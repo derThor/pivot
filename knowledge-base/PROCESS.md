@@ -40,6 +40,23 @@ eigenen Eintrag.
   gibt es. Das ist der Teil, der bei reiner Code-Lektüre am ehesten verloren
   geht (das "Warum" hinter einer Entscheidung).
 
+## Struktur: wann in Unterordner gruppieren
+
+Aktuell liegen alle Einträge flach in `knowledge-base/`, unterschieden durch
+sprechende Datei-Präfixe (`auth-*`, `content-*`, `frontend-*`,
+`tooling-*`). Das bleibt so, solange:
+
+- kein Themenbereich (Präfix) 4 oder mehr Dateien hat, und
+- die Gesamtzahl der Einträge unter ca. 12–15 liegt (die Tabelle in
+  [INDEX.md](./INDEX.md) bleibt sonst unübersichtlich).
+
+Wird eine dieser Schwellen überschritten: Unterordner pro Themenbereich
+anlegen (z.B. `knowledge-base/auth/`, `knowledge-base/content/`,
+`knowledge-base/frontend/`), bestehende Dateien passend verschieben und
+die Links in `INDEX.md` entsprechend anpassen. Nicht vorher aufteilen –
+zu frühe Verschachtelung macht das Nachschlagen bei einer Handvoll
+Dateien eher schwerer als leichter.
+
 ## Stil
 
 - Kurz und konkret, keine Wiederholung von Code, der sich selbst erklärt.

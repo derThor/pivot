@@ -22,7 +22,10 @@ export class ContentService {
         skip: (page - 1) * pageSize,
         take: pageSize,
         orderBy: { updatedAt: 'desc' },
-        include: { author: { select: { id: true, name: true } } },
+        include: {
+          author: { select: { id: true, name: true } },
+          contentType: { select: { id: true, name: true, slug: true } },
+        },
       }),
       this.prisma.content.count({ where }),
     ]);
@@ -38,6 +41,7 @@ export class ContentService {
       where: { id },
       include: {
         author: { select: { id: true, name: true } },
+        contentType: { select: { id: true, name: true, slug: true } },
         versions: { orderBy: { createdAt: 'desc' }, take: 10 },
       },
     });

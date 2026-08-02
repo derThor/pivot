@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   FileText,
@@ -11,6 +11,7 @@ import {
   Settings,
   Tags,
   Globe,
+  LogOut,
 } from "lucide-react";
 
 import {
@@ -26,6 +27,23 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import type { CurrentUser } from "@/lib/api-server";
+
+const roleLabels: Record<CurrentUser["role"], string> = {
+  ADMIN: "Administrator",
+  EDITOR: "Redakteur",
+  AUTHOR: "Autor",
+  VIEWER: "Betrachter",
+};
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]!.toUpperCase())
+    .join("");
+}
 
 const navMain = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -40,8 +58,20 @@ const navManage = [
   { title: "Einstellungen", url: "/dashboard/settings", icon: Settings },
 ];
 
-export function AppSidebar() {
+export function AppSidebar({ user }: { user: CurrentUser }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+
+  async function handleLogout() {
+    setIsLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      router.push("/login");
+      router.refresh();
+    }
+  }
 
   return (
     <Sidebar collapsible="icon">
@@ -100,14 +130,26 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg">
               <Avatar className="h-6 w-6 rounded-md">
-                <AvatarFallback className="rounded-md">TW</AvatarFallback>
+                <AvatarFallback className="rounded-md">
+                  {initials(user.name)}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                <span className="truncate font-medium">Thorsten Wessels</span>
+                <span className="truncate font-medium">{user.name}</span>
                 <span className="truncate text-xs text-muted-foreground">
-                  Administrator
+                  {roleLabels[user.role]}
                 </span>
               </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              tooltip="Abmelden"
+            >
+              <LogOut />
+              <span>{isLoggingOut ? "Wird abgemeldet…" : "Abmelden"}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

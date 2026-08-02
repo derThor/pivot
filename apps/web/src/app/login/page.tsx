@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -30,14 +32,41 @@ const loginSchema = z.object({
 type LoginValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
 
-  function onSubmit(values: LoginValues) {
-    // TODO: Anbindung an POST /auth/login (apps/api)
-    console.log(values);
+  async function onSubmit(values: LoginValues) {
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setError(data?.message ?? "Anmeldung fehlgeschlagen.");
+        return;
+      }
+
+      const redirectTo =
+        new URLSearchParams(window.location.search).get("redirectTo") ??
+        "/dashboard";
+      router.push(redirectTo);
+      router.refresh();
+    } catch {
+      setError("Server nicht erreichbar. Bitte später erneut versuchen.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -85,8 +114,11 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full">
-                Anmelden
+              {error && (
+                <p className="text-sm text-destructive">{error}</p>
+              )}
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? "Anmelden…" : "Anmelden"}
               </Button>
             </form>
           </Form>

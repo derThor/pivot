@@ -114,6 +114,15 @@ Diese Besonderheit ist auch in der [Knowledge Base](../knowledge-base/frontend-s
 festgehalten, da sie leicht zu Fehlern führt, wenn man mit "klassischem"
 shadcn/Radix-Wissen an den Code geht.
 
+### UI-Konvention: Anlegen → Bearbeiten + Löschen
+
+Jede Ressource, die über die UI angelegt werden kann, muss auch bearbeitet
+und gelöscht werden können. Löschen läuft nie direkt aus einer Aktion
+heraus, sondern immer über die geteilte Komponente
+`src/components/confirm-delete-dialog.tsx` (Bestätigen/Abbrechen-Popup).
+Details und Hintergrund:
+[Knowledge Base](../knowledge-base/ui-convention-crud-and-delete-confirmation.md).
+
 ### Datenanbindung
 
 Aktuell sind die Admin-Seiten mit Platzhalterdaten vorbereitet (siehe

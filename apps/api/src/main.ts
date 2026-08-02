@@ -1,14 +1,22 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import { mkdirSync } from 'node:fs';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { UPLOAD_DIR } from './media/media.config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  mkdirSync(UPLOAD_DIR, { recursive: true });
+
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService);
 
+  // Vor helmet() registrieren: sonst würde helmets Cross-Origin-Resource-Policy
+  // (same-origin) das Einbetten der Bilder vom Frontend-Origin (Port 3000) blockieren.
+  app.useStaticAssets(UPLOAD_DIR, { prefix: '/uploads' });
   app.use(helmet());
   app.enableCors({
     origin: config.get<string>('CORS_ORIGIN', 'http://localhost:3000'),

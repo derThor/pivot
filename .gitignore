@@ -33,6 +33,9 @@ Thumbs.db
 # prisma
 packages/database/generated/
 
+# lokale Medien-Uploads
+apps/api/uploads/
+
 # misc
 coverage/
 *.tsbuildinfo

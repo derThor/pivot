@@ -11,16 +11,24 @@
 
 ## Phase 1 – End-to-End MVP
 
-- [ ] Frontend an die API anbinden (Login-Flow, Token-Handling,
+- [x] Frontend an die API anbinden (Login-Flow, Token-Handling,
       Content-Liste mit echten Daten)
-- [ ] Content-Editor-Formular (dynamisch aus `ContentType.schema` generiert)
-- [ ] Medien-Upload-Endpoint (lokal oder S3-kompatibel) + Medien-Bibliothek-UI
-- [ ] Benutzerverwaltung-UI (Liste, Anlegen, Rollen ändern)
-- [ ] Kategorien/Tags-Verwaltung (Backend-Endpoints + UI)
-- [ ] Erste automatisierte Tests für Auth- und Content-Flows
+- [x] Content-Editor-Formular (dynamisch aus `ContentType.schema` generiert)
+- [x] Medien-Upload-Endpoint (lokal oder S3-kompatibel) + Medien-Bibliothek-UI
+- [x] Benutzerverwaltung-UI (Liste, Anlegen, Rollen ändern)
+- [x] Kategorien/Tags-Verwaltung (Backend-Endpoints + UI)
+- [x] Erste automatisierte Tests für Auth- und Content-Flows
 
 ## Phase 2 – Redaktionelle Reife
 
+- [x] Content bearbeiten (Edit-Formular für bestehende Einträge; Backend
+      `PATCH /content/:id` existiert bereits) und löschen (`DELETE
+      /content/:id` existiert bereits) im Frontend nutzen
+- [x] Medien bearbeiten (Alt-Text ändern) und löschen – Backend-Endpoint
+      `DELETE /media/:id` fehlt noch komplett, nicht nur die UI
+- [ ] Benutzer vollständig bearbeiten (Name/E-Mail/Aktiv-Status, nicht nur
+      Rolle) und löschen – Backend-Endpoints `PATCH`/`DELETE /users/:id`
+      existieren bereits, im Frontend bisher nur Rollen-Änderung genutzt
 - [ ] Rich-Text/Block-Editor für Content-Body
 - [ ] Versions-Diff & Rollback-UI (Backend-Daten bereits vorhanden)
 - [ ] Scheduler-Job: `SCHEDULED` → `PUBLISHED` zum Zielzeitpunkt (Redis/BullMQ)
