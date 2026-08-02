@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Auth & Benutzer ----------
+
+enum Role {
+  ADMIN
+  EDITOR
+  AUTHOR
+  VIEWER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  avatarUrl    String?
+  role         Role     @default(AUTHOR)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  contents        Content[]        @relation("ContentAuthor")
+  contentVersions ContentVersion[]
+  media           Media[]
+  auditLogs       AuditLog[]
+  refreshTokens   RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
+
+// ---------- Content ----------
+
+enum ContentStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+model ContentType {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  // JSON-Schema-artige Feld-Definition fuer flexible Content-Modelle
+  schema    Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  contents  Content[]
+
+  @@map("content_types")
+}
+
+model Content {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String
+  status      ContentStatus @default(DRAFT)
+  locale      String        @default("de")
+  data        Json
+  excerpt     String?
+  seoTitle    String?
+  seoDescription String?
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  contentTypeId String
+  contentType   ContentType @relation(fields: [contentTypeId], references: [id])
+
+  authorId String
+  author   User   @relation("ContentAuthor", fields: [authorId], references: [id])
+
+  versions   ContentVersion[]
+  categories ContentCategory[]
+  tags       ContentTag[]
+
+  @@unique([slug, locale])
+  @@index([status])
+  @@map("contents")
+}
+
+model ContentVersion {
+  id        String   @id @default(cuid())
+  contentId String
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  data      Json
+  createdAt DateTime @default(now())
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  @@map("content_versions")
+}
+
+model Category {
+  id       String            @id @default(cuid())
+  name     String            @unique
+  slug     String            @unique
+  contents ContentCategory[]
+
+  @@map("categories")
+}
+
+model ContentCategory {
+  contentId  String
+  categoryId String
+  content    Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, categoryId])
+  @@map("content_categories")
+}
+
+model Tag {
+  id       String       @id @default(cuid())
+  name     String       @unique
+  slug     String       @unique
+  contents ContentTag[]
+
+  @@map("tags")
+}
+
+model ContentTag {
+  contentId String
+  tagId     String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, tagId])
+  @@map("content_tags")
+}
+
+// ---------- Medien ----------
+
+model Media {
+  id          String   @id @default(cuid())
+  filename    String
+  url         String
+  mimeType    String
+  size        Int
+  width       Int?
+  height      Int?
+  alt         String?
+  createdAt   DateTime @default(now())
+
+  uploadedById String
+  uploadedBy   User   @relation(fields: [uploadedById], references: [id])
+
+  @@map("media")
+}
+
+// ---------- Audit Log ----------
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
