@@ -7,14 +7,22 @@ import {
   FolderTree,
   Image as ImageIcon,
   Search,
+  ShieldCheck,
   Tag as TagIcon,
+  Users,
 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 
 const MIN_QUERY_LENGTH = 3;
 
-type SearchResultType = "content" | "category" | "tag" | "media";
+type SearchResultType =
+  | "content"
+  | "category"
+  | "tag"
+  | "media"
+  | "user"
+  | "role";
 
 interface SearchResult {
   type: SearchResultType;
@@ -26,16 +34,55 @@ interface SearchResult {
 
 const typeMeta: Record<
   SearchResultType,
-  { label: string; icon: typeof FileText; href: string }
+  {
+    label: string;
+    icon: typeof FileText;
+    href: string;
+    badgeClassName: string;
+  }
 > = {
-  content: { label: "Inhalt", icon: FileText, href: "/dashboard/content" },
+  content: {
+    label: "Inhalt",
+    icon: FileText,
+    href: "/dashboard/content",
+    badgeClassName:
+      "bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-400",
+  },
   category: {
     label: "Kategorie",
     icon: FolderTree,
     href: "/dashboard/categories",
+    badgeClassName:
+      "bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400",
   },
-  tag: { label: "Tag", icon: TagIcon, href: "/dashboard/tags" },
-  media: { label: "Medium", icon: ImageIcon, href: "/dashboard/media" },
+  tag: {
+    label: "Tag",
+    icon: TagIcon,
+    href: "/dashboard/tags",
+    badgeClassName:
+      "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",
+  },
+  media: {
+    label: "Medium",
+    icon: ImageIcon,
+    href: "/dashboard/media",
+    badgeClassName:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400",
+  },
+  user: {
+    label: "Benutzer",
+    icon: Users,
+    href: "/dashboard/users",
+    badgeClassName:
+      "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400",
+  },
+  role: {
+    label: "Rolle",
+    icon: ShieldCheck,
+    href: "/dashboard/roles",
+    badgeClassName:
+      "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400",
+  },
 };
 
 function resultHref(result: SearchResult) {
@@ -125,7 +172,9 @@ export function GlobalSearch() {
                       <span className="min-w-0 flex-1 truncate font-medium">
                         {result.title}
                       </span>
-                      <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${meta.badgeClassName}`}
+                      >
                         {meta.label}
                       </span>
                     </button>

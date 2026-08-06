@@ -1,7 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
+  IsIn,
   IsObject,
   IsOptional,
   IsString,
@@ -52,6 +54,41 @@ export class CreateContentDto {
   @IsOptional()
   @IsString()
   seoDescription?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  canonicalUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  ogTitle?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  ogDescription?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  ogImageUrl?: string;
+
+  @ApiPropertyOptional({ enum: ['summary', 'summary_large_image'], nullable: true })
+  @IsOptional()
+  @IsIn(['summary', 'summary_large_image'])
+  twitterCard?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  robotsIndex?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  robotsFollow?: boolean;
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()

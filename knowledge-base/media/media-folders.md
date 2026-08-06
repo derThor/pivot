@@ -5,6 +5,36 @@
 apps/web (`src/components/media-folder-browser.tsx`,
 `folder-dialog.tsx`, `move-to-folder-dialog.tsx`, `image-picker-dialog.tsx`)
 
+> **Update 2026-08-06 (Icon-Kachel-Redesign, Badges/Menü als Overlay):**
+> Ordner-Kacheln in der Medienbibliothek (`media-folder-browser.tsx`)
+> nach Referenzbild neu gestaltet: großes, farbiges Ordner-Icon
+> (`Folder` aus lucide-react mit `fill="currentColor"` statt nur
+> Outline, in einer `size-20`-Kachel mit
+> `bg-gradient-to-br from-amber-400 to-orange-500`) statt der bisherigen
+> kleinen Outline-Icon+Text-Zeile. Name steht jetzt zentriert **unter**
+> dem Icon statt daneben. Die Anzahl-Badges
+> (`folder.mediaCount`/`folder.childCount`) und das Kebab-Menü
+> (`FolderTileMenu`) liegen jetzt **direkt auf dem Icon** statt in einer
+> eigenen Zeile/Ecke der Kachel: Menü oben rechts
+> (`absolute -top-2 -right-2`, Trigger auf eine kleine runde
+> `bg-background/90`-Chip mit Ring/Schatten umgestylt, damit er auf dem
+> farbigen Icon sichtbar bleibt), Medien-Anzahl unten links, Unterordner-
+> Anzahl unten rechts (beide `absolute -bottom-2`, `border-2
+> border-background` als "Ausstanz"-Effekt gegen das Icon). Die äußere
+> Karte (`bg-card p-4 shadow-card`) wurde entfernt – die Kachel besteht
+> jetzt nur noch aus Icon + Name, kein umschließender Kartenrahmen mehr
+> (näher am Referenzbild, wirkt luftiger im Grid). Grid dadurch auf mehr,
+> kleinere Spalten umgestellt (`grid-cols-3` bis `xl:grid-cols-8` statt
+> `grid-cols-2` bis `xl:grid-cols-6`), da die Kacheln jetzt schmaler
+> sind. Auf Nutzerwunsch ("überall diese ordner einfügen") identisch
+> (kompakter skaliert: `size-14` statt `size-20`, kleinere Badges, ohne
+> Options-Menü) auch in `image-picker-dialog.tsx` übernommen – das war
+> die einzige weitere Stelle im Projekt, an der Ordner als Icon-Kacheln
+> mit Anzahl-Badges dargestellt werden (per Grep nach
+> `mediaCount`/`childCount`-Verwendung geprüft; `move-to-folder-dialog.tsx`
+> zeigt Ordner nur als eingerücktes Dropdown ohne Icon-Kacheln und war
+> daher nicht betroffen).
+
 > **Update 2026-08-04 (kaskadierendes Löschen):** Löschen eines
 > nicht-leeren Ordners ist jetzt erlaubt statt mit 400 abgelehnt zu
 > werden – dabei werden alle enthaltenen Unterordner (rekursiv) und

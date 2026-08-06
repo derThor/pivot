@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,7 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ImagePickerDialog } from "@/components/image-picker-dialog";
+import { mediaUrl } from "@/lib/media";
 import {
   Form,
   FormControl,
@@ -33,7 +37,50 @@ import type {
   ContentStatus,
   ContentDetail,
 } from "@/lib/api-server";
-import { slugify } from "@/lib/utils";
+import { formatName, slugify } from "@/lib/utils";
+
+const LOCK_HEARTBEAT_INTERVAL_MS = 60_000;
+
+interface LockInfo {
+  lockedBy: { id: string; firstName: string | null; lastName: string };
+  lockedAt: string;
+}
+
+type LockState = "checking" | "held" | "locked-by-other" | "error";
+
+const twitterCardLabel: Record<string, string> = {
+  none: "Nicht gesetzt",
+  summary: "Summary",
+  summary_large_image: "Summary (großes Bild)",
+};
+
+interface SeoValues {
+  excerpt: string;
+  seoTitle: string;
+  seoDescription: string;
+  canonicalUrl: string;
+  ogTitle: string;
+  ogDescription: string;
+  ogImageUrl: string;
+  twitterCard: string;
+  robotsIndex: boolean;
+  robotsFollow: boolean;
+}
+
+function toSeoValues(content: ContentDetail | undefined): SeoValues {
+  return {
+    excerpt: content?.excerpt ?? "",
+    seoTitle: content?.seoTitle ?? "",
+    seoDescription: content?.seoDescription ?? "",
+    canonicalUrl: content?.canonicalUrl ?? "",
+    ogTitle: content?.ogTitle ?? "",
+    ogDescription: content?.ogDescription ?? "",
+    ogImageUrl: content?.ogImageUrl ?? "",
+    twitterCard: content?.twitterCard ?? "none",
+    robotsIndex: content?.robotsIndex ?? true,
+    robotsFollow: content?.robotsFollow ?? true,
+  };
+}
 
 const statusLabel: Record<ContentStatus, string> = {
   DRAFT: "Entwurf",
@@ -66,14 +113,44 @@ function toDataValues(
   );
 }
 
+const DRAFT_STORAGE_PREFIX = "strasev:content-draft:";
+
+interface DraftSnapshot {
+  savedAt: string;
+  title: string;
+  slug: string;
+  status: ContentStatus;
+  categoryIds: string[];
+  dataValues: Record<string, string>;
+  seoValues: SeoValues;
+}
+
+function draftStorageKey(
+  content: ContentDetail | undefined,
+  contentTypeId: string,
+) {
+  return `${DRAFT_STORAGE_PREFIX}${content?.id ?? `new-${contentTypeId}`}`;
+}
+
+function isDraftWorthSaving(snapshot: DraftSnapshot) {
+  return (
+    snapshot.title.trim().length > 0 ||
+    Object.values(snapshot.dataValues).some((value) => value.trim().length > 0)
+  );
+}
+
 export function ContentEditorForm({
   contentTypes,
   categories,
   content,
+  autosaveEnabled = true,
+  canForceUnlock = false,
 }: {
   contentTypes: ContentType[];
   categories: CategoryRef[];
   content?: ContentDetail;
+  autosaveEnabled?: boolean;
+  canForceUnlock?: boolean;
 }) {
   const router = useRouter();
   const isEditing = Boolean(content);
@@ -85,8 +162,18 @@ export function ContentEditorForm({
   const [categoryIds, setCategoryIds] = useState<string[]>(
     content?.categories.map((category) => category.id) ?? [],
   );
+  const [seoValues, setSeoValues] = useState<SeoValues>(toSeoValues(content));
+  const [ogImagePickerOpen, setOgImagePickerOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [draftBanner, setDraftBanner] = useState<DraftSnapshot | null>(null);
+  const [lastAutosavedAt, setLastAutosavedAt] = useState<Date | null>(null);
+  const isFirstAutosaveRun = useRef(true);
+  const [lockState, setLockState] = useState<LockState>(
+    isEditing ? "checking" : "held",
+  );
+  const [lockInfo, setLockInfo] = useState<LockInfo | null>(null);
+  const [isUnlocking, setIsUnlocking] = useState(false);
 
   const form = useForm<MetaValues>({
     resolver: zodResolver(metaSchema),
@@ -98,9 +185,189 @@ export function ContentEditorForm({
     },
   });
 
+  const watchedValues = form.watch();
   const selectedType = contentTypes.find(
-    (type) => type.id === form.watch("contentTypeId"),
+    (type) => type.id === watchedValues.contentTypeId,
   );
+  const editorFields =
+    selectedType?.schema.fields.filter((field) => field.type === "richtext") ??
+    [];
+  const settingsFields =
+    selectedType?.schema.fields.filter((field) => field.type !== "richtext") ??
+    [];
+
+  // Prüft beim Öffnen einmalig, ob im Browser noch ein nicht gespeicherter
+  // Entwurf für diesen Inhalt (bzw. für "neuer Inhalt" dieses Content-Typs)
+  // liegt, und bietet ihn zur Wiederherstellung an.
+  useEffect(() => {
+    if (!autosaveEnabled) return;
+    try {
+      const raw = localStorage.getItem(
+        draftStorageKey(content, watchedValues.contentTypeId),
+      );
+      if (raw) {
+        setDraftBanner(JSON.parse(raw) as DraftSnapshot);
+      }
+    } catch {
+      // Kaputter/nicht vorhandener Entwurf – einfach ignorieren, kein
+      // kritischer Pfad.
+    }
+    // Nur beim ersten Rendern prüfen, nicht bei jeder Content-Typ-Änderung.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Debounced Autosave: schreibt den aktuellen Bearbeitungsstand lokal in
+  // den Browser, sobald sich etwas ändert – nicht beim ersten Render (das
+  // wäre nur der unveränderte Server-Stand).
+  useEffect(() => {
+    if (!autosaveEnabled) return;
+    if (isFirstAutosaveRun.current) {
+      isFirstAutosaveRun.current = false;
+      return;
+    }
+    const timeout = setTimeout(() => {
+      const snapshot: DraftSnapshot = {
+        savedAt: new Date().toISOString(),
+        title: watchedValues.title,
+        slug: watchedValues.slug,
+        status: watchedValues.status,
+        categoryIds,
+        dataValues,
+        seoValues,
+      };
+      if (!isDraftWorthSaving(snapshot)) return;
+      try {
+        localStorage.setItem(
+          draftStorageKey(content, watchedValues.contentTypeId),
+          JSON.stringify(snapshot),
+        );
+        setLastAutosavedAt(new Date());
+      } catch {
+        // localStorage kann in seltenen Fällen (Privatmodus, Kontingent
+        // voll) fehlschlagen – Autosave ist best-effort, kein kritischer
+        // Pfad, deshalb kein Fehler-UI dafür.
+      }
+    }, 1500);
+    return () => clearTimeout(timeout);
+  }, [
+    autosaveEnabled,
+    content,
+    watchedValues.title,
+    watchedValues.slug,
+    watchedValues.status,
+    watchedValues.contentTypeId,
+    categoryIds,
+    dataValues,
+    seoValues,
+  ]);
+
+  // Bearbeitungssperre: verhindert, dass zwei Redakteure denselben Inhalt
+  // gleichzeitig bearbeiten und sich gegenseitig überschreiben. Nur bei
+  // bestehenden Inhalten relevant – ein noch nicht angelegter Inhalt kann
+  // nicht kollidieren.
+  useEffect(() => {
+    if (!isEditing) return;
+    let cancelled = false;
+
+    async function acquireLock() {
+      try {
+        const res = await fetch(`/api/content/${content!.id}/lock`, {
+          method: "POST",
+        });
+        if (cancelled) return;
+        if (res.ok) {
+          setLockState("held");
+          setLockInfo(null);
+        } else if (res.status === 409) {
+          const body = await res.json().catch(() => null);
+          setLockState("locked-by-other");
+          setLockInfo(
+            body?.lockedBy
+              ? { lockedBy: body.lockedBy, lockedAt: body.lockedAt }
+              : null,
+          );
+        } else {
+          setLockState("error");
+        }
+      } catch {
+        if (!cancelled) setLockState("error");
+      }
+    }
+
+    acquireLock();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditing, content?.id]);
+
+  // Heartbeat: verlängert die eigene Sperre, solange aktiv bearbeitet wird.
+  useEffect(() => {
+    if (!isEditing || lockState !== "held") return;
+    const interval = setInterval(() => {
+      fetch(`/api/content/${content!.id}/lock`, { method: "POST" }).catch(
+        () => {},
+      );
+    }, LOCK_HEARTBEAT_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [isEditing, lockState, content]);
+
+  // Sperre wieder freigeben: beim Verlassen der Seite (Client-Navigation)
+  // sowie best-effort beim Schließen des Tabs/Browsers.
+  useEffect(() => {
+    if (!isEditing) return;
+    const contentId = content!.id;
+
+    function releaseOnUnload() {
+      navigator.sendBeacon?.(`/api/content/${contentId}/unlock`);
+    }
+    window.addEventListener("beforeunload", releaseOnUnload);
+    return () => {
+      window.removeEventListener("beforeunload", releaseOnUnload);
+      fetch(`/api/content/${contentId}/unlock`, { method: "POST" }).catch(
+        () => {},
+      );
+    };
+  }, [isEditing, content]);
+
+  async function handleForceUnlock() {
+    if (!content) return;
+    setIsUnlocking(true);
+    try {
+      await fetch(`/api/content/${content.id}/unlock`, { method: "POST" });
+      setLockState("checking");
+      const res = await fetch(`/api/content/${content.id}/lock`, {
+        method: "POST",
+      });
+      setLockState(res.ok ? "held" : "error");
+      setLockInfo(null);
+    } finally {
+      setIsUnlocking(false);
+    }
+  }
+
+  function handleRestoreDraft() {
+    if (!draftBanner) return;
+    form.setValue("title", draftBanner.title);
+    form.setValue("slug", draftBanner.slug);
+    form.setValue("status", draftBanner.status);
+    setSlugTouched(true);
+    setCategoryIds(draftBanner.categoryIds);
+    setDataValues(draftBanner.dataValues);
+    setSeoValues(draftBanner.seoValues);
+    setDraftBanner(null);
+  }
+
+  function handleDiscardDraft() {
+    try {
+      localStorage.removeItem(
+        draftStorageKey(content, watchedValues.contentTypeId),
+      );
+    } catch {
+      // ignore
+    }
+    setDraftBanner(null);
+  }
 
   function handleTypeChange(id: string | null) {
     if (!id) return;
@@ -115,6 +382,10 @@ export function ContentEditorForm({
       form.setValue("slug", slugify(value));
     }
   }
+
+  const isLockedByOther = isEditing && lockState === "locked-by-other";
+  const lockBlocksEditing =
+    isEditing && (lockState === "checking" || lockState === "locked-by-other");
 
   async function onSubmit(values: MetaValues) {
     setFormError(null);
@@ -143,6 +414,11 @@ export function ContentEditorForm({
     try {
       const url = isEditing ? `/api/content/${content!.id}` : "/api/content";
       const method = isEditing ? "PATCH" : "POST";
+      const seoPayload = {
+        ...seoValues,
+        twitterCard:
+          seoValues.twitterCard === "none" ? null : seoValues.twitterCard,
+      };
       const body = isEditing
         ? {
             title: values.title,
@@ -150,8 +426,9 @@ export function ContentEditorForm({
             status: values.status,
             data,
             categoryIds,
+            ...seoPayload,
           }
-        : { ...values, data, categoryIds };
+        : { ...values, data, categoryIds, ...seoPayload };
 
       const res = await fetch(url, {
         method,
@@ -165,6 +442,12 @@ export function ContentEditorForm({
           errorBody?.message ?? "Inhalt konnte nicht gespeichert werden.",
         );
         return;
+      }
+
+      try {
+        localStorage.removeItem(draftStorageKey(content, values.contentTypeId));
+      } catch {
+        // ignore
       }
 
       router.push("/dashboard/content");
@@ -182,217 +465,545 @@ export function ContentEditorForm({
         onSubmit={form.handleSubmit(onSubmit)}
         className="flex w-full flex-col gap-6"
       >
-        <Card>
-          <CardContent className="flex flex-col gap-6">
-            <FormField
-              control={form.control}
-              name="contentTypeId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Content-Type</FormLabel>
-                  <Select
-                    value={field.value}
-                    onValueChange={handleTypeChange}
-                    disabled={isEditing}
-                    items={Object.fromEntries(
-                      contentTypes.map((type) => [type.id, type.name]),
+        {isLockedByOther && (
+          <div className="flex items-center justify-between gap-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm">
+            <p>
+              {lockInfo?.lockedBy
+                ? `Wird gerade bearbeitet von ${formatName(lockInfo.lockedBy)}`
+                : "Wird gerade von einer anderen Person bearbeitet"}
+              {lockInfo?.lockedAt &&
+                ` seit ${new Date(lockInfo.lockedAt).toLocaleTimeString("de-DE")}`}
+              . Änderungen sind gesperrt, bis die Bearbeitung dort beendet
+              wird.
+            </p>
+            {canForceUnlock && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={isUnlocking}
+                onClick={handleForceUnlock}
+                className="shrink-0"
+              >
+                {isUnlocking ? "Hebt auf…" : "Sperre aufheben"}
+              </Button>
+            )}
+          </div>
+        )}
+
+        {draftBanner && (
+          <div className="flex items-center justify-between gap-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm dark:border-amber-500/30 dark:bg-amber-500/10">
+            <p>
+              Es gibt einen nicht gespeicherten Entwurf vom{" "}
+              {new Date(draftBanner.savedAt).toLocaleString("de-DE")}.
+            </p>
+            <div className="flex shrink-0 gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleDiscardDraft}
+              >
+                Verwerfen
+              </Button>
+              <Button type="button" size="sm" onClick={handleRestoreDraft}>
+                Wiederherstellen
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <fieldset disabled={lockBlocksEditing} className="contents">
+        <Tabs defaultValue="content">
+          <TabsList>
+            <TabsTrigger value="content">Inhalt</TabsTrigger>
+            <TabsTrigger value="seo">SEO</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="content">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_1fr]">
+              <Card>
+                <CardContent className="flex flex-col gap-6">
+                  <FormField
+                    control={form.control}
+                    name="contentTypeId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Content-Type</FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={handleTypeChange}
+                          disabled={isEditing}
+                          items={Object.fromEntries(
+                            contentTypes.map((type) => [type.id, type.name]),
+                          )}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Content-Type wählen" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {contentTypes.map((type) => (
+                              <SelectItem key={type.id} value={type.id}>
+                                {type.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {isEditing && (
+                          <p className="text-xs text-muted-foreground">
+                            Der Content-Type kann nachträglich nicht geändert
+                            werden.
+                          </p>
+                        )}
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Content-Type wählen" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {contentTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.name}
-                        </SelectItem>
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Titel</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            onChange={(e) => handleTitleChange(e.target.value)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="slug"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Slug</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            onChange={(e) => {
+                              setSlugTouched(true);
+                              field.onChange(e);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          items={statusLabel}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Object.entries(statusLabel).map(
+                              ([value, label]) => (
+                                <SelectItem key={value} value={value}>
+                                  {label}
+                                </SelectItem>
+                              ),
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {categories.length > 0 && (
+                    <div className="flex flex-col gap-2">
+                      <Label>Kategorien</Label>
+                      <Select
+                        multiple
+                        value={categoryIds}
+                        onValueChange={(value) => setCategoryIds(value ?? [])}
+                        items={Object.fromEntries(
+                          categories.map((category) => [
+                            category.id,
+                            category.name,
+                          ]),
+                        )}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Kategorien wählen">
+                            {(value: string[]) =>
+                              value.length === 0
+                                ? "Keine Kategorie ausgewählt"
+                                : `${value.length} ${value.length === 1 ? "Kategorie" : "Kategorien"} ausgewählt`
+                            }
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {settingsFields.length > 0 && (
+                    <div className="flex flex-col gap-4 rounded-xl bg-muted/30 p-4">
+                      <p className="text-sm font-medium">
+                        {selectedType?.name} – Felder
+                      </p>
+                      {settingsFields.map((field) => (
+                        <div key={field.name} className="flex flex-col gap-2">
+                          <Label htmlFor={`data-${field.name}`}>
+                            {field.name}
+                            {field.required && (
+                              <span className="text-destructive"> *</span>
+                            )}
+                          </Label>
+                          {field.type === "text" ? (
+                            <Textarea
+                              id={`data-${field.name}`}
+                              rows={6}
+                              value={dataValues[field.name] ?? ""}
+                              onChange={(e) =>
+                                setDataValues((prev) => ({
+                                  ...prev,
+                                  [field.name]: e.target.value,
+                                }))
+                              }
+                            />
+                          ) : (
+                            <Input
+                              id={`data-${field.name}`}
+                              type={
+                                field.type === "number" ? "number" : "text"
+                              }
+                              value={dataValues[field.name] ?? ""}
+                              onChange={(e) =>
+                                setDataValues((prev) => ({
+                                  ...prev,
+                                  [field.name]: e.target.value,
+                                }))
+                              }
+                            />
+                          )}
+                          {dataErrors[field.name] && (
+                            <p className="text-sm text-destructive">
+                              {dataErrors[field.name]}
+                            </p>
+                          )}
+                        </div>
                       ))}
-                    </SelectContent>
-                  </Select>
-                  {isEditing && (
-                    <p className="text-xs text-muted-foreground">
-                      Der Content-Type kann nachträglich nicht geändert
-                      werden.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="flex h-full flex-col">
+                <CardContent className="flex flex-1 flex-col gap-6">
+                  {editorFields.length > 0 ? (
+                    editorFields.map((field) => (
+                      <div
+                        key={field.name}
+                        className="flex min-h-0 flex-1 flex-col gap-2"
+                      >
+                        <Label htmlFor={`data-${field.name}`}>
+                          {field.name}
+                          {field.required && (
+                            <span className="text-destructive"> *</span>
+                          )}
+                        </Label>
+                        <RichTextEditor
+                          id={`data-${field.name}`}
+                          value={dataValues[field.name] ?? ""}
+                          editable={!lockBlocksEditing}
+                          onChange={(html) =>
+                            setDataValues((prev) => ({
+                              ...prev,
+                              [field.name]: html,
+                            }))
+                          }
+                        />
+                        {dataErrors[field.name] && (
+                          <p className="text-sm text-destructive">
+                            {dataErrors[field.name]}
+                          </p>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Dieser Content-Type hat kein Editor-Feld.
                     </p>
                   )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Titel</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      onChange={(e) => handleTitleChange(e.target.value)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <TabsContent value="seo">
+            <Card>
+              <CardContent className="flex flex-col gap-6">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="seo-excerpt">Kurzbeschreibung (Excerpt)</Label>
+                  <Textarea
+                    id="seo-excerpt"
+                    rows={3}
+                    value={seoValues.excerpt}
+                    onChange={(e) =>
+                      setSeoValues((prev) => ({
+                        ...prev,
+                        excerpt: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
 
-            <FormField
-              control={form.control}
-              name="slug"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Slug</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      onChange={(e) => {
-                        setSlugTouched(true);
-                        field.onChange(e);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="seo-title">SEO-Titel</Label>
+                  <Input
+                    id="seo-title"
+                    value={seoValues.seoTitle}
+                    onChange={(e) =>
+                      setSeoValues((prev) => ({
+                        ...prev,
+                        seoTitle: e.target.value,
+                      }))
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Wird als Seitentitel in Suchergebnissen verwendet, falls
+                    gesetzt – sonst der normale Titel.
+                  </p>
+                </div>
 
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    items={statusLabel}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {Object.entries(statusLabel).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="seo-description">Meta-Description</Label>
+                  <Textarea
+                    id="seo-description"
+                    rows={3}
+                    value={seoValues.seoDescription}
+                    onChange={(e) =>
+                      setSeoValues((prev) => ({
+                        ...prev,
+                        seoDescription: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
 
-            {categories.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <Label>Kategorien</Label>
-                <Select
-                  multiple
-                  value={categoryIds}
-                  onValueChange={(value) => setCategoryIds(value ?? [])}
-                  items={Object.fromEntries(
-                    categories.map((category) => [
-                      category.id,
-                      category.name,
-                    ]),
-                  )}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Kategorien wählen">
-                      {(value: string[]) =>
-                        value.length === 0
-                          ? "Keine Kategorie ausgewählt"
-                          : `${value.length} ${value.length === 1 ? "Kategorie" : "Kategorien"} ausgewählt`
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="seo-canonical">Canonical-URL</Label>
+                  <Input
+                    id="seo-canonical"
+                    placeholder="https://example.com/pfad"
+                    value={seoValues.canonicalUrl}
+                    onChange={(e) =>
+                      setSeoValues((prev) => ({
+                        ...prev,
+                        canonicalUrl: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
 
-            {selectedType && selectedType.schema.fields.length > 0 && (
-              <div className="flex flex-col gap-4 rounded-xl bg-muted/30 p-4">
-                <p className="text-sm font-medium">
-                  {selectedType.name} – Felder
-                </p>
-                {selectedType.schema.fields.map((field) => (
-                  <div key={field.name} className="flex flex-col gap-2">
-                    <Label htmlFor={`data-${field.name}`}>
-                      {field.name}
-                      {field.required && (
-                        <span className="text-destructive"> *</span>
-                      )}
+                <div className="flex items-center justify-between gap-4 py-2">
+                  <div className="flex flex-col gap-0.5">
+                    <Label htmlFor="seo-robots-index">
+                      Indexierung erlauben
                     </Label>
-                    {field.type === "richtext" ? (
-                      <RichTextEditor
-                        id={`data-${field.name}`}
-                        value={dataValues[field.name] ?? ""}
-                        onChange={(html) =>
-                          setDataValues((prev) => ({
-                            ...prev,
-                            [field.name]: html,
-                          }))
+                    <p className="text-sm text-muted-foreground">
+                      Deaktiviert: Suchmaschinen wird `noindex` mitgeteilt.
+                    </p>
+                  </div>
+                  <Switch
+                    id="seo-robots-index"
+                    checked={seoValues.robotsIndex}
+                    onCheckedChange={(checked) =>
+                      setSeoValues((prev) => ({
+                        ...prev,
+                        robotsIndex: checked,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-4 py-2">
+                  <div className="flex flex-col gap-0.5">
+                    <Label htmlFor="seo-robots-follow">
+                      Link-Folgen erlauben
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Deaktiviert: Suchmaschinen wird `nofollow` mitgeteilt.
+                    </p>
+                  </div>
+                  <Switch
+                    id="seo-robots-follow"
+                    checked={seoValues.robotsFollow}
+                    onCheckedChange={(checked) =>
+                      setSeoValues((prev) => ({
+                        ...prev,
+                        robotsFollow: checked,
+                      }))
+                    }
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="mt-6">
+              <CardContent className="flex flex-col gap-6">
+                <p className="text-sm font-medium">OpenGraph & Twitter-Card</p>
+
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="seo-og-title">OG-Titel</Label>
+                  <Input
+                    id="seo-og-title"
+                    placeholder={
+                      seoValues.seoTitle || "Fällt auf SEO-Titel zurück"
+                    }
+                    value={seoValues.ogTitle}
+                    onChange={(e) =>
+                      setSeoValues((prev) => ({
+                        ...prev,
+                        ogTitle: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="seo-og-description">OG-Beschreibung</Label>
+                  <Textarea
+                    id="seo-og-description"
+                    rows={3}
+                    placeholder={
+                      seoValues.seoDescription ||
+                      "Fällt auf Meta-Description zurück"
+                    }
+                    value={seoValues.ogDescription}
+                    onChange={(e) =>
+                      setSeoValues((prev) => ({
+                        ...prev,
+                        ogDescription: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <Label>OG-Bild</Label>
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-muted/40">
+                      {seoValues.ogImageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={mediaUrl({ url: seoValues.ogImageUrl })}
+                          alt="OG-Bild"
+                          className="size-full object-contain"
+                        />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          Kein Bild
+                        </span>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setOgImagePickerOpen(true)}
+                    >
+                      Bild wählen
+                    </Button>
+                    {seoValues.ogImageUrl && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          setSeoValues((prev) => ({ ...prev, ogImageUrl: "" }))
                         }
-                      />
-                    ) : field.type === "text" ? (
-                      <Textarea
-                        id={`data-${field.name}`}
-                        rows={6}
-                        value={dataValues[field.name] ?? ""}
-                        onChange={(e) =>
-                          setDataValues((prev) => ({
-                            ...prev,
-                            [field.name]: e.target.value,
-                          }))
-                        }
-                      />
-                    ) : (
-                      <Input
-                        id={`data-${field.name}`}
-                        type={field.type === "number" ? "number" : "text"}
-                        value={dataValues[field.name] ?? ""}
-                        onChange={(e) =>
-                          setDataValues((prev) => ({
-                            ...prev,
-                            [field.name]: e.target.value,
-                          }))
-                        }
-                      />
-                    )}
-                    {dataErrors[field.name] && (
-                      <p className="text-sm text-destructive">
-                        {dataErrors[field.name]}
-                      </p>
+                      >
+                        Entfernen
+                      </Button>
                     )}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="seo-twitter-card">Twitter-Card-Typ</Label>
+                  <Select
+                    value={seoValues.twitterCard}
+                    onValueChange={(value) =>
+                      setSeoValues((prev) => ({
+                        ...prev,
+                        twitterCard: value ?? "none",
+                      }))
+                    }
+                    items={twitterCardLabel}
+                  >
+                    <SelectTrigger id="seo-twitter-card" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(twitterCardLabel).map(
+                        ([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ),
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+        </fieldset>
+
+        <ImagePickerDialog
+          open={ogImagePickerOpen}
+          onOpenChange={setOgImagePickerOpen}
+          onSelect={(url) =>
+            setSeoValues((prev) => ({ ...prev, ogImageUrl: url }))
+          }
+        />
 
         {formError && <p className="text-sm text-destructive">{formError}</p>}
 
-        <div className="flex gap-2">
-          <Button type="submit" disabled={isSubmitting}>
+        <div className="flex items-center gap-3">
+          <Button type="submit" disabled={isSubmitting || lockBlocksEditing}>
             {isSubmitting
               ? "Speichert…"
               : isEditing
                 ? "Änderungen speichern"
                 : "Inhalt speichern"}
           </Button>
+          {autosaveEnabled && lastAutosavedAt && (
+            <p className="text-xs text-muted-foreground">
+              Entwurf lokal gespeichert um{" "}
+              {lastAutosavedAt.toLocaleTimeString("de-DE")}
+            </p>
+          )}
         </div>
       </form>
     </Form>

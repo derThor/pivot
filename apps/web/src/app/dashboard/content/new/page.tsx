@@ -1,10 +1,11 @@
 import { ContentEditorForm } from "@/components/content-editor-form";
-import { getCategories, getContentTypes } from "@/lib/api-server";
+import { getCategories, getContentTypes, getPublicSettings } from "@/lib/api-server";
 
 export default async function NewContentPage() {
-  const [contentTypes, categories] = await Promise.all([
+  const [contentTypes, categories, settings] = await Promise.all([
     getContentTypes(),
     getCategories({ pageSize: 100 }),
+    getPublicSettings(),
   ]);
 
   return (
@@ -27,6 +28,7 @@ export default async function NewContentPage() {
         <ContentEditorForm
           contentTypes={contentTypes}
           categories={categories?.items ?? []}
+          autosaveEnabled={settings?.autosaveEnabled ?? true}
         />
       )}
     </div>

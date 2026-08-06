@@ -132,12 +132,12 @@ export function LogoUploadField({
             <span className="text-xs text-muted-foreground">Kein Bild</span>
           )}
         </div>
-        <div className="flex flex-1 items-center gap-2">
+        <div className="flex items-center gap-2">
           <Input
             type="file"
             accept="image/jpeg,image/png,image/webp,image/svg+xml"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="flex-1"
+            className="max-w-xs"
           />
           <Button
             type="button"

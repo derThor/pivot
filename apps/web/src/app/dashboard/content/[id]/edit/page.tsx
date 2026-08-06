@@ -3,7 +3,13 @@ import { notFound } from "next/navigation";
 import { History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ContentEditorForm } from "@/components/content-editor-form";
-import { getCategories, getContent, getContentTypes } from "@/lib/api-server";
+import {
+  getCategories,
+  getContent,
+  getContentTypes,
+  getCurrentUser,
+  getPublicSettings,
+} from "@/lib/api-server";
 
 export default async function EditContentPage({
   params,
@@ -11,10 +17,12 @@ export default async function EditContentPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [content, contentTypes, categories] = await Promise.all([
+  const [content, contentTypes, categories, settings, user] = await Promise.all([
     getContent(id),
     getContentTypes(),
     getCategories({ pageSize: 100 }),
+    getPublicSettings(),
+    getCurrentUser(),
   ]);
 
   if (!content) {
@@ -43,6 +51,8 @@ export default async function EditContentPage({
         contentTypes={contentTypes ?? []}
         categories={categories?.items ?? []}
         content={content}
+        autosaveEnabled={settings?.autosaveEnabled ?? true}
+        canForceUnlock={user?.permissions?.includes("content:delete") ?? false}
       />
     </div>
   );

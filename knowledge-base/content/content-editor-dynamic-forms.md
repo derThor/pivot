@@ -5,6 +5,33 @@
 `src/content/content.service.ts`), apps/web (`src/app/dashboard/content/new`,
 `src/components/content-editor-form.tsx`, `src/app/api/content/route.ts`)
 
+> **Update 2026-08-06 (Zweispaltiges Layout im "Inhalt"-Tab):** Der
+> "Inhalt"-Tab von `ContentEditorForm` ist jetzt zweispaltig
+> (`grid-cols-[360px_1fr]`, untereinander gestapelt unterhalb von `lg`):
+> **links** eine schmale "Einstellungen"-Karte (Content-Type, Titel,
+> Slug, Status, Kategorien, alle dynamischen Felder **außer**
+> Richtext), **rechts** eine große Editor-Karte mit ausschließlich den
+> Richtext-Feldern (i.d.R. `body`). `selectedType.schema.fields` wird
+> dafür per `field.type === "richtext"` in `editorFields`/
+> `settingsFields` aufgeteilt. Die SEO-Tab-Struktur ist davon nicht
+> betroffen (weiterhin einspaltig, eigener Tab). Kein Layout-Wechsel bei
+> Content-Types ohne Richtext-Feld – dann zeigt die rechte Spalte einen
+> Platzhaltertext ("kein Editor-Feld") statt leer zu bleiben.
+>
+> **Zweites Update 2026-08-06 (Editor immer volle Höhe):** Die rechte
+> Editor-Spalte war zwar zweispaltig, aber nicht so hoch wie die linke
+> Einstellungen-Spalte (Grid stand auf `items-start`, jede Spalte nur so
+> hoch wie ihr eigener Inhalt). Jetzt: `items-start` entfernt (Grid-
+> Default "stretch" sorgt dafür, dass beide Spalten gleich hoch werden),
+> und die Flex-Kette `Card -> CardContent -> Feld-Wrapper ->
+> RichTextEditor -> EditorContent -> .tiptap` durchgängig mit
+> `flex-1`/`min-h-0` versehen, damit der eigentliche Editor-Bereich
+> (inkl. HTML-Quellcode-Modus) diese Höhe auch tatsächlich ausfüllt
+> statt nur eine leere Box mit `min-h-24` oben zu zeigen. Kein
+> Scroll-Cap gesetzt – wächst bei viel Inhalt einfach über die
+> Einstellungen-Spalte hinaus, füllt bei wenig Inhalt aber immer
+> mindestens deren Höhe.
+
 ## Was wurde gebaut
 
 - Neues Backend-Modul `content-types`: `GET /content-types` (Liste) und

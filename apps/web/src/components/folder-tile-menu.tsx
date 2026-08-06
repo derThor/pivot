@@ -35,10 +35,11 @@ export function FolderTileMenu({ folder }: { folder: MediaFolder }) {
               variant="ghost"
               size="icon-sm"
               aria-label={`Aktionen für ${folder.name}`}
+              className="size-6 rounded-full border border-border bg-background/90 shadow-sm hover:bg-background"
             />
           }
         >
-          <MoreVertical />
+          <MoreVertical className="size-3.5" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => setRenameOpen(true)}>

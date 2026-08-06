@@ -43,6 +43,7 @@ const settingsSchema = z.object({
   allowPasswordReset: z.boolean(),
   allowEmailChange: z.boolean(),
   requireAdminActivation: z.boolean(),
+  autosaveEnabled: z.boolean(),
   passwordMinLength: z.number().int().min(4).max(128),
   passwordRequireUppercase: z.boolean(),
   passwordRequireLowercase: z.boolean(),
@@ -101,6 +102,7 @@ export function SettingsForm({
       allowPasswordReset: settings.allowPasswordReset,
       allowEmailChange: settings.allowEmailChange,
       requireAdminActivation: settings.requireAdminActivation,
+      autosaveEnabled: settings.autosaveEnabled,
       passwordMinLength: settings.passwordMinLength,
       passwordRequireUppercase: settings.passwordRequireUppercase,
       passwordRequireLowercase: settings.passwordRequireLowercase,
@@ -179,7 +181,7 @@ export function SettingsForm({
               </CardContent>
             </Card>
 
-            <Card className="mt-4">
+            <Card className="mt-6">
               <CardHeader>
                 <CardTitle>Logo</CardTitle>
                 <CardDescription>
@@ -263,6 +265,20 @@ export function SettingsForm({
                       <SwitchRow
                         label="Admin-Freischaltung erforderlich"
                         description="Neu registrierte Benutzer sind zunächst deaktiviert und müssen von einem Admin freigeschaltet werden, bevor sie sich anmelden können. Deaktiviert: neue Benutzer sind sofort aktiv."
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="autosaveEnabled"
+                  render={({ field }) => (
+                    <FormItem>
+                      <SwitchRow
+                        label="Autosave im Content-Editor"
+                        description="Speichert Entwürfe während der Bearbeitung automatisch lokal im Browser und bietet beim erneuten Öffnen an, nicht gespeicherte Änderungen wiederherzustellen."
                         checked={field.value}
                         onCheckedChange={field.onChange}
                       />

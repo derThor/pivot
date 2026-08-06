@@ -146,6 +146,54 @@ describe('Content-Flow (e2e)', () => {
     expect(versionsAfter).toBe(versionsBefore + 1);
   });
 
+  it('Neuer Content bekommt robotsIndex/robotsFollow standardmäßig true', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/content/${createdId}`)
+      .set(auth())
+      .expect(200);
+
+    expect(res.body.robotsIndex).toBe(true);
+    expect(res.body.robotsFollow).toBe(true);
+  });
+
+  it('PATCH /v1/content/:id speichert SEO-/OpenGraph-/Robots-Felder', async () => {
+    const res = await request(app.getHttpServer())
+      .patch(`/v1/content/${createdId}`)
+      .set(auth())
+      .send({
+        excerpt: 'E2E Kurzbeschreibung',
+        seoTitle: 'E2E SEO-Titel',
+        seoDescription: 'E2E Meta-Description',
+        canonicalUrl: 'https://example.com/e2e',
+        ogTitle: 'E2E OG-Titel',
+        ogDescription: 'E2E OG-Beschreibung',
+        ogImageUrl: '/uploads/e2e-og.png',
+        twitterCard: 'summary_large_image',
+        robotsIndex: false,
+        robotsFollow: false,
+      })
+      .expect(200);
+
+    expect(res.body.excerpt).toBe('E2E Kurzbeschreibung');
+    expect(res.body.seoTitle).toBe('E2E SEO-Titel');
+    expect(res.body.seoDescription).toBe('E2E Meta-Description');
+    expect(res.body.canonicalUrl).toBe('https://example.com/e2e');
+    expect(res.body.ogTitle).toBe('E2E OG-Titel');
+    expect(res.body.ogDescription).toBe('E2E OG-Beschreibung');
+    expect(res.body.ogImageUrl).toBe('/uploads/e2e-og.png');
+    expect(res.body.twitterCard).toBe('summary_large_image');
+    expect(res.body.robotsIndex).toBe(false);
+    expect(res.body.robotsFollow).toBe(false);
+  });
+
+  it('PATCH /v1/content/:id lehnt ungültigen twitterCard-Wert ab (400)', async () => {
+    await request(app.getHttpServer())
+      .patch(`/v1/content/${createdId}`)
+      .set(auth())
+      .send({ twitterCard: 'not-a-valid-card-type' })
+      .expect(400);
+  });
+
   it('GET /v1/content/search ohne Token liefert 401', async () => {
     await request(app.getHttpServer())
       .get('/v1/content/search')

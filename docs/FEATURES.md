@@ -30,12 +30,12 @@ Legende: ✅ umgesetzt (Grundgerüst) · 🚧 vorbereitet, aber unvollständig �
 | Versions-Diff & Rollback (UI) | ✅ | `GET /content/:id/versions`, `POST .../rollback`; Feld-für-Feld-Wortdiff gegen den aktuellen Stand |
 | Kategorien & Tags (n:m) | ✅ | Verwaltung (Anlegen/Bearbeiten/Löschen) über eigene Menüpunkte `/dashboard/categories` und `/dashboard/tags`; Kategorien mit Beschreibungsfeld; Kategorien-Zuordnung im Content-Editor + Anzeige in der Content-Liste; Tags noch nicht mit Content verknüpft |
 | Mehrsprachigkeit (Locale-Feld) | 🚧 | Feld vorhanden, kein Locale-Switching in UI |
-| SEO-Felder (Title, Description) | ✅ | Pro Content-Eintrag |
+| SEO-Felder | ✅ | Pro Content-Eintrag im eigenen "SEO"-Tab des Editors: SEO-Titel, Meta-Description, Excerpt, Canonical-URL, OpenGraph (Titel/Beschreibung/Bild), Twitter-Card-Typ, Robots-Attribute (index/follow) – Felder existierten teils schon im Schema, waren aber bis 2026-08-06 nirgends im UI editierbar |
 | Rich-Text/Block-Editor | ✅ | Tiptap (Core + StarterKit); Überschriften H1-H6, Code-Block, HTML-Quellcode-Ansicht, Bild einfügen (Medienbibliothek/Upload) + Ausrichtung |
 | Medienverwaltung (Upload, Alt-Text) | ✅ | `POST /media`, lokale Speicherung, Bild-Whitelist (10 MB) |
 | Content-Vorschau (Preview-Links) | ⏳ | |
 | Webhooks bei Publish/Update | ⏳ | |
-| Volltextsuche | ✅ | Bereichsübergreifend über `GET /v1/search`: Inhalte (Postgres `tsvector`, Präfix-Suche, Titel/SEO/gesamter dynamischer Body), Kategorien, Tags, Medien – globale Such-Dropdown im Dashboard-Header, Treffer mit Bereichs-Badge, permission-gefiltert pro Bereich |
+| Volltextsuche | ✅ | Bereichsübergreifend über `GET /v1/search`: Inhalte (Postgres `tsvector`, Präfix-Suche, Titel/SEO/gesamter dynamischer Body), Kategorien, Tags, Medien, Benutzer, Rollen – globale Such-Dropdown im Dashboard-Header, Treffer mit farbiger Bereichs-Badge, permission-gefiltert pro Bereich |
 
 ## Plattform / DX
 
@@ -64,6 +64,8 @@ Legende: ✅ umgesetzt (Grundgerüst) · 🚧 vorbereitet, aber unvollständig �
 | Dashboard-Statistiken | ✅ | Live-Zahlen (Content-Status-Counts, Nutzerzahl) |
 | Auth-Gate für `/dashboard` | ✅ | Middleware-Redirect + stiller Token-Refresh, siehe [frontend-auth-flow.md](../knowledge-base/auth/frontend-auth-flow.md) |
 | Content-Editor (Formular je ContentType) | ✅ | Anlegen und Bearbeiten, dynamisch aus `ContentType.schema`; Löschen mit Bestätigung |
+| Autosave & Entwurfs-Wiederherstellung | ✅ | Lokaler Autosave im Browser (`localStorage`, debounced), Wiederherstellungs-Banner beim erneuten Öffnen; admin-abschaltbar in den Einstellungen |
+| Content Locking | ✅ | Weiche Bearbeitungssperre pro Inhalt (2-Minuten-TTL, Heartbeat), schreibgeschütztes Formular + Banner bei Fremdsperre, Admin-Override; keine Konfliktauflösung/Merge (separates offenes Roadmap-Item) |
 | Medien-Bibliothek (Grid, Upload) | ✅ | Alt-Text bearbeiten, Löschen mit Bestätigung (inkl. Datei), Vorschau-Popup; verschachtelte Ordner (anlegen/umbenennen/verschieben/löschen); keine Bild-Dimensionen |
 | Benutzerverwaltung-UI | ✅ | Liste, Anlegen, vollständig bearbeiten (Name/E-Mail/Status/Rolle), Löschen mit Bestätigung + Selbstlöschschutz |
 | Rollen-/Rechteverwaltung-UI | ✅ | `/dashboard/roles`, Checkbox-Matrix für Rechte pro Rolle |

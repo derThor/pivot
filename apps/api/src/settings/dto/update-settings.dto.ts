@@ -24,6 +24,11 @@ export class UpdateSettingsDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsBoolean()
+  autosaveEnabled?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsInt()
   @Min(4)
   @Max(128)

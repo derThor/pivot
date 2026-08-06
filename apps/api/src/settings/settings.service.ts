@@ -21,6 +21,7 @@ export class SettingsService {
       allowPasswordReset: settings.allowPasswordReset,
       allowEmailChange: settings.allowEmailChange,
       requireAdminActivation: settings.requireAdminActivation,
+      autosaveEnabled: settings.autosaveEnabled,
       passwordMinLength: settings.passwordMinLength,
       passwordRequireUppercase: settings.passwordRequireUppercase,
       passwordRequireLowercase: settings.passwordRequireLowercase,

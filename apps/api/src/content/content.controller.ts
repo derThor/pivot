@@ -92,4 +92,20 @@ export class ContentController {
   ) {
     return this.contentService.removeVersion(id, versionId);
   }
+
+  @RequirePermission('content:update')
+  @Post(':id/lock')
+  lock(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.contentService.lock(id, user.sub);
+  }
+
+  @RequirePermission('content:update')
+  @Post(':id/unlock')
+  unlock(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.contentService.unlock(
+      id,
+      user.sub,
+      user.permissions.includes('content:delete'),
+    );
+  }
 }

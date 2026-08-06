@@ -53,6 +53,7 @@ model AppSettings {
   allowPasswordReset         Boolean  @default(true)
   allowEmailChange           Boolean  @default(true)
   requireAdminActivation     Boolean  @default(false)
+  autosaveEnabled            Boolean  @default(true)
   passwordMinLength          Int      @default(8)
   passwordRequireUppercase   Boolean  @default(true)
   passwordRequireLowercase   Boolean  @default(true)
@@ -93,6 +94,7 @@ model User {
   role   Role   @relation(fields: [roleId], references: [id])
 
   contents                Content[]                @relation("ContentAuthor")
+  lockedContents          Content[]                @relation("ContentLockedBy")
   contentVersions         ContentVersion[]
   media                   Media[]
   auditLogs               AuditLog[]
@@ -171,6 +173,13 @@ model Content {
   excerpt     String?
   seoTitle    String?
   seoDescription String?
+  canonicalUrl   String?
+  ogTitle        String?
+  ogDescription  String?
+  ogImageUrl     String?
+  twitterCard    String?
+  robotsIndex    Boolean   @default(true)
+  robotsFollow   Boolean   @default(true)
   publishedAt DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -180,6 +189,10 @@ model Content {
 
   authorId String
   author   User   @relation("ContentAuthor", fields: [authorId], references: [id])
+
+  lockedById String?
+  lockedBy   User?     @relation("ContentLockedBy", fields: [lockedById], references: [id])
+  lockedAt   DateTime?
 
   versions   ContentVersion[]
   categories ContentCategory[]

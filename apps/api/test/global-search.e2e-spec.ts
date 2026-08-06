@@ -21,6 +21,11 @@ describe('Globale Suche (e2e)', () => {
   let tagId: string;
   let mediaId: string;
   let contentId: string;
+  let targetUserId: string;
+  let targetRoleId: string;
+
+  const targetUserEmail = `${token}@strasev.dev`;
+  const targetRoleName = `${token} Rolle`;
 
   async function cleanup() {
     await prisma.content.deleteMany({ where: { slug: `${token}-slug` } });
@@ -34,9 +39,11 @@ describe('Globale Suche (e2e)', () => {
     await prisma.tag.deleteMany({ where: { slug: `${token}-tag` } });
     await prisma.media.deleteMany({ where: { filename: { startsWith: token } } });
     await prisma.user.deleteMany({
-      where: { email: { in: [adminEmail, scopedEmail] } },
+      where: { email: { in: [adminEmail, scopedEmail, targetUserEmail] } },
     });
-    await prisma.role.deleteMany({ where: { name: scopedRoleName } });
+    await prisma.role.deleteMany({
+      where: { name: { in: [scopedRoleName, targetRoleName] } },
+    });
   }
 
   beforeAll(async () => {
@@ -114,6 +121,22 @@ describe('Globale Suche (e2e)', () => {
     });
     mediaId = media.id;
 
+    const targetRole = await prisma.role.create({
+      data: { name: targetRoleName, description: `${token} Beschreibung` },
+    });
+    targetRoleId = targetRole.id;
+
+    const targetUser = await prisma.user.create({
+      data: {
+        email: targetUserEmail,
+        firstName: token,
+        lastName: 'Zielbenutzer',
+        roleId: adminRole.id,
+        passwordHash: await argon2.hash(password),
+      },
+    });
+    targetUserId = targetUser.id;
+
     const adminLogin = await request(app.getHttpServer())
       .post('/v1/auth/login')
       .send({ email: adminEmail, password })
@@ -146,7 +169,7 @@ describe('Globale Suche (e2e)', () => {
       .expect(400);
   });
 
-  it('Admin findet Treffer über alle vier Bereiche (Inhalt, Kategorie, Tag, Medium)', async () => {
+  it('Admin findet Treffer über alle sechs Bereiche (Inhalt, Kategorie, Tag, Medium, Benutzer, Rolle)', async () => {
     const res = await request(app.getHttpServer())
       .get('/v1/search')
       .query({ q: token, limit: 10 })
@@ -154,7 +177,14 @@ describe('Globale Suche (e2e)', () => {
       .expect(200);
 
     const types = res.body.map((r: { type: string }) => r.type).sort();
-    expect(types).toEqual(['category', 'content', 'media', 'tag']);
+    expect(types).toEqual([
+      'category',
+      'content',
+      'media',
+      'role',
+      'tag',
+      'user',
+    ]);
 
     expect(
       res.body.find((r: { type: string }) => r.type === 'content').id,
@@ -168,6 +198,12 @@ describe('Globale Suche (e2e)', () => {
     expect(
       res.body.find((r: { type: string }) => r.type === 'media').id,
     ).toBe(mediaId);
+    expect(
+      res.body.find((r: { type: string }) => r.type === 'user').id,
+    ).toBe(targetUserId);
+    expect(
+      res.body.find((r: { type: string }) => r.type === 'role').id,
+    ).toBe(targetRoleId);
   });
 
   it('Nutzer mit nur content:read sieht ausschließlich Content-Treffer', async () => {

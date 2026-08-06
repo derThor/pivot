@@ -5,6 +5,22 @@
 (`src/components/rich-text-editor.tsx`, `content-versions-list.tsx`,
 `src/app/dashboard/content/[id]/versions`)
 
+> **Update 2026-08-06 (HTML-Diff/Vorschau in Tabs):** Im
+> Versions-Diff (`content-versions-list.tsx`) standen bei Richtext-
+> Feldern bisher zwei Blöcke übereinander: der rohe HTML-Wort-Diff
+> (Label = Feldname, z.B. "body") und darunter eine gerenderte
+> Vorschau ("body – Vorschau (Stand dieser Version)"). Auf Nutzerwunsch
+> jetzt in zwei Tabs zusammengefasst: "{feld} (HTML)" (roher Diff) und
+> "Vorschau" (gerendert, read-only `RichTextEditor`). Nicht-Richtext-
+> Felder (z.B. `title`) bleiben unverändert als einfacher Diff-Block
+> ohne Tabs – Tabs ergeben nur Sinn, wo es tatsächlich zwei
+> Darstellungsformen desselben Werts gibt. `FieldDiff` intern
+> aufgeteilt in `DiffBox` (nur die eingefärbten Diff-Spans, ohne Label –
+> wiederverwendbar im HTML-Tab) und `FieldDiff` (Label + `DiffBox`, für
+> den Nicht-Tab-Fall). Sichtbarkeits-Logik ("nur anzeigen, wenn sich das
+> Feld geändert hat") in eine gemeinsame `hasFieldChanged()`-Helper-
+> funktion gezogen, damit sie für beide Darstellungen konsistent bleibt.
+>
 > **Update 2026-08-04:** Toolbar erweitert – auswählbare Überschriften
 > H1–H6, Code-Block, HTML-Quellcode-Ansicht, Bild einfügen (aus
 > Medienbibliothek wählen oder direkt hochladen) + Ausrichtung. Details

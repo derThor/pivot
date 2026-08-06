@@ -104,8 +104,8 @@ function ToolbarButton({
 }
 
 const editorContentClassName = cn(
-  "px-2.5 py-2 text-base md:text-sm",
-  "[&_.tiptap]:min-h-24 [&_.tiptap]:outline-none",
+  "flex flex-1 flex-col px-2.5 py-2 text-base md:text-sm",
+  "[&_.tiptap]:min-h-24 [&_.tiptap]:flex-1 [&_.tiptap]:outline-none",
   "[&_.tiptap_h1]:text-2xl [&_.tiptap_h1]:font-bold",
   "[&_.tiptap_h2]:text-xl [&_.tiptap_h2]:font-semibold",
   "[&_.tiptap_h3]:text-lg [&_.tiptap_h3]:font-semibold",
@@ -195,9 +195,9 @@ export function RichTextEditor({
   return (
     <div
       id={id}
-      className="flex flex-col gap-1 rounded-lg border border-input bg-transparent transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30"
+      className="flex h-full min-h-0 flex-1 flex-col gap-1 rounded-lg border border-input bg-transparent transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30"
     >
-      <div className="flex flex-wrap items-center gap-0.5 border-b border-input p-1">
+      <div className="flex shrink-0 flex-wrap items-center gap-0.5 border-b border-input p-1">
         <Select
           value={headingValue}
           onValueChange={(next) => {
@@ -334,7 +334,7 @@ export function RichTextEditor({
           value={sourceValue}
           onChange={(e) => setSourceValue(e.target.value)}
           rows={8}
-          className="rounded-none border-none focus-visible:ring-0"
+          className="h-full flex-1 rounded-none border-none focus-visible:ring-0"
         />
       ) : (
         <>

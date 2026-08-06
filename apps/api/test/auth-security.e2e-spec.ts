@@ -335,6 +335,37 @@ describe('Auth-Härtung (e2e)', () => {
         })
         .expect(200);
     });
+
+    it('autosaveEnabled ist per Default true und über /settings/public umschaltbar', async () => {
+      const adminLogin = await request(app.getHttpServer())
+        .post('/v1/auth/login')
+        .send({ email: 'admin@strasev.dev', password: 'ChangeMe123!' })
+        .expect(200);
+      const adminToken = adminLogin.body.accessToken as string;
+
+      const defaultRes = await request(app.getHttpServer())
+        .get('/v1/settings/public')
+        .expect(200);
+      expect(defaultRes.body.autosaveEnabled).toBe(true);
+
+      await request(app.getHttpServer())
+        .patch('/v1/settings')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ autosaveEnabled: false })
+        .expect(200);
+
+      const disabledRes = await request(app.getHttpServer())
+        .get('/v1/settings/public')
+        .expect(200);
+      expect(disabledRes.body.autosaveEnabled).toBe(false);
+
+      // Aufräumen, damit andere Tests/der Dev-Stand nicht verschmutzt werden.
+      await request(app.getHttpServer())
+        .patch('/v1/settings')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ autosaveEnabled: true })
+        .expect(200);
+    });
   });
 
   describe('Pagination (Users/Roles)', () => {

@@ -29,11 +29,14 @@ Themenbereiche/Umgruppierungen: siehe [PROCESS.md](./PROCESS.md)).
 | Datei | Thema | Zuletzt aktualisiert |
 |---|---|---|
 | [content-versioning.md](./content/content-versioning.md) | Content-Modell, automatische Versionierung | 2026-08-02 |
-| [content-editor-dynamic-forms.md](./content/content-editor-dynamic-forms.md) | Content-Types-API + dynamisch aus `ContentType.schema` generiertes Editor-Formular | 2026-08-02 |
+| [content-editor-dynamic-forms.md](./content/content-editor-dynamic-forms.md) | Content-Types-API + dynamisch aus `ContentType.schema` generiertes Editor-Formular, zweispaltiges Layout (Einstellungen links, Editor rechts) | 2026-08-06 |
 | [content-edit-delete.md](./content/content-edit-delete.md) | Content bearbeiten (Edit-Formular) und löschen (mit Bestätigung, kaskadiert automatisch auf Versionen) | 2026-08-04 |
-| [rich-text-and-versioning.md](./content/rich-text-and-versioning.md) | Rich-Text-Editor (Tiptap, inkl. H1-H6/Code/Bilder) + Versions-Diff & Rollback-UI | 2026-08-04 |
+| [rich-text-and-versioning.md](./content/rich-text-and-versioning.md) | Rich-Text-Editor (Tiptap, inkl. H1-H6/Code/Bilder) + Versions-Diff & Rollback-UI, HTML-Diff/Vorschau als Tabs | 2026-08-06 |
 | [content-categories.md](./content/content-categories.md) | Kategorien-Zuordnung im Content-Editor (n:m, `ContentCategory`) | 2026-08-05 |
-| [global-search.md](./content/global-search.md) | Globale Suche über Inhalte (Postgres `tsvector` Präfix-Match), Kategorien, Tags und Medien, permission-gefiltert pro Bereich | 2026-08-06 |
+| [content-seo-fields.md](./content/content-seo-fields.md) | SEO-Tab im Content-Editor: SEO-Titel/Meta-Description/Excerpt (bereits vorhanden, aber nie im UI), neu Canonical-URL, OpenGraph, Twitter-Card, Robots-Attribute | 2026-08-06 |
+| [content-autosave.md](./content/content-autosave.md) | Autosave (lokal, `localStorage`, debounced) + Entwurfs-Wiederherstellungs-Banner im Content-Editor, admin-abschaltbar | 2026-08-06 |
+| [content-locking.md](./content/content-locking.md) | Weiche Bearbeitungssperre (2-Minuten-TTL, Heartbeat), schreibgeschütztes Formular bei Fremdsperre, Admin-Override | 2026-08-06 |
+| [global-search.md](./content/global-search.md) | Globale Suche über Inhalte (Postgres `tsvector` Präfix-Match), Kategorien, Tags, Medien, Benutzer und Rollen, farbige Bereichs-Badges, permission-gefiltert pro Bereich | 2026-08-06 |
 
 ## Medien (`media/`)
 

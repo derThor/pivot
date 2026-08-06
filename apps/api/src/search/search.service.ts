@@ -2,7 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ContentService } from '../content/content.service';
 
-export type SearchResultType = 'content' | 'category' | 'tag' | 'media';
+export type SearchResultType =
+  | 'content'
+  | 'category'
+  | 'tag'
+  | 'media'
+  | 'user'
+  | 'role';
 
 export interface SearchResult {
   type: SearchResultType;
@@ -14,13 +20,12 @@ export interface SearchResult {
 
 /**
  * Bündelt die Volltextsuche (`ContentService.search`) mit einfachen
- * `contains`-Suchen über Kategorien, Tags und Medien zu einem
- * einheitlichen Ergebnis-Format, das im Frontend pro Treffer den
- * Bereich (`type`) flaggt. Kategorien/Tags/Medien nutzen bewusst kein
- * Postgres-`tsvector` wie der Content-Body – ihre Textfelder sind kurz
- * (Name/Dateiname/Alt-Text), ein einfacher case-insensitiver
- * `contains`-Filter reicht dafür völlig aus und bleibt einfacher zu
- * lesen als vier verschiedene `tsvector`-Ausdrücke.
+ * `contains`-Suchen über Kategorien, Tags, Medien, Benutzer und Rollen
+ * zu einem einheitlichen Ergebnis-Format, das im Frontend pro Treffer
+ * den Bereich (`type`) flaggt. Kategorien/Tags/Medien/Benutzer/Rollen
+ * nutzen bewusst kein Postgres-`tsvector` wie der Content-Body – ihre
+ * Textfelder sind kurz (Name/Dateiname/E-Mail/Alt-Text), ein einfacher
+ * case-insensitiver `contains`-Filter reicht dafür völlig aus.
  */
 @Injectable()
 export class SearchService {
@@ -47,6 +52,12 @@ export class SearchService {
     }
     if (permissions.includes('media:read')) {
       tasks.push(this.searchMedia(q, limit));
+    }
+    if (permissions.includes('users:manage')) {
+      tasks.push(this.searchUsers(q, limit));
+    }
+    if (permissions.includes('roles:manage')) {
+      tasks.push(this.searchRoles(q, limit));
     }
 
     const results = await Promise.all(tasks);
@@ -112,6 +123,46 @@ export class SearchService {
       id: row.id,
       title: row.filename,
       subtitle: row.alt ?? undefined,
+    }));
+  }
+
+  private async searchUsers(q: string, limit: number): Promise<SearchResult[]> {
+    const rows = await this.prisma.user.findMany({
+      where: {
+        OR: [
+          { firstName: { contains: q, mode: 'insensitive' } },
+          { lastName: { contains: q, mode: 'insensitive' } },
+          { email: { contains: q, mode: 'insensitive' } },
+        ],
+      },
+      take: limit,
+      orderBy: { lastName: 'asc' },
+      include: { role: { select: { name: true } } },
+    });
+    return rows.map((row) => ({
+      type: 'user' as const,
+      id: row.id,
+      title: [row.firstName, row.lastName].filter(Boolean).join(' '),
+      subtitle: row.role.name,
+    }));
+  }
+
+  private async searchRoles(q: string, limit: number): Promise<SearchResult[]> {
+    const rows = await this.prisma.role.findMany({
+      where: {
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { description: { contains: q, mode: 'insensitive' } },
+        ],
+      },
+      take: limit,
+      orderBy: { name: 'asc' },
+    });
+    return rows.map((row) => ({
+      type: 'role' as const,
+      id: row.id,
+      title: row.name,
+      subtitle: row.description ?? undefined,
     }));
   }
 }

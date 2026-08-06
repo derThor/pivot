@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { ChevronRight, Folder, FolderTree, Home, Image, Upload } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -187,29 +186,35 @@ export function ImagePickerDialog({
                   ))}
                 </nav>
                 {childFolders.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-3">
                     {childFolders.map((folder) => (
                       <button
                         key={folder.id}
                         type="button"
                         onClick={() => setCurrentFolderId(folder.id)}
-                        className="flex flex-col gap-1 rounded-md border border-input px-2 py-1 text-xs hover:border-ring"
+                        className="flex w-16 flex-col items-center gap-1"
                       >
-                        <span className="flex items-center gap-1.5">
-                          <Folder className="size-3.5 text-muted-foreground" />
-                          {folder.name}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Badge variant="secondary">
-                            <Image />
-                            {folder.mediaCount}
-                          </Badge>
-                          {folder.childCount > 0 && (
-                            <Badge variant="secondary">
-                              <FolderTree />
-                              {folder.childCount}
-                            </Badge>
+                        <span className="relative flex size-14 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm">
+                          <Folder
+                            className="size-7 text-white"
+                            fill="currentColor"
+                            strokeWidth={1.5}
+                          />
+                          {folder.mediaCount > 0 && (
+                            <span className="absolute -bottom-1.5 -left-1.5 flex h-4 min-w-4 items-center justify-center gap-0.5 rounded-full border-2 border-background bg-secondary px-1 text-[9px] font-semibold text-secondary-foreground">
+                              <Image className="size-2.5" />
+                              {folder.mediaCount}
+                            </span>
                           )}
+                          {folder.childCount > 0 && (
+                            <span className="absolute -bottom-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center gap-0.5 rounded-full border-2 border-background bg-secondary px-1 text-[9px] font-semibold text-secondary-foreground">
+                              <FolderTree className="size-2.5" />
+                              {folder.childCount}
+                            </span>
+                          )}
+                        </span>
+                        <span className="w-full truncate text-center text-xs">
+                          {folder.name}
                         </span>
                       </button>
                     ))}

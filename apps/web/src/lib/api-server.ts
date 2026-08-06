@@ -127,6 +127,18 @@ export function getContentType(id: string) {
 
 export interface ContentDetail extends ContentListItem {
   data: Record<string, unknown>;
+  excerpt: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  canonicalUrl: string | null;
+  ogTitle: string | null;
+  ogDescription: string | null;
+  ogImageUrl: string | null;
+  twitterCard: string | null;
+  robotsIndex: boolean;
+  robotsFollow: boolean;
+  lockedBy: AuthorRef | null;
+  lockedAt: string | null;
 }
 
 export function getContent(id: string) {
@@ -265,6 +277,7 @@ export interface AppSettings {
   allowPasswordReset: boolean;
   allowEmailChange: boolean;
   requireAdminActivation: boolean;
+  autosaveEnabled: boolean;
   passwordMinLength: number;
   passwordRequireUppercase: boolean;
   passwordRequireLowercase: boolean;

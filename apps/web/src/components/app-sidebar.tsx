@@ -71,14 +71,21 @@ const navGroups = [
   },
 ] as const;
 
+function fallbackInitials(companyName?: string | null) {
+  const trimmed = companyName?.trim();
+  return trimmed ? trimmed.slice(0, 2).toUpperCase() : "TW";
+}
+
 export function AppSidebar({
   user,
   logoExpandedUrl,
   logoCollapsedUrl,
+  companyName,
 }: {
   user: CurrentUser;
   logoExpandedUrl?: string | null;
   logoCollapsedUrl?: string | null;
+  companyName?: string | null;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -108,8 +115,8 @@ export function AppSidebar({
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center gap-2 py-2 group-data-[collapsible=icon]:justify-center">
-          <div className="flex h-8 w-0 shrink-0 items-center justify-center overflow-hidden rounded-xl opacity-0 shadow-sm transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:opacity-100">
+        <div className="flex items-center gap-2 py-2 transition-[gap] duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
+          <div className="flex h-12 w-0 shrink-0 items-center justify-center overflow-hidden rounded-xl opacity-0 shadow-sm transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:opacity-100">
             {logoCollapsedUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -118,8 +125,8 @@ export function AppSidebar({
                 className="size-full object-contain"
               />
             ) : (
-              <div className="flex size-full items-center justify-center bg-gradient-to-br from-orange-400 to-rose-500 font-semibold text-white">
-                S
+              <div className="flex size-full items-center justify-center bg-gradient-to-br from-orange-400 to-rose-500 text-sm font-semibold text-white">
+                {fallbackInitials(companyName)}
               </div>
             )}
           </div>

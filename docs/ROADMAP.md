@@ -109,8 +109,9 @@ Details: [rich-text-and-versioning.md](../knowledge-base/content/rich-text-and-v
 - [x] Volltextsuche (Postgres `tsvector` als erster Schritt) – globale
       Such-Dropdown im Dashboard-Header, durchsucht bereichsübergreifend
       Inhalte (Titel, Excerpt, SEO-Felder, kompletter dynamischer Body),
-      Kategorien, Tags und Medien; Treffer mit Bereichs-Badge, Präfix-
-      Suche ab 3 Zeichen, Dropdown öffnet erst bei Eingabe
+      Kategorien, Tags, Medien, Benutzer und Rollen; Treffer mit
+      farbiger Bereichs-Badge, Präfix-Suche ab 3 Zeichen, Dropdown
+      öffnet erst bei Eingabe, permission-gefiltert pro Bereich
       (2026-08-06)
 - [ ] Content-Vorschau-Links (signierte, zeitlich begrenzte URLs)
 
@@ -122,22 +123,31 @@ Details: [rich-text-and-versioning.md](../knowledge-base/content/rich-text-and-v
 - [ ] Mehrfachbearbeitung (Status, Kategorien, Autor, Tags ändern)
 - [ ] Favoriten / angeheftete Inhalte
 - [ ] Zuletzt bearbeitete Inhalte
-- [ ] Autosave während der Bearbeitung
-- [ ] Wiederherstellung nicht gespeicherter Entwürfe
+- [x] Autosave während der Bearbeitung – lokal im Browser
+      (`localStorage`), debounced 1.5s nach Änderung, admin-abschaltbar
+      über `Einstellungen → Zugriff & Funktionen → Autosave im
+      Content-Editor` (2026-08-06)
+- [x] Wiederherstellung nicht gespeicherter Entwürfe – Banner beim
+      Öffnen eines Inhalts, falls ein neuerer lokaler Entwurf existiert
+      (Wiederherstellen/Verwerfen) (2026-08-06)
 - [ ] Keyboard-Shortcuts (Strg+S, Strg+K, Esc usw.)
 - [ ] Command Palette (ähnlich VS Code)
 
 ### 2b.6 – SEO
 
-- [ ] SEO-Titel
-- [ ] Meta-Description
-- [ ] Canonical-URL
-- [ ] OpenGraph- und Twitter-Card-Einstellungen
-- [ ] Robots-Attribute (index/noindex, follow/nofollow)
+- [x] SEO-Titel – eigener "SEO"-Tab im Content-Editor (2026-08-06)
+- [x] Meta-Description (2026-08-06)
+- [x] Canonical-URL (2026-08-06)
+- [x] OpenGraph- und Twitter-Card-Einstellungen – OG-Titel/-Beschreibung/
+      -Bild (per Medienbibliothek-Picker) + Twitter-Card-Typ
+      (2026-08-06)
+- [x] Robots-Attribute (index/noindex, follow/nofollow) – zwei Schalter,
+      Default beide "erlaubt" (2026-08-06)
 - [ ] XML-Sitemap automatisch erzeugen
 - [ ] robots.txt verwalten
 - [ ] SEO-Analyse mit Hinweisen
-- [ ] URL-Slug automatisch generieren
+- [x] URL-Slug automatisch generieren – war bereits vorhanden
+      (`slugify(title)`, solange der Slug nicht manuell angefasst wurde)
 - [ ] Weiterleitungen (301/302)
 
 ### 2b.7 – Medienmanagement
@@ -168,15 +178,19 @@ Details: [rich-text-and-versioning.md](../knowledge-base/content/rich-text-and-v
 
 ### 2b.9 – Workflow
 
-- [ ] Review-Workflow
-- [ ] Freigabeprozesse
+- [ ] Review-Workflow - simpel halten
+- [ ] Freigabeprozesse - simpel halten
 - [ ] Kommentare direkt am Inhalt
 - [ ] Aufgaben zuweisen
 - [ ] Änderungsanfragen
 - [ ] Veröffentlichungs-Historie
 - [ ] Benachrichtigungen
-- [ ] Sperren während Bearbeitung (Content Locking)
-- [ ] Konfliktauflösung bei paralleler Bearbeitung
+- [x] Sperren während Bearbeitung (Content Locking) – weiche Sperre
+      (`Content.lockedById`/`lockedAt`), 2-Minuten-TTL mit
+      Heartbeat-Verlängerung, Banner + schreibgeschütztes Formular bei
+      Fremdsperre, Admin-Override (`content:delete`) (2026-08-06)
+- [ ] Konfliktauflösung bei paralleler Bearbeitung – bewusst separat
+      gelassen, siehe `knowledge-base/content/content-locking.md`
 
 ### 2b.10 – Formulare
 

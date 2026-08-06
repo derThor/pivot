@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -15,6 +17,9 @@ export interface CategoryRef {
   name: string;
   slug: string;
 }
+
+/** Sperren älter als das hier gelten als abgelaufen (verwaiste Sperre nach Tab-Crash o.ä.). */
+const CONTENT_LOCK_TTL_MS = 2 * 60 * 1000;
 
 /** Flacht die Join-Tabellen-Form (`ContentCategory[]` mit verschachteltem `category`) zu einem einfachen `CategoryRef[]` ab. */
 function mapContentCategories<T extends { categories: { category: CategoryRef }[] }>(
@@ -135,6 +140,7 @@ export class ContentService {
             createdBy: { select: { id: true, firstName: true, lastName: true } },
           },
         },
+        lockedBy: { select: { id: true, firstName: true, lastName: true } },
       },
     });
     if (!content) {
@@ -158,6 +164,13 @@ export class ContentService {
         excerpt: dto.excerpt,
         seoTitle: dto.seoTitle,
         seoDescription: dto.seoDescription,
+        canonicalUrl: dto.canonicalUrl,
+        ogTitle: dto.ogTitle,
+        ogDescription: dto.ogDescription,
+        ogImageUrl: dto.ogImageUrl,
+        twitterCard: dto.twitterCard,
+        robotsIndex: dto.robotsIndex ?? true,
+        robotsFollow: dto.robotsFollow ?? true,
         contentTypeId: dto.contentTypeId,
         authorId,
         publishedAt: dto.status === ContentStatus.PUBLISHED ? new Date() : null,
@@ -231,6 +244,73 @@ export class ContentService {
   async remove(id: string) {
     await this.findOne(id);
     await this.prisma.content.delete({ where: { id } });
+  }
+
+  /**
+   * Weiche Bearbeitungssperre: verhindert, dass zwei Redakteure denselben
+   * Inhalt gleichzeitig bearbeiten und sich gegenseitig überschreiben.
+   * Läuft nach `LOCK_TTL_MS` automatisch ab (kein Freischalt-Endpoint für
+   * abgestürzte Tabs nötig) – der Editor im Frontend ruft diesen Endpoint
+   * per Heartbeat erneut auf, solange aktiv bearbeitet wird, wodurch sich
+   * die Sperre verlängert.
+   */
+  async lock(id: string, userId: string) {
+    const content = await this.prisma.content.findUnique({
+      where: { id },
+      select: { id: true, lockedById: true, lockedAt: true },
+    });
+    if (!content) {
+      throw new NotFoundException(`Inhalt ${id} nicht gefunden.`);
+    }
+
+    const isExpired =
+      !content.lockedAt ||
+      Date.now() - content.lockedAt.getTime() > CONTENT_LOCK_TTL_MS;
+
+    if (content.lockedById && content.lockedById !== userId && !isExpired) {
+      const holder = await this.prisma.user.findUnique({
+        where: { id: content.lockedById },
+        select: { id: true, firstName: true, lastName: true },
+      });
+      throw new ConflictException({
+        message: 'Dieser Inhalt wird gerade von einer anderen Person bearbeitet.',
+        lockedBy: holder,
+        lockedAt: content.lockedAt,
+      });
+    }
+
+    const updated = await this.prisma.content.update({
+      where: { id },
+      data: { lockedById: userId, lockedAt: new Date() },
+      select: {
+        lockedAt: true,
+        lockedBy: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+    return updated;
+  }
+
+  async unlock(id: string, userId: string, canForceUnlock: boolean) {
+    const content = await this.prisma.content.findUnique({
+      where: { id },
+      select: { id: true, lockedById: true },
+    });
+    if (!content) {
+      throw new NotFoundException(`Inhalt ${id} nicht gefunden.`);
+    }
+    if (
+      content.lockedById &&
+      content.lockedById !== userId &&
+      !canForceUnlock
+    ) {
+      throw new ForbiddenException(
+        'Nur die sperrende Person oder ein Admin kann diese Sperre aufheben.',
+      );
+    }
+    await this.prisma.content.update({
+      where: { id },
+      data: { lockedById: null, lockedAt: null },
+    });
   }
 
   async findVersions(contentId: string, query: QueryContentVersionsDto) {

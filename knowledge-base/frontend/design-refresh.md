@@ -5,6 +5,28 @@
 `src/components/{app-sidebar,dashboard-header,ui/card,ui/checkbox}.tsx`,
 alle Row-Action-Komponenten der Listen-Ansichten)
 
+> **Update 2026-08-06 (Eingeklapptes Logo: größer, zentriert,
+> Initialen-Fallback; Mobile Burger-Icon; Logo-Upload-Breite):**
+> - Eingeklapptes Sidebar-Logo `size-8` → `size-12`; zusätzlich
+>   `group-data-[collapsible=icon]:gap-0` (statt `gap-2`) auf dem
+>   Header-Container – der ungenutzte Flex-`gap` zum (jetzt `w-0`)
+>   Wortmarken-Span schob das Icon sonst leicht aus der Mitte.
+> - **Fallback ohne Logo**: statt eines statischen "S" zeigt die
+>   eingeklappte Kachel jetzt die ersten zwei Buchstaben von
+>   `AppSettings.companyName` (uppercased), oder `"TW"`, falls
+>   `companyName` leer ist (`fallbackInitials()` in
+>   `app-sidebar.tsx`, `companyName` neu von `dashboard/layout.tsx`
+>   durchgereicht). Per Live-Test mit temporär umgeschaltetem
+>   `logoCollapsedUrl`/`companyName` verifiziert (danach beide Werte
+>   wieder auf den ursprünglichen Dev-Stand zurückgesetzt).
+> - **Mobile Sidebar-Trigger**: zeigt jetzt ein Burger-Menü-Icon
+>   (`MenuIcon`) statt des Desktop-`PanelLeftIcon`, wenn
+>   `useSidebar().isMobile` true ist (`ui/sidebar.tsx`).
+> - **`LogoUploadField`**: das `type="file"`-Input hatte `flex-1` und
+>   spannte sich dadurch über die volle Kartenbreite auf
+>   (`Datei auswählen ... Keine ausgewählt` mit riesigem Leerraum
+>   dazwischen). `flex-1` entfernt, `max-w-xs` gesetzt.
+
 > **Update 2026-08-06 (Größeres Logo, Navigation wieder gruppiert,
 > Mobile-Navigation-Fix):**
 > - **Ausgeklapptes Logo vergrößert**: `h-6` → `h-11` (24px → 44px) in

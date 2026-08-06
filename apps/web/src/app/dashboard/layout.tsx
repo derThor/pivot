@@ -37,11 +37,12 @@ export default async function DashboardLayout({
         user={user}
         logoExpandedUrl={settings?.logoExpandedUrl}
         logoCollapsedUrl={settings?.logoCollapsedUrl}
+        companyName={settings?.companyName}
       />
       <SidebarInset>
         {!user.emailVerifiedAt && <EmailVerificationBanner />}
         <DashboardHeader user={user} />
-        <div className="flex flex-1 flex-col gap-6 bg-background p-8">
+        <div className="flex flex-1 flex-col gap-6 bg-background px-12 pt-5 pb-8">
           {children}
         </div>
       </SidebarInset>

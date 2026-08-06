@@ -33,7 +33,7 @@ export default async function DashboardPage() {
           Willkommen zurück. Hier ist ein Überblick über dein CMS.
         </p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
           <Card key={stat.label}>
             <CardHeader className="pb-2">

@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { SelectionToolbar } from "@/components/selection-toolbar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSelection } from "@/hooks/use-selection";
 import { formatName } from "@/lib/utils";
 import type { ContentVersion } from "@/lib/api-server";
@@ -18,6 +19,39 @@ import type { ContentVersion } from "@/lib/api-server";
 function stringifyValue(value: unknown): string {
   if (value == null) return "";
   return typeof value === "string" ? value : JSON.stringify(value, null, 2);
+}
+
+function hasFieldChanged(oldValue: unknown, newValue: unknown) {
+  return stringifyValue(oldValue) !== stringifyValue(newValue);
+}
+
+function DiffBox({
+  oldValue,
+  newValue,
+}: {
+  oldValue: unknown;
+  newValue: unknown;
+}) {
+  const parts = diffWords(stringifyValue(oldValue), stringifyValue(newValue));
+
+  return (
+    <p className="rounded-md border bg-muted/30 p-2 text-sm break-words whitespace-pre-wrap">
+      {parts.map((part, index) => (
+        <span
+          key={index}
+          className={
+            part.added
+              ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400"
+              : part.removed
+                ? "bg-destructive/20 text-destructive line-through"
+                : undefined
+          }
+        >
+          {part.value}
+        </span>
+      ))}
+    </p>
+  );
 }
 
 function FieldDiff({
@@ -29,31 +63,12 @@ function FieldDiff({
   oldValue: unknown;
   newValue: unknown;
 }) {
-  const oldStr = stringifyValue(oldValue);
-  const newStr = stringifyValue(newValue);
-  if (oldStr === newStr) return null;
-
-  const parts = diffWords(oldStr, newStr);
+  if (!hasFieldChanged(oldValue, newValue)) return null;
 
   return (
     <div className="flex flex-col gap-1">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className="rounded-md border bg-muted/30 p-2 text-sm break-words whitespace-pre-wrap">
-        {parts.map((part, index) => (
-          <span
-            key={index}
-            className={
-              part.added
-                ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400"
-                : part.removed
-                  ? "bg-destructive/20 text-destructive line-through"
-                  : undefined
-            }
-          >
-            {part.value}
-          </span>
-        ))}
-      </p>
+      <DiffBox oldValue={oldValue} newValue={newValue} />
     </div>
   );
 }
@@ -196,30 +211,42 @@ export function ContentVersionsList({
             </CardHeader>
             {isExpanded && (
               <CardContent className="flex flex-col gap-3">
-                {fieldNames.map((field) => (
-                  <div key={field} className="flex flex-col gap-2">
-                    <FieldDiff
-                      label={field}
-                      oldValue={version.data[field]}
-                      newValue={currentData[field]}
-                    />
-                    {richtextFields.includes(field) && (
-                      <div className="flex flex-col gap-1">
-                        <p className="text-xs font-medium text-muted-foreground">
-                          {field} – Vorschau (Stand dieser Version)
-                        </p>
+                {fieldNames.map((field) => {
+                  const oldValue = version.data[field];
+                  const newValue = currentData[field];
+                  if (!hasFieldChanged(oldValue, newValue)) return null;
+
+                  if (!richtextFields.includes(field)) {
+                    return (
+                      <FieldDiff
+                        key={field}
+                        label={field}
+                        oldValue={oldValue}
+                        newValue={newValue}
+                      />
+                    );
+                  }
+
+                  return (
+                    <Tabs key={field} defaultValue="preview">
+                      <TabsList>
+                        <TabsTrigger value="preview">Vorschau</TabsTrigger>
+                        <TabsTrigger value="html">{field} (HTML)</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="html">
+                        <DiffBox oldValue={oldValue} newValue={newValue} />
+                      </TabsContent>
+                      <TabsContent value="preview">
                         <RichTextEditor
                           editable={false}
                           value={
-                            typeof version.data[field] === "string"
-                              ? (version.data[field] as string)
-                              : ""
+                            typeof oldValue === "string" ? oldValue : ""
                           }
                         />
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      </TabsContent>
+                    </Tabs>
+                  );
+                })}
               </CardContent>
             )}
           </Card>
