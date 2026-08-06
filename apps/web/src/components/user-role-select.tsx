@@ -9,32 +9,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { CurrentUser } from "@/lib/api-server";
-
-const roleLabels: Record<CurrentUser["role"], string> = {
-  ADMIN: "Administrator",
-  EDITOR: "Redakteur",
-  AUTHOR: "Autor",
-  VIEWER: "Betrachter",
-};
+import type { Role } from "@/lib/api-server";
 
 export function UserRoleSelect({
   userId,
-  role,
+  roleId,
+  roles,
 }: {
   userId: string;
-  role: CurrentUser["role"];
+  roleId: string;
+  roles: Role[];
 }) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
 
-  async function handleChange(nextRole: string) {
+  async function handleChange(nextRoleId: string | null) {
+    if (!nextRoleId) return;
     setIsSaving(true);
     try {
       await fetch(`/api/users/${userId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: nextRole }),
+        body: JSON.stringify({ roleId: nextRoleId }),
       });
       router.refresh();
     } finally {
@@ -43,14 +39,19 @@ export function UserRoleSelect({
   }
 
   return (
-    <Select value={role} onValueChange={handleChange} disabled={isSaving}>
+    <Select
+      value={roleId}
+      onValueChange={handleChange}
+      disabled={isSaving}
+      items={Object.fromEntries(roles.map((role) => [role.id, role.name]))}
+    >
       <SelectTrigger size="sm" className="w-40">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {Object.entries(roleLabels).map(([value, label]) => (
-          <SelectItem key={value} value={value}>
-            {label}
+        {roles.map((role) => (
+          <SelectItem key={role.id} value={role.id}>
+            {role.name}
           </SelectItem>
         ))}
       </SelectContent>

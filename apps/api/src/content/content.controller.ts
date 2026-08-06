@@ -9,12 +9,13 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { Role } from '@strasev/database';
 import { ContentService } from './content.service';
 import { CreateContentDto } from './dto/create-content.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
 import { QueryContentDto } from './dto/query-content.dto';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { QueryContentVersionsDto } from './dto/query-content-versions.dto';
+import { SearchContentDto } from './dto/search-content.dto';
+import { RequirePermission } from '../auth/decorators/permissions.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
@@ -24,23 +25,31 @@ import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 export class ContentController {
   constructor(private readonly contentService: ContentService) {}
 
+  @RequirePermission('content:read')
   @Get()
   findAll(@Query() query: QueryContentDto) {
     return this.contentService.findAll(query);
   }
 
+  @RequirePermission('content:read')
+  @Get('search')
+  search(@Query() query: SearchContentDto) {
+    return this.contentService.search(query.q, query.limit);
+  }
+
+  @RequirePermission('content:read')
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.contentService.findOne(id);
   }
 
-  @Roles(Role.ADMIN, Role.EDITOR, Role.AUTHOR)
+  @RequirePermission('content:create')
   @Post()
   create(@Body() dto: CreateContentDto, @CurrentUser() user: JwtPayload) {
     return this.contentService.create(dto, user.sub);
   }
 
-  @Roles(Role.ADMIN, Role.EDITOR, Role.AUTHOR)
+  @RequirePermission('content:update')
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -50,9 +59,37 @@ export class ContentController {
     return this.contentService.update(id, dto, user.sub);
   }
 
-  @Roles(Role.ADMIN, Role.EDITOR)
+  @RequirePermission('content:delete')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.contentService.remove(id);
+  }
+
+  @RequirePermission('content:update')
+  @Get(':id/versions')
+  findVersions(
+    @Param('id') id: string,
+    @Query() query: QueryContentVersionsDto,
+  ) {
+    return this.contentService.findVersions(id, query);
+  }
+
+  @RequirePermission('content:update')
+  @Post(':id/versions/:versionId/rollback')
+  rollback(
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.contentService.rollback(id, versionId, user.sub);
+  }
+
+  @RequirePermission('content:update')
+  @Delete(':id/versions/:versionId')
+  removeVersion(
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+  ) {
+    return this.contentService.removeVersion(id, versionId);
   }
 }

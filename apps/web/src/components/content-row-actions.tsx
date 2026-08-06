@@ -1,10 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Pencil, Trash2 } from "lucide-react";
+import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 
 export function ContentRowActions({
@@ -15,6 +22,7 @@ export function ContentRowActions({
   title: string;
 }) {
   const router = useRouter();
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   async function handleDelete() {
     await fetch(`/api/content/${id}`, { method: "DELETE" });
@@ -22,25 +30,37 @@ export function ContentRowActions({
   }
 
   return (
-    <div className="flex justify-end gap-1">
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        render={<Link href={`/dashboard/content/${id}/edit`} />}
-        aria-label={`${title} bearbeiten`}
-      >
-        <Pencil />
-      </Button>
-      <ConfirmDeleteDialog
-        trigger={
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={`${title} löschen`}
+    <div className="flex justify-end">
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="rounded-full"
+              aria-label={`Aktionen für ${title}`}
+            />
+          }
+        >
+          <MoreVertical />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem render={<Link href={`/dashboard/content/${id}/edit`} />}>
+            <Pencil />
+            Bearbeiten
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => setDeleteOpen(true)}
           >
             <Trash2 />
-          </Button>
-        }
+            Löschen
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
         title={`„${title}“ löschen?`}
         description="Diese Aktion kann nicht rückgängig gemacht werden."
         onConfirm={handleDelete}

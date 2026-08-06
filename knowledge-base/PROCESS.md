@@ -11,7 +11,7 @@ oder eine Aktualisierung eines bestehenden Eintrags.** Das gilt für:
 - nicht-triviale Architektur- oder Tooling-Entscheidungen
 - Workarounds für Bugs/Eigenheiten von Dependencies (z.B. das
   `render`-statt-`asChild`-Pattern von Base UI, siehe
-  [frontend-shadcn-base-ui.md](./frontend-shadcn-base-ui.md))
+  [frontend-shadcn-base-ui.md](./frontend/frontend-shadcn-base-ui.md))
 
 Kleine Bugfixes oder reine Refactorings ohne neues Verhalten benötigen keinen
 eigenen Eintrag.
@@ -40,22 +40,32 @@ eigenen Eintrag.
   gibt es. Das ist der Teil, der bei reiner Code-Lektüre am ehesten verloren
   geht (das "Warum" hinter einer Entscheidung).
 
-## Struktur: wann in Unterordner gruppieren
+## Struktur: Unterordner pro Themenbereich
 
-Aktuell liegen alle Einträge flach in `knowledge-base/`, unterschieden durch
-sprechende Datei-Präfixe (`auth-*`, `content-*`, `frontend-*`,
-`tooling-*`). Das bleibt so, solange:
+Seit 2026-08-02 (15 Einträge erreicht) liegen die Einträge in
+Unterordnern nach Themenbereich:
 
-- kein Themenbereich (Präfix) 4 oder mehr Dateien hat, und
-- die Gesamtzahl der Einträge unter ca. 12–15 liegt (die Tabelle in
-  [INDEX.md](./INDEX.md) bleibt sonst unübersichtlich).
+- `auth/` – Login/Token-Flow, Backend und Frontend
+- `content/` – Content-Modell, -Editor, -CRUD
+- `media/` – Upload, Bearbeiten/Löschen, Vorschau
+- `frontend/` – Frontend-Themen ohne eigenen größeren Bereich (UI-Basis,
+  projektweite UI-Konventionen, Benutzerverwaltung-UI, Taxonomie-UI)
+- `tooling/` – Monorepo/Build/Test-Infrastruktur
 
-Wird eine dieser Schwellen überschritten: Unterordner pro Themenbereich
-anlegen (z.B. `knowledge-base/auth/`, `knowledge-base/content/`,
-`knowledge-base/frontend/`), bestehende Dateien passend verschieben und
-die Links in `INDEX.md` entsprechend anpassen. Nicht vorher aufteilen –
-zu frühe Verschachtelung macht das Nachschlagen bei einer Handvoll
-Dateien eher schwerer als leichter.
+`INDEX.md`, `PROCESS.md` und `TEMPLATE.md` bleiben auf oberster Ebene.
+
+**Neuen Eintrag anlegen:**
+
+1. Passt das Thema zu einem bestehenden Ordner? → Datei dort anlegen.
+2. Kein passender Ordner vorhanden? → Datei zunächst direkt in
+   `knowledge-base/` (flach) anlegen. Ein neuer Themenbereich bekommt erst
+   dann einen eigenen Ordner, wenn er 3–4 Einträge erreicht hat – für ein
+   bis zwei Dateien lohnt sich die Verschachtelung nicht.
+3. Bei Links zwischen Einträgen: relative Pfade verwenden
+   (`./andere-datei.md` innerhalb desselben Ordners,
+   `../anderer-ordner/datei.md` ordnerübergreifend). Links von einem
+   Unterordner nach `docs/` brauchen ein zusätzliches `../`
+   (`../../docs/ROADMAP.md`, nicht `../docs/ROADMAP.md`).
 
 ## Stil
 

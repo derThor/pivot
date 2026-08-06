@@ -12,7 +12,7 @@ export default async function DashboardPage() {
     getContentList({ status: "PUBLISHED", pageSize: 1 }),
     getContentList({ status: "DRAFT", pageSize: 1 }),
     getMediaList({ pageSize: 1 }),
-    getUsers(),
+    getUsers({ pageSize: 1 }),
   ]);
 
   const stats = [
@@ -22,7 +22,7 @@ export default async function DashboardPage() {
     },
     { label: "Entwürfe", value: drafts?.meta.total.toString() ?? "–" },
     { label: "Medien", value: media?.meta.total.toString() ?? "–" },
-    { label: "Benutzer", value: users?.length.toString() ?? "–" },
+    { label: "Benutzer", value: users?.meta.total.toString() ?? "–" },
   ];
 
   return (

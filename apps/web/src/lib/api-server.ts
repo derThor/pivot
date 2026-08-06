@@ -3,16 +3,39 @@ import { ACCESS_TOKEN_COOKIE } from "./auth";
 
 const API_URL = process.env.API_URL ?? "http://localhost:3001/v1";
 
+export interface UserRoleRef {
+  id: string;
+  name: string;
+}
+
 export interface CurrentUser {
   id: string;
   email: string;
-  name: string;
-  role: "ADMIN" | "EDITOR" | "AUTHOR" | "VIEWER";
+  firstName: string | null;
+  lastName: string;
   avatarUrl: string | null;
   isActive: boolean;
+  emailVerifiedAt: string | null;
+  role: UserRoleRef;
+  /** Nur bei getCurrentUser() (GET /auth/me) vorhanden, nicht bei getUsers(). */
+  permissions?: string[];
+  /** Nur bei getCurrentUser() (GET /auth/me) vorhanden, nicht bei getUsers(). */
+  canAccessDashboard?: boolean;
 }
 
 export type ContentStatus = "DRAFT" | "SCHEDULED" | "PUBLISHED" | "ARCHIVED";
+
+export interface AuthorRef {
+  id: string;
+  firstName: string | null;
+  lastName: string;
+}
+
+export interface CategoryRef {
+  id: string;
+  name: string;
+  slug: string;
+}
 
 export interface ContentListItem {
   id: string;
@@ -21,7 +44,8 @@ export interface ContentListItem {
   status: ContentStatus;
   updatedAt: string;
   contentType: { id: string; name: string; slug: string };
-  author: { id: string; name: string };
+  author: AuthorRef;
+  categories: CategoryRef[];
 }
 
 export interface ContentListResponse {
@@ -39,6 +63,12 @@ async function apiFetch<T>(path: string): Promise<T | null> {
   });
   if (!res.ok) return null;
 
+  return res.json();
+}
+
+async function publicApiFetch<T>(path: string): Promise<T | null> {
+  const res = await fetch(`${API_URL}${path}`, { cache: "no-store" });
+  if (!res.ok) return null;
   return res.json();
 }
 
@@ -60,8 +90,18 @@ export function getContentList(params?: {
   return apiFetch<ContentListResponse>(`/content${query ? `?${query}` : ""}`);
 }
 
-export function getUsers() {
-  return apiFetch<CurrentUser[]>("/users");
+export interface UserListResponse {
+  items: CurrentUser[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
+export function getUsers(params?: { page?: number; pageSize?: number }) {
+  const search = new URLSearchParams();
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.pageSize) search.set("pageSize", String(params.pageSize));
+  const query = search.toString();
+
+  return apiFetch<UserListResponse>(`/users${query ? `?${query}` : ""}`);
 }
 
 export interface ContentTypeField {
@@ -81,12 +121,41 @@ export function getContentTypes() {
   return apiFetch<ContentType[]>("/content-types");
 }
 
+export function getContentType(id: string) {
+  return apiFetch<ContentType>(`/content-types/${id}`);
+}
+
 export interface ContentDetail extends ContentListItem {
   data: Record<string, unknown>;
 }
 
 export function getContent(id: string) {
   return apiFetch<ContentDetail>(`/content/${id}`);
+}
+
+export interface ContentVersion {
+  id: string;
+  data: Record<string, unknown>;
+  createdAt: string;
+  createdBy: AuthorRef;
+}
+
+export interface ContentVersionsResponse {
+  items: ContentVersion[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
+export function getContentVersions(
+  id: string,
+  params?: { page?: number; pageSize?: number },
+) {
+  const query = new URLSearchParams();
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.pageSize) query.set("pageSize", String(params.pageSize));
+  const qs = query.toString();
+  return apiFetch<ContentVersionsResponse>(
+    `/content/${id}/versions${qs ? `?${qs}` : ""}`,
+  );
 }
 
 export interface MediaItem {
@@ -97,7 +166,8 @@ export interface MediaItem {
   size: number;
   alt: string | null;
   createdAt: string;
-  uploadedBy: { id: string; name: string };
+  uploadedBy: AuthorRef;
+  folderId: string | null;
 }
 
 export interface MediaListResponse {
@@ -105,25 +175,128 @@ export interface MediaListResponse {
   meta: { page: number; pageSize: number; total: number; pageCount: number };
 }
 
-export function getMediaList(params?: { page?: number; pageSize?: number }) {
+export function getMediaList(params?: {
+  page?: number;
+  pageSize?: number;
+  folderId?: string;
+}) {
   const search = new URLSearchParams();
   if (params?.page) search.set("page", String(params.page));
   if (params?.pageSize) search.set("pageSize", String(params.pageSize));
+  if (params?.folderId) search.set("folderId", params.folderId);
   const query = search.toString();
 
   return apiFetch<MediaListResponse>(`/media${query ? `?${query}` : ""}`);
+}
+
+export interface MediaFolder {
+  id: string;
+  name: string;
+  parentId: string | null;
+  isSystem: boolean;
+  mediaCount: number;
+  childCount: number;
+}
+
+export function getMediaFolders() {
+  return apiFetch<MediaFolder[]>("/media-folders");
 }
 
 export interface TaxonomyItem {
   id: string;
   name: string;
   slug: string;
+  description?: string | null;
 }
 
-export function getCategories() {
-  return apiFetch<TaxonomyItem[]>("/categories");
+export interface TaxonomyListResponse {
+  items: TaxonomyItem[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
 }
 
-export function getTags() {
-  return apiFetch<TaxonomyItem[]>("/tags");
+function taxonomyQuery(params?: { page?: number; pageSize?: number }) {
+  const search = new URLSearchParams();
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.pageSize) search.set("pageSize", String(params.pageSize));
+  const query = search.toString();
+  return query ? `?${query}` : "";
+}
+
+export function getCategories(params?: { page?: number; pageSize?: number }) {
+  return apiFetch<TaxonomyListResponse>(`/categories${taxonomyQuery(params)}`);
+}
+
+export function getTags(params?: { page?: number; pageSize?: number }) {
+  return apiFetch<TaxonomyListResponse>(`/tags${taxonomyQuery(params)}`);
+}
+
+export interface Role {
+  id: string;
+  name: string;
+  description: string | null;
+  isSystem: boolean;
+  isDefault: boolean;
+  canAccessDashboard: boolean;
+  userCount: number;
+  permissions: string[];
+}
+
+export interface RoleListResponse {
+  items: Role[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
+export function getRoles(params?: { page?: number; pageSize?: number }) {
+  const search = new URLSearchParams();
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.pageSize) search.set("pageSize", String(params.pageSize));
+  const query = search.toString();
+
+  return apiFetch<RoleListResponse>(`/roles${query ? `?${query}` : ""}`);
+}
+
+export function getPermissionsCatalog() {
+  return apiFetch<string[]>("/permissions");
+}
+
+export interface AppSettings {
+  id: number;
+  allowRegistration: boolean;
+  allowPasswordReset: boolean;
+  allowEmailChange: boolean;
+  requireAdminActivation: boolean;
+  passwordMinLength: number;
+  passwordRequireUppercase: boolean;
+  passwordRequireLowercase: boolean;
+  passwordRequireNumber: boolean;
+  passwordRequireSpecialChar: boolean;
+  defaultPageSize: number;
+  logoExpandedUrl: string | null;
+  logoCollapsedUrl: string | null;
+  companyName: string | null;
+  companyStreet: string | null;
+  companyPostalCode: string | null;
+  companyCity: string | null;
+  companyCountry: string | null;
+  companyRepresentative: string | null;
+  companyEmail: string | null;
+  companyPhone: string | null;
+  companyRegisterCourt: string | null;
+  companyRegisterNumber: string | null;
+  companyVatId: string | null;
+  updatedAt: string;
+}
+
+export type PublicSettings = Omit<AppSettings, "id" | "updatedAt">;
+
+export function getSettings() {
+  return apiFetch<AppSettings>("/settings");
+}
+
+export function getPublicSettings() {
+  return publicApiFetch<PublicSettings>("/settings/public");
+}
+
+export interface MessageResponse {
+  message: string;
 }

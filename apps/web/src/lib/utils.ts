@@ -18,3 +18,10 @@ export function formatBytes(bytes: number) {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
+
+export function formatName(user: {
+  firstName?: string | null
+  lastName: string
+}) {
+  return [user.firstName, user.lastName].filter(Boolean).join(" ")
+}

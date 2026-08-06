@@ -11,16 +11,23 @@ export class MediaService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: QueryMediaDto) {
-    const { page, pageSize } = query;
+    const { page, pageSize, folderId } = query;
+    const where = {
+      ...(folderId === 'root' && { folderId: null }),
+      ...(folderId && folderId !== 'root' && { folderId }),
+    };
 
     const [items, total] = await Promise.all([
       this.prisma.media.findMany({
+        where,
         skip: (page - 1) * pageSize,
         take: pageSize,
         orderBy: { createdAt: 'desc' },
-        include: { uploadedBy: { select: { id: true, name: true } } },
+        include: {
+          uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+        },
       }),
-      this.prisma.media.count(),
+      this.prisma.media.count({ where }),
     ]);
 
     return {
@@ -29,7 +36,12 @@ export class MediaService {
     };
   }
 
-  create(file: Express.Multer.File, uploadedById: string, alt?: string) {
+  create(
+    file: Express.Multer.File,
+    uploadedById: string,
+    alt?: string,
+    folderId?: string,
+  ) {
     return this.prisma.media.create({
       data: {
         filename: file.originalname,
@@ -38,6 +50,7 @@ export class MediaService {
         size: file.size,
         alt,
         uploadedById,
+        folderId,
       },
     });
   }

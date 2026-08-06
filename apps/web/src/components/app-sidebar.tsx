@@ -8,7 +8,9 @@ import {
   FileText,
   Image as ImageIcon,
   Users,
+  ShieldCheck,
   Settings,
+  FolderTree,
   Tags,
   Globe,
   LogOut,
@@ -26,42 +28,72 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import type { CurrentUser } from "@/lib/api-server";
+import { mediaUrl } from "@/lib/media";
 
-const roleLabels: Record<CurrentUser["role"], string> = {
-  ADMIN: "Administrator",
-  EDITOR: "Redakteur",
-  AUTHOR: "Autor",
-  VIEWER: "Betrachter",
-};
+const navActiveClass =
+  "-mx-2 h-auto w-[calc(100%+1rem)] gap-2 overflow-hidden rounded-none px-4 py-3 transition-[gap] duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 data-active:bg-gradient-to-r data-active:from-orange-400 data-active:to-rose-500 data-active:text-white data-active:shadow-sm data-active:hover:text-white";
 
-function initials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]!.toUpperCase())
-    .join("");
-}
+const navLabelClass =
+  "overflow-hidden whitespace-nowrap transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0";
 
-const navMain = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Inhalte", url: "/dashboard/content", icon: FileText },
-  { title: "Medien", url: "/dashboard/media", icon: ImageIcon },
-  { title: "Kategorien & Tags", url: "/dashboard/taxonomy", icon: Tags },
-];
+const navGroups = [
+  {
+    label: "Übersicht",
+    items: [{ title: "Dashboard", url: "/dashboard", icon: LayoutDashboard }],
+  },
+  {
+    label: "Inhalte",
+    items: [
+      { title: "Inhalte", url: "/dashboard/content", icon: FileText },
+      { title: "Medien", url: "/dashboard/media", icon: ImageIcon },
+      { title: "Kategorien", url: "/dashboard/categories", icon: FolderTree },
+      { title: "Tags", url: "/dashboard/tags", icon: Tags },
+    ],
+  },
+  {
+    label: "Verwaltung",
+    items: [
+      {
+        title: "Benutzer",
+        url: "/dashboard/users",
+        icon: Users,
+        permission: "users:manage",
+      },
+      {
+        title: "Rollen & Rechte",
+        url: "/dashboard/roles",
+        icon: ShieldCheck,
+        permission: "roles:manage",
+      },
+      { title: "Websites", url: "/dashboard/sites", icon: Globe },
+    ],
+  },
+] as const;
 
-const navManage = [
-  { title: "Benutzer & Rollen", url: "/dashboard/users", icon: Users },
-  { title: "Websites", url: "/dashboard/sites", icon: Globe },
-  { title: "Einstellungen", url: "/dashboard/settings", icon: Settings },
-];
-
-export function AppSidebar({ user }: { user: CurrentUser }) {
+export function AppSidebar({
+  user,
+  logoExpandedUrl,
+  logoCollapsedUrl,
+}: {
+  user: CurrentUser;
+  logoExpandedUrl?: string | null;
+  logoCollapsedUrl?: string | null;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+  const permissions = user.permissions ?? [];
+  const visibleNavGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) =>
+          !("permission" in item) || permissions.includes(item.permission),
+      ),
+    }))
+    .filter((group) => group.items.length > 0);
+  const canManageSettings = permissions.includes("settings:manage");
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -76,80 +108,85 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-1.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground font-semibold">
-            S
+        <div className="flex items-center gap-2 py-2 group-data-[collapsible=icon]:justify-center">
+          <div className="flex h-8 w-0 shrink-0 items-center justify-center overflow-hidden rounded-xl opacity-0 shadow-sm transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:opacity-100">
+            {logoCollapsedUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={mediaUrl({ url: logoCollapsedUrl })}
+                alt="Logo"
+                className="size-full object-contain"
+              />
+            ) : (
+              <div className="flex size-full items-center justify-center bg-gradient-to-br from-orange-400 to-rose-500 font-semibold text-white">
+                S
+              </div>
+            )}
           </div>
-          <span className="font-semibold group-data-[collapsible=icon]:hidden">
-            strasev CMS
+          <span className="overflow-hidden whitespace-nowrap transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
+            {logoExpandedUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={mediaUrl({ url: logoExpandedUrl })}
+                alt="strasev CMS"
+                className="h-11 w-auto max-w-full object-contain"
+              />
+            ) : (
+              <span className="text-lg font-semibold">strasev CMS</span>
+            )}
           </span>
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Content</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navMain.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton
-                    render={<Link href={item.url} />}
-                    isActive={pathname === item.url}
-                    tooltip={item.title}
-                  >
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>Verwaltung</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navManage.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton
-                    render={<Link href={item.url} />}
-                    isActive={pathname === item.url}
-                    tooltip={item.title}
-                  >
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {visibleNavGroups.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton
+                      render={<Link href={item.url} />}
+                      isActive={pathname === item.url}
+                      tooltip={item.title}
+                      className={navActiveClass}
+                    >
+                      <item.icon />
+                      <span className={navLabelClass}>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg">
-              <Avatar className="h-6 w-6 rounded-md">
-                <AvatarFallback className="rounded-md">
-                  {initials(user.name)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="truncate text-xs text-muted-foreground">
-                  {roleLabels[user.role]}
-                </span>
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          {canManageSettings && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<Link href="/dashboard/settings" />}
+                isActive={pathname === "/dashboard/settings"}
+                tooltip="Einstellungen"
+                className={navActiveClass}
+              >
+                <Settings />
+                <span className={navLabelClass}>Einstellungen</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={handleLogout}
               disabled={isLoggingOut}
               tooltip="Abmelden"
+              className={navActiveClass}
             >
               <LogOut />
-              <span>{isLoggingOut ? "Wird abgemeldet…" : "Abmelden"}</span>
+              <span className={navLabelClass}>
+                {isLoggingOut ? "Wird abgemeldet…" : "Abmelden"}
+              </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

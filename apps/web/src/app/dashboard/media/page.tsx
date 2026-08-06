@@ -1,15 +1,30 @@
+import { FolderDialog } from "@/components/folder-dialog";
+import { MediaFolderBrowser } from "@/components/media-folder-browser";
 import { MediaUploadDialog } from "@/components/media-upload-dialog";
-import { MediaCardActions } from "@/components/media-card-actions";
-import { MediaPreviewDialog } from "@/components/media-preview-dialog";
-import { getMediaList } from "@/lib/api-server";
-import { formatBytes } from "@/lib/utils";
+import { PaginationControls } from "@/components/pagination-controls";
+import { getMediaFolders, getMediaList, getPublicSettings } from "@/lib/api-server";
 
-export default async function MediaPage() {
-  const media = await getMediaList({ pageSize: 48 });
-  const items = media?.items ?? [];
+export default async function MediaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ folder?: string; page?: string }>;
+}) {
+  const { folder, page: pageParam } = await searchParams;
+  const currentFolderId = folder ?? null;
+  const page = Number(pageParam) || 1;
+
+  const [folders, settings] = await Promise.all([
+    getMediaFolders(),
+    getPublicSettings(),
+  ]);
+  const media = await getMediaList({
+    page,
+    pageSize: settings?.defaultPageSize ?? 10,
+    folderId: currentFolderId ?? "root",
+  });
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Medien</h1>
@@ -17,33 +32,31 @@ export default async function MediaPage() {
             Bilder und Dateien deines CMS.
           </p>
         </div>
-        <MediaUploadDialog />
+        <div className="flex gap-2">
+          <FolderDialog parentId={currentFolderId} />
+          <MediaUploadDialog
+            folders={folders ?? []}
+            defaultFolderId={currentFolderId}
+          />
+        </div>
       </div>
 
-      {items.length === 0 ? (
-        <div className="flex h-24 items-center justify-center rounded-lg border text-sm text-muted-foreground">
-          Noch keine Medien vorhanden.
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-          {items.map((item) => (
-            <figure
-              key={item.id}
-              className="flex flex-col gap-2 overflow-hidden rounded-lg border"
-            >
-              <MediaPreviewDialog item={item} />
-              <figcaption className="flex flex-col gap-1 px-2 pb-2">
-                <span className="truncate text-xs font-medium">
-                  {item.filename}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {formatBytes(item.size)}
-                </span>
-                <MediaCardActions item={item} />
-              </figcaption>
-            </figure>
-          ))}
-        </div>
+      <MediaFolderBrowser
+        folders={folders ?? []}
+        currentFolderId={currentFolderId}
+        items={media?.items ?? []}
+      />
+
+      {media && (
+        <PaginationControls
+          page={media.meta.page}
+          pageCount={media.meta.pageCount}
+          buildHref={(p) =>
+            currentFolderId
+              ? `?folder=${currentFolderId}&page=${p}`
+              : `?page=${p}`
+          }
+        />
       )}
     </div>
   );

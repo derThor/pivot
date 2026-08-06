@@ -6,7 +6,10 @@ import { ConfigService } from '@nestjs/config';
 export interface JwtPayload {
   sub: string;
   email: string;
-  role: string;
+  roleId: string;
+  roleName: string;
+  permissions: string[];
+  canAccessDashboard: boolean;
 }
 
 @Injectable()

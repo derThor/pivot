@@ -18,26 +18,41 @@ export function ConfirmDeleteDialog({
   title,
   description,
   onConfirm,
+  confirmLabel = "Löschen",
+  confirmingLabel = "Löscht…",
+  variant = "destructive",
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: {
-  trigger: React.ReactElement;
+  /** Weggelassen = vollständig extern gesteuert über `open`/`onOpenChange`, kein eigener Trigger. */
+  trigger?: React.ReactElement;
   title: string;
   description: string;
   onConfirm: () => void | Promise<void>;
+  confirmLabel?: string;
+  confirmingLabel?: string;
+  variant?: "destructive" | "default";
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = controlledOnOpenChange ?? setInternalOpen;
+  const [isConfirming, setIsConfirming] = useState(false);
 
   async function handleConfirm() {
-    setIsDeleting(true);
+    setIsConfirming(true);
     try {
       await onConfirm();
+      setOpen(false);
     } finally {
-      setIsDeleting(false);
+      setIsConfirming(false);
     }
   }
 
   return (
-    <AlertDialog>
-      <AlertDialogTrigger render={trigger} />
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      {trigger && <AlertDialogTrigger render={trigger} />}
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
@@ -46,11 +61,11 @@ export function ConfirmDeleteDialog({
         <AlertDialogFooter>
           <AlertDialogCancel>Abbrechen</AlertDialogCancel>
           <AlertDialogAction
-            variant="destructive"
+            variant={variant}
             onClick={handleConfirm}
-            disabled={isDeleting}
+            disabled={isConfirming}
           >
-            {isDeleting ? "Löscht…" : "Löschen"}
+            {isConfirming ? confirmingLabel : confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

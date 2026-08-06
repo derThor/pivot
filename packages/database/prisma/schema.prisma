@@ -10,29 +10,95 @@ datasource db {
 
 // ---------- Auth & Benutzer ----------
 
-enum Role {
-  ADMIN
-  EDITOR
-  AUTHOR
-  VIEWER
+model Role {
+  id                 String   @id @default(cuid())
+  name               String   @unique
+  description        String?
+  isSystem           Boolean  @default(false)
+  isDefault          Boolean  @default(false)
+  canAccessDashboard Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id       String @id @default(cuid())
+  resource String
+  action   String
+
+  roles RolePermission[]
+
+  @@unique([resource, action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model AppSettings {
+  id                         Int      @id @default(1)
+  allowRegistration          Boolean  @default(true)
+  allowPasswordReset         Boolean  @default(true)
+  allowEmailChange           Boolean  @default(true)
+  requireAdminActivation     Boolean  @default(false)
+  passwordMinLength          Int      @default(8)
+  passwordRequireUppercase   Boolean  @default(true)
+  passwordRequireLowercase   Boolean  @default(true)
+  passwordRequireNumber      Boolean  @default(true)
+  passwordRequireSpecialChar Boolean  @default(true)
+  defaultPageSize            Int      @default(10)
+  logoExpandedUrl            String?
+  logoCollapsedUrl           String?
+  companyName                String?
+  companyStreet              String?
+  companyPostalCode          String?
+  companyCity                String?
+  companyCountry             String?
+  companyRepresentative      String?
+  companyEmail               String?
+  companyPhone               String?
+  companyRegisterCourt       String?
+  companyRegisterNumber      String?
+  companyVatId               String?
+  updatedAt                  DateTime @updatedAt
+
+  @@map("app_settings")
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  name         String
-  avatarUrl    String?
-  role         Role     @default(AUTHOR)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String
+  firstName       String?
+  lastName        String
+  avatarUrl       String?
+  isActive        Boolean   @default(true)
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  contents        Content[]        @relation("ContentAuthor")
-  contentVersions ContentVersion[]
-  media           Media[]
-  auditLogs       AuditLog[]
-  refreshTokens   RefreshToken[]
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  contents                Content[]                @relation("ContentAuthor")
+  contentVersions         ContentVersion[]
+  media                   Media[]
+  auditLogs               AuditLog[]
+  refreshTokens           RefreshToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens     PasswordResetToken[]
 
   @@map("users")
 }
@@ -47,6 +113,30 @@ model RefreshToken {
   createdAt DateTime @default(now())
 
   @@map("refresh_tokens")
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("email_verification_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("password_reset_tokens")
 }
 
 // ---------- Content ----------
@@ -114,10 +204,11 @@ model ContentVersion {
 }
 
 model Category {
-  id       String            @id @default(cuid())
-  name     String            @unique
-  slug     String            @unique
-  contents ContentCategory[]
+  id          String            @id @default(cuid())
+  name        String            @unique
+  slug        String            @unique
+  description String?
+  contents    ContentCategory[]
 
   @@map("categories")
 }
@@ -153,6 +244,19 @@ model ContentTag {
 
 // ---------- Medien ----------
 
+model MediaFolder {
+  id        String        @id @default(cuid())
+  name      String
+  parentId  String?
+  isSystem  Boolean       @default(false)
+  parent    MediaFolder?  @relation("MediaFolderChildren", fields: [parentId], references: [id])
+  children  MediaFolder[] @relation("MediaFolderChildren")
+  media     Media[]
+  createdAt DateTime      @default(now())
+
+  @@map("media_folders")
+}
+
 model Media {
   id          String   @id @default(cuid())
   filename    String
@@ -166,6 +270,9 @@ model Media {
 
   uploadedById String
   uploadedBy   User   @relation(fields: [uploadedById], references: [id])
+
+  folderId String?
+  folder   MediaFolder? @relation(fields: [folderId], references: [id])
 
   @@map("media")
 }

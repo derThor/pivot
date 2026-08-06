@@ -1,81 +1,62 @@
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { CreateUserDialog } from "@/components/create-user-dialog";
-import { UserRoleSelect } from "@/components/user-role-select";
-import { getUsers } from "@/lib/api-server";
+import { UsersTable } from "@/components/users-table";
+import { PaginationControls } from "@/components/pagination-controls";
+import { getCurrentUser, getRoles, getSettings, getUsers } from "@/lib/api-server";
 
-export default async function UsersPage() {
-  const users = await getUsers();
+export default async function UsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page: pageParam } = await searchParams;
+  const page = Number(pageParam) || 1;
+
+  const settings = await getSettings();
+  const [users, currentUser, roles] = await Promise.all([
+    getUsers({ page, pageSize: settings?.defaultPageSize ?? 10 }),
+    getCurrentUser(),
+    // Volle Rollenliste für die Rollen-Auswahl (Dropdown) – bewusst
+    // unpaginiert mit großer fester pageSize statt der echten Pagination
+    // der Rollen-Seite, siehe knowledge-base/frontend/pagination.md.
+    getRoles({ pageSize: 100 }),
+  ]);
+  const allowEmailChange = settings?.allowEmailChange ?? true;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Benutzer & Rollen
+            Benutzer
           </h1>
           <p className="text-sm text-muted-foreground">
             Wer Zugriff auf das CMS hat und mit welcher Rolle.
           </p>
         </div>
-        <CreateUserDialog />
+        {roles && settings && (
+          <CreateUserDialog roles={roles.items} passwordPolicy={settings} />
+        )}
       </div>
 
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>E-Mail</TableHead>
-              <TableHead>Rolle</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users === null ? (
-              <TableRow>
-                <TableCell
-                  colSpan={4}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  Keine Berechtigung, Benutzer zu verwalten.
-                </TableCell>
-              </TableRow>
-            ) : users.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={4}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  Noch keine Benutzer vorhanden.
-                </TableCell>
-              </TableRow>
-            ) : (
-              users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <UserRoleSelect userId={user.id} role={user.role} />
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={user.isActive ? "default" : "secondary"}>
-                      {user.isActive ? "Aktiv" : "Deaktiviert"}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      {users === null || roles === null ? (
+        <div className="flex h-24 items-center justify-center rounded-lg border text-sm text-muted-foreground">
+          Keine Berechtigung, Benutzer zu verwalten.
+        </div>
+      ) : (
+        <>
+          <UsersTable
+            users={users.items}
+            currentUserId={currentUser?.id}
+            roles={roles.items}
+            allowEmailChange={allowEmailChange}
+          />
+          <PaginationControls
+            page={users.meta.page}
+            pageCount={users.meta.pageCount}
+            buildHref={(p) => `?page=${p}`}
+          />
+        </>
+      )}
     </div>
   );
 }

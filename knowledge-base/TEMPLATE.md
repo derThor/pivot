@@ -1,7 +1,8 @@
 <!--
   Vorlage für einen neuen Knowledge-Base-Eintrag.
-  Datei kopieren nach knowledge-base/<kebab-case-thema>.md, ausfüllen,
-  in INDEX.md verlinken. Diese Kommentar-Box beim Ausfüllen entfernen.
+  Datei kopieren nach knowledge-base/<themenordner>/<kebab-case-thema>.md
+  (passenden Ordner wählen, siehe PROCESS.md#struktur-unterordner-pro-themenbereich),
+  ausfüllen, in INDEX.md verlinken. Diese Kommentar-Box beim Ausfüllen entfernen.
 -->
 
 # <Thema/Feature>

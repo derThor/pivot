@@ -1,16 +1,147 @@
-import { PrismaClient, Role } from "../generated/client";
+import { PrismaClient } from "../generated/client";
 import * as argon2 from "argon2";
 
 const prisma = new PrismaClient();
 
+// Rechte-Katalog: muss synchron gehalten werden mit
+// apps/api/src/roles/permissions.catalog.ts (bewusst dupliziert statt über
+// Package-Grenzen hinweg geteilt, siehe knowledge-base/auth/rbac-rework.md).
+const PERMISSIONS: { resource: string; action: string }[] = [
+  { resource: "content", action: "read" },
+  { resource: "content", action: "create" },
+  { resource: "content", action: "update" },
+  { resource: "content", action: "delete" },
+  { resource: "media", action: "read" },
+  { resource: "media", action: "create" },
+  { resource: "media", action: "update" },
+  { resource: "media", action: "delete" },
+  { resource: "categories", action: "read" },
+  { resource: "categories", action: "create" },
+  { resource: "categories", action: "update" },
+  { resource: "categories", action: "delete" },
+  { resource: "tags", action: "read" },
+  { resource: "tags", action: "create" },
+  { resource: "tags", action: "update" },
+  { resource: "tags", action: "delete" },
+  { resource: "users", action: "manage" },
+  { resource: "roles", action: "manage" },
+  { resource: "settings", action: "manage" },
+];
+
+const ROLES: {
+  name: string;
+  description: string;
+  isDefault?: boolean;
+  canAccessDashboard: boolean;
+  permissions: { resource: string; action: string }[];
+}[] = [
+  {
+    name: "Admin",
+    description: "Voller Zugriff auf alle Bereiche.",
+    canAccessDashboard: true,
+    permissions: PERMISSIONS,
+  },
+  {
+    name: "Editor",
+    description: "Kann Inhalte, Medien, Kategorien und Tags verwalten.",
+    canAccessDashboard: true,
+    permissions: PERMISSIONS.filter((p) =>
+      ["content", "media", "categories", "tags"].includes(p.resource),
+    ),
+  },
+  {
+    name: "Autor",
+    description: "Kann Inhalte und Medien anlegen und bearbeiten.",
+    canAccessDashboard: true,
+    permissions: PERMISSIONS.filter(
+      (p) =>
+        ["content", "media"].includes(p.resource) && p.action !== "delete",
+    ),
+  },
+  {
+    name: "Nutzer",
+    description:
+      "Registrierter Benutzer ohne Zugriff auf das Verwaltungs-Dashboard.",
+    isDefault: true,
+    canAccessDashboard: false,
+    permissions: [],
+  },
+];
+
 async function main() {
+  const permissionRecords = await Promise.all(
+    PERMISSIONS.map((p) =>
+      prisma.permission.upsert({
+        where: { resource_action: { resource: p.resource, action: p.action } },
+        update: {},
+        create: p,
+      }),
+    ),
+  );
+  const permissionIdByKey = new Map(
+    permissionRecords.map((p) => [`${p.resource}:${p.action}`, p.id]),
+  );
+
+  const roleByName = new Map<string, { id: string }>();
+  for (const roleDef of ROLES) {
+    const role = await prisma.role.upsert({
+      where: { name: roleDef.name },
+      update: {
+        description: roleDef.description,
+        isDefault: roleDef.isDefault ?? false,
+        canAccessDashboard: roleDef.canAccessDashboard,
+      },
+      create: {
+        name: roleDef.name,
+        description: roleDef.description,
+        isSystem: true,
+        isDefault: roleDef.isDefault ?? false,
+        canAccessDashboard: roleDef.canAccessDashboard,
+      },
+    });
+    roleByName.set(roleDef.name, role);
+
+    await prisma.rolePermission.deleteMany({ where: { roleId: role.id } });
+    await prisma.rolePermission.createMany({
+      data: roleDef.permissions.map((p) => ({
+        roleId: role.id,
+        permissionId: permissionIdByKey.get(`${p.resource}:${p.action}`)!,
+      })),
+    });
+  }
+
+  await prisma.appSettings.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1 },
+  });
+
+  // Systemordner für Logo-Uploads (Einstellungen → Firma) – darf nicht
+  // gelöscht werden (isSystem), daher hier statt on-demand angelegt.
+  const existingLogoFolder = await prisma.mediaFolder.findFirst({
+    where: { name: 'Logo', parentId: null },
+  });
+  if (!existingLogoFolder) {
+    await prisma.mediaFolder.create({
+      data: { name: 'Logo', parentId: null, isSystem: true },
+    });
+  } else if (!existingLogoFolder.isSystem) {
+    await prisma.mediaFolder.update({
+      where: { id: existingLogoFolder.id },
+      data: { isSystem: true },
+    });
+  }
+
+  const adminRole = roleByName.get("Admin")!;
   const admin = await prisma.user.upsert({
     where: { email: "admin@strasev.dev" },
     update: {},
     create: {
       email: "admin@strasev.dev",
-      name: "Admin",
-      role: Role.ADMIN,
+      firstName: null,
+      lastName: "Admin",
+      roleId: adminRole.id,
+      emailVerifiedAt: new Date(),
       passwordHash: await argon2.hash("ChangeMe123!"),
     },
   });

@@ -2,131 +2,202 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X } from "lucide-react";
+import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { slugify } from "@/lib/utils";
-import type { TaxonomyItem } from "@/lib/api-server";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
+import { SelectionToolbar } from "@/components/selection-toolbar";
+import { TaxonomyItemDialog } from "@/components/taxonomy-item-dialog";
+import { useSelection } from "@/hooks/use-selection";
+import type { TaxonomyItem } from "@/lib/api-server";
+
+function TaxonomyRowActions({
+  apiPath,
+  withDescription,
+  item,
+  newLabel,
+  entitySingular,
+  onDelete,
+}: {
+  apiPath: "categories" | "tags";
+  withDescription?: boolean;
+  item: TaxonomyItem;
+  newLabel: string;
+  entitySingular: string;
+  onDelete: () => void;
+}) {
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  return (
+    <div className="flex justify-end">
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="rounded-full"
+              aria-label={`Aktionen für ${item.name}`}
+            />
+          }
+        >
+          <MoreVertical />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setEditOpen(true)}>
+            <Pencil />
+            Bearbeiten
+          </DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
+            <Trash2 />
+            Löschen
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <TaxonomyItemDialog
+        apiPath={apiPath}
+        withDescription={withDescription}
+        item={item}
+        newLabel={newLabel}
+        entitySingular={entitySingular}
+        hideTrigger
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
+
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={`„${item.name}“ löschen?`}
+        description="Diese Aktion kann nicht rückgängig gemacht werden."
+        onConfirm={onDelete}
+      />
+    </div>
+  );
+}
 
 export function TaxonomyManager({
-  title,
   apiPath,
   items,
+  withDescription,
+  newLabel,
+  entitySingular,
+  entityLabelPlural,
 }: {
-  title: string;
   apiPath: "categories" | "tags";
   items: TaxonomyItem[];
+  withDescription?: boolean;
+  newLabel: string;
+  entitySingular: string;
+  entityLabelPlural: string;
 }) {
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [slugTouched, setSlugTouched] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  function handleNameChange(value: string) {
-    setName(value);
-    if (!slugTouched) setSlug(slugify(value));
-  }
-
-  async function handleCreate(event: React.FormEvent) {
-    event.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
-    try {
-      const res = await fetch(`/api/${apiPath}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, slug }),
-      });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        setError(body?.message ?? "Konnte nicht angelegt werden.");
-        return;
-      }
-
-      setName("");
-      setSlug("");
-      setSlugTouched(false);
-      router.refresh();
-    } catch {
-      setError("Server nicht erreichbar. Bitte später erneut versuchen.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
+  const { selected, toggle, toggleAll, clear, allSelected, someSelected, count } =
+    useSelection(items.map((item) => item.id));
 
   async function handleDelete(id: string) {
     await fetch(`/api/${apiPath}/${id}`, { method: "DELETE" });
     router.refresh();
   }
 
+  async function handleBulkDelete() {
+    await Promise.all(
+      [...selected].map((id) =>
+        fetch(`/api/${apiPath}/${id}`, { method: "DELETE" }),
+      ),
+    );
+    clear();
+    router.refresh();
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <form onSubmit={handleCreate} className="flex flex-col gap-2 sm:flex-row">
-          <Input
-            placeholder="Name"
-            value={name}
-            onChange={(e) => handleNameChange(e.target.value)}
-            required
-          />
-          <Input
-            placeholder="slug"
-            value={slug}
-            onChange={(e) => {
-              setSlugTouched(true);
-              setSlug(e.target.value);
-            }}
-            required
-          />
-          <Button type="submit" disabled={isSubmitting} className="shrink-0">
-            <Plus />
-            Anlegen
-          </Button>
-        </form>
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        <div className="flex flex-wrap gap-2">
-          {items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Noch keine Einträge vorhanden.
-            </p>
-          ) : (
-            items.map((item) => (
-              <Badge key={item.id} variant="secondary" className="gap-1 pr-1">
-                {item.name}
-                <ConfirmDeleteDialog
-                  trigger={
-                    <button
-                      type="button"
-                      className="rounded-sm p-0.5 hover:bg-muted-foreground/20"
-                      aria-label={`${item.name} löschen`}
-                    >
-                      <X className="size-3" />
-                    </button>
-                  }
-                  title={`„${item.name}“ löschen?`}
-                  description="Diese Aktion kann nicht rückgängig gemacht werden."
-                  onConfirm={() => handleDelete(item.id)}
+    <div className="flex flex-col gap-4">
+      <SelectionToolbar
+        count={count}
+        entityLabelPlural={entityLabelPlural}
+        onDelete={handleBulkDelete}
+        onClear={clear}
+      />
+      <div className="rounded-2xl bg-card shadow-card overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={allSelected}
+                  indeterminate={someSelected}
+                  onCheckedChange={toggleAll}
+                  aria-label="Alle auswählen"
                 />
-              </Badge>
-            ))
-          )}
-        </div>
-      </CardContent>
-    </Card>
+              </TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Slug</TableHead>
+              {withDescription && <TableHead>Beschreibung</TableHead>}
+              <TableHead className="text-right">Aktionen</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={withDescription ? 5 : 4}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  Noch keine Einträge vorhanden.
+                </TableCell>
+              </TableRow>
+            ) : (
+              items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selected.has(item.id)}
+                      onCheckedChange={() => toggle(item.id)}
+                      aria-label={`${item.name} auswählen`}
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium">{item.name}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {item.slug}
+                  </TableCell>
+                  {withDescription && (
+                    <TableCell className="text-muted-foreground">
+                      {item.description || "—"}
+                    </TableCell>
+                  )}
+                  <TableCell>
+                    <TaxonomyRowActions
+                      apiPath={apiPath}
+                      withDescription={withDescription}
+                      item={item}
+                      newLabel={newLabel}
+                      entitySingular={entitySingular}
+                      onDelete={() => handleDelete(item.id)}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
   );
 }

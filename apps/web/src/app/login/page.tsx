@@ -1,12 +1,3 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -14,60 +5,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { LoginForm } from "@/components/login-form";
+import { getPublicSettings } from "@/lib/api-server";
 
-const loginSchema = z.object({
-  email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben."),
-  password: z.string().min(8, "Das Passwort muss mind. 8 Zeichen haben."),
-});
-
-type LoginValues = z.infer<typeof loginSchema>;
-
-export default function LoginPage() {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const form = useForm<LoginValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
-  });
-
-  async function onSubmit(values: LoginValues) {
-    setError(null);
-    setIsSubmitting(true);
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        setError(data?.message ?? "Anmeldung fehlgeschlagen.");
-        return;
-      }
-
-      const redirectTo =
-        new URLSearchParams(window.location.search).get("redirectTo") ??
-        "/dashboard";
-      router.push(redirectTo);
-      router.refresh();
-    } catch {
-      setError("Server nicht erreichbar. Bitte später erneut versuchen.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
+export default async function LoginPage() {
+  const settings = await getPublicSettings();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
@@ -79,49 +21,10 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="flex flex-col gap-4"
-            >
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>E-Mail</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="name@firma.de"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Passwort</FormLabel>
-                    <FormControl>
-                      <Input type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {error && (
-                <p className="text-sm text-destructive">{error}</p>
-              )}
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Anmelden…" : "Anmelden"}
-              </Button>
-            </form>
-          </Form>
+          <LoginForm
+            allowRegistration={settings?.allowRegistration ?? true}
+            allowPasswordReset={settings?.allowPasswordReset ?? true}
+          />
         </CardContent>
       </Card>
     </div>

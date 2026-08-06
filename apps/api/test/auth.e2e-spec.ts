@@ -25,7 +25,7 @@ describe('Auth-Flow (e2e)', () => {
   it('POST /v1/auth/register legt einen neuen Benutzer an', async () => {
     const res = await request(app.getHttpServer())
       .post('/v1/auth/register')
-      .send({ email, password, name: 'E2E Auth Test' })
+      .send({ email, password, lastName: 'E2E Auth Test' })
       .expect(201);
 
     expect(res.body).toHaveProperty('accessToken');
@@ -35,7 +35,7 @@ describe('Auth-Flow (e2e)', () => {
   it('POST /v1/auth/register lehnt doppelte E-Mail ab', async () => {
     await request(app.getHttpServer())
       .post('/v1/auth/register')
-      .send({ email, password, name: 'E2E Auth Test' })
+      .send({ email, password, lastName: 'E2E Auth Test' })
       .expect(409);
   });
 
@@ -81,7 +81,7 @@ describe('Auth-Flow (e2e)', () => {
       .send({ email, password })
       .expect(200);
 
-    // Neu registrierte Nutzer haben laut Schema die Default-Rolle AUTHOR
+    // Neu registrierte Nutzer bekommen die per isDefault=true markierte Rolle ("Autor")
     await request(app.getHttpServer())
       .get('/v1/users')
       .set('Authorization', `Bearer ${login.body.accessToken}`)

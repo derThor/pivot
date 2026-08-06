@@ -1,8 +1,16 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class QueryMediaDto {
+  @ApiPropertyOptional({
+    description:
+      'Ordner-ID zum Filtern. Literal "root" filtert auf Medien ohne Ordner. Weggelassen = alle Medien, ordnerübergreifend.',
+  })
+  @IsOptional()
+  @IsString()
+  folderId?: string;
+
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()
   @Type(() => Number)

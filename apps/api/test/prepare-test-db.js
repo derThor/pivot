@@ -9,25 +9,35 @@ const schemaPath = path.resolve(
   '../../../packages/database/prisma/schema.prisma',
 );
 
-const command = [
-  'pnpm',
-  'exec',
-  'prisma',
-  'db',
-  'push',
-  '--skip-generate',
-  '--accept-data-loss',
-  `--schema=${schemaPath}`,
-].join(' ');
+const databasePkgDir = path.resolve(__dirname, '../../../packages/database');
+const sharedEnv = { ...process.env, DATABASE_URL: TEST_DATABASE_URL };
 
-const result = spawnSync(command, {
-  cwd: path.resolve(__dirname, '../../../packages/database'),
-  env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL },
-  stdio: 'inherit',
-  shell: true,
-});
-
-if (result.status !== 0) {
-  console.error('Konnte Test-Datenbank nicht vorbereiten.');
-  process.exit(result.status ?? 1);
+function run(command) {
+  const result = spawnSync(command, {
+    cwd: databasePkgDir,
+    env: sharedEnv,
+    stdio: 'inherit',
+    shell: true,
+  });
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1);
+  }
 }
+
+// Schema synchronisieren (Wegwerf-Testdatenbank, keine Migrationshistorie nötig).
+run(
+  [
+    'pnpm',
+    'exec',
+    'prisma',
+    'db',
+    'push',
+    '--skip-generate',
+    '--accept-data-loss',
+    `--schema=${schemaPath}`,
+  ].join(' '),
+);
+
+// Rollen/Rechte/Settings seeden – ohne isDefault-Rolle würde AuthService.register()
+// in den Tests fehlschlagen (findFirstOrThrow auf leerer Role-Tabelle).
+run('pnpm exec tsx prisma/seed.ts');

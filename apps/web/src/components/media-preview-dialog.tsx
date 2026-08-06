@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import type { MediaItem } from "@/lib/api-server";
 import { mediaUrl } from "@/lib/media";
-import { formatBytes } from "@/lib/utils";
+import { formatBytes, formatName } from "@/lib/utils";
 
 const dateFormatter = new Intl.DateTimeFormat("de-DE", {
   dateStyle: "medium",
@@ -41,7 +41,7 @@ export function MediaPreviewDialog({ item }: { item: MediaItem }) {
           <DialogTitle className="truncate">{item.filename}</DialogTitle>
           <DialogDescription>
             {item.mimeType} · {formatBytes(item.size)} · hochgeladen von{" "}
-            {item.uploadedBy.name} am{" "}
+            {formatName(item.uploadedBy)} am{" "}
             {dateFormatter.format(new Date(item.createdAt))}
           </DialogDescription>
         </DialogHeader>

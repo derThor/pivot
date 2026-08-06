@@ -9,7 +9,9 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -25,7 +27,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { ContentType, ContentStatus, ContentDetail } from "@/lib/api-server";
+import type {
+  CategoryRef,
+  ContentType,
+  ContentStatus,
+  ContentDetail,
+} from "@/lib/api-server";
 import { slugify } from "@/lib/utils";
 
 const statusLabel: Record<ContentStatus, string> = {
@@ -61,9 +68,11 @@ function toDataValues(
 
 export function ContentEditorForm({
   contentTypes,
+  categories,
   content,
 }: {
   contentTypes: ContentType[];
+  categories: CategoryRef[];
   content?: ContentDetail;
 }) {
   const router = useRouter();
@@ -73,6 +82,9 @@ export function ContentEditorForm({
     toDataValues(content?.data),
   );
   const [dataErrors, setDataErrors] = useState<Record<string, string>>({});
+  const [categoryIds, setCategoryIds] = useState<string[]>(
+    content?.categories.map((category) => category.id) ?? [],
+  );
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -90,7 +102,8 @@ export function ContentEditorForm({
     (type) => type.id === form.watch("contentTypeId"),
   );
 
-  function handleTypeChange(id: string) {
+  function handleTypeChange(id: string | null) {
+    if (!id) return;
     form.setValue("contentTypeId", id);
     setDataValues({});
     setDataErrors({});
@@ -131,8 +144,14 @@ export function ContentEditorForm({
       const url = isEditing ? `/api/content/${content!.id}` : "/api/content";
       const method = isEditing ? "PATCH" : "POST";
       const body = isEditing
-        ? { title: values.title, slug: values.slug, status: values.status, data }
-        : { ...values, data };
+        ? {
+            title: values.title,
+            slug: values.slug,
+            status: values.status,
+            data,
+            categoryIds,
+          }
+        : { ...values, data, categoryIds };
 
       const res = await fetch(url, {
         method,
@@ -161,156 +180,208 @@ export function ContentEditorForm({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="flex max-w-2xl flex-col gap-6"
+        className="flex w-full flex-col gap-6"
       >
-        <FormField
-          control={form.control}
-          name="contentTypeId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Content-Type</FormLabel>
-              <Select
-                value={field.value}
-                onValueChange={handleTypeChange}
-                disabled={isEditing}
-              >
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Content-Type wählen" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {contentTypes.map((type) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      {type.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {isEditing && (
-                <p className="text-xs text-muted-foreground">
-                  Der Content-Type kann nachträglich nicht geändert werden.
-                </p>
-              )}
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Titel</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  onChange={(e) => handleTitleChange(e.target.value)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="slug"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Slug</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  onChange={(e) => {
-                    setSlugTouched(true);
-                    field.onChange(e);
-                  }}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="status"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Status</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {Object.entries(statusLabel).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {selectedType && selectedType.schema.fields.length > 0 && (
-          <div className="flex flex-col gap-4 rounded-lg border p-4">
-            <p className="text-sm font-medium">
-              {selectedType.name} – Felder
-            </p>
-            {selectedType.schema.fields.map((field) => (
-              <div key={field.name} className="flex flex-col gap-2">
-                <Label htmlFor={`data-${field.name}`}>
-                  {field.name}
-                  {field.required && (
-                    <span className="text-destructive"> *</span>
+        <Card>
+          <CardContent className="flex flex-col gap-6">
+            <FormField
+              control={form.control}
+              name="contentTypeId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Content-Type</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={handleTypeChange}
+                    disabled={isEditing}
+                    items={Object.fromEntries(
+                      contentTypes.map((type) => [type.id, type.name]),
+                    )}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Content-Type wählen" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {contentTypes.map((type) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {isEditing && (
+                    <p className="text-xs text-muted-foreground">
+                      Der Content-Type kann nachträglich nicht geändert
+                      werden.
+                    </p>
                   )}
-                </Label>
-                {field.type === "richtext" || field.type === "text" ? (
-                  <Textarea
-                    id={`data-${field.name}`}
-                    rows={6}
-                    value={dataValues[field.name] ?? ""}
-                    onChange={(e) =>
-                      setDataValues((prev) => ({
-                        ...prev,
-                        [field.name]: e.target.value,
-                      }))
-                    }
-                  />
-                ) : (
-                  <Input
-                    id={`data-${field.name}`}
-                    type={field.type === "number" ? "number" : "text"}
-                    value={dataValues[field.name] ?? ""}
-                    onChange={(e) =>
-                      setDataValues((prev) => ({
-                        ...prev,
-                        [field.name]: e.target.value,
-                      }))
-                    }
-                  />
-                )}
-                {field.type === "richtext" && (
-                  <p className="text-xs text-muted-foreground">
-                    Einfacher Text – Rich-Text-Editor folgt in Phase 2.
-                  </p>
-                )}
-                {dataErrors[field.name] && (
-                  <p className="text-sm text-destructive">
-                    {dataErrors[field.name]}
-                  </p>
-                )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Titel</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      onChange={(e) => handleTitleChange(e.target.value)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="slug"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Slug</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      onChange={(e) => {
+                        setSlugTouched(true);
+                        field.onChange(e);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    items={statusLabel}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Object.entries(statusLabel).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {categories.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <Label>Kategorien</Label>
+                <Select
+                  multiple
+                  value={categoryIds}
+                  onValueChange={(value) => setCategoryIds(value ?? [])}
+                  items={Object.fromEntries(
+                    categories.map((category) => [
+                      category.id,
+                      category.name,
+                    ]),
+                  )}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Kategorien wählen">
+                      {(value: string[]) =>
+                        value.length === 0
+                          ? "Keine Kategorie ausgewählt"
+                          : `${value.length} ${value.length === 1 ? "Kategorie" : "Kategorien"} ausgewählt`
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            ))}
-          </div>
-        )}
+            )}
+
+            {selectedType && selectedType.schema.fields.length > 0 && (
+              <div className="flex flex-col gap-4 rounded-xl bg-muted/30 p-4">
+                <p className="text-sm font-medium">
+                  {selectedType.name} – Felder
+                </p>
+                {selectedType.schema.fields.map((field) => (
+                  <div key={field.name} className="flex flex-col gap-2">
+                    <Label htmlFor={`data-${field.name}`}>
+                      {field.name}
+                      {field.required && (
+                        <span className="text-destructive"> *</span>
+                      )}
+                    </Label>
+                    {field.type === "richtext" ? (
+                      <RichTextEditor
+                        id={`data-${field.name}`}
+                        value={dataValues[field.name] ?? ""}
+                        onChange={(html) =>
+                          setDataValues((prev) => ({
+                            ...prev,
+                            [field.name]: html,
+                          }))
+                        }
+                      />
+                    ) : field.type === "text" ? (
+                      <Textarea
+                        id={`data-${field.name}`}
+                        rows={6}
+                        value={dataValues[field.name] ?? ""}
+                        onChange={(e) =>
+                          setDataValues((prev) => ({
+                            ...prev,
+                            [field.name]: e.target.value,
+                          }))
+                        }
+                      />
+                    ) : (
+                      <Input
+                        id={`data-${field.name}`}
+                        type={field.type === "number" ? "number" : "text"}
+                        value={dataValues[field.name] ?? ""}
+                        onChange={(e) =>
+                          setDataValues((prev) => ({
+                            ...prev,
+                            [field.name]: e.target.value,
+                          }))
+                        }
+                      />
+                    )}
+                    {dataErrors[field.name] && (
+                      <p className="text-sm text-destructive">
+                        {dataErrors[field.name]}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {formError && <p className="text-sm text-destructive">{formError}</p>}
 

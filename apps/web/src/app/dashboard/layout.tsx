@@ -1,35 +1,49 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
-import { getCurrentUser } from "@/lib/api-server";
+import { DashboardHeader } from "@/components/dashboard-header";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { EmailVerificationBanner } from "@/components/email-verification-banner";
+import { NoDashboardAccess } from "@/components/no-dashboard-access";
+import { getCurrentUser, getPublicSettings } from "@/lib/api-server";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
+  const [user, settings] = await Promise.all([
+    getCurrentUser(),
+    getPublicSettings(),
+  ]);
   if (!user) {
     redirect("/login");
   }
 
+  if (user.canAccessDashboard === false) {
+    return <NoDashboardAccess user={user} />;
+  }
+
+  // Cookie-Name muss mit SIDEBAR_COOKIE_NAME in ui/sidebar.tsx übereinstimmen.
+  // Kann nicht importiert werden: sidebar.tsx ist "use client", einfache
+  // Konstanten-Exports daraus werden beim Import in eine Server Component
+  // zu Client-Referenzen statt echten Werten (kein string mehr).
+  const sidebarState = (await cookies()).get("sidebar_state")?.value;
+  const defaultOpen = sidebarState !== "false";
+
   return (
-    <SidebarProvider>
-      <AppSidebar user={user} />
+    <SidebarProvider defaultOpen={defaultOpen}>
+      <AppSidebar
+        user={user}
+        logoExpandedUrl={settings?.logoExpandedUrl}
+        logoCollapsedUrl={settings?.logoCollapsedUrl}
+      />
       <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <span className="text-sm font-medium text-muted-foreground">
-            strasev CMS
-          </span>
-        </header>
-        <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>
+        {!user.emailVerifiedAt && <EmailVerificationBanner />}
+        <DashboardHeader user={user} />
+        <div className="flex flex-1 flex-col gap-6 bg-background p-8">
+          {children}
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

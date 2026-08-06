@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Trash2 } from "lucide-react";
+import { FolderInput, MoreVertical, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,14 +13,28 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
-import type { MediaItem } from "@/lib/api-server";
+import { MoveToFolderDialog } from "@/components/move-to-folder-dialog";
+import type { MediaFolder, MediaItem } from "@/lib/api-server";
 
-export function MediaCardActions({ item }: { item: MediaItem }) {
+export function MediaCardActions({
+  item,
+  folders,
+}: {
+  item: MediaItem;
+  folders: MediaFolder[];
+}) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [altOpen, setAltOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [alt, setAlt] = useState(item.alt ?? "");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +54,7 @@ export function MediaCardActions({ item }: { item: MediaItem }) {
         setError(body?.message ?? "Konnte nicht gespeichert werden.");
         return;
       }
-      setOpen(false);
+      setAltOpen(false);
       router.refresh();
     } catch {
       setError("Server nicht erreichbar. Bitte später erneut versuchen.");
@@ -55,11 +69,40 @@ export function MediaCardActions({ item }: { item: MediaItem }) {
   }
 
   return (
-    <div className="flex justify-end gap-1">
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Alt-Text bearbeiten" />}>
-          <Pencil />
-        </DialogTrigger>
+    <div className="flex justify-end">
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="rounded-full"
+              aria-label={`Aktionen für ${item.filename}`}
+            />
+          }
+        >
+          <MoreVertical />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setAltOpen(true)}>
+            <Pencil />
+            Alt-Text bearbeiten
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setMoveOpen(true)}>
+            <FolderInput />
+            Verschieben
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 />
+            Löschen
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog open={altOpen} onOpenChange={setAltOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Alt-Text bearbeiten</DialogTitle>
@@ -82,12 +125,17 @@ export function MediaCardActions({ item }: { item: MediaItem }) {
           </form>
         </DialogContent>
       </Dialog>
+
+      <MoveToFolderDialog
+        open={moveOpen}
+        onOpenChange={setMoveOpen}
+        folders={folders}
+        mediaIds={[item.id]}
+      />
+
       <ConfirmDeleteDialog
-        trigger={
-          <Button variant="ghost" size="icon-sm" aria-label={`${item.filename} löschen`}>
-            <Trash2 />
-          </Button>
-        }
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
         title={`„${item.filename}“ löschen?`}
         description="Diese Aktion kann nicht rückgängig gemacht werden."
         onConfirm={handleDelete}

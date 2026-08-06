@@ -60,7 +60,10 @@ export async function middleware(request: NextRequest) {
     return clearAuthCookies(NextResponse.redirect(loginUrl));
   }
 
-  if (pathname === "/login" && (accessToken || refreshToken)) {
+  if (
+    (pathname === "/login" || pathname === "/register") &&
+    (accessToken || refreshToken)
+  ) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
@@ -68,5 +71,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
+  matcher: ["/dashboard/:path*", "/login", "/register"],
 };

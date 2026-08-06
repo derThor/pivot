@@ -19,8 +19,8 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "pretest:e2e": "node test/prepare-test-db.js",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "pretest:e2e": "cross-env NODE_ENV=test node test/prepare-test-db.js",
+    "test:e2e": "cross-env NODE_ENV=test DATABASE_URL=postgresql://strasev:strasev@localhost:5432/strasev_test?schema=public jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -54,6 +54,7 @@
     "@types/node": "^24.0.0",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^7.0.0",
+    "cross-env": "^10.1.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

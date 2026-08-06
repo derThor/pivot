@@ -1,9 +1,19 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { Role } from '@strasev/database';
 import { TagsService } from './tags.service';
 import { CreateTagDto } from './dto/create-tag.dto';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { UpdateTagDto } from './dto/update-tag.dto';
+import { QueryTagDto } from './dto/query-tag.dto';
+import { RequirePermission } from '../auth/decorators/permissions.decorator';
 
 @ApiTags('tags')
 @ApiBearerAuth()
@@ -11,18 +21,25 @@ import { Roles } from '../auth/decorators/roles.decorator';
 export class TagsController {
   constructor(private readonly tagsService: TagsService) {}
 
+  @RequirePermission('tags:read')
   @Get()
-  findAll() {
-    return this.tagsService.findAll();
+  findAll(@Query() query: QueryTagDto) {
+    return this.tagsService.findAll(query);
   }
 
-  @Roles(Role.ADMIN, Role.EDITOR)
+  @RequirePermission('tags:create')
   @Post()
   create(@Body() dto: CreateTagDto) {
     return this.tagsService.create(dto);
   }
 
-  @Roles(Role.ADMIN, Role.EDITOR)
+  @RequirePermission('tags:update')
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateTagDto) {
+    return this.tagsService.update(id, dto);
+  }
+
+  @RequirePermission('tags:delete')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.tagsService.remove(id);

@@ -1,9 +1,19 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { Role } from '@strasev/database';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { UpdateCategoryDto } from './dto/update-category.dto';
+import { QueryCategoryDto } from './dto/query-category.dto';
+import { RequirePermission } from '../auth/decorators/permissions.decorator';
 
 @ApiTags('categories')
 @ApiBearerAuth()
@@ -11,18 +21,25 @@ import { Roles } from '../auth/decorators/roles.decorator';
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
+  @RequirePermission('categories:read')
   @Get()
-  findAll() {
-    return this.categoriesService.findAll();
+  findAll(@Query() query: QueryCategoryDto) {
+    return this.categoriesService.findAll(query);
   }
 
-  @Roles(Role.ADMIN, Role.EDITOR)
+  @RequirePermission('categories:create')
   @Post()
   create(@Body() dto: CreateCategoryDto) {
     return this.categoriesService.create(dto);
   }
 
-  @Roles(Role.ADMIN, Role.EDITOR)
+  @RequirePermission('categories:update')
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
+    return this.categoriesService.update(id, dto);
+  }
+
+  @RequirePermission('categories:delete')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.categoriesService.remove(id);

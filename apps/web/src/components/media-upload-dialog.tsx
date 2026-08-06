@@ -15,18 +15,36 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { getIndentedFolderOptions } from "@/lib/media-folders";
+import type { MediaFolder } from "@/lib/api-server";
 
-export function MediaUploadDialog() {
+export function MediaUploadDialog({
+  folders = [],
+  defaultFolderId = null,
+}: {
+  folders?: MediaFolder[];
+  defaultFolderId?: string | null;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [alt, setAlt] = useState("");
+  const [folderId, setFolderId] = useState(defaultFolderId ?? "root");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const folderOptions = getIndentedFolderOptions(folders);
 
   function reset() {
     setFile(null);
     setAlt("");
+    setFolderId(defaultFolderId ?? "root");
     setError(null);
   }
 
@@ -43,6 +61,7 @@ export function MediaUploadDialog() {
       const formData = new FormData();
       formData.set("file", file);
       if (alt) formData.set("alt", alt);
+      if (folderId !== "root") formData.set("folderId", folderId);
 
       const res = await fetch("/api/media", {
         method: "POST",
@@ -98,6 +117,31 @@ export function MediaUploadDialog() {
               value={alt}
               onChange={(e) => setAlt(e.target.value)}
             />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="media-folder">Ordner</Label>
+            <Select
+              value={folderId}
+              onValueChange={(value) => setFolderId(value ?? "root")}
+              items={{
+                root: "Kein Ordner (Root)",
+                ...Object.fromEntries(
+                  folderOptions.map((option) => [option.id, option.label]),
+                ),
+              }}
+            >
+              <SelectTrigger id="media-folder" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="root">Kein Ordner (Root)</SelectItem>
+                {folderOptions.map((option) => (
+                  <SelectItem key={option.id} value={option.id}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>

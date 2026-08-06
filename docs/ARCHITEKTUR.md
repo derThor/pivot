@@ -22,8 +22,11 @@ src/
 ├── app.module.ts        # Root-Modul, globale Guards/Config
 ├── main.ts               # Bootstrap: Helmet, CORS, Versioning, Swagger, ValidationPipe
 ├── prisma/                # PrismaService (global bereitgestellt)
-├── auth/                  # Login/Register/Refresh/Logout, JWT-Strategie, Guards
-├── users/                 # Benutzerverwaltung (nur ADMIN)
+├── auth/                  # Login/Register/Refresh/Logout/Passwort/Verifikation, JWT-Strategie, Guards
+├── users/                 # Benutzerverwaltung (Recht `users:manage`)
+├── roles/                 # Rollen-/Rechteverwaltung (Recht `roles:manage`)
+├── settings/               # Admin-Einstellungen, Passwort-Policy (Recht `settings:manage`)
+├── mailer/                 # E-Mail-Versand (aktuell Dev-Stub, nur Logging)
 ├── content/                # Content-CRUD inkl. Versionierung
 └── common/
     ├── config/env.validation.ts  # zod-basierte Env-Validierung
@@ -34,21 +37,36 @@ src/
 
 1. `POST /auth/register` bzw. `/auth/login` → Access-Token (JWT, kurzlebig,
    Default 15 Min) + Refresh-Token (zufälliger 384-Bit-String, in DB als
-   SHA-256-Hash gespeichert, Default 30 Tage TTL).
+   SHA-256-Hash gespeichert, Default 30 Tage TTL). Der Access-Token trägt
+   `{ sub, email, roleId, roleName, permissions: string[] }` – die Rechte
+   der Rolle werden bei Ausstellung einmal geladen und eingebettet (wirken
+   sich also erst beim nächsten Refresh aus, wenn sich die Rechte einer
+   Rolle ändern).
 2. Jeder nachfolgende Request trägt den Access-Token im
    `Authorization: Bearer <token>`-Header.
 3. `POST /auth/refresh` rotiert das Refresh-Token: das alte wird als
    `revokedAt` markiert, ein neues Paar wird ausgestellt (schützt gegen
    Replay von gestohlenen Refresh-Tokens).
-4. `POST /auth/logout` widerruft das übergebene Refresh-Token.
-5. Globale Guards (`JwtAuthGuard`, `RolesGuard`) sichern standardmäßig alle
-   Routen ab; `@Public()` markiert Ausnahmen (Login, Register, Refresh,
-   Health-Check). `@Roles(Role.ADMIN, ...)` schränkt auf bestimmte Rollen ein.
+4. `POST /auth/logout` widerruft das übergebene Refresh-Token;
+   `PATCH /auth/password` (Passwort ändern) und `POST /auth/reset-password`
+   widerrufen **alle** Refresh-Tokens des Users.
+5. Globale Guards (`JwtAuthGuard`, `PermissionsGuard`) sichern standardmäßig
+   alle Routen ab; `@Public()` markiert Ausnahmen (Login, Register, Refresh,
+   Verify-Email, Forgot/Reset-Password, Health-Check).
+   `@RequirePermission('resource:action')` schränkt auf ein granulares
+   Recht ein (z.B. `content:create`) – welche Rollen dieses Recht besitzen,
+   ist frei über `/dashboard/roles` konfigurierbar. Details:
+   [rbac-rework.md](../knowledge-base/auth/rbac-rework.md).
 
 ### Datenmodell (Prisma, Auszug)
 
-- `User` (Role-Enum: ADMIN, EDITOR, AUTHOR, VIEWER)
-- `RefreshToken` (rotierend, widerrufbar)
+- `User` (`firstName?`/`lastName`, `roleId`-FK, `emailVerifiedAt?`)
+- `Role` / `Permission` / `RolePermission` (frei anlegbare Rollen, fester
+  Rechte-Katalog im Code, n:m-Zuordnung)
+- `AppSettings` (Singleton, `id=1`: Passwort-Policy, Feature-Schalter)
+- `RefreshToken` / `EmailVerificationToken` / `PasswordResetToken`
+  (rotierend bzw. einmalig, widerrufbar/verbrauchbar; alle drei speichern
+  nur einen SHA-256-Hash, nie den Klartext-Token)
 - `ContentType` (flexibles JSON-Schema pro Content-Modell)
 - `Content` (Status-Enum: DRAFT, SCHEDULED, PUBLISHED, ARCHIVED; JSON-Daten
   gemäß `ContentType.schema`; SEO-Felder; Locale für Mehrsprachigkeit)
@@ -110,7 +128,7 @@ Weiterentwicklung: Polymorphie läuft über die **`render`-Prop**, nicht über
 <Button asChild><Link href="...">...</Link></Button>
 ```
 
-Diese Besonderheit ist auch in der [Knowledge Base](../knowledge-base/frontend-shadcn-base-ui.md)
+Diese Besonderheit ist auch in der [Knowledge Base](../knowledge-base/frontend/frontend-shadcn-base-ui.md)
 festgehalten, da sie leicht zu Fehlern führt, wenn man mit "klassischem"
 shadcn/Radix-Wissen an den Code geht.
 
@@ -121,14 +139,17 @@ und gelöscht werden können. Löschen läuft nie direkt aus einer Aktion
 heraus, sondern immer über die geteilte Komponente
 `src/components/confirm-delete-dialog.tsx` (Bestätigen/Abbrechen-Popup).
 Details und Hintergrund:
-[Knowledge Base](../knowledge-base/ui-convention-crud-and-delete-confirmation.md).
+[Knowledge Base](../knowledge-base/frontend/ui-convention-crud-and-delete-confirmation.md).
 
 ### Datenanbindung
 
-Aktuell sind die Admin-Seiten mit Platzhalterdaten vorbereitet (siehe
-`entries: []` in `content/page.tsx`). Die Anbindung an die NestJS-API
-(`fetch`/Server Actions gegen `http://localhost:3001/v1/...`) ist der nächste
-Schritt gemäß [ROADMAP.md](./ROADMAP.md).
+Server Components rufen die NestJS-API direkt server-seitig auf
+(`lib/api-server.ts`, Access-Token aus dem httpOnly-Cookie). Mutationen
+(Formulare, Buttons) laufen über Next.js Route Handler unter `app/api/*`,
+die als schlanker BFF-Proxy den Access-Token aus dem Cookie lesen und an
+die NestJS-API weiterreichen (der Browser hat selbst keinen Zugriff auf
+das httpOnly-Cookie). Details zum Cookie-/Token-Handling:
+[frontend-auth-flow.md](../knowledge-base/auth/frontend-auth-flow.md).
 
 ## Deployment (Ausblick, noch nicht umgesetzt)
 

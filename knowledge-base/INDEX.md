@@ -9,26 +9,61 @@ genau so".
 **Update-Prozess: siehe [PROCESS.md](./PROCESS.md).** Kurzfassung: bei jedem
 neuen Feature wird hier ein Eintrag ergänzt oder ein bestehender aktualisiert
 – das ist keine Ausnahme, sondern Teil der Feature-Definition-of-Done.
+Einträge sind nach Themenbereich in Unterordnern gruppiert (Regel für neue
+Themenbereiche/Umgruppierungen: siehe [PROCESS.md](./PROCESS.md)).
 
-## Einträge
+## Auth (`auth/`)
 
 | Datei | Thema | Zuletzt aktualisiert |
 |---|---|---|
-| [monorepo-setup.md](./monorepo-setup.md) | Turborepo/pnpm-Grundgerüst, Workspace-Struktur | 2026-08-02 |
-| [auth-jwt-refresh-rotation.md](./auth-jwt-refresh-rotation.md) | JWT Auth, Refresh-Token-Rotation, RBAC | 2026-08-02 |
-| [content-versioning.md](./content-versioning.md) | Content-Modell, automatische Versionierung | 2026-08-02 |
-| [frontend-shadcn-base-ui.md](./frontend-shadcn-base-ui.md) | shadcn/ui auf Base-UI-Basis, `render`-statt-`asChild`-Pattern | 2026-08-02 |
-| [tooling-pnpm-build-approvals.md](./tooling-pnpm-build-approvals.md) | pnpm-Build-Skript-Freigaben (`allowBuilds`) | 2026-08-02 |
-| [frontend-auth-flow.md](./frontend-auth-flow.md) | httpOnly-Cookie-Session via BFF-Route-Handler + Middleware-Gate/Silent-Refresh | 2026-08-02 |
-| [content-editor-dynamic-forms.md](./content-editor-dynamic-forms.md) | Content-Types-API + dynamisch aus `ContentType.schema` generiertes Editor-Formular | 2026-08-02 |
-| [user-management-ui.md](./user-management-ui.md) | Benutzerverwaltung-UI (Liste, Anlegen, Rollen ändern) | 2026-08-02 |
-| [media-upload.md](./media-upload.md) | Medien-Upload (lokal) + Medien-Bibliothek-UI | 2026-08-02 |
-| [taxonomy-management.md](./taxonomy-management.md) | Kategorien/Tags-Verwaltung (CRUD + UI) | 2026-08-02 |
-| [ui-convention-crud-and-delete-confirmation.md](./ui-convention-crud-and-delete-confirmation.md) | Konvention: Anlegen→Bearbeiten+Löschen, Löschen immer mit Bestätigungs-Popup (`ConfirmDeleteDialog`) | 2026-08-02 |
-| [e2e-testing-setup.md](./e2e-testing-setup.md) | Erste E2E-Tests (Auth-/Content-Flow), eigene Testdatenbank | 2026-08-02 |
-| [content-edit-delete.md](./content-edit-delete.md) | Content bearbeiten (Edit-Formular) und löschen (mit Bestätigung) | 2026-08-02 |
-| [media-edit-delete.md](./media-edit-delete.md) | Medien bearbeiten (Alt-Text) und löschen (inkl. Datei von Disk) | 2026-08-02 |
-| [media-preview.md](./media-preview.md) | Medien-Vorschau-Popup; `next/headers`-Stolperstein in Client-Komponenten | 2026-08-02 |
+| [auth-jwt-refresh-rotation.md](./auth/auth-jwt-refresh-rotation.md) | JWT Auth, Refresh-Token-Rotation, RBAC (Backend) | 2026-08-02 |
+| [frontend-auth-flow.md](./auth/frontend-auth-flow.md) | httpOnly-Cookie-Session via BFF-Route-Handler + Middleware-Gate/Silent-Refresh (Frontend) | 2026-08-02 |
+| [rbac-rework.md](./auth/rbac-rework.md) | Von 4 festen Rollen zu granularem, admin-verwaltbarem RBAC (Role/Permission-Tabellen) | 2026-08-03 |
+| [settings-and-password-policy.md](./auth/settings-and-password-policy.md) | Admin-Einstellungen (Singleton), konfigurierbare Passwort-Policy, Logo-Upload + Firmenangaben | 2026-08-05 |
+| [self-service-auth-flows.md](./auth/self-service-auth-flows.md) | Registrierung, E-Mail-Verifikation (Dev-Stub), Passwort ändern/vergessen, Self-Service-Profil | 2026-08-03 |
+| [admin-activation-and-permission-nav.md](./auth/admin-activation-and-permission-nav.md) | Admin-Freischaltung für Registrierungen (Einstellung), rollenabhängige Navigation | 2026-08-03 |
+| [read-permissions-and-dashboard-access.md](./auth/read-permissions-and-dashboard-access.md) | Lese-Rechte pro Ressource (`content:read` etc.) + `Role.canAccessDashboard`, neue Default-Rolle "Nutzer" | 2026-08-03 |
+
+## Content (`content/`)
+
+| Datei | Thema | Zuletzt aktualisiert |
+|---|---|---|
+| [content-versioning.md](./content/content-versioning.md) | Content-Modell, automatische Versionierung | 2026-08-02 |
+| [content-editor-dynamic-forms.md](./content/content-editor-dynamic-forms.md) | Content-Types-API + dynamisch aus `ContentType.schema` generiertes Editor-Formular | 2026-08-02 |
+| [content-edit-delete.md](./content/content-edit-delete.md) | Content bearbeiten (Edit-Formular) und löschen (mit Bestätigung, kaskadiert automatisch auf Versionen) | 2026-08-04 |
+| [rich-text-and-versioning.md](./content/rich-text-and-versioning.md) | Rich-Text-Editor (Tiptap, inkl. H1-H6/Code/Bilder) + Versions-Diff & Rollback-UI | 2026-08-04 |
+| [content-categories.md](./content/content-categories.md) | Kategorien-Zuordnung im Content-Editor (n:m, `ContentCategory`) | 2026-08-05 |
+| [global-search.md](./content/global-search.md) | Globale Suche über Inhalte (Postgres `tsvector` Präfix-Match), Kategorien, Tags und Medien, permission-gefiltert pro Bereich | 2026-08-06 |
+
+## Medien (`media/`)
+
+| Datei | Thema | Zuletzt aktualisiert |
+|---|---|---|
+| [media-upload.md](./media/media-upload.md) | Medien-Upload (lokal) + Medien-Bibliothek-UI | 2026-08-02 |
+| [media-edit-delete.md](./media/media-edit-delete.md) | Medien bearbeiten (Alt-Text) und löschen (inkl. Datei von Disk) | 2026-08-02 |
+| [media-preview.md](./media/media-preview.md) | Medien-Vorschau-Popup; `next/headers`-Stolperstein in Client-Komponenten | 2026-08-02 |
+| [media-folders.md](./media/media-folders.md) | Verschachtelte Ordner in der Medienbibliothek, Verschieben, Ordner-Navigation im Bild-Picker | 2026-08-04 |
+
+## Frontend – allgemein (`frontend/`)
+
+| Datei | Thema | Zuletzt aktualisiert |
+|---|---|---|
+| [frontend-shadcn-base-ui.md](./frontend/frontend-shadcn-base-ui.md) | shadcn/ui auf Base-UI-Basis, `render`-statt-`asChild`-Pattern, `nativeButton`-Stolperstein | 2026-08-03 |
+| [ui-convention-crud-and-delete-confirmation.md](./frontend/ui-convention-crud-and-delete-confirmation.md) | Konvention: Anlegen→Bearbeiten+Löschen, Löschen immer mit Bestätigungs-Popup (`ConfirmDeleteDialog`) + Massenauswahl | 2026-08-04 |
+| [bulk-selection-and-delete.md](./frontend/bulk-selection-and-delete.md) | Massenauswahl + Sammel-Löschen für alle Listen-Ansichten (`useSelection`, `SelectionToolbar`) | 2026-08-04 |
+| [pagination.md](./frontend/pagination.md) | URL-getriebene Pagination (`?page=`) für alle Listen-Seiten (`PaginationControls`) | 2026-08-05 |
+| [design-refresh.md](./frontend/design-refresh.md) | Koralle/Orange-Theme, Sidebar/Header-Neugestaltung, Kebab-Menüs in allen Listen | 2026-08-05 |
+| [user-management-ui.md](./frontend/user-management-ui.md) | Benutzerverwaltung-UI (Liste, Anlegen, Rollen ändern) | 2026-08-02 |
+| [taxonomy-management.md](./frontend/taxonomy-management.md) | Kategorien/Tags-Verwaltung (CRUD inkl. Bearbeiten, Kategorie-Beschreibung, eigene Menüpunkte) | 2026-08-05 |
+| [user-edit-delete.md](./frontend/user-edit-delete.md) | Benutzer vollständig bearbeiten (Name/E-Mail/Status) und löschen (mit Selbstlöschschutz) | 2026-08-02 |
+
+## Tooling & Infrastruktur (`tooling/`)
+
+| Datei | Thema | Zuletzt aktualisiert |
+|---|---|---|
+| [monorepo-setup.md](./tooling/monorepo-setup.md) | Turborepo/pnpm-Grundgerüst, Workspace-Struktur | 2026-08-02 |
+| [tooling-pnpm-build-approvals.md](./tooling/tooling-pnpm-build-approvals.md) | pnpm-Build-Skript-Freigaben (`allowBuilds`) | 2026-08-02 |
+| [e2e-testing-setup.md](./tooling/e2e-testing-setup.md) | Erste E2E-Tests (Auth-/Content-Flow), eigene Testdatenbank | 2026-08-02 |
 
 ## Offene Wissenslücken (bewusst vermerkt)
 

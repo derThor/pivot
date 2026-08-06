@@ -28,3 +28,26 @@ export async function PATCH(
   const data = await backendRes.json().catch(() => null);
   return NextResponse.json(data, { status: backendRes.status });
 }
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const accessToken = (await cookies()).get(ACCESS_TOKEN_COOKIE)?.value;
+  if (!accessToken) {
+    return NextResponse.json({ message: "Nicht angemeldet." }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  const backendRes = await fetch(`${API_URL}/users/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (backendRes.status === 204) {
+    return new NextResponse(null, { status: 204 });
+  }
+  const data = await backendRes.json().catch(() => null);
+  return NextResponse.json(data, { status: backendRes.status });
+}

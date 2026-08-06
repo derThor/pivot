@@ -1,7 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import * as argon2 from 'argon2';
-import { Role } from '@strasev/database';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { createTestApp } from './setup-app';
 
@@ -24,6 +23,9 @@ describe('Content-Flow (e2e)', () => {
       });
       await prisma.contentType.delete({ where: { id: contentType.id } });
     }
+    await prisma.category.deleteMany({
+      where: { slug: { startsWith: 'e2e-content-kategorie-' } },
+    });
     await prisma.user.deleteMany({ where: { email: userEmail } });
   }
 
@@ -33,11 +35,14 @@ describe('Content-Flow (e2e)', () => {
 
     await cleanup();
 
+    const adminRole = await prisma.role.findFirstOrThrow({
+      where: { name: 'Admin' },
+    });
     await prisma.user.create({
       data: {
         email: userEmail,
-        name: 'E2E Content Test',
-        role: Role.ADMIN,
+        lastName: 'E2E Content Test',
+        roleId: adminRole.id,
         passwordHash: await argon2.hash(password),
       },
     });
@@ -139,6 +144,126 @@ describe('Content-Flow (e2e)', () => {
       where: { contentId: createdId },
     });
     expect(versionsAfter).toBe(versionsBefore + 1);
+  });
+
+  it('GET /v1/content/search ohne Token liefert 401', async () => {
+    await request(app.getHttpServer())
+      .get('/v1/content/search')
+      .query({ q: 'Hallo' })
+      .expect(401);
+  });
+
+  it('GET /v1/content/search ohne q liefert 400', async () => {
+    await request(app.getHttpServer())
+      .get('/v1/content/search')
+      .set(auth())
+      .expect(400);
+  });
+
+  it('GET /v1/content/search findet Treffer im dynamischen data-Body, nicht nur im Titel', async () => {
+    // "Hallo Welt" steckt nur in `data.body`, nicht im Titel
+    // ("E2E Testeintrag") – belegt, dass die Volltextsuche wirklich den
+    // gesamten Inhalt durchsucht statt nur Titel/Excerpt.
+    const res = await request(app.getHttpServer())
+      .get('/v1/content/search')
+      .query({ q: 'Hallo' })
+      .set(auth())
+      .expect(200);
+
+    const hit = res.body.find((item: { id: string }) => item.id === createdId);
+    expect(hit).toBeDefined();
+    expect(hit.title).toBe('E2E Testeintrag');
+  });
+
+  it('GET /v1/content/search liefert leeres Array bei keinem Treffer', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/v1/content/search')
+      .query({ q: 'garantiert-kein-treffer-xyz-987654321' })
+      .set(auth())
+      .expect(200);
+
+    expect(res.body).toEqual([]);
+  });
+
+  let categoryOneId: string;
+  let categoryTwoId: string;
+
+  it('POST /v1/content mit categoryIds ordnet Kategorien zu', async () => {
+    const [catOne, catTwo] = await Promise.all([
+      prisma.category.create({
+        data: { name: 'E2E Content Kategorie 1', slug: 'e2e-content-kategorie-1' },
+      }),
+      prisma.category.create({
+        data: { name: 'E2E Content Kategorie 2', slug: 'e2e-content-kategorie-2' },
+      }),
+    ]);
+    categoryOneId = catOne.id;
+    categoryTwoId = catTwo.id;
+
+    const contentType = await prisma.contentType.findUniqueOrThrow({
+      where: { slug: contentTypeSlug },
+    });
+
+    const res = await request(app.getHttpServer())
+      .post('/v1/content')
+      .set(auth())
+      .send({
+        title: 'E2E Content mit Kategorie',
+        slug: 'e2e-content-mit-kategorie',
+        contentTypeId: contentType.id,
+        data: { body: 'x' },
+        categoryIds: [categoryOneId],
+      })
+      .expect(201);
+
+    expect(res.body.categories).toHaveLength(1);
+    expect(res.body.categories[0].id).toBe(categoryOneId);
+
+    await request(app.getHttpServer())
+      .delete(`/v1/content/${res.body.id}`)
+      .set(auth())
+      .expect(200);
+  });
+
+  it('POST /v1/content mit unbekannter categoryId lehnt mit 400 ab', async () => {
+    const contentType = await prisma.contentType.findUniqueOrThrow({
+      where: { slug: contentTypeSlug },
+    });
+
+    await request(app.getHttpServer())
+      .post('/v1/content')
+      .set(auth())
+      .send({
+        title: 'E2E Content mit unbekannter Kategorie',
+        slug: 'e2e-content-unbekannte-kategorie',
+        contentTypeId: contentType.id,
+        data: { body: 'x' },
+        categoryIds: ['nicht-existent'],
+      })
+      .expect(400);
+  });
+
+  it('PATCH /v1/content/:id ersetzt die Kategorien-Zuordnung vollständig', async () => {
+    await request(app.getHttpServer())
+      .patch(`/v1/content/${createdId}`)
+      .set(auth())
+      .send({ categoryIds: [categoryOneId, categoryTwoId] })
+      .expect(200);
+
+    const withBoth = await request(app.getHttpServer())
+      .get(`/v1/content/${createdId}`)
+      .set(auth())
+      .expect(200);
+    expect(withBoth.body.categories).toHaveLength(2);
+
+    const res = await request(app.getHttpServer())
+      .patch(`/v1/content/${createdId}`)
+      .set(auth())
+      .send({ categoryIds: [categoryTwoId] })
+      .expect(200);
+
+    expect(res.body.categories).toHaveLength(1);
+    expect(res.body.categories[0].id).toBe(categoryTwoId);
   });
 
   it('DELETE /v1/content/:id entfernt den Eintrag', async () => {

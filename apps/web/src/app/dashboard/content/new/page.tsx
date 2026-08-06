@@ -1,8 +1,11 @@
 import { ContentEditorForm } from "@/components/content-editor-form";
-import { getContentTypes } from "@/lib/api-server";
+import { getCategories, getContentTypes } from "@/lib/api-server";
 
 export default async function NewContentPage() {
-  const contentTypes = (await getContentTypes()) ?? [];
+  const [contentTypes, categories] = await Promise.all([
+    getContentTypes(),
+    getCategories({ pageSize: 100 }),
+  ]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -15,13 +18,16 @@ export default async function NewContentPage() {
         </p>
       </div>
 
-      {contentTypes.length === 0 ? (
+      {!contentTypes || contentTypes.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           Kein Content-Type vorhanden. Bitte zuerst einen Content-Type
           anlegen.
         </p>
       ) : (
-        <ContentEditorForm contentTypes={contentTypes} />
+        <ContentEditorForm
+          contentTypes={contentTypes}
+          categories={categories?.items ?? []}
+        />
       )}
     </div>
   );
