@@ -187,10 +187,17 @@ Gültigkeit verlängern. Beides wurde nachgerüstet:
 - Kein Passwortschutz/zusätzliche Zugriffsbeschränkung pro Link (jeder
   mit der URL kann sie aufrufen, solange sie gültig ist – "zeitlich
   begrenzt", nicht "zugangsbeschränkt").
-- Vorschau-Seite rendert dynamische Felder generisch (alle String-Werte
-  aus `data`), ohne das `ContentType.schema` zu kennen (öffentlicher
-  Endpoint liefert es bewusst nicht mit) – Feldnamen/-Reihenfolge exakt
-  wie im Editor sind daher nicht garantiert.
+- Vorschau-Seite rendert dynamische Felder größtenteils weiterhin
+  generisch (alle nicht-leeren String-Werte aus `data`, außer `title`),
+  ohne das `ContentType.schema` zu kennen (öffentlicher Endpoint liefert
+  es bewusst nicht mit) – Feldnamen/-Reihenfolge exakt wie im Editor sind
+  daher nicht garantiert. **Ausnahme seit 2026-08-07:** Array-Felder
+  (Seiten-Designer-Bausteine, `data.blocks`) werden erkannt und über die
+  bekannten `ModuleType`-Schemas (`GET /module-types`, jetzt `@Public()`)
+  korrekt gerendert – vorher fielen sie komplett durch den
+  String-only-Filter und die Vorschau zeigte nur den Titel. Details siehe
+  [page-designer.md](./page-designer.md) Abschnitt "Kritischer Bug:
+  öffentliche Vorschau-Seite rendert Bausteine nicht".
 - Vorschau-Links werden jetzt im Klartext gespeichert (siehe Update
   oben) – ein DB-Leak macht damit alle aktuell gültigen Vorschau-Links
   nutzbar (nicht aber Passwörter/Sessions, die weiterhin gehasht sind).

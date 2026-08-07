@@ -64,7 +64,7 @@ const navGroups = [
     icon: Layers,
     items: [
       {
-        title: "Navigation",
+        title: "Menüs",
         url: "/dashboard/navigation",
         icon: Compass,
         permission: "settings:manage",
@@ -166,32 +166,25 @@ export function AppSidebar({
     .filter((group) => group.originalItemCount === 0 || group.items.length > 0);
   const canManageSettings = permissions.includes("settings:manage");
 
-  const [openGroups, setOpenGroups] = React.useState<Set<string>>(() => {
-    const activeLabel = findActiveGroupLabel(pathname);
-    return new Set(activeLabel ? [activeLabel] : []);
-  });
-  // Beim Navigieren in eine andere Gruppe hinein diese zusätzlich aufklappen
-  // (bereits offene Gruppen bleiben offen) – als Render-Zeit-Anpassung statt
-  // Effekt, da es sich um eine reine Ableitung aus `pathname` handelt.
+  // Akkordeon-Verhalten: immer höchstens eine Gruppe gleichzeitig
+  // aufgeklappt – öffnet man eine, schließt sich die vorherige.
+  const [openGroup, setOpenGroup] = React.useState<string | null>(() =>
+    findActiveGroupLabel(pathname),
+  );
+  // Beim Navigieren in eine andere Gruppe hinein diese aufklappen (löst
+  // die vorherige ab) – als Render-Zeit-Anpassung statt Effekt, da es
+  // sich um eine reine Ableitung aus `pathname` handelt.
   const [syncedPathname, setSyncedPathname] = React.useState(pathname);
   if (pathname !== syncedPathname) {
     setSyncedPathname(pathname);
     const activeLabel = findActiveGroupLabel(pathname);
-    if (activeLabel && !openGroups.has(activeLabel)) {
-      setOpenGroups((prev) => new Set(prev).add(activeLabel));
+    if (activeLabel && activeLabel !== openGroup) {
+      setOpenGroup(activeLabel);
     }
   }
 
   function toggleGroup(label: string) {
-    setOpenGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(label)) {
-        next.delete(label);
-      } else {
-        next.add(label);
-      }
-      return next;
-    });
+    setOpenGroup((prev) => (prev === label ? null : label));
   }
 
   async function handleLogout() {
@@ -206,7 +199,7 @@ export function AppSidebar({
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader>
+      <SidebarHeader className="border-b">
         <div className="flex items-center gap-2 py-2 transition-[gap] duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
           <div className="flex h-12 w-0 shrink-0 items-center justify-center overflow-hidden rounded-xl opacity-0 shadow-sm transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:opacity-100">
             {logoCollapsedUrl ? (
@@ -247,8 +240,11 @@ export function AppSidebar({
           if (sidebarState === "collapsed" && group.items.length === 0) {
             return null;
           }
-          const isOpen =
-            sidebarState === "collapsed" || openGroups.has(group.label);
+          const isExpanded = openGroup === group.label;
+          const isOpen = sidebarState === "collapsed" || isExpanded;
+          const isEmphasized = group.items.some(
+            (item) => pathname === item.url,
+          );
           return (
             <SidebarGroup key={group.label}>
               <SidebarGroupLabel
@@ -258,7 +254,14 @@ export function AppSidebar({
               >
                 <span className="flex min-w-0 items-center gap-2">
                   <group.icon className="size-4 shrink-0" />
-                  <span className={navLabelClass}>{group.label}</span>
+                  <span
+                    className={cn(
+                      navLabelClass,
+                      isEmphasized && "font-semibold",
+                    )}
+                  >
+                    {group.label}
+                  </span>
                 </span>
                 <ChevronRight
                   className={cn(

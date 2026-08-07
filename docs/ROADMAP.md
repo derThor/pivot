@@ -208,21 +208,44 @@ der bereits vorhandenen dynamischen Formular-Generierung aus
 Ersetzt die bisherigen, vageren Einzelpunkte "Inhaltsblöcke mehrfach
 verwendbar", "Globaler Content (Footer, Header, Banner)" und
 "Wiederverwendbare Komponenten" durch ein einziges, kohärentes
-Feature-Konzept – **noch nicht umgesetzt, nur Roadmap-Eintrag.**
+Feature-Konzept. Umgesetzt am 2026-08-07, dabei mehrfach am selben Tag
+nachgeschärft (Liste → freies Canvas → Gutenberg-Block-Editor mit
+zunächst versteckter, dann permanent sichtbarer Typ-Palette in einem
+eigenen "Design"-Tab, ohne separates `body`-Rich-Text-Feld daneben →
+echte Inhalts-Vorschau statt Formularfeldern im Block selbst → Fläche
+komplett schreibgeschützt, Einfügen nur noch per Drag&Drop ohne
+Klick-Fallback, jeder Bausteintyp mit Dummy-/Beispieldaten vorbefüllt,
+Bearbeitung ausschließlich über ein Popup-Fenster → zuletzt kein
+permanentes Icon/Name-Label mehr über dem Block (Steuerung nur bei
+Hover), Umsortieren nur noch per Drag&Drop im Content statt Pfeilen,
+plus Bugfix: öffentliche Vorschau-Seite rendert Bausteine jetzt
+tatsächlich). Details siehe
+[page-designer.md](../knowledge-base/content/page-designer.md).
 
-- [ ] Modul-Typen definieren (Backend) – neues `ModuleType`-Modell
+- [x] Modul-Typen definieren (Backend) – neues `ModuleType`-Modell
       analog zu `ContentType.schema`: Name, Icon, Feldschema
-- [ ] Neuer Feldtyp "Module" in `ContentType.schema` – ein Content-Type
+- [x] Neuer Feldtyp "Module" in `ContentType.schema` – ein Content-Type
       bekommt ein Feld vom Typ "Modul-Liste" statt/zusätzlich zu einem
       reinen Rich-Text-Feld
-- [ ] Drag&Drop-Editor-UI – Modul-Palette zum Einfügen neuer Bausteine,
-      Umsortieren per Drag & Drop (nativer HTML5-DnD wie bereits bei
-      der Navigationsverwaltung verwendet, siehe
-      [navigation-management.md](../knowledge-base/content/navigation-management.md)),
-      Inline-Bearbeitung der Modul-Felder, Löschen einzelner Module
-- [ ] Basis-Modul-Bibliothek – Startset: Rich-Text, Bild, Bild+Text,
-      Zitat/Testimonial, CTA-Button, Trenner, Akkordeon/FAQ,
-      Bildergalerie
+- [x] Gutenberg-artiger Block-Editor mit eigenem "Design"-Tab – links
+      permanent sichtbare, durchsuchbare Palette aller Modul-Typen
+      (Icon+Name), Einfügen per Drag&Drop auf eine beliebige Position im
+      Block-Flow (kein Klick-Fallback), direkt mit realistischem
+      Dummy-Inhalt vorbefüllt (Lorem Ipsum, Platzhalterbild etc.). Die
+      Fläche selbst zeigt **ausschließlich** den echten Inhalt (keine
+      Icon/Name-Kopfzeile) – Bearbeiten/Entfernen erscheinen erst als
+      schwebende Leiste bei Hover, Umsortieren per Drag&Drop direkt im
+      Content (keine Pfeile). Jegliche Bearbeitung (Inhalt und
+      Einstellungen) läuft über ein Popup-Fenster. Neuer Feldtyp "image"
+      mit Klick-zu-Medienbibliothek statt roher URL-Eingabe, per
+      Zieh-Griff frei skalierbar (15-100%), mit Ausrichtung (Keine/Volle
+      Breite/Links/Zentriert/Rechts) – links/rechts floaten echt (CSS
+      `float`), sodass Text bzw. andere, ebenfalls schmal eingestellte
+      Bausteine (z.B. Zitat, per eigenem Block-Zieh-Griff) sich daneben
+      einreihen statt in eigener Zeile darunter zu stehen.
+- [ ] Basis-Modul-Bibliothek – bisher 5 von 8 geplanten Typen umgesetzt
+      (Rich-Text, Bild, Bild+Text, CTA-Button, Zitat); noch offen:
+      Trenner, Akkordeon/FAQ, Bildergalerie
 - [ ] Globale Module – ein Modul lässt sich als "global" markieren
       (einmal pflegen, auf mehreren Seiten eingebunden – deckt Footer/
       Header/Banner und wiederverwendbare Inhaltsblöcke gleichzeitig ab,
@@ -370,7 +393,7 @@ schaffen gleichzeitig die Grundlage für die späteren Enterprise-Features:
 4. ~~Autosave (2b.5)~~ ✅ 2026-08-06
 5. ~~Content Locking (2b.9)~~ ✅ 2026-08-06
 6. Workflow/Freigaben (2b.9)
-7. Seiten-Designer – modul-basierter Drag&Drop-Editor (2b.8)
+7. ~~Seiten-Designer – freiflächiges Drag&Drop-Canvas (2b.8)~~ ✅ 2026-08-07 (Basis-Modul-Bibliothek, globale Module, Live-Vorschau-Integration noch offen)
 8. Bildoptimierung – WebP/AVIF (2b.7)
 9. API-Keys für externe Anwendungen (Phase 3)
 10. Dashboard mit Statistiken (4.3)

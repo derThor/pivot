@@ -9,6 +9,7 @@ import {
   getContent,
   getContentTypes,
   getCurrentUser,
+  getModuleTypes,
   getPublicSettings,
 } from "@/lib/api-server";
 
@@ -18,13 +19,15 @@ export default async function EditContentPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [content, contentTypes, categories, settings, user] = await Promise.all([
-    getContent(id),
-    getContentTypes(),
-    getCategories({ pageSize: 100 }),
-    getPublicSettings(),
-    getCurrentUser(),
-  ]);
+  const [content, contentTypes, moduleTypes, categories, settings, user] =
+    await Promise.all([
+      getContent(id),
+      getContentTypes(),
+      getModuleTypes(),
+      getCategories({ pageSize: 100 }),
+      getPublicSettings(),
+      getCurrentUser(),
+    ]);
 
   if (!content) {
     notFound();
@@ -53,6 +56,7 @@ export default async function EditContentPage({
       </div>
       <ContentEditorForm
         contentTypes={contentTypes ?? []}
+        moduleTypes={moduleTypes ?? []}
         categories={categories?.items ?? []}
         content={content}
         autosaveEnabled={settings?.autosaveEnabled ?? true}

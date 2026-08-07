@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ContentModule } from './content/content.module';
 import { ContentTypesModule } from './content-types/content-types.module';
+import { ModuleTypesModule } from './module-types/module-types.module';
 import { MediaModule } from './media/media.module';
 import { MediaFoldersModule } from './media-folders/media-folders.module';
 import { CategoriesModule } from './categories/categories.module';
@@ -38,6 +39,7 @@ import { validateEnv } from './common/config/env.validation';
     UsersModule,
     ContentModule,
     ContentTypesModule,
+    ModuleTypesModule,
     MediaModule,
     MediaFoldersModule,
     CategoriesModule,

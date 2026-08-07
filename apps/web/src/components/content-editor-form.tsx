@@ -18,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DateTimePicker } from "@/components/date-time-picker";
 import { InfoTooltip } from "@/components/info-tooltip";
+import { BlockEditorField, type ModuleInstance } from "@/components/block-editor-field";
 import { mediaUrl } from "@/lib/media";
 import {
   Form,
@@ -39,8 +40,9 @@ import type {
   ContentType,
   ContentStatus,
   ContentDetail,
+  ModuleType,
 } from "@/lib/api-server";
-import { formatName, slugify } from "@/lib/utils";
+import { cn, formatName, slugify } from "@/lib/utils";
 
 const LOCK_HEARTBEAT_INTERVAL_MS = 60_000;
 
@@ -124,6 +126,26 @@ function toDataValues(
   );
 }
 
+/**
+ * Modul-Felder (Seiten-Designer) speichern kein einfaches String-Feld,
+ * sondern ein Array von Modul-Instanzen – laufen deshalb bewusst über
+ * einen eigenen State statt über `dataValues`, statt dessen Typ auf
+ * `string | ModuleInstance[]` aufzuweiten (hätte sonst an vielen Stellen
+ * String-Annahmen über `dataValues` gebrochen).
+ */
+function toModuleValues(
+  data: Record<string, unknown> | undefined,
+): Record<string, ModuleInstance[]> {
+  if (!data) return {};
+  const result: Record<string, ModuleInstance[]> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (Array.isArray(value)) {
+      result[key] = value as ModuleInstance[];
+    }
+  }
+  return result;
+}
+
 const DRAFT_STORAGE_PREFIX = "strasev:content-draft:";
 
 interface DraftSnapshot {
@@ -153,12 +175,14 @@ function isDraftWorthSaving(snapshot: DraftSnapshot) {
 
 export function ContentEditorForm({
   contentTypes,
+  moduleTypes,
   categories,
   content,
   autosaveEnabled = true,
   canForceUnlock = false,
 }: {
   contentTypes: ContentType[];
+  moduleTypes: ModuleType[];
   categories: CategoryRef[];
   content?: ContentDetail;
   autosaveEnabled?: boolean;
@@ -170,6 +194,9 @@ export function ContentEditorForm({
   const [dataValues, setDataValues] = useState<Record<string, string>>(
     toDataValues(content?.data),
   );
+  const [moduleValues, setModuleValues] = useState<
+    Record<string, ModuleInstance[]>
+  >(toModuleValues(content?.data));
   const [dataErrors, setDataErrors] = useState<Record<string, string>>({});
   const [categoryIds, setCategoryIds] = useState<string[]>(
     content?.categories.map((category) => category.id) ?? [],
@@ -212,9 +239,26 @@ export function ContentEditorForm({
   const editorFields =
     selectedType?.schema.fields.filter((field) => field.type === "richtext") ??
     [];
-  const settingsFields =
-    selectedType?.schema.fields.filter((field) => field.type !== "richtext") ??
+  const moduleFields =
+    selectedType?.schema.fields.filter((field) => field.type === "modules") ??
     [];
+  const settingsFields =
+    selectedType?.schema.fields.filter(
+      (field) => field.type !== "richtext" && field.type !== "modules",
+    ) ?? [];
+
+  const [activeTab, setActiveTab] = useState(() =>
+    moduleFields.length > 0 ? "design" : "settings",
+  );
+
+  // Wechselt automatisch zurück, falls der Design-Tab durch einen
+  // Content-Type-Wechsel wegfällt (kein "modules"-Feld mehr vorhanden).
+  useEffect(() => {
+    if (moduleFields.length === 0) {
+      setActiveTab((prev) => (prev === "design" ? "settings" : prev));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [moduleFields.length]);
 
   // Prüft beim Öffnen einmalig, ob im Browser noch ein nicht gespeicherter
   // Entwurf für diesen Inhalt (bzw. für "neuer Inhalt" dieses Content-Typs)
@@ -396,6 +440,7 @@ export function ContentEditorForm({
     if (!id) return;
     form.setValue("contentTypeId", id);
     setDataValues({});
+    setModuleValues({});
     setDataErrors({});
   }
 
@@ -440,6 +485,7 @@ export function ContentEditorForm({
     const data: Record<string, unknown> = {};
 
     for (const field of fields) {
+      if (field.type === "modules") continue;
       const raw = dataValues[field.name]?.trim() ?? "";
       if (field.required && !raw) {
         nextDataErrors[field.name] = "Pflichtfeld";
@@ -447,6 +493,19 @@ export function ContentEditorForm({
       }
       if (!raw) continue;
       data[field.name] = field.type === "number" ? Number(raw) : raw;
+    }
+
+    // Modul-Felder (Seiten-Designer): Array von Modul-Instanzen statt
+    // einfachem String-Wert, deshalb separat behandelt.
+    for (const field of fields) {
+      if (field.type !== "modules") continue;
+      const instances = moduleValues[field.name] ?? [];
+      if (field.required && instances.length === 0) {
+        nextDataErrors[field.name] = "Mindestens ein Baustein erforderlich";
+        continue;
+      }
+      if (instances.length === 0) continue;
+      data[field.name] = instances;
     }
 
     if (Object.keys(nextDataErrors).length > 0) {
@@ -571,14 +630,48 @@ export function ContentEditorForm({
         )}
 
         <fieldset disabled={lockBlocksEditing} className="contents">
-        <Tabs defaultValue="content">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="content">Inhalt</TabsTrigger>
+            {moduleFields.length > 0 && (
+              <TabsTrigger value="design">Design</TabsTrigger>
+            )}
+            <TabsTrigger value="settings">Einstellungen</TabsTrigger>
             <TabsTrigger value="seo">SEO</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="content">
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_1fr]">
+          {moduleFields.length > 0 && (
+            <TabsContent value="design">
+              <div className="flex flex-col gap-2">
+                {moduleFields.map((field) => (
+                  <div key={field.name} className="flex flex-col gap-2">
+                    <BlockEditorField
+                      value={moduleValues[field.name] ?? []}
+                      onChange={(next) =>
+                        setModuleValues((prev) => ({
+                          ...prev,
+                          [field.name]: next,
+                        }))
+                      }
+                      moduleTypes={moduleTypes}
+                    />
+                    {dataErrors[field.name] && (
+                      <p className="text-center text-sm text-destructive">
+                        {dataErrors[field.name]}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+          )}
+
+          <TabsContent value="settings">
+            <div
+              className={cn(
+                "grid grid-cols-1 gap-6",
+                editorFields.length > 0 && "lg:grid-cols-[360px_1fr]",
+              )}
+            >
               <Card>
                 <CardContent className="flex flex-col gap-6">
                   <FormField
@@ -841,10 +934,10 @@ export function ContentEditorForm({
                 </CardContent>
               </Card>
 
-              <Card className="flex h-full flex-col">
-                <CardContent className="flex flex-1 flex-col gap-6">
-                  {editorFields.length > 0 ? (
-                    editorFields.map((field) => (
+              {editorFields.length > 0 && (
+                <Card className="flex h-full flex-col">
+                  <CardContent className="flex flex-1 flex-col gap-6">
+                    {editorFields.map((field) => (
                       <div
                         key={field.name}
                         className="flex min-h-0 flex-1 flex-col gap-2"
@@ -872,14 +965,10 @@ export function ContentEditorForm({
                           </p>
                         )}
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Dieser Content-Type hat kein Editor-Feld.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </TabsContent>
 

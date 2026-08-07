@@ -100,7 +100,7 @@ export function NavigationItemDialog({
       <DialogTrigger render={trigger} />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Navigationspunkt hinzufügen</DialogTitle>
+          <DialogTitle>Menüpunkt hinzufügen</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">

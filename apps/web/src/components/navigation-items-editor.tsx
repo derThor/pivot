@@ -220,7 +220,7 @@ export function NavigationItemsEditor({
       <ConfirmDeleteDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
-        title={`Navigationspunkt „${deleteTarget?.label}“ löschen?`}
+        title={`Menüpunkt „${deleteTarget?.label}“ löschen?`}
         description="Untereinträge dieses Punkts werden dabei nicht gelöscht, sondern rücken auf die oberste Ebene."
         onConfirm={handleDelete}
       />

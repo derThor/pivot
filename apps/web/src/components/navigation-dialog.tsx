@@ -118,7 +118,7 @@ export function NavigationDialog({
           ) : (
             <>
               <Plus />
-              Neue Navigation
+              Neues Menü
             </>
           )}
         </DialogTrigger>
@@ -126,7 +126,7 @@ export function NavigationDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? "Navigation bearbeiten" : "Neue Navigation"}
+            {isEditing ? "Menü bearbeiten" : "Neues Menü"}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

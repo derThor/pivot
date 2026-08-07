@@ -155,11 +155,129 @@ async function main() {
       schema: {
         fields: [
           { name: "title", type: "string", required: true },
-          { name: "body", type: "richtext", required: true },
+          { name: "blocks", type: "modules" },
         ],
       },
     },
   });
+
+  // Basis-Modul-Bibliothek für den Seiten-Designer (Drag&Drop-Editor,
+  // siehe knowledge-base/content/page-designer.md). Wie Content-Typen
+  // aktuell nur per Seed gepflegt, keine eigene Verwaltungs-UI.
+  // Offline-sicherer Platzhalter statt eines echten Bild-Uploads/externen
+  // Placeholder-Dienstes – wird beim Einfügen eines Bild-Bausteins als
+  // Dummy-Bild vorbefüllt, bis der Nutzer ein echtes Bild auswählt.
+  const dummyImage = `data:image/svg+xml,${encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450"><rect width="800" height="450" fill="#e2e8f0"/><text x="400" y="235" font-family="sans-serif" font-size="28" fill="#94a3b8" text-anchor="middle">Beispielbild</text></svg>',
+  )}`;
+  const loremIpsumShort =
+    "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat.";
+
+  const moduleTypes: {
+    name: string;
+    slug: string;
+    icon: string;
+    schema: {
+      fields: {
+        name: string;
+        type: string;
+        required?: boolean;
+        option?: boolean;
+        variant?: "button" | "quote" | "caption";
+        example?: string;
+      }[];
+    };
+  }[] = [
+    {
+      name: "Rich-Text",
+      slug: "rich-text",
+      icon: "FileText",
+      schema: {
+        fields: [
+          {
+            name: "content",
+            type: "richtext",
+            required: true,
+            example: `<p>${loremIpsumShort}</p>`,
+          },
+        ],
+      },
+    },
+    {
+      name: "Bild",
+      slug: "image",
+      icon: "Image",
+      schema: {
+        fields: [
+          { name: "imageUrl", type: "image", required: true, example: dummyImage },
+          { name: "altText", type: "string", option: true, example: "Beispielbild" },
+        ],
+      },
+    },
+    {
+      name: "Bild + Text",
+      slug: "image-text",
+      icon: "Columns2",
+      schema: {
+        fields: [
+          { name: "imageUrl", type: "image", required: true, example: dummyImage },
+          { name: "altText", type: "string", option: true, example: "Beispielbild" },
+          {
+            name: "text",
+            type: "richtext",
+            required: true,
+            example: `<p>${loremIpsumShort}</p>`,
+          },
+        ],
+      },
+    },
+    {
+      name: "CTA-Button",
+      slug: "cta-button",
+      icon: "MousePointerClick",
+      schema: {
+        fields: [
+          {
+            name: "label",
+            type: "string",
+            required: true,
+            variant: "button",
+            example: "Jetzt entdecken",
+          },
+          { name: "url", type: "string", required: true, option: true, example: "/" },
+        ],
+      },
+    },
+    {
+      name: "Zitat",
+      slug: "quote",
+      icon: "Quote",
+      schema: {
+        fields: [
+          {
+            name: "quote",
+            type: "text",
+            required: true,
+            variant: "quote",
+            example: loremIpsumShort,
+          },
+          {
+            name: "author",
+            type: "string",
+            variant: "caption",
+            example: "Max Mustermann",
+          },
+        ],
+      },
+    },
+  ];
+  for (const moduleType of moduleTypes) {
+    await prisma.moduleType.upsert({
+      where: { slug: moduleType.slug },
+      update: {},
+      create: moduleType,
+    });
+  }
 
   console.log(`Seed abgeschlossen. Admin-User: ${admin.email}`);
 }

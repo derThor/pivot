@@ -33,7 +33,7 @@ export function MediaPreviewDialog({ item }: { item: MediaItem }) {
         <img
           src={mediaUrl(item)}
           alt={item.alt ?? item.filename}
-          className="aspect-square w-full object-cover transition-opacity hover:opacity-90"
+          className="aspect-[4/3] w-full object-cover transition-opacity hover:opacity-90"
         />
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl">

@@ -40,6 +40,7 @@ Themenbereiche/Umgruppierungen: siehe [PROCESS.md](./PROCESS.md)).
 | [content-preview-links.md](./content/content-preview-links.md) | Signierte, zeitlich begrenzte Vorschau-Links (`/preview/[token]`, öffentlich, unabhängig vom Content-Status) | 2026-08-06 |
 | [global-search.md](./content/global-search.md) | Globale Suche über Inhalte (Postgres `tsvector` Präfix-Match), Vorschau-Links, Kategorien, Tags, Medien, Benutzer und Rollen, farbige Bereichs-Badges, Deep-Link + Wort-Markierung + Pagination-Sprung beim Klick auf einen Treffer | 2026-08-06 |
 | [navigation-management.md](./content/navigation-management.md) | Navigationsverwaltung (mehrere benannte Menüs, Einträge beliebig tief verschachtelbar, zeigen auf Inhalte oder externe URLs); dokumentiert auch den am selben Tag zurückgebauten "Seitenbaum"-Ansatz | 2026-08-06 |
+| [page-designer.md](./content/page-designer.md) | Seiten-Designer: `ModuleType`-Modell (öffentlich lesbar) + Feldtyp `"modules"`, Gutenberg-artiger Block-Editor mit Bild-Resize/Ausrichtung (echtes CSS-Float) und Block-Level-Layout für Nicht-Bild-Bausteine (Zitat etc., reihen sich neben ausgerichtetem Bild ein); inkl. Bugfixes (öffentliche Vorschau, Doppel-Breiten-Anwendung) und der sechs verworfenen Vorläufer | 2026-08-08 |
 
 ## Medien (`media/`)
 

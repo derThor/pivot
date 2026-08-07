@@ -55,7 +55,7 @@ export function NavigationsManager({ items }: { items: NavigationSummary[] }) {
                 colSpan={4}
                 className="h-24 text-center text-muted-foreground"
               >
-                Noch keine Navigationen vorhanden.
+                Noch keine Menüs vorhanden.
               </TableCell>
             </TableRow>
           ) : (
@@ -155,8 +155,8 @@ export function NavigationsManager({ items }: { items: NavigationSummary[] }) {
       <ConfirmDeleteDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
-        title={`Navigation „${deleteTarget?.name}“ löschen?`}
-        description="Alle Einträge dieser Navigation werden mitgelöscht. Diese Aktion kann nicht rückgängig gemacht werden."
+        title={`Menü „${deleteTarget?.name}“ löschen?`}
+        description="Alle Einträge dieses Menüs werden mitgelöscht. Diese Aktion kann nicht rückgängig gemacht werden."
         onConfirm={handleDelete}
       />
     </div>

@@ -1,8 +1,34 @@
 import { Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { RichTextEditor } from "@/components/rich-text-editor";
-import { getContentByPreviewToken } from "@/lib/api-server";
-import type { ContentStatus } from "@/lib/api-server";
+import {
+  BlockFieldOutput,
+  blockLayoutClasses,
+  resolveBlockLayout,
+  type BlockLayoutValue,
+} from "@/components/block-field-output";
+import { RichTextDisplay } from "@/components/rich-text-display";
+import { getContentByPreviewToken, getModuleTypes } from "@/lib/api-server";
+import type { ContentStatus, ModuleType } from "@/lib/api-server";
+
+interface ModuleInstance {
+  id: string;
+  moduleTypeId: string;
+  values: Record<string, unknown>;
+  layout?: BlockLayoutValue;
+}
+
+function isModuleInstanceArray(value: unknown): value is ModuleInstance[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        typeof item === "object" &&
+        item !== null &&
+        "moduleTypeId" in item &&
+        "values" in item,
+    )
+  );
+}
 
 const statusLabel: Record<ContentStatus, string> = {
   DRAFT: "Entwurf",
@@ -17,7 +43,10 @@ export default async function ContentPreviewPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const content = await getContentByPreviewToken(token);
+  const [content, moduleTypes] = await Promise.all([
+    getContentByPreviewToken(token),
+    getModuleTypes(),
+  ]);
 
   if (!content) {
     return (
@@ -30,9 +59,9 @@ export default async function ContentPreviewPage({
     );
   }
 
-  const dataEntries = Object.entries(content.data).filter(
-    ([, value]) => typeof value === "string" && value.trim().length > 0,
-  ) as [string, string][];
+  const moduleTypeById = new Map<string, ModuleType>(
+    (moduleTypes ?? []).map((moduleType) => [moduleType.id, moduleType]),
+  );
 
   return (
     <div className="mx-auto flex min-h-svh w-full max-w-3xl flex-col gap-6 bg-background p-8">
@@ -53,11 +82,47 @@ export default async function ContentPreviewPage({
       </div>
 
       <div className="flex flex-col gap-6">
-        {dataEntries.map(([field, value]) => (
-          <div key={field} className="flex flex-col gap-1">
-            <RichTextEditor editable={false} value={value} />
-          </div>
-        ))}
+        {Object.entries(content.data).map(([field, value]) => {
+          // Bereits als Überschrift oben gezeigt – Content-Types legen
+          // häufig zusätzlich ein eigenes "title"-Feld in `data` an
+          // (parallel zum Content.title), das hier sonst doppelt
+          // erscheinen würde.
+          if (field === "title") return null;
+          if (isModuleInstanceArray(value)) {
+            return (
+              <div key={field} className="flow-root space-y-6">
+                {value.map((instance) => {
+                  const moduleType = moduleTypeById.get(instance.moduleTypeId);
+                  if (!moduleType) return null;
+                  const contentFields = moduleType.schema.fields.filter((f) => !f.option);
+                  const layout = resolveBlockLayout(contentFields, instance.values, instance.layout);
+                  return (
+                    <div
+                      key={instance.id}
+                      className={blockLayoutClasses(layout.align)}
+                      style={{ width: `${layout.width}%` }}
+                    >
+                      <div className="flow-root space-y-3">
+                        {contentFields.map((moduleField) => (
+                          <BlockFieldOutput
+                            key={moduleField.name}
+                            field={moduleField}
+                            value={instance.values[moduleField.name]}
+                            applyOwnLayout={contentFields.length > 1}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          }
+          if (typeof value === "string" && value.trim().length > 0) {
+            return <RichTextDisplay key={field} html={value} />;
+          }
+          return null;
+        })}
       </div>
     </div>
   );

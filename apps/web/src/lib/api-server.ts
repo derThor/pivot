@@ -145,6 +145,18 @@ export interface ContentTypeField {
   name: string;
   type: string;
   required?: boolean;
+  // Nur für Modul-Felder relevant: Feld ist eine Einstellung (z.B. Alt-Text,
+  // Link-Ziel) statt echter, sichtbarer Inhalt – wird im Block-Editor daher
+  // nicht inline auf der Fläche gerendert, sondern im Optionen-Popup.
+  option?: boolean;
+  // Nur für Modul-Felder relevant: reine CSS-Darstellungs-Hinweise für die
+  // Inline-Vorschau im Block-Editor (kein echtes Rendering der späteren
+  // Frontend-Optik, dafür ist strasev als Headless-CMS zu themenunabhängig).
+  variant?: "button" | "quote" | "caption";
+  // Nur für Modul-Felder relevant: Beispielwert, mit dem eine neu
+  // eingefügte Modul-Instanz vorbefüllt wird, damit man beim Einfügen
+  // sofort sieht, wie der Baustein aussieht, statt eine leere Fläche.
+  example?: string;
 }
 
 export interface ContentType {
@@ -160,6 +172,22 @@ export function getContentTypes() {
 
 export function getContentType(id: string) {
   return apiFetch<ContentType>(`/content-types/${id}`);
+}
+
+export interface ModuleType {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string | null;
+  schema: { fields: ContentTypeField[] };
+}
+
+// Öffentlicher Endpoint (siehe ModuleTypesController) – `publicApiFetch`
+// statt `apiFetch`, damit auch die anonyme Vorschau-Seite
+// (`/preview/[token]`, kein Login-Cookie) Modul-Typ-Schemas auflösen
+// kann, um `Content.data.blocks` zu rendern.
+export function getModuleTypes() {
+  return publicApiFetch<ModuleType[]>("/module-types");
 }
 
 export interface ContentDetail extends ContentListItem {

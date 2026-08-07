@@ -164,6 +164,24 @@ model ContentType {
   @@map("content_types")
 }
 
+// Modul-Typ für den Seiten-Designer (Drag&Drop-Bausteine, siehe
+// knowledge-base/content/page-designer.md). Gleiche Schema-Form wie
+// ContentType.schema ({ fields: [{name,type,required}] }), damit die
+// vorhandene dynamische Formular-Generierung wiederverwendet werden
+// kann. Modul-Instanzen selbst leben (wie andere dynamische
+// Feldwerte auch) eingebettet in Content.data, keine eigene Tabelle.
+model ModuleType {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  icon      String?
+  schema    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("module_types")
+}
+
 model Content {
   id          String        @id @default(cuid())
   title       String

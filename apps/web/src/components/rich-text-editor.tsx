@@ -214,7 +214,7 @@ export function RichTextEditor({
       id={id}
       className="flex h-full min-h-0 flex-1 flex-col gap-1 rounded-lg border border-input bg-transparent transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30"
     >
-      <div className="flex shrink-0 flex-wrap items-center gap-0.5 border-b border-input p-1">
+      <div className="sticky top-0 z-10 flex shrink-0 flex-wrap items-center gap-0.5 rounded-t-lg border-b border-input bg-background p-1">
         <Select
           value={headingValue}
           onValueChange={(next) => {
