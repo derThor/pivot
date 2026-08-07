@@ -21,7 +21,35 @@
 > Feld geändert hat") in eine gemeinsame `hasFieldChanged()`-Helper-
 > funktion gezogen, damit sie für beide Darstellungen konsistent bleibt.
 >
-> **Update 2026-08-04:** Toolbar erweitert – auswählbare Überschriften
+> **Zweites Update 2026-08-06 (Regression: leere Diffs bei
+> unverändertem Body):** Das Tabs-Update oben führte einen echten Fehler
+> ein, vom Nutzer gemeldet ("bei den Versionen sind immer leere Diffs,
+> keine Inhalte mehr vorhanden"): die neue Sichtbarkeits-Prüfung
+> (`if (!hasFieldChanged(...)) return null`) saß eine Ebene zu hoch –
+> sie unterdrückte für Richtext-Felder nicht nur den HTML-Diff (korrekt,
+> das war schon vorher so), sondern **auch die Vorschau**, sobald sich
+> der Body zwischen einer Version und dem aktuellen Stand nicht geändert
+> hatte (z.B. weil zwischen zwei Versionen nur der Status umgeschaltet
+> wurde, nicht der Inhalt selbst). Vor dem Tabs-Update wurde die Vorschau
+> für Richtext-Felder **immer** gerendert, unabhängig von `hasFieldChanged`
+> – dieses Verhalten war beim Umbau versehentlich mit unter die neue
+> Bedingung gerutscht. Fix: `hasFieldChanged`-Check nur noch für
+> Nicht-Richtext-Felder (dort weiterhin über den internen Early-Return
+> in `FieldDiff`, unverändert seit vor dem Tabs-Update); Richtext-Felder
+> rendern die Tabs (Vorschau + HTML) jetzt wieder immer.
+>
+> **Drittes Update 2026-08-06 (Regression: Editor ließ sich nicht mehr
+> bearbeiten):** Zweiter vom Nutzer gemeldeter Fehler im selben Zug
+> ("ich kann nichts mehr im Editor ändern"), verursacht durch das
+> Content-Locking-Feature (siehe
+> [content-locking.md](./content-locking.md#stolpersteine--besonderheiten)
+> für die volle Erklärung): `RichTextEditor.editable` änderte sich dort
+> zum ersten Mal *nach* dem Mounten, was zwei latente Bugs im
+> `useEditor()`-Aufruf aufdeckte – `editable` selbst wurde von Tiptap
+> nach der Erstellung nicht mehr übernommen, und `onUpdate` war
+> `editable ? … : undefined` und blieb dadurch dauerhaft `undefined`, da
+> `editable` beim allerersten Render `false` war. Fix: `onUpdate` immer
+> registrieren, zusätzlicher `useEffect` mit `editor.setEditable(editable)`.
 > H1–H6, Code-Block, HTML-Quellcode-Ansicht, Bild einfügen (aus
 > Medienbibliothek wählen oder direkt hochladen) + Ausrichtung. Details
 > im Abschnitt "Editor-Erweiterung" unten.

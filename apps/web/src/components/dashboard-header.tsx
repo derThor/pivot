@@ -29,7 +29,13 @@ function initials(user: CurrentUser) {
     .join("");
 }
 
-export function DashboardHeader({ user }: { user: CurrentUser }) {
+export function DashboardHeader({
+  user,
+  defaultPageSize,
+}: {
+  user: CurrentUser;
+  defaultPageSize: number;
+}) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -46,7 +52,7 @@ export function DashboardHeader({ user }: { user: CurrentUser }) {
   return (
     <header className="flex h-16 shrink-0 items-center gap-3 bg-background px-4">
       <SidebarTrigger className="shrink-0" />
-      <GlobalSearch />
+      <GlobalSearch defaultPageSize={defaultPageSize} />
       <div className="ml-auto flex items-center gap-1">
         <Button variant="ghost" size="icon" className="rounded-full" disabled>
           <Bell />

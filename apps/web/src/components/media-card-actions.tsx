@@ -70,37 +70,69 @@ export function MediaCardActions({
 
   return (
     <div className="flex justify-end">
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="rounded-full"
-              aria-label={`Aktionen für ${item.filename}`}
-            />
-          }
+      <div className="hidden items-center gap-1 md:flex">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`Alt-Text von ${item.filename} bearbeiten`}
+          onClick={() => setAltOpen(true)}
         >
-          <MoreVertical />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setAltOpen(true)}>
-            <Pencil />
-            Alt-Text bearbeiten
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setMoveOpen(true)}>
-            <FolderInput />
-            Verschieben
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={() => setDeleteOpen(true)}
+          <Pencil />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`${item.filename} verschieben`}
+          onClick={() => setMoveOpen(true)}
+        >
+          <FolderInput />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`${item.filename} löschen`}
+          onClick={() => setDeleteOpen(true)}
+        >
+          <Trash2 />
+        </Button>
+      </div>
+
+      <div className="md:hidden">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="rounded-full"
+                aria-label={`Aktionen für ${item.filename}`}
+              />
+            }
           >
-            <Trash2 />
-            Löschen
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            <MoreVertical />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setAltOpen(true)}>
+              <Pencil />
+              Alt-Text bearbeiten
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setMoveOpen(true)}>
+              <FolderInput />
+              Verschieben
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 />
+              Löschen
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       <Dialog open={altOpen} onOpenChange={setAltOpen}>
         <DialogContent>

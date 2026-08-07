@@ -21,6 +21,7 @@ describe('Globale Suche (e2e)', () => {
   let tagId: string;
   let mediaId: string;
   let contentId: string;
+  let previewLinkId: string;
   let targetUserId: string;
   let targetRoleId: string;
 
@@ -100,6 +101,16 @@ describe('Globale Suche (e2e)', () => {
     });
     contentId = content.id;
 
+    const previewLink = await prisma.contentPreviewToken.create({
+      data: {
+        token: `${token}-preview-token`,
+        contentId: content.id,
+        createdById: adminUser.id,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      },
+    });
+    previewLinkId = previewLink.id;
+
     const category = await prisma.category.create({
       data: { name: `${token} Kategorie`, slug: `${token}-kategorie` },
     });
@@ -169,7 +180,7 @@ describe('Globale Suche (e2e)', () => {
       .expect(400);
   });
 
-  it('Admin findet Treffer über alle sechs Bereiche (Inhalt, Kategorie, Tag, Medium, Benutzer, Rolle)', async () => {
+  it('Admin findet Treffer über alle sieben Bereiche (Inhalt, Vorschau-Link, Kategorie, Tag, Medium, Benutzer, Rolle)', async () => {
     const res = await request(app.getHttpServer())
       .get('/v1/search')
       .query({ q: token, limit: 10 })
@@ -181,6 +192,7 @@ describe('Globale Suche (e2e)', () => {
       'category',
       'content',
       'media',
+      'previewLink',
       'role',
       'tag',
       'user',
@@ -189,6 +201,9 @@ describe('Globale Suche (e2e)', () => {
     expect(
       res.body.find((r: { type: string }) => r.type === 'content').id,
     ).toBe(contentId);
+    expect(
+      res.body.find((r: { type: string }) => r.type === 'previewLink').id,
+    ).toBe(previewLinkId);
     expect(
       res.body.find((r: { type: string }) => r.type === 'category').id,
     ).toBe(categoryId);
@@ -206,7 +221,7 @@ describe('Globale Suche (e2e)', () => {
     ).toBe(targetRoleId);
   });
 
-  it('Nutzer mit nur content:read sieht ausschließlich Content-Treffer', async () => {
+  it('Nutzer mit nur content:read sieht ausschließlich Content- und Vorschau-Link-Treffer', async () => {
     const res = await request(app.getHttpServer())
       .get('/v1/search')
       .query({ q: token, limit: 10 })
@@ -215,7 +230,10 @@ describe('Globale Suche (e2e)', () => {
 
     expect(res.body.length).toBeGreaterThan(0);
     expect(
-      res.body.every((r: { type: string }) => r.type === 'content'),
+      res.body.every(
+        (r: { type: string }) =>
+          r.type === 'content' || r.type === 'previewLink',
+      ),
     ).toBe(true);
   });
 

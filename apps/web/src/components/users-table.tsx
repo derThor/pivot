@@ -12,10 +12,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { HighlightText } from "@/components/highlight-text";
 import { UserRoleSelect } from "@/components/user-role-select";
 import { UserRowActions } from "@/components/user-row-actions";
 import { SelectionToolbar } from "@/components/selection-toolbar";
 import { useSelection } from "@/hooks/use-selection";
+import { useHighlightParam } from "@/hooks/use-highlight-param";
 import { formatName } from "@/lib/utils";
 import type { CurrentUser, Role } from "@/lib/api-server";
 
@@ -31,6 +33,7 @@ export function UsersTable({
   allowEmailChange: boolean;
 }) {
   const router = useRouter();
+  const { activeId, query: highlightQuery } = useHighlightParam("user-row");
   const deletableIds = users
     .filter((user) => user.id !== currentUserId)
     .map((user) => user.id);
@@ -86,7 +89,7 @@ export function UsersTable({
               users.map((user) => {
                 const isSelf = user.id === currentUserId;
                 return (
-                  <TableRow key={user.id}>
+                  <TableRow key={user.id} id={`user-row-${user.id}`}>
                     <TableCell>
                       {!isSelf && (
                         <Checkbox
@@ -97,7 +100,11 @@ export function UsersTable({
                       )}
                     </TableCell>
                     <TableCell className="font-medium">
-                      {formatName(user)}
+                      <HighlightText
+                        text={formatName(user)}
+                        query={highlightQuery}
+                        active={activeId === user.id}
+                      />
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>

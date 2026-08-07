@@ -24,6 +24,15 @@ export class TagsService {
     };
   }
 
+  /** Ermittelt, auf welcher Seite (bei gegebener pageSize) ein Eintrag liegt. */
+  async findPage(id: string, pageSize: number) {
+    const target = await this.prisma.tag.findUniqueOrThrow({ where: { id } });
+    const rank = await this.prisma.tag.count({
+      where: { name: { lt: target.name } },
+    });
+    return { page: Math.floor(rank / pageSize) + 1 };
+  }
+
   async create(dto: CreateTagDto) {
     const existing = await this.prisma.tag.findFirst({
       where: { OR: [{ name: dto.name }, { slug: dto.slug }] },

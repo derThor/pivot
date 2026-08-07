@@ -13,6 +13,13 @@ import {
   FolderTree,
   Tags,
   Globe,
+  Webhook,
+  Link2,
+  Compass,
+  Layers,
+  ChevronRight,
+  Puzzle,
+  Wrench,
   LogOut,
 } from "lucide-react";
 
@@ -27,12 +34,21 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 import type { CurrentUser } from "@/lib/api-server";
 import { mediaUrl } from "@/lib/media";
 
 const navActiveClass =
-  "-mx-2 h-auto w-[calc(100%+1rem)] gap-2 overflow-hidden rounded-none px-4 py-3 transition-[gap] duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 data-active:bg-gradient-to-r data-active:from-orange-400 data-active:to-rose-500 data-active:text-white data-active:shadow-sm data-active:hover:text-white";
+  "h-auto w-full gap-2 overflow-hidden rounded-none pl-10 pr-4 py-3 transition-[gap,padding] duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:pl-4 data-active:bg-gradient-to-r data-active:from-orange-400 data-active:to-rose-500 data-active:text-white data-active:shadow-sm data-active:hover:text-white";
+
+// Footer-Einträge (Einstellungen/Abmelden) liegen direkt im gepolsterten
+// SidebarFooter, nicht in dem eigenen Voll-Breite-Wrapper der
+// Akkordeon-Gruppen – bekommen deshalb ihren eigenen Rand-zu-Rand-Trick
+// und dieselbe Einrückung wie die erste Ebene (Gruppen-Header).
+const navFooterActiveClass =
+  "-mx-2 h-auto w-[calc(100%+1rem)] gap-2 overflow-hidden rounded-none px-4 py-3 transition-[gap,padding] duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 data-active:bg-gradient-to-r data-active:from-orange-400 data-active:to-rose-500 data-active:text-white data-active:shadow-sm data-active:hover:text-white";
 
 const navLabelClass =
   "overflow-hidden whitespace-nowrap transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0";
@@ -40,19 +56,38 @@ const navLabelClass =
 const navGroups = [
   {
     label: "Übersicht",
+    icon: LayoutDashboard,
     items: [{ title: "Dashboard", url: "/dashboard", icon: LayoutDashboard }],
   },
   {
     label: "Inhalte",
+    icon: Layers,
     items: [
-      { title: "Inhalte", url: "/dashboard/content", icon: FileText },
+      {
+        title: "Navigation",
+        url: "/dashboard/navigation",
+        icon: Compass,
+        permission: "settings:manage",
+      },
+      { title: "Seiten", url: "/dashboard/content", icon: FileText },
       { title: "Medien", url: "/dashboard/media", icon: ImageIcon },
       { title: "Kategorien", url: "/dashboard/categories", icon: FolderTree },
       { title: "Tags", url: "/dashboard/tags", icon: Tags },
+      {
+        title: "Vorschau-Links",
+        url: "/dashboard/content/preview-links",
+        icon: Link2,
+      },
     ],
   },
   {
+    label: "Erweiterungen",
+    icon: Puzzle,
+    items: [],
+  },
+  {
     label: "Verwaltung",
+    icon: Wrench,
     items: [
       {
         title: "Benutzer",
@@ -67,6 +102,12 @@ const navGroups = [
         permission: "roles:manage",
       },
       { title: "Websites", url: "/dashboard/sites", icon: Globe },
+      {
+        title: "Webhooks",
+        url: "/dashboard/webhooks",
+        icon: Webhook,
+        permission: "settings:manage",
+      },
     ],
   },
 ] as const;
@@ -74,6 +115,27 @@ const navGroups = [
 function fallbackInitials(companyName?: string | null) {
   const trimmed = companyName?.trim();
   return trimmed ? trimmed.slice(0, 2).toUpperCase() : "TW";
+}
+
+/**
+ * Wählt die Gruppe des am genauesten passenden Nav-Items (längste
+ * übereinstimmende URL) statt der ersten gefundenen – sonst würde "/dashboard"
+ * (Dashboard-Link) als Präfix jeder anderen Route immer zuerst matchen.
+ */
+function findActiveGroupLabel(pathname: string): string | null {
+  let bestLabel: string | null = null;
+  let bestLength = -1;
+  for (const group of navGroups) {
+    for (const item of group.items) {
+      const matches =
+        pathname === item.url || pathname.startsWith(`${item.url}/`);
+      if (matches && item.url.length > bestLength) {
+        bestLabel = group.label;
+        bestLength = item.url.length;
+      }
+    }
+  }
+  return bestLabel;
 }
 
 export function AppSidebar({
@@ -89,18 +151,48 @@ export function AppSidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { state: sidebarState } = useSidebar();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
   const permissions = user.permissions ?? [];
   const visibleNavGroups = navGroups
     .map((group) => ({
       ...group,
+      originalItemCount: group.items.length as number,
       items: group.items.filter(
         (item) =>
           !("permission" in item) || permissions.includes(item.permission),
       ),
     }))
-    .filter((group) => group.items.length > 0);
+    .filter((group) => group.originalItemCount === 0 || group.items.length > 0);
   const canManageSettings = permissions.includes("settings:manage");
+
+  const [openGroups, setOpenGroups] = React.useState<Set<string>>(() => {
+    const activeLabel = findActiveGroupLabel(pathname);
+    return new Set(activeLabel ? [activeLabel] : []);
+  });
+  // Beim Navigieren in eine andere Gruppe hinein diese zusätzlich aufklappen
+  // (bereits offene Gruppen bleiben offen) – als Render-Zeit-Anpassung statt
+  // Effekt, da es sich um eine reine Ableitung aus `pathname` handelt.
+  const [syncedPathname, setSyncedPathname] = React.useState(pathname);
+  if (pathname !== syncedPathname) {
+    setSyncedPathname(pathname);
+    const activeLabel = findActiveGroupLabel(pathname);
+    if (activeLabel && !openGroups.has(activeLabel)) {
+      setOpenGroups((prev) => new Set(prev).add(activeLabel));
+    }
+  }
+
+  function toggleGroup(label: string) {
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) {
+        next.delete(label);
+      } else {
+        next.add(label);
+      }
+      return next;
+    });
+  }
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -145,30 +237,79 @@ export function AppSidebar({
         </div>
       </SidebarHeader>
       <SidebarContent>
-        {visibleNavGroups.map((group) => (
-          <SidebarGroup key={group.label}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => (
-                  <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton
-                      render={<Link href={item.url} />}
-                      isActive={pathname === item.url}
-                      tooltip={item.title}
-                      className={navActiveClass}
-                    >
-                      <item.icon />
-                      <span className={navLabelClass}>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+        {visibleNavGroups.map((group) => {
+          // Im eingeklappten (icon-only) Zustand macht ein Auf-/Zuklappen der
+          // Gruppen keinen Sinn (Labels sind ohnehin ausgeblendet) – Items
+          // bleiben dann immer sichtbar. Gruppen ohne Items (aktuell nur
+          // "Erweiterungen") haben in diesem Zustand nichts anzuzeigen (kein
+          // Icon, kein Platzhaltertext) und werden komplett übersprungen –
+          // sonst entstünde eine leere Lücke im eingeklappten Zustand.
+          if (sidebarState === "collapsed" && group.items.length === 0) {
+            return null;
+          }
+          const isOpen =
+            sidebarState === "collapsed" || openGroups.has(group.label);
+          return (
+            <SidebarGroup key={group.label}>
+              <SidebarGroupLabel
+                render={<button type="button" />}
+                onClick={() => toggleGroup(group.label)}
+                className="-mx-2 w-[calc(100%+1rem)] cursor-pointer justify-between gap-2 rounded-none px-4 text-sm font-normal text-sidebar-foreground"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <group.icon className="size-4 shrink-0" />
+                  <span className={navLabelClass}>{group.label}</span>
+                </span>
+                <ChevronRight
+                  className={cn(
+                    "size-4 shrink-0 transition-transform duration-200 ease-linear",
+                    navLabelClass,
+                    isOpen && "rotate-90",
+                  )}
+                />
+              </SidebarGroupLabel>
+              <div
+                className={cn(
+                  "-mx-2 grid w-[calc(100%+1rem)] transition-[grid-template-rows] duration-200 ease-linear",
+                  isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                )}
+              >
+                <div className="overflow-hidden">
+                  <SidebarGroupContent>
+                    {group.items.length === 0 ? (
+                      <p
+                        className={cn(
+                          "px-4 py-1 text-xs text-sidebar-foreground/50",
+                          navLabelClass,
+                        )}
+                      >
+                        Bald verfügbar
+                      </p>
+                    ) : (
+                      <SidebarMenu>
+                        {group.items.map((item) => (
+                          <SidebarMenuItem key={item.url}>
+                            <SidebarMenuButton
+                              render={<Link href={item.url} />}
+                              isActive={pathname === item.url}
+                              tooltip={item.title}
+                              className={navActiveClass}
+                            >
+                              <item.icon />
+                              <span className={navLabelClass}>{item.title}</span>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
+                    )}
+                  </SidebarGroupContent>
+                </div>
+              </div>
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t">
         <SidebarMenu>
           {canManageSettings && (
             <SidebarMenuItem>
@@ -176,7 +317,7 @@ export function AppSidebar({
                 render={<Link href="/dashboard/settings" />}
                 isActive={pathname === "/dashboard/settings"}
                 tooltip="Einstellungen"
-                className={navActiveClass}
+                className={navFooterActiveClass}
               >
                 <Settings />
                 <span className={navLabelClass}>Einstellungen</span>
@@ -188,7 +329,7 @@ export function AppSidebar({
               onClick={handleLogout}
               disabled={isLoggingOut}
               tooltip="Abmelden"
-              className={navActiveClass}
+              className={navFooterActiveClass}
             >
               <LogOut />
               <span className={navLabelClass}>

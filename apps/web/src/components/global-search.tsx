@@ -6,6 +6,7 @@ import {
   FileText,
   FolderTree,
   Image as ImageIcon,
+  Link2,
   Search,
   ShieldCheck,
   Tag as TagIcon,
@@ -22,7 +23,8 @@ type SearchResultType =
   | "tag"
   | "media"
   | "user"
-  | "role";
+  | "role"
+  | "previewLink";
 
 interface SearchResult {
   type: SearchResultType;
@@ -83,16 +85,60 @@ const typeMeta: Record<
     badgeClassName:
       "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400",
   },
+  previewLink: {
+    label: "Vorschau-Link",
+    icon: Link2,
+    href: "/dashboard/content/preview-links",
+    badgeClassName:
+      "bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-400",
+  },
 };
 
-function resultHref(result: SearchResult) {
+/**
+ * Ermittelt für Nicht-Inhalte-Treffer (die keine eigene Detailseite
+ * haben, nur eine per Dialog bearbeitbare Listen-Zeile/-Kachel), auf
+ * welcher Seite der paginierten Liste der Treffer tatsächlich liegt –
+ * sonst würde man immer auf Seite 1 landen und die Markierung liefe bei
+ * größeren Listen ins Leere.
+ */
+async function locateResult(result: SearchResult, defaultPageSize: number) {
+  const res = await fetch(
+    `/api/search/locate?type=${result.type}&id=${result.id}&pageSize=${defaultPageSize}`,
+  );
+  const data = await res.json().catch(() => null);
+  return data as { page?: number; folderId?: string | null } | null;
+}
+
+async function resultHref(
+  result: SearchResult,
+  searchTerm: string,
+  defaultPageSize: number,
+) {
+  // Inhalte haben eine eigene Detailseite (Editor) – dahin springt man
+  // direkt, ohne Markierung. Alle anderen Bereiche werden nur per Dialog
+  // auf ihrer Listen-Seite bearbeitet, dort wird stattdessen der
+  // gesuchte Begriff im Treffer-Text markiert (siehe useHighlightParam)
+  // und – bei Bedarf – zur richtigen Seite navigiert.
   if (result.type === "content") {
     return `/dashboard/content/${result.id}/edit`;
   }
-  return typeMeta[result.type].href;
+
+  const location = await locateResult(result, defaultPageSize);
+  const params = new URLSearchParams({ highlight: result.id, q: searchTerm });
+  if (location?.page && location.page > 1) {
+    params.set("page", String(location.page));
+  }
+  if (result.type === "media" && location?.folderId) {
+    params.set("folder", location.folderId);
+  }
+  return `${typeMeta[result.type].href}?${params.toString()}`;
 }
 
-export function GlobalSearch() {
+export function GlobalSearch({
+  defaultPageSize,
+}: {
+  defaultPageSize: number;
+}) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
@@ -130,10 +176,11 @@ export function GlobalSearch() {
     return () => clearTimeout(timeout);
   }, [query]);
 
-  function goTo(result: SearchResult) {
+  async function goTo(result: SearchResult) {
+    const searchTerm = query.trim();
     setOpen(false);
     setQuery("");
-    router.push(resultHref(result));
+    router.push(await resultHref(result, searchTerm, defaultPageSize));
   }
 
   return (

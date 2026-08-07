@@ -5,6 +5,66 @@
 (`src/components/{global-search,dashboard-header}.tsx`,
 `src/app/api/{search,content}/route.ts`)
 
+> **Update 2026-08-06 (Vorschau-Links ergänzt):** Auf Nutzerwunsch
+> ("vorschaulink in der suche berücksichtigen, merken: alles neue in der
+> suche berücksichtigen und entsprechend farblich flaggen" – siehe auch
+> die Standing-Rule dazu) um den Bereich `previewLink` erweitert, gegated
+> auf `content:read` (dieselbe Permission wie das Anlegen/Auflisten der
+> Links selbst). Gesucht wird über den **Titel des verknüpften Inhalts**
+> (`content.title`), nicht über den Token selbst (ein zufälliger
+> Hex-String, für Volltextsuche bedeutungslos) – nur nicht abgelaufene
+> Links (`expiresAt > now`) tauchen auf. Badge-Farbe: Cyan (neu, bisher
+> unbenutzt), Icon `Link2` (dasselbe wie im `PreviewLinksDialog`/der
+> Sidebar), Klick navigiert zur inhaltsübergreifenden Liste
+> `/dashboard/content/preview-links`. Damit deckt die Suche jetzt
+> **sieben** Bereiche ab.
+
+> **Update 2026-08-06 (Deep-Link + Wort-Markierung + Pagination-Sprung):**
+> Auf Nutzerwunsch ("wenn man in der suche das gewünschte anklickt, soll
+> direkt dahingesprungen werden und das suchwort markiert" /
+> "wo es eine detailseite gibt, sofort zur detailseite springen, ohne
+> markieren" / "bedenke beim hinspringen das pagination, immer auf die
+> richtige seite springen"): Klick auf einen Treffer springt jetzt
+> gezielt zum Eintrag, nicht mehr nur auf die generische Listen-Seite:
+> - **Content** hat eine echte Detailseite (der Editor) – dahin wird wie
+>   bisher direkt verlinkt, ohne Markierung (macht dort keinen Sinn).
+> - **Kategorie/Tag/Medium/Benutzer/Rolle/Vorschau-Link** werden nur per
+>   Dialog auf ihrer Listen-Seite bearbeitet, keine eigene Detailroute.
+>   Für sie: (1) neuer Backend-Endpoint `GET /v1/<ressource>/:id/page`
+>   pro betroffenem Modul (`categories`, `tags`, `roles`, `users`,
+>   `media`, `content/preview-links`) ermittelt anhand der **exakt
+>   gleichen Sortierung wie die jeweilige Listen-Seite** (nicht die
+>   Sortierung der Suche selbst – die weicht z.B. bei `users` ab, siehe
+>   Stolpersteine), auf welcher Seite der Eintrag bei gegebener
+>   `pageSize` liegt (`rank = count(… vor diesem Eintrag …)`,
+>   `page = floor(rank / pageSize) + 1`). Für `media` zusätzlich
+>   `folderId`, weil die Medien-Übersicht ordnergefiltert ist – ein
+>   Treffer aus einem Unterordner taucht auf der Root-Seite nie auf,
+>   ohne Ordnerwechsel würde man ins Leere springen. (2) Frontend ruft
+>   vor der Navigation eine neue, generische BFF-Route
+>   `GET /api/search/locate?type=&id=&pageSize=` auf (mappt `type` auf
+>   den richtigen Backend-Pfad, ein einziges File statt sechs
+>   Fast-Duplikaten), hängt `?page=&folder=&highlight=<id>&q=<begriff>`
+>   an die Ziel-URL an.
+> - Neuer Hook `useHighlightParam(prefix)` (`apps/web/src/hooks/`): liest
+>   `highlight`/`q` aus der URL, scrollt das Element mit
+>   `id={`${prefix}-${id}`}` ins Blickfeld (`scrollIntoView`), liefert
+>   die aktive ID zurück. **Markierung bleibt bestehen, bis irgendwo auf
+>   der Seite geklickt wird** (expliziter Nutzerwunsch, kein Auto-Timeout)
+>   – ein `document`-Click-Listener in der Capture-Phase, `{ once: true }`.
+> - Neue Komponente `HighlightText` (`apps/web/src/components/`): hebt
+>   das erste Vorkommen von `q` im angezeigten Text farblich hervor
+>   (`<mark>`, Orange, `transition-colors` für sanftes Verblassen) – **im
+>   Text selbst, nicht als Zeilen-Hintergrund** (erste Version hatte
+>   testweise den ganzen Zeilen-Hintergrund eingefärbt, das war
+>   ausdrücklich nicht gewollt: "das wort soll gehilightet werden, nicht
+>   die spalte vom background her").
+> - Bekannte Grenze: die Rangberechnung ist ein einfacher `count(…)`
+>   über dasselbe Sortierfeld – bei sehr vielen exakt gleichen Werten
+>   (z.B. viele Kategorien mit identischem Namen, was durch die
+>   Unique-Constraint ohnehin ausgeschlossen ist) wäre das Ranking nicht
+>   exakt, praktisch kein Problem in diesem Projekt.
+
 > **Update 2026-08-06 (Benutzer + Rollen ergänzt, farbige Bereichs-Badges):**
 > Auf Nutzerwunsch um zwei weitere Bereiche erweitert: `User`
 > (Vorname/Nachname/E-Mail) und `Role` (Name/Beschreibung), gegated über
@@ -125,18 +185,43 @@
   (`exports: [ContentService]`), damit `SearchModule` sie importieren
   kann – war vorher nicht exportiert, da `ContentService` bis dahin nur
   innerhalb des eigenen Moduls gebraucht wurde.
+- **Sortierung der Suche ≠ Sortierung der Listen-Seite**: `searchUsers()`
+  in `SearchService` sortiert nach `lastName asc` (sinnvoll für eine
+  Ergebnisliste), aber `UsersService.findAll()` (die echte
+  Benutzer-Übersicht) sortiert nach `createdAt desc`. Der
+  `:id/page`-Endpoint für den Pagination-Sprung **muss** die Sortierung
+  der Listen-Seite verwenden, nicht die der Suche – sonst würde die
+  berechnete Seitenzahl nicht zu dem passen, was die Zielseite
+  tatsächlich anzeigt. Beim Bauen des Features zunächst übersehen, beim
+  Nachschauen der `findAll()`-Methoden aufgefallen, bevor es zum Bug
+  wurde.
+- **`figure`/`<mark>` statt Zeilen-Hintergrund**: eine erste Version
+  färbte die ganze `TableRow`/Media-Karte ein (`bg-orange-100/70` bzw.
+  `ring-2`) – auf expliziten Nutzerwunsch durch eine reine
+  Text-Markierung im jeweiligen Titel-/Namensfeld ersetzt.
 
 ## Relevante Dateien
 
-- `apps/api/src/search/{search.module,search.controller,search.service}.ts`,
-  `dto/global-search.dto.ts`
-- `apps/api/src/content/content.service.ts` (`search()`, jetzt mit
-  Präfix-`tsquery`), `content.module.ts` (Export)
-- `apps/web/src/components/global-search.tsx`,
-  `src/components/dashboard-header.tsx`
-- `apps/web/src/app/api/search/route.ts` (neuer BFF-Endpoint)
+- `apps/api/src/search/{search.module,search.controller,search.service}.ts`
+  (`searchPreviewLinks()`), `dto/global-search.dto.ts`
+- `apps/api/src/common/dto/find-page.dto.ts` (geteiltes `pageSize`-DTO
+  für alle `:id/page`-Endpoints)
+- `apps/api/src/{categories,tags,roles,users,media}/*.service.ts`
+  (`findPage()`), `*.controller.ts` (`GET :id/page`)
+- `apps/api/src/content/content.service.ts` (`search()` mit
+  Präfix-`tsquery`, `findPreviewLinkPage()`), `content.controller.ts`
+  (`GET preview-links/:linkId/page`), `content.module.ts` (Export)
+- `apps/web/src/components/{global-search,dashboard-header}.tsx`
+- `apps/web/src/hooks/use-highlight-param.ts`,
+  `src/components/highlight-text.tsx`
+- `apps/web/src/components/{taxonomy-manager,users-table,roles-table,media-grid,preview-links-table}.tsx`
+  (alle nutzen `useHighlightParam` + `HighlightText`)
+- `apps/web/src/app/api/search/{route.ts,locate/route.ts}` (neue
+  generische BFF-Route für den Pagination-Sprung)
+- `apps/web/src/app/dashboard/layout.tsx` (reicht `defaultPageSize` bis
+  zu `GlobalSearch` durch)
 - `apps/api/test/global-search.e2e-spec.ts` (401/400, Treffer über alle
-  sechs Bereiche inkl. Permission-Scoping für Benutzer/Rollen,
+  sieben Bereiche inkl. Permission-Scoping für Benutzer/Rollen,
   Präfix-Suche mit 3 Zeichen), `apps/api/test/content.e2e-spec.ts`
   (Content-Suche im dynamischen Body)
 
@@ -144,8 +229,6 @@
 
 - Kein GIN-Index / materialisierte `tsvector`-Spalte – bei sehr vielen
   Content-Einträgen würde die Live-Berechnung pro Query langsamer.
-- Kategorie-/Tag-/Medien-/Benutzer-/Rollen-Treffer verlinken nur auf die
-  jeweilige Listen-Seite, nicht direkt auf den konkreten Eintrag (kein
-  Deep-Link/Highlight-Mechanismus für einzelne Zeilen vorhanden).
-- Kein signierter Vorschau-Link aus den Suchergebnissen (siehe separater
-  Roadmap-Punkt "Content-Vorschau-Links", noch offen).
+- Kein e2e-Test für die neuen `:id/page`-Endpoints und die
+  `/api/search/locate`-BFF-Route (nur manuell per `curl` gegen die
+  laufenden Dev-Server verifiziert).

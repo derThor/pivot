@@ -24,6 +24,7 @@ import { UpdateMediaDto } from './dto/update-media.dto';
 import { multerOptions } from './media.config';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { FindPageDto } from '../common/dto/find-page.dto';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @ApiTags('media')
@@ -36,6 +37,12 @@ export class MediaController {
   @Get()
   findAll(@Query() query: QueryMediaDto) {
     return this.mediaService.findAll(query);
+  }
+
+  @RequirePermission('media:read')
+  @Get(':id/page')
+  findPage(@Param('id') id: string, @Query() query: FindPageDto) {
+    return this.mediaService.findPage(id, query.pageSize);
   }
 
   @RequirePermission('media:create')

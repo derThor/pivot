@@ -2,6 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { ContentService } from '../src/content/content.service';
 import { createTestApp } from './setup-app';
 
 describe('Content-Flow (e2e)', () => {
@@ -312,6 +313,76 @@ describe('Content-Flow (e2e)', () => {
 
     expect(res.body.categories).toHaveLength(1);
     expect(res.body.categories[0].id).toBe(categoryTwoId);
+  });
+
+  it('POST /v1/content mit status=SCHEDULED ohne scheduledFor liefert 400', async () => {
+    const contentType = await prisma.contentType.findUniqueOrThrow({
+      where: { slug: contentTypeSlug },
+    });
+    await request(app.getHttpServer())
+      .post('/v1/content')
+      .set(auth())
+      .send({
+        title: 'E2E Ohne Zeitpunkt',
+        slug: 'e2e-ohne-zeitpunkt',
+        contentTypeId: contentType.id,
+        data: { body: 'x' },
+        status: 'SCHEDULED',
+      })
+      .expect(400);
+  });
+
+  it('PATCH /v1/content/:id auf status=SCHEDULED ohne scheduledFor liefert 400', async () => {
+    await request(app.getHttpServer())
+      .patch(`/v1/content/${createdId}`)
+      .set(auth())
+      .send({ status: 'SCHEDULED' })
+      .expect(400);
+  });
+
+  it('PATCH /v1/content/:id auf status=SCHEDULED mit scheduledFor setzt beides', async () => {
+    const scheduledFor = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const res = await request(app.getHttpServer())
+      .patch(`/v1/content/${createdId}`)
+      .set(auth())
+      .send({ status: 'SCHEDULED', scheduledFor })
+      .expect(200);
+
+    expect(res.body.status).toBe('SCHEDULED');
+    expect(res.body.scheduledFor).toBe(scheduledFor);
+  });
+
+  it('der Scheduler lässt einen erst in der Zukunft fälligen Inhalt unangetastet', async () => {
+    const contentService = app.get(ContentService);
+    const publishedCount = await contentService.publishDueScheduled();
+
+    const still = await request(app.getHttpServer())
+      .get(`/v1/content/${createdId}`)
+      .set(auth())
+      .expect(200);
+    expect(still.body.status).toBe('SCHEDULED');
+    // Nur zur Doku: andere, bereits fällige Test-Fixtures könnten den
+    // Zähler > 0 machen, daher hier keine strikte 0-Prüfung.
+    expect(publishedCount).toBeGreaterThanOrEqual(0);
+  });
+
+  it('der Scheduler veröffentlicht einen fälligen Inhalt automatisch', async () => {
+    const pastDate = new Date(Date.now() - 60 * 1000);
+    await prisma.content.update({
+      where: { id: createdId },
+      data: { scheduledFor: pastDate },
+    });
+
+    const contentService = app.get(ContentService);
+    const publishedCount = await contentService.publishDueScheduled();
+    expect(publishedCount).toBeGreaterThanOrEqual(1);
+
+    const res = await request(app.getHttpServer())
+      .get(`/v1/content/${createdId}`)
+      .set(auth())
+      .expect(200);
+    expect(res.body.status).toBe('PUBLISHED');
+    expect(res.body.publishedAt).not.toBeNull();
   });
 
   it('DELETE /v1/content/:id entfernt den Eintrag', async () => {

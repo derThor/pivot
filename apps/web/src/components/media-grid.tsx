@@ -5,11 +5,13 @@ import { FolderInput } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { HighlightText } from "@/components/highlight-text";
 import { MediaCardActions } from "@/components/media-card-actions";
 import { MediaPreviewDialog } from "@/components/media-preview-dialog";
 import { MoveToFolderDialog } from "@/components/move-to-folder-dialog";
 import { SelectionToolbar } from "@/components/selection-toolbar";
 import { useSelection } from "@/hooks/use-selection";
+import { useHighlightParam } from "@/hooks/use-highlight-param";
 import { formatBytes } from "@/lib/utils";
 import type { MediaFolder, MediaItem } from "@/lib/api-server";
 
@@ -21,6 +23,7 @@ export function MediaGrid({
   folders?: MediaFolder[];
 }) {
   const router = useRouter();
+  const { activeId, query: highlightQuery } = useHighlightParam("media-item");
   const { selected, toggle, toggleAll, clear, allSelected, someSelected, count } =
     useSelection(items.map((item) => item.id));
 
@@ -73,6 +76,7 @@ export function MediaGrid({
         {items.map((item) => (
           <figure
             key={item.id}
+            id={`media-item-${item.id}`}
             className="relative flex flex-col gap-2 overflow-hidden rounded-2xl bg-card shadow-card"
           >
             <Checkbox
@@ -84,7 +88,11 @@ export function MediaGrid({
             <MediaPreviewDialog item={item} />
             <figcaption className="flex flex-col gap-1 px-4 pb-4">
               <span className="truncate text-xs font-medium">
-                {item.filename}
+                <HighlightText
+                  text={item.filename}
+                  query={highlightQuery}
+                  active={activeId === item.id}
+                />
               </span>
               <span className="text-xs text-muted-foreground">
                 {formatBytes(item.size)}

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
@@ -17,6 +18,8 @@ import { SettingsModule } from './settings/settings.module';
 import { RolesModule } from './roles/roles.module';
 import { MailerModule } from './mailer/mailer.module';
 import { SearchModule } from './search/search.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
+import { NavigationModule } from './navigation/navigation.module';
 import { validateEnv } from './common/config/env.validation';
 
 @Module({
@@ -29,6 +32,7 @@ import { validateEnv } from './common/config/env.validation';
     ThrottlerModule.forRoot({
       throttlers: [{ ttl: 60_000, limit: 100 }],
     }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -42,6 +46,8 @@ import { validateEnv } from './common/config/env.validation';
     RolesModule,
     MailerModule,
     SearchModule,
+    WebhooksModule,
+    NavigationModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

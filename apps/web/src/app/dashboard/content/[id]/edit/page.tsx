@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ContentEditorForm } from "@/components/content-editor-form";
+import { PreviewLinksDialog } from "@/components/preview-links-dialog";
 import {
   getCategories,
   getContent,
@@ -38,14 +39,17 @@ export default async function EditContentPage({
           </h1>
           <p className="text-sm text-muted-foreground">{content.title}</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          render={<Link href={`/dashboard/content/${id}/versions`} />}
-        >
-          <History />
-          Versionen anzeigen
-        </Button>
+        <div className="flex shrink-0 gap-2">
+          <PreviewLinksDialog contentId={id} />
+          <Button
+            variant="outline"
+            size="sm"
+            render={<Link href={`/dashboard/content/${id}/versions`} />}
+          >
+            <History />
+            Versionen anzeigen
+          </Button>
+        </div>
       </div>
       <ContentEditorForm
         contentTypes={contentTypes ?? []}

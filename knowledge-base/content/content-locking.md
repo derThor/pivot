@@ -78,6 +78,29 @@
 
 - Für "Neuer Inhalt" (`content` ist `undefined`) läuft keine der
   Lock-Effects – `isEditing` gate am Anfang jedes Effects.
+- **Echter Regressions-Bug, vom Nutzer gemeldet ("ich kann nichts mehr
+  im Editor ändern")**: `RichTextEditor` bekam durch dieses Feature zum
+  ersten Mal einen `editable`-Prop, der sich **nach dem Mounten**
+  ändert (`editable={!lockBlocksEditing}`, startet während der kurzen
+  Lock-Prüfphase als `false`, wird dann `true`, sobald die Sperre
+  erworben ist). `useEditor()` von Tiptap übernimmt einen geänderten
+  `editable`-Wert aber **nicht automatisch** nach der Erstellung – der
+  Editor blieb dadurch dauerhaft nicht editierbar, selbst nachdem die
+  Sperre erfolgreich erworben war. Zusätzlich war `onUpdate` ursprünglich
+  `editable ? (...) : undefined` – da `editable` beim allerersten Render
+  `false` war, blieb `onUpdate` (und damit jede Weitergabe von Änderungen
+  an `onChange`) dauerhaft `undefined`, selbst nachdem `editable` später
+  `true` wurde. Fix in `rich-text-editor.tsx`: `onUpdate` wird jetzt
+  immer registriert (sicher, da externe Content-Syncs bewusst
+  `emitUpdate: false` nutzen und ein schreibgeschützter Editor ohnehin
+  keine Nutzereingabe zulässt), zusätzlich ein `useEffect`, der
+  `editor.setEditable(editable)` bei jeder Änderung explizit nachzieht
+  (der von Tiptap dokumentierte Weg, `editable` reaktiv zu halten).
+  Siehe auch [publishing-automation.md](./publishing-automation.md) für
+  denselben Denkfehler an einer anderen Stelle (Kalender-Popover-
+  Clipping) – beides Fälle, in denen eine bestehende Komponente zum
+  ersten Mal in einer neuen, dynamischeren Weise genutzt wurde, als sie
+  ursprünglich gebaut war.
 - `navigator.sendBeacon` für den `beforeunload`-Fall sendet Cookies bei
   Same-Origin-Requests automatisch mit, die httpOnly-Access-Token-Cookie-
   Auth funktioniert daher ohne zusätzlichen Header.

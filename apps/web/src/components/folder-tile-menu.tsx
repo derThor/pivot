@@ -49,10 +49,11 @@ export function FolderTileMenu({ folder }: { folder: MediaFolder }) {
           <DropdownMenuItem
             variant="destructive"
             disabled={folder.isSystem}
+            title={folder.isSystem ? "Systemordner können nicht gelöscht werden." : undefined}
             onClick={() => setDeleteOpen(true)}
           >
             <Trash2 />
-            {folder.isSystem ? "Löschen (Systemordner)" : "Löschen"}
+            Löschen
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

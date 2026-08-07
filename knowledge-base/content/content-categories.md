@@ -5,6 +5,15 @@
 (`src/components/content-editor-form.tsx`, `content-table.tsx`,
 `src/app/dashboard/content/{new,[id]/edit}/page.tsx`)
 
+> **Update 2026-08-06 (Ausgewählte Kategorien als Badges):** Unter dem
+> Mehrfachauswahl-Dropdown erscheinen jetzt die ausgewählten Kategorien
+> als entfernbare Badges (Name + "×"-Button, `categoryIds.filter(...)`
+> bei Klick). Vorher zeigte der Dropdown nur eine Zusammenfassung
+> ("3 Kategorien ausgewählt") ohne zu sehen, *welche* – auf
+> Nutzerwunsch ergänzt. Abwählen über den Dropdown selbst entfernt die
+> Badge automatisch wieder (beide Stellen greifen auf denselben
+> `categoryIds`-State zu).
+
 ## Was wurde gebaut
 
 - `CreateContentDto` bekommt ein neues optionales Feld

@@ -36,6 +36,30 @@ export class MediaService {
     };
   }
 
+  /**
+   * Ermittelt, auf welcher Seite (bei gegebener pageSize) ein Eintrag
+   * liegt – innerhalb des Ordners, in dem er tatsächlich liegt (die
+   * Medien-Übersicht ist ordnerbezogen gefiltert, ein Eintrag aus einem
+   * Unterordner taucht auf der Root-Seite nie auf). Liefert `folderId`
+   * mit zurück, damit das Frontend zusätzlich zur Seite auch in den
+   * richtigen Ordner wechseln kann.
+   */
+  async findPage(id: string, pageSize: number) {
+    const target = await this.prisma.media.findUniqueOrThrow({
+      where: { id },
+    });
+    const rank = await this.prisma.media.count({
+      where: {
+        folderId: target.folderId,
+        createdAt: { gt: target.createdAt },
+      },
+    });
+    return {
+      page: Math.floor(rank / pageSize) + 1,
+      folderId: target.folderId,
+    };
+  }
+
   create(
     file: Express.Multer.File,
     uploadedById: string,

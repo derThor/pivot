@@ -14,6 +14,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { QueryCategoryDto } from './dto/query-category.dto';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
+import { FindPageDto } from '../common/dto/find-page.dto';
 
 @ApiTags('categories')
 @ApiBearerAuth()
@@ -25,6 +26,12 @@ export class CategoriesController {
   @Get()
   findAll(@Query() query: QueryCategoryDto) {
     return this.categoriesService.findAll(query);
+  }
+
+  @RequirePermission('categories:read')
+  @Get(':id/page')
+  findPage(@Param('id') id: string, @Query() query: FindPageDto) {
+    return this.categoriesService.findPage(id, query.pageSize);
   }
 
   @RequirePermission('categories:create')

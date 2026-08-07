@@ -4,6 +4,7 @@ import {
   IsBoolean,
   IsEnum,
   IsIn,
+  IsISO8601,
   IsObject,
   IsOptional,
   IsString,
@@ -89,6 +90,14 @@ export class CreateContentDto {
   @IsOptional()
   @IsBoolean()
   robotsFollow?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'ISO-8601-Zeitpunkt, erforderlich wenn status=SCHEDULED.',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsISO8601()
+  scheduledFor?: string | null;
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()

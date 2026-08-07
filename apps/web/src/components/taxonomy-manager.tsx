@@ -21,9 +21,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
+import { HighlightText } from "@/components/highlight-text";
 import { SelectionToolbar } from "@/components/selection-toolbar";
 import { TaxonomyItemDialog } from "@/components/taxonomy-item-dialog";
 import { useSelection } from "@/hooks/use-selection";
+import { useHighlightParam } from "@/hooks/use-highlight-param";
 import type { TaxonomyItem } from "@/lib/api-server";
 
 function TaxonomyRowActions({
@@ -46,30 +48,53 @@ function TaxonomyRowActions({
 
   return (
     <div className="flex justify-end">
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="rounded-full"
-              aria-label={`Aktionen für ${item.name}`}
-            />
-          }
+      <div className="hidden items-center gap-1 md:flex">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`${item.name} bearbeiten`}
+          onClick={() => setEditOpen(true)}
         >
-          <MoreVertical />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setEditOpen(true)}>
-            <Pencil />
-            Bearbeiten
-          </DropdownMenuItem>
-          <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
-            <Trash2 />
-            Löschen
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          <Pencil />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`${item.name} löschen`}
+          onClick={() => setDeleteOpen(true)}
+        >
+          <Trash2 />
+        </Button>
+      </div>
+
+      <div className="md:hidden">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="rounded-full"
+                aria-label={`Aktionen für ${item.name}`}
+              />
+            }
+          >
+            <MoreVertical />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setEditOpen(true)}>
+              <Pencil />
+              Bearbeiten
+            </DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
+              <Trash2 />
+              Löschen
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       <TaxonomyItemDialog
         apiPath={apiPath}
@@ -109,6 +134,7 @@ export function TaxonomyManager({
   entityLabelPlural: string;
 }) {
   const router = useRouter();
+  const { activeId, query: highlightQuery } = useHighlightParam("taxonomy-row");
   const { selected, toggle, toggleAll, clear, allSelected, someSelected, count } =
     useSelection(items.map((item) => item.id));
 
@@ -165,7 +191,7 @@ export function TaxonomyManager({
               </TableRow>
             ) : (
               items.map((item) => (
-                <TableRow key={item.id}>
+                <TableRow key={item.id} id={`taxonomy-row-${item.id}`}>
                   <TableCell>
                     <Checkbox
                       checked={selected.has(item.id)}
@@ -173,7 +199,13 @@ export function TaxonomyManager({
                       aria-label={`${item.name} auswählen`}
                     />
                   </TableCell>
-                  <TableCell className="font-medium">{item.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <HighlightText
+                      text={item.name}
+                      query={highlightQuery}
+                      active={activeId === item.id}
+                    />
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {item.slug}
                   </TableCell>

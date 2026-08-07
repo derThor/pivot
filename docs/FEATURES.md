@@ -33,9 +33,11 @@ Legende: ✅ umgesetzt (Grundgerüst) · 🚧 vorbereitet, aber unvollständig �
 | SEO-Felder | ✅ | Pro Content-Eintrag im eigenen "SEO"-Tab des Editors: SEO-Titel, Meta-Description, Excerpt, Canonical-URL, OpenGraph (Titel/Beschreibung/Bild), Twitter-Card-Typ, Robots-Attribute (index/follow) – Felder existierten teils schon im Schema, waren aber bis 2026-08-06 nirgends im UI editierbar |
 | Rich-Text/Block-Editor | ✅ | Tiptap (Core + StarterKit); Überschriften H1-H6, Code-Block, HTML-Quellcode-Ansicht, Bild einfügen (Medienbibliothek/Upload) + Ausrichtung |
 | Medienverwaltung (Upload, Alt-Text) | ✅ | `POST /media`, lokale Speicherung, Bild-Whitelist (10 MB) |
-| Content-Vorschau (Preview-Links) | ⏳ | |
-| Webhooks bei Publish/Update | ⏳ | |
-| Volltextsuche | ✅ | Bereichsübergreifend über `GET /v1/search`: Inhalte (Postgres `tsvector`, Präfix-Suche, Titel/SEO/gesamter dynamischer Body), Kategorien, Tags, Medien, Benutzer, Rollen – globale Such-Dropdown im Dashboard-Header, Treffer mit farbiger Bereichs-Badge, permission-gefiltert pro Bereich |
+| Content-Vorschau (Preview-Links) | ✅ | Zeitlich begrenzte Links (`/preview/[token]`) für unveröffentlichte/geplante Inhalte, ohne Login abrufbar; erstellen/kopieren/verlängern/widerrufen über Dialog im Content-Editor oder inhaltsübergreifend über `/dashboard/content/preview-links` |
+| Automatische Veröffentlichung geplanter Inhalte | ✅ | `Content.scheduledFor` + `@nestjs/schedule`-Cron (jede Minute), schaltet fällige `SCHEDULED`-Inhalte automatisch auf `PUBLISHED` |
+| Webhooks bei Publish/Update | ✅ | `/dashboard/webhooks`, Events `content.published`/`content.updated`, fire-and-forget-Zustellung (5s Timeout, kein Retry) |
+| Volltextsuche | ✅ | Bereichsübergreifend über `GET /v1/search`: Inhalte (Postgres `tsvector`, Präfix-Suche, Titel/SEO/gesamter dynamischer Body), Vorschau-Links (über den Titel des verknüpften Inhalts), Kategorien, Tags, Medien, Benutzer, Rollen – globale Such-Dropdown im Dashboard-Header, Treffer mit farbiger Bereichs-Badge, permission-gefiltert pro Bereich; Klick springt bei Inhalten direkt zum Editor, bei allen anderen Bereichen zur richtigen Seite der Listen-Ansicht mit markiertem Suchbegriff |
+| Navigationsverwaltung | ✅ | Mehrere benannte Menüs (`/dashboard/navigation`), Einträge zeigen auf Inhalte oder externe URLs, beliebig tief verschachtelbar, Reihenfolge per Drag & Drop – deckt auch die frühere Seitenbaum-Idee ab (siehe `knowledge-base/content/navigation-management.md`) |
 
 ## Plattform / DX
 

@@ -24,6 +24,17 @@ export class CategoriesService {
     };
   }
 
+  /** Ermittelt, auf welcher Seite (bei gegebener pageSize) ein Eintrag liegt. */
+  async findPage(id: string, pageSize: number) {
+    const target = await this.prisma.category.findUniqueOrThrow({
+      where: { id },
+    });
+    const rank = await this.prisma.category.count({
+      where: { name: { lt: target.name } },
+    });
+    return { page: Math.floor(rank / pageSize) + 1 };
+  }
+
   async create(dto: CreateCategoryDto) {
     const existing = await this.prisma.category.findFirst({
       where: { OR: [{ name: dto.name }, { slug: dto.slug }] },

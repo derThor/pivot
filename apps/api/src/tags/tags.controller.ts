@@ -14,6 +14,7 @@ import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { QueryTagDto } from './dto/query-tag.dto';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
+import { FindPageDto } from '../common/dto/find-page.dto';
 
 @ApiTags('tags')
 @ApiBearerAuth()
@@ -25,6 +26,12 @@ export class TagsController {
   @Get()
   findAll(@Query() query: QueryTagDto) {
     return this.tagsService.findAll(query);
+  }
+
+  @RequirePermission('tags:read')
+  @Get(':id/page')
+  findPage(@Param('id') id: string, @Query() query: FindPageDto) {
+    return this.tagsService.findPage(id, query.pageSize);
   }
 
   @RequirePermission('tags:create')

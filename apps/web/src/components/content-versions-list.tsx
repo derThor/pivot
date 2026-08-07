@@ -214,9 +214,11 @@ export function ContentVersionsList({
                 {fieldNames.map((field) => {
                   const oldValue = version.data[field];
                   const newValue = currentData[field];
-                  if (!hasFieldChanged(oldValue, newValue)) return null;
 
                   if (!richtextFields.includes(field)) {
+                    // FieldDiff blendet sich selbst aus, wenn sich das
+                    // Feld nicht geändert hat – für Nicht-Richtext-Felder
+                    // gibt es sonst keine sinnvolle Darstellung.
                     return (
                       <FieldDiff
                         key={field}
@@ -227,6 +229,12 @@ export function ContentVersionsList({
                     );
                   }
 
+                  // Richtext-Felder zeigen die Vorschau immer, auch wenn
+                  // sich zwischen dieser Version und dem aktuellen Stand
+                  // nichts geändert hat (z.B. weil nur der Status
+                  // umgeschaltet wurde) – sonst verschwindet der gesamte
+                  // historische Inhalt aus der Ansicht, sobald keine
+                  // Textänderung vorliegt.
                   return (
                     <Tabs key={field} defaultValue="preview">
                       <TabsList>

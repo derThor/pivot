@@ -99,10 +99,19 @@ Details: [rbac-rework.md](../knowledge-base/auth/rbac-rework.md),
 
 Details: [rich-text-and-versioning.md](../knowledge-base/content/rich-text-and-versioning.md).
 
-### 2b.3 – Publishing-Automatisierung
+### 2b.3 – Publishing-Automatisierung (abgeschlossen, 2026-08-06)
 
-- [ ] Scheduler-Job: `SCHEDULED` → `PUBLISHED` zum Zielzeitpunkt (Redis/BullMQ)
-- [ ] Webhooks bei Publish/Update-Events
+- [x] Scheduler-Job: `SCHEDULED` → `PUBLISHED` zum Zielzeitpunkt – neues
+      Feld `Content.scheduledFor` (existierte vorher gar nicht, obwohl
+      der `SCHEDULED`-Status schon lange wählbar war), `@nestjs/schedule`-
+      Cron-Job jede Minute statt Redis/BullMQ (Redis ist im Projekt noch
+      nicht angebunden, siehe Phase 3 – ein zusätzlicher Queue-Betrieb
+      nur für diesen einen periodischen Job wäre unverhältnismäßig)
+- [x] Webhooks bei Publish/Update-Events – eigenes CRUD
+      (`/dashboard/webhooks`, Events `content.published`/
+      `content.updated`), fire-and-forget-Zustellung mit Timeout, feuert
+      sowohl bei manuellem Statuswechsel als auch beim automatischen
+      Scheduler-Publish
 
 ### 2b.4 – Auffindbarkeit
 
@@ -113,7 +122,13 @@ Details: [rich-text-and-versioning.md](../knowledge-base/content/rich-text-and-v
       farbiger Bereichs-Badge, Präfix-Suche ab 3 Zeichen, Dropdown
       öffnet erst bei Eingabe, permission-gefiltert pro Bereich
       (2026-08-06)
-- [ ] Content-Vorschau-Links (signierte, zeitlich begrenzte URLs)
+- [x] Content-Vorschau-Links (signierte, zeitlich begrenzte URLs) –
+      `POST /content/:id/preview-links` erzeugt einen Token (SHA-256-
+      gehasht gespeichert, gleiches Muster wie Refresh-/Verifikations-
+      Tokens), öffentliche Seite `/preview/[token]` zeigt den Inhalt
+      unabhängig vom Status ohne Login; Verwaltung (erstellen/auflisten/
+      widerrufen) über einen neuen "Vorschau-Link"-Dialog im Content-
+      Editor (2026-08-06)
 
 ### 2b.5 – Redaktionskomfort
 
@@ -166,15 +181,54 @@ Details: [rich-text-and-versioning.md](../knowledge-base/content/rich-text-and-v
 
 ### 2b.8 – Content-Struktur
 
-- [ ] Seitenbaum
-- [ ] Navigationen verwalten
-- [ ] Startseite definieren
-- [ ] Parent-/Child-Seiten
-- [ ] Reihenfolge per Drag & Drop
-- [ ] URL-Hierarchien
-- [ ] Inhaltsblöcke mehrfach verwendbar
-- [ ] Globaler Content (Footer, Header, Banner)
-- [ ] Wiederverwendbare Komponenten
+- [x] Navigationen verwalten – eigenständige `Navigation`/`NavigationItem`-
+      Modelle, `/dashboard/navigation`, mehrere benannte Menüs mit
+      beliebig tief verschachtelbaren Einträgen, die auf Inhalte oder
+      externe URLs zeigen (2026-08-06)
+- [ ] Seitenbaum / Parent-/Child-Seiten / URL-Hierarchien / Reihenfolge
+      per Drag & Drop am Inhalt selbst / Startseite definieren –
+      **bewusst nicht umgesetzt**: ein erster Versuch (`Content.parentId`/
+      `sortOrder`/`path`, `/dashboard/content/tree`) wurde noch am
+      selben Tag auf Nutzerwunsch wieder zurückgebaut, da die Trennung
+      von Seitenbaum und Navigation nicht nachvollziehbar war – die
+      Navigationsverwaltung deckt den eigentlichen Bedarf ("Seiten
+      organisieren und verschachteln") vollständig ab. Details siehe
+      [navigation-management.md](../knowledge-base/content/navigation-management.md)
+      Abschnitt "Verworfener Ansatz".
+
+#### Seiten-Designer (modul-basierter Drag&Drop-Editor)
+
+Auf Nutzervorschlag (2026-08-06) statt eines einzelnen Rich-Text-Felds
+pro Inhalt: Seiten werden aus einer geordneten Liste typisierter, per
+Drag & Drop einfügbarer "Module" zusammengesetzt – vergleichbar mit
+WordPress-Gutenberg, Storyblok oder Contentfuls "Modular Content". Jedes
+Modul hat wie ein Content-Type ein eigenes JSON-Schema (Wiederverwendung
+der bereits vorhandenen dynamischen Formular-Generierung aus
+[content-editor-dynamic-forms.md](../knowledge-base/content/content-editor-dynamic-forms.md)).
+Ersetzt die bisherigen, vageren Einzelpunkte "Inhaltsblöcke mehrfach
+verwendbar", "Globaler Content (Footer, Header, Banner)" und
+"Wiederverwendbare Komponenten" durch ein einziges, kohärentes
+Feature-Konzept – **noch nicht umgesetzt, nur Roadmap-Eintrag.**
+
+- [ ] Modul-Typen definieren (Backend) – neues `ModuleType`-Modell
+      analog zu `ContentType.schema`: Name, Icon, Feldschema
+- [ ] Neuer Feldtyp "Module" in `ContentType.schema` – ein Content-Type
+      bekommt ein Feld vom Typ "Modul-Liste" statt/zusätzlich zu einem
+      reinen Rich-Text-Feld
+- [ ] Drag&Drop-Editor-UI – Modul-Palette zum Einfügen neuer Bausteine,
+      Umsortieren per Drag & Drop (nativer HTML5-DnD wie bereits bei
+      der Navigationsverwaltung verwendet, siehe
+      [navigation-management.md](../knowledge-base/content/navigation-management.md)),
+      Inline-Bearbeitung der Modul-Felder, Löschen einzelner Module
+- [ ] Basis-Modul-Bibliothek – Startset: Rich-Text, Bild, Bild+Text,
+      Zitat/Testimonial, CTA-Button, Trenner, Akkordeon/FAQ,
+      Bildergalerie
+- [ ] Globale Module – ein Modul lässt sich als "global" markieren
+      (einmal pflegen, auf mehreren Seiten eingebunden – deckt Footer/
+      Header/Banner und wiederverwendbare Inhaltsblöcke gleichzeitig ab,
+      statt sie als separate Features zu bauen)
+- [ ] Live-Vorschau der zusammengesetzten Seite – Integration mit den
+      bestehenden Content-Vorschau-Links
 
 ### 2b.9 – Workflow
 
@@ -310,13 +364,13 @@ ist, sollten diese zehn Funktionen aus den obigen Phasen zuerst angegangen
 werden – sie erhöhen den praktischen Nutzen für Redakteure am stärksten und
 schaffen gleichzeitig die Grundlage für die späteren Enterprise-Features:
 
-1. Volltextsuche (2b.4)
-2. Seitenbaum mit Navigation (2b.8)
-3. SEO-Verwaltung (2b.6)
-4. Autosave (2b.5)
-5. Content Locking (2b.9)
+1. ~~Volltextsuche (2b.4)~~ ✅ 2026-08-06
+2. ~~Navigationsverwaltung (2b.8)~~ ✅ 2026-08-06 (Seitenbaum-Teil bewusst nicht umgesetzt, siehe 2b.8)
+3. ~~SEO-Verwaltung (2b.6)~~ ✅ 2026-08-06
+4. ~~Autosave (2b.5)~~ ✅ 2026-08-06
+5. ~~Content Locking (2b.9)~~ ✅ 2026-08-06
 6. Workflow/Freigaben (2b.9)
-7. Wiederverwendbare Inhaltsblöcke (2b.8)
+7. Seiten-Designer – modul-basierter Drag&Drop-Editor (2b.8)
 8. Bildoptimierung – WebP/AVIF (2b.7)
 9. API-Keys für externe Anwendungen (Phase 3)
 10. Dashboard mit Statistiken (4.3)

@@ -95,6 +95,7 @@ model User {
 
   contents                Content[]                @relation("ContentAuthor")
   lockedContents          Content[]                @relation("ContentLockedBy")
+  createdPreviewTokens    ContentPreviewToken[]
   contentVersions         ContentVersion[]
   media                   Media[]
   auditLogs               AuditLog[]
@@ -180,6 +181,7 @@ model Content {
   twitterCard    String?
   robotsIndex    Boolean   @default(true)
   robotsFollow   Boolean   @default(true)
+  scheduledFor   DateTime?
   publishedAt DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -194,13 +196,30 @@ model Content {
   lockedBy   User?     @relation("ContentLockedBy", fields: [lockedById], references: [id])
   lockedAt   DateTime?
 
-  versions   ContentVersion[]
-  categories ContentCategory[]
-  tags       ContentTag[]
+  versions        ContentVersion[]
+  categories      ContentCategory[]
+  tags            ContentTag[]
+  previewTokens   ContentPreviewToken[]
+  navigationItems NavigationItem[]
 
   @@unique([slug, locale])
   @@index([status])
   @@map("contents")
+}
+
+model ContentPreviewToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  contentId String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  @@map("content_preview_tokens")
 }
 
 model ContentVersion {
@@ -255,6 +274,45 @@ model ContentTag {
   @@map("content_tags")
 }
 
+// ---------- Navigation ----------
+
+model Navigation {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items NavigationItem[]
+
+  @@map("navigations")
+}
+
+model NavigationItem {
+  id          String   @id @default(cuid())
+  label       String
+  externalUrl String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  navigationId String
+  navigation   Navigation @relation(fields: [navigationId], references: [id], onDelete: Cascade)
+
+  // Ziel entweder ein Inhalt ODER eine externe URL (App-Ebene validiert,
+  // dass genau eines von beidem gesetzt ist – siehe NavigationService).
+  contentId String?
+  content   Content? @relation(fields: [contentId], references: [id], onDelete: SetNull)
+
+  parentId String?
+  parent   NavigationItem?  @relation("NavigationItemHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children NavigationItem[] @relation("NavigationItemHierarchy")
+
+  @@index([navigationId])
+  @@index([parentId])
+  @@map("navigation_items")
+}
+
 // ---------- Medien ----------
 
 model MediaFolder {
@@ -305,4 +363,17 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@map("audit_logs")
+}
+
+// ---------- Webhooks ----------
+
+model Webhook {
+  id        String   @id @default(cuid())
+  url       String
+  events    String[]
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("webhooks")
 }

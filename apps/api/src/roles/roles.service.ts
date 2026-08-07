@@ -56,6 +56,15 @@ export class RolesService {
     };
   }
 
+  /** Ermittelt, auf welcher Seite (bei gegebener pageSize) ein Eintrag liegt. */
+  async findPage(id: string, pageSize: number) {
+    const target = await this.prisma.role.findUniqueOrThrow({ where: { id } });
+    const rank = await this.prisma.role.count({
+      where: { name: { lt: target.name } },
+    });
+    return { page: Math.floor(rank / pageSize) + 1 };
+  }
+
   async findOne(id: string) {
     const role = await this.prisma.role.findUnique({
       where: { id },

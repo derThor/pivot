@@ -50,6 +50,15 @@ export class UsersService {
     };
   }
 
+  /** Ermittelt, auf welcher Seite (bei gegebener pageSize) ein Eintrag liegt. */
+  async findPage(id: string, pageSize: number) {
+    const target = await this.prisma.user.findUniqueOrThrow({ where: { id } });
+    const rank = await this.prisma.user.count({
+      where: { createdAt: { gt: target.createdAt } },
+    });
+    return { page: Math.floor(rank / pageSize) + 1 };
+  }
+
   async findOne(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },

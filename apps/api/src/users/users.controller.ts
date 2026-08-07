@@ -15,6 +15,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { FindPageDto } from '../common/dto/find-page.dto';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @ApiTags('users')
@@ -32,6 +33,11 @@ export class UsersController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
+  }
+
+  @Get(':id/page')
+  findPage(@Param('id') id: string, @Query() query: FindPageDto) {
+    return this.usersService.findPage(id, query.pageSize);
   }
 
   @Post()

@@ -12,9 +12,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { HighlightText } from "@/components/highlight-text";
 import { RoleRowActions } from "@/components/role-row-actions";
 import { SelectionToolbar } from "@/components/selection-toolbar";
 import { useSelection } from "@/hooks/use-selection";
+import { useHighlightParam } from "@/hooks/use-highlight-param";
 import type { Role } from "@/lib/api-server";
 
 export function RolesTable({
@@ -25,6 +27,7 @@ export function RolesTable({
   permissionsCatalog: string[];
 }) {
   const router = useRouter();
+  const { activeId, query: highlightQuery } = useHighlightParam("role-row");
   const deletableIds = roles
     .filter((role) => !role.isSystem && role.userCount === 0)
     .map((role) => role.id);
@@ -59,7 +62,7 @@ export function RolesTable({
                   aria-label="Alle auswählen"
                 />
               </TableHead>
-              <TableHead>Name</TableHead>
+              <TableHead className="min-w-56">Name</TableHead>
               <TableHead>Beschreibung</TableHead>
               <TableHead>Rechte</TableHead>
               <TableHead>Dashboard</TableHead>
@@ -71,7 +74,7 @@ export function RolesTable({
             {roles.map((role) => {
               const canDelete = !role.isSystem && role.userCount === 0;
               return (
-                <TableRow key={role.id}>
+                <TableRow key={role.id} id={`role-row-${role.id}`}>
                   <TableCell>
                     {canDelete && (
                       <Checkbox
@@ -81,13 +84,17 @@ export function RolesTable({
                       />
                     )}
                   </TableCell>
-                  <TableCell className="font-medium">
-                    {role.name}
-                    {role.isSystem && (
-                      <Badge variant="secondary" className="ml-2">
-                        System
-                      </Badge>
-                    )}
+                  <TableCell className="min-w-56 font-medium">
+                    <div className="flex flex-col items-start gap-1">
+                      <HighlightText
+                        text={role.name}
+                        query={highlightQuery}
+                        active={activeId === role.id}
+                      />
+                      {role.isSystem && (
+                        <Badge variant="secondary">System</Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {role.description}

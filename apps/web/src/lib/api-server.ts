@@ -76,6 +76,43 @@ export function getCurrentUser() {
   return apiFetch<CurrentUser>("/auth/me");
 }
 
+export interface NavigationSummary {
+  id: string;
+  name: string;
+  slug: string;
+  createdAt: string;
+  updatedAt: string;
+  _count: { items: number };
+}
+
+export interface NavigationItemNode {
+  id: string;
+  label: string;
+  externalUrl: string | null;
+  contentId: string | null;
+  content: { id: string; title: string; slug: string; status: ContentStatus } | null;
+  sortOrder: number;
+  parentId: string | null;
+  children: NavigationItemNode[];
+}
+
+export interface NavigationDetail {
+  id: string;
+  name: string;
+  slug: string;
+  createdAt: string;
+  updatedAt: string;
+  items: NavigationItemNode[];
+}
+
+export function getNavigations() {
+  return apiFetch<NavigationSummary[]>("/navigations");
+}
+
+export function getNavigation(id: string) {
+  return apiFetch<NavigationDetail>(`/navigations/${id}`);
+}
+
 export function getContentList(params?: {
   status?: ContentStatus;
   page?: number;
@@ -137,12 +174,52 @@ export interface ContentDetail extends ContentListItem {
   twitterCard: string | null;
   robotsIndex: boolean;
   robotsFollow: boolean;
+  scheduledFor: string | null;
   lockedBy: AuthorRef | null;
   lockedAt: string | null;
 }
 
+export interface PreviewLink {
+  id: string;
+  token: string;
+  expiresAt: string;
+  createdAt: string;
+  createdBy: AuthorRef;
+}
+
+export interface PreviewLinkWithContent extends PreviewLink {
+  content: { id: string; title: string };
+}
+
+export interface PreviewLinkListResponse {
+  items: PreviewLinkWithContent[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
+export function getAllPreviewLinks(params?: {
+  page?: number;
+  pageSize?: number;
+}) {
+  return apiFetch<PreviewLinkListResponse>(
+    `/content/preview-links${taxonomyQuery(params)}`,
+  );
+}
+
+export interface PreviewContent {
+  id: string;
+  title: string;
+  status: ContentStatus;
+  data: Record<string, unknown>;
+  excerpt: string | null;
+  contentType: { id: string; name: string; slug: string };
+}
+
 export function getContent(id: string) {
   return apiFetch<ContentDetail>(`/content/${id}`);
+}
+
+export function getContentByPreviewToken(token: string) {
+  return publicApiFetch<PreviewContent>(`/content/preview/${token}`);
 }
 
 export interface ContentVersion {
@@ -240,6 +317,24 @@ export function getCategories(params?: { page?: number; pageSize?: number }) {
 
 export function getTags(params?: { page?: number; pageSize?: number }) {
   return apiFetch<TaxonomyListResponse>(`/tags${taxonomyQuery(params)}`);
+}
+
+export interface Webhook {
+  id: string;
+  url: string;
+  events: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WebhookListResponse {
+  items: Webhook[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
+export function getWebhooks(params?: { page?: number; pageSize?: number }) {
+  return apiFetch<WebhookListResponse>(`/webhooks${taxonomyQuery(params)}`);
 }
 
 export interface Role {

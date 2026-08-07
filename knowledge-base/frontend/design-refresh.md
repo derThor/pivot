@@ -5,6 +5,37 @@
 `src/components/{app-sidebar,dashboard-header,ui/card,ui/checkbox}.tsx`,
 alle Row-Action-Komponenten der Listen-Ansichten)
 
+> **Update 2026-08-06 (Globaler Standard-Button-Stil: Verlauf statt
+> Flächenfarbe; Outline-Buttons ohne Hintergrund):** Zwei Änderungen an
+> `ui/button.tsx` (`buttonVariants`), wirken dadurch **automatisch auf
+> jede** `<Button>`-Verwendung im gesamten Projekt (kein Component nutzt
+> mehr eine lokale Farbe für Primär-/Sekundär-Buttons):
+> - **`variant="outline"`** (Sekundär-Aktionen wie "Zurücksetzen",
+>   "Abbrechen"): `bg-background` entfernt → `bg-transparent`. Vorher
+>   sah der Button durch die helle Flächenfarbe wie eine gefüllte Pille
+>   aus, jetzt nur Rahmen + Text, kein Hintergrund.
+> - **`variant="default"`** (Primär-Aktionen, z.B. "Übernehmen",
+>   "Speichern", "Anmelden", "Neuer Eintrag" – der mit Abstand meist-
+>   verwendete Button-Typ im Projekt): von einer flachen `bg-primary`-
+>   Fläche auf den Koralle→Rosé-Verlauf umgestellt
+>   (`bg-gradient-to-r from-orange-400 to-rose-500`, `hover:opacity-90`
+>   statt einer zweiten Flächenfarbe für den Hover-Zustand). Dieser
+>   Verlauf wurde vorher schon punktuell per Inline-`className` an
+>   einzelnen Stellen (z.B. der "Übernehmen"-Button im neuen
+>   `DateTimePicker`) nachgebaut – dieser lokale Override ist jetzt
+>   überflüssig und wurde entfernt, da die Basis-Komponente ihn
+>   automatisch mitbringt.
+> - Bewusst **nicht** angefasst: `variant="destructive"` (bleibt rot,
+>   damit Löschen-Aktionen visuell nicht mit der einladenden
+>   Primärfarbe verwechselt werden) sowie `bg-primary`-Verwendungen
+>   außerhalb von `Button` (Checkbox/Switch-Akzentfarbe, Avatar-
+>   Fallback, Badge-Default) – die Anfrage bezog sich explizit auf
+>   Buttons, eine Umfärbung dieser anderen Komponenten war nicht
+>   verlangt und hätte den Scope unnötig ausgeweitet.
+> - Verifiziert per Live-Check über acht verschiedene Dashboard-Seiten
+>   plus die öffentliche Login-Seite – überall erscheint der neue
+>   Verlauf-Stil ohne weitere Anpassungen nötig zu haben.
+
 > **Update 2026-08-06 (Eingeklapptes Logo: größer, zentriert,
 > Initialen-Fallback; Mobile Burger-Icon; Logo-Upload-Breite):**
 > - Eingeklapptes Sidebar-Logo `size-8` → `size-12`; zusätzlich

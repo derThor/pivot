@@ -147,11 +147,18 @@ export function RichTextEditor({
     content: value,
     editable,
     immediatelyRender: false,
-    onUpdate: editable
-      ? ({ editor }) => {
-          onChange?.(editor.isEmpty ? "" : editor.getHTML());
-        }
-      : undefined,
+    // Immer registriert (nicht an `editable` zur Erstellungszeit
+    // gekoppelt): externe Syncs (siehe Effect unten) nutzen bewusst
+    // `emitUpdate: false` und lösen dieses Callback ohnehin nie aus, ein
+    // schreibgeschützter Editor lässt gar keine Nutzereingabe zu. Wäre
+    // `onUpdate` hier stattdessen `editable ? ... : undefined`, würde es
+    // beim allerersten Rendern mit `editable=false` dauerhaft
+    // `undefined` bleiben, selbst wenn `editable` später auf `true`
+    // wechselt (z.B. sobald die Content-Sperre erworben ist) – `useEditor`
+    // reagiert nicht automatisch auf spätere Options-Änderungen.
+    onUpdate: ({ editor }) => {
+      onChange?.(editor.isEmpty ? "" : editor.getHTML());
+    },
   });
 
   useEffect(() => {
@@ -162,6 +169,16 @@ export function RichTextEditor({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, editor]);
+
+  // `useEditor` übernimmt einen geänderten `editable`-Wert nicht
+  // automatisch nach der Erstellung – muss explizit über TipTaps API
+  // nachgezogen werden, sonst bleibt ein Editor, der initial (z.B.
+  // während die Content-Sperre noch geprüft wird) nicht editierbar war,
+  // dauerhaft nicht editierbar, selbst wenn `editable` später `true`
+  // wird.
+  useEffect(() => {
+    editor?.setEditable(editable);
+  }, [editable, editor]);
 
   if (!editor) return null;
 

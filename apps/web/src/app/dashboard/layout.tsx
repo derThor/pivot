@@ -41,8 +41,11 @@ export default async function DashboardLayout({
       />
       <SidebarInset>
         {!user.emailVerifiedAt && <EmailVerificationBanner />}
-        <DashboardHeader user={user} />
-        <div className="flex flex-1 flex-col gap-6 bg-background px-12 pt-5 pb-8">
+        <DashboardHeader
+          user={user}
+          defaultPageSize={settings?.defaultPageSize ?? 10}
+        />
+        <div className="flex min-w-0 flex-1 flex-col gap-6 bg-background px-4 pt-5 pb-8 sm:px-8 lg:px-12">
           {children}
         </div>
       </SidebarInset>

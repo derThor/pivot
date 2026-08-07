@@ -14,6 +14,7 @@ import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { QueryRoleDto } from './dto/query-role.dto';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
+import { FindPageDto } from '../common/dto/find-page.dto';
 
 @ApiTags('roles')
 @ApiBearerAuth()
@@ -30,6 +31,11 @@ export class RolesController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.rolesService.findOne(id);
+  }
+
+  @Get(':id/page')
+  findPage(@Param('id') id: string, @Query() query: FindPageDto) {
+    return this.rolesService.findPage(id, query.pageSize);
   }
 
   @Post()

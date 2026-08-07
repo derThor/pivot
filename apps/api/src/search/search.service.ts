@@ -8,7 +8,8 @@ export type SearchResultType =
   | 'tag'
   | 'media'
   | 'user'
-  | 'role';
+  | 'role'
+  | 'previewLink';
 
 export interface SearchResult {
   type: SearchResultType;
@@ -43,6 +44,7 @@ export class SearchService {
 
     if (permissions.includes('content:read')) {
       tasks.push(this.searchContent(q, limit));
+      tasks.push(this.searchPreviewLinks(q, limit));
     }
     if (permissions.includes('categories:read')) {
       tasks.push(this.searchCategories(q, limit));
@@ -72,6 +74,30 @@ export class SearchService {
       title: row.title,
       subtitle: row.contentTypeName,
       status: row.status,
+    }));
+  }
+
+  /**
+   * Sucht über den Titel des verknüpften Inhalts, nicht über den Token
+   * selbst (der ist ein zufälliger Hex-String, für Volltextsuche
+   * bedeutungslos) – gegated auf `content:read` wie das Anlegen/
+   * Auflisten der Links selbst.
+   */
+  private async searchPreviewLinks(q: string, limit: number): Promise<SearchResult[]> {
+    const rows = await this.prisma.contentPreviewToken.findMany({
+      where: {
+        expiresAt: { gt: new Date() },
+        content: { title: { contains: q, mode: 'insensitive' } },
+      },
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: { content: { select: { title: true } } },
+    });
+    return rows.map((row) => ({
+      type: 'previewLink' as const,
+      id: row.id,
+      title: row.content.title,
+      subtitle: `Läuft ab ${row.expiresAt.toLocaleDateString('de-DE')}`,
     }));
   }
 

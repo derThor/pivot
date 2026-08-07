@@ -4,6 +4,29 @@
 **Betroffene Bereiche:** apps/api (`src/content`), apps/web
 (`src/components/content-editor-form.tsx`)
 
+> **Update 2026-08-06 (Info-Tooltips, OG-Bild-Upload wie Logo-Feld):**
+> - Neue wiederverwendbare `InfoTooltip`-Komponente
+>   (`src/components/info-tooltip.tsx`, "i"-Icon + Hover-Text über die
+>   bereits vorhandene `Tooltip`-UI-Komponente/`TooltipProvider`) – an
+>   jedem Feld-Label im "Inhalt"-Tab (Content-Type, Slug, Status – Status
+>   erklärt alle vier Werte in einem mehrzeiligen Tooltip) und im
+>   "SEO"-Tab (alle Felder) ergänzt. Der bisherige statische Hinweistext
+>   unter "SEO-Titel" wurde durch den Tooltip ersetzt statt doppelt
+>   vorzuhalten.
+> - **OG-Bild**: die bisherige "Bild wählen"-Schaltfläche (öffnete den
+>   großen `ImagePickerDialog` zur Auswahl aus der Medienbibliothek)
+>   durch denselben Direkt-Upload-Flow wie die Logo-Felder in den
+>   Einstellungen ersetzt (`Input type="file"` + "Hochladen"-Button +
+>   Papierkorb-Icon zum Entfernen), auf Nutzerwunsch ("so umsetzen wie
+>   bei Einstellungen"). Bewusster Unterschied zu `LogoUploadField`:
+>   "Entfernen" löscht hier **nur** die Referenz (`ogImageUrl` wird
+>   geleert), nicht die zugrunde liegende Mediendatei – anders als beim
+>   Logo (eigener geschützter System-Ordner) kann ein OG-Bild eine
+>   beliebige, evtl. anderswo wiederverwendete Datei sein; ein Löschen
+>   der Datei beim Entfernen der Referenz wäre hier zu aggressiv.
+>   `ImagePickerDialog`-Import aus `content-editor-form.tsx` entfernt
+>   (keine andere Stelle dort nutzt ihn mehr).
+
 ## Was wurde gebaut
 
 - Sieben neue `Content`-Felder: `canonicalUrl`, `ogTitle`,

@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Trash2, Upload, X } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,7 +16,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ImagePickerDialog } from "@/components/image-picker-dialog";
+import { DateTimePicker } from "@/components/date-time-picker";
+import { InfoTooltip } from "@/components/info-tooltip";
 import { mediaUrl } from "@/lib/media";
 import {
   Form,
@@ -104,6 +107,14 @@ const metaSchema = z.object({
 
 type MetaValues = z.infer<typeof metaSchema>;
 
+/** ISO-String (UTC) -> Wert für ein `datetime-local`-Input (lokale Zeit, ohne Zeitzone). */
+function toDatetimeLocalValue(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 function toDataValues(
   data: Record<string, unknown> | undefined,
 ): Record<string, string> {
@@ -120,6 +131,7 @@ interface DraftSnapshot {
   title: string;
   slug: string;
   status: ContentStatus;
+  scheduledForValue: string;
   categoryIds: string[];
   dataValues: Record<string, string>;
   seoValues: SeoValues;
@@ -163,7 +175,15 @@ export function ContentEditorForm({
     content?.categories.map((category) => category.id) ?? [],
   );
   const [seoValues, setSeoValues] = useState<SeoValues>(toSeoValues(content));
-  const [ogImagePickerOpen, setOgImagePickerOpen] = useState(false);
+  const [scheduledForValue, setScheduledForValue] = useState(
+    toDatetimeLocalValue(content?.scheduledFor),
+  );
+  const [scheduledForError, setScheduledForError] = useState<string | null>(
+    null,
+  );
+  const [ogImageFile, setOgImageFile] = useState<File | null>(null);
+  const [isUploadingOgImage, setIsUploadingOgImage] = useState(false);
+  const [ogImageError, setOgImageError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [draftBanner, setDraftBanner] = useState<DraftSnapshot | null>(null);
@@ -231,6 +251,7 @@ export function ContentEditorForm({
         title: watchedValues.title,
         slug: watchedValues.slug,
         status: watchedValues.status,
+        scheduledForValue,
         categoryIds,
         dataValues,
         seoValues,
@@ -256,6 +277,7 @@ export function ContentEditorForm({
     watchedValues.slug,
     watchedValues.status,
     watchedValues.contentTypeId,
+    scheduledForValue,
     categoryIds,
     dataValues,
     seoValues,
@@ -352,6 +374,7 @@ export function ContentEditorForm({
     form.setValue("slug", draftBanner.slug);
     form.setValue("status", draftBanner.status);
     setSlugTouched(true);
+    setScheduledForValue(draftBanner.scheduledForValue);
     setCategoryIds(draftBanner.categoryIds);
     setDataValues(draftBanner.dataValues);
     setSeoValues(draftBanner.seoValues);
@@ -383,6 +406,28 @@ export function ContentEditorForm({
     }
   }
 
+  async function handleOgImageUpload() {
+    if (!ogImageFile) return;
+    setOgImageError(null);
+    setIsUploadingOgImage(true);
+    try {
+      const formData = new FormData();
+      formData.set("file", ogImageFile);
+      const res = await fetch("/api/media", { method: "POST", body: formData });
+      const uploaded = await res.json().catch(() => null);
+      if (!res.ok) {
+        setOgImageError(uploaded?.message ?? "Upload fehlgeschlagen.");
+        return;
+      }
+      setSeoValues((prev) => ({ ...prev, ogImageUrl: uploaded.url }));
+      setOgImageFile(null);
+    } catch {
+      setOgImageError("Server nicht erreichbar. Bitte später erneut versuchen.");
+    } finally {
+      setIsUploadingOgImage(false);
+    }
+  }
+
   const isLockedByOther = isEditing && lockState === "locked-by-other";
   const lockBlocksEditing =
     isEditing && (lockState === "checking" || lockState === "locked-by-other");
@@ -410,6 +455,14 @@ export function ContentEditorForm({
     }
     setDataErrors({});
 
+    if (values.status === "SCHEDULED" && !scheduledForValue) {
+      setScheduledForError(
+        "Für einen geplanten Inhalt ist ein Veröffentlichungszeitpunkt erforderlich.",
+      );
+      return;
+    }
+    setScheduledForError(null);
+
     setIsSubmitting(true);
     try {
       const url = isEditing ? `/api/content/${content!.id}` : "/api/content";
@@ -419,6 +472,9 @@ export function ContentEditorForm({
         twitterCard:
           seoValues.twitterCard === "none" ? null : seoValues.twitterCard,
       };
+      const scheduledFor = scheduledForValue
+        ? new Date(scheduledForValue).toISOString()
+        : null;
       const body = isEditing
         ? {
             title: values.title,
@@ -426,9 +482,10 @@ export function ContentEditorForm({
             status: values.status,
             data,
             categoryIds,
+            scheduledFor,
             ...seoPayload,
           }
-        : { ...values, data, categoryIds, ...seoPayload };
+        : { ...values, data, categoryIds, scheduledFor, ...seoPayload };
 
       const res = await fetch(url, {
         method,
@@ -529,7 +586,10 @@ export function ContentEditorForm({
                     name="contentTypeId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Content-Type</FormLabel>
+                        <div className="flex items-center gap-1.5">
+                          <FormLabel>Content-Type</FormLabel>
+                          <InfoTooltip text="Legt fest, welche Felder dieser Inhalt hat (z.B. Titel + Text). Kann nach dem Anlegen nicht mehr geändert werden." />
+                        </div>
                         <Select
                           value={field.value}
                           onValueChange={handleTypeChange}
@@ -584,7 +644,10 @@ export function ContentEditorForm({
                     name="slug"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Slug</FormLabel>
+                        <div className="flex items-center gap-1.5">
+                          <FormLabel>Slug</FormLabel>
+                          <InfoTooltip text="Der URL-freundliche Teil der Adresse, z.B. wird aus „Mein Titel“ „mein-titel“. Wird automatisch aus dem Titel erzeugt, lässt sich aber manuell anpassen." />
+                        </div>
                         <FormControl>
                           <Input
                             {...field}
@@ -604,7 +667,17 @@ export function ContentEditorForm({
                     name="status"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Status</FormLabel>
+                        <div className="flex items-center gap-1.5">
+                          <FormLabel>Status</FormLabel>
+                          <InfoTooltip
+                            text={
+                              "Entwurf: nur intern sichtbar, noch nicht veröffentlicht.\n" +
+                              "Geplant: wird automatisch veröffentlicht, sobald der gewählte Zeitpunkt erreicht ist.\n" +
+                              "Veröffentlicht: öffentlich sichtbar.\n" +
+                              "Archiviert: nicht mehr aktiv, bleibt aber erhalten."
+                            }
+                          />
+                        </div>
                         <Select
                           value={field.value}
                           onValueChange={field.onChange}
@@ -629,6 +702,31 @@ export function ContentEditorForm({
                       </FormItem>
                     )}
                   />
+
+                  {watchedValues.status === "SCHEDULED" && (
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="scheduled-for">
+                        Veröffentlichungszeitpunkt
+                      </Label>
+                      <DateTimePicker
+                        id="scheduled-for"
+                        value={scheduledForValue}
+                        onChange={(next) => {
+                          setScheduledForValue(next);
+                          setScheduledForError(null);
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Wird automatisch veröffentlicht, sobald dieser
+                        Zeitpunkt erreicht ist.
+                      </p>
+                      {scheduledForError && (
+                        <p className="text-sm text-destructive">
+                          {scheduledForError}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {categories.length > 0 && (
                     <div className="flex flex-col gap-2">
@@ -661,6 +759,33 @@ export function ContentEditorForm({
                           ))}
                         </SelectContent>
                       </Select>
+                      {categoryIds.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {categoryIds.map((id) => {
+                            const category = categories.find(
+                              (c) => c.id === id,
+                            );
+                            if (!category) return null;
+                            return (
+                              <Badge key={id} variant="secondary">
+                                {category.name}
+                                <button
+                                  type="button"
+                                  aria-label={`${category.name} entfernen`}
+                                  onClick={() =>
+                                    setCategoryIds((prev) =>
+                                      prev.filter((c) => c !== id),
+                                    )
+                                  }
+                                  className="ml-0.5 rounded-full hover:text-foreground"
+                                >
+                                  <X className="size-3" />
+                                </button>
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -762,7 +887,12 @@ export function ContentEditorForm({
             <Card>
               <CardContent className="flex flex-col gap-6">
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="seo-excerpt">Kurzbeschreibung (Excerpt)</Label>
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="seo-excerpt">
+                      Kurzbeschreibung (Excerpt)
+                    </Label>
+                    <InfoTooltip text="Kurze Zusammenfassung, z.B. für Listenansichten oder als Vorschautext." />
+                  </div>
                   <Textarea
                     id="seo-excerpt"
                     rows={3}
@@ -777,7 +907,10 @@ export function ContentEditorForm({
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="seo-title">SEO-Titel</Label>
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="seo-title">SEO-Titel</Label>
+                    <InfoTooltip text="Wird als Seitentitel in Suchergebnissen angezeigt, falls gesetzt – sonst der normale Titel." />
+                  </div>
                   <Input
                     id="seo-title"
                     value={seoValues.seoTitle}
@@ -788,14 +921,13 @@ export function ContentEditorForm({
                       }))
                     }
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Wird als Seitentitel in Suchergebnissen verwendet, falls
-                    gesetzt – sonst der normale Titel.
-                  </p>
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="seo-description">Meta-Description</Label>
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="seo-description">Meta-Description</Label>
+                    <InfoTooltip text="Kurzbeschreibung für Suchergebnisse, empfohlen ca. 150–160 Zeichen." />
+                  </div>
                   <Textarea
                     id="seo-description"
                     rows={3}
@@ -810,7 +942,10 @@ export function ContentEditorForm({
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="seo-canonical">Canonical-URL</Label>
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="seo-canonical">Canonical-URL</Label>
+                    <InfoTooltip text="Offizielle URL, falls dieser Inhalt auch unter einer anderen Adresse erreichbar ist – verhindert doppelten Content bei Suchmaschinen." />
+                  </div>
                   <Input
                     id="seo-canonical"
                     placeholder="https://example.com/pfad"
@@ -826,9 +961,12 @@ export function ContentEditorForm({
 
                 <div className="flex items-center justify-between gap-4 py-2">
                   <div className="flex flex-col gap-0.5">
-                    <Label htmlFor="seo-robots-index">
-                      Indexierung erlauben
-                    </Label>
+                    <div className="flex items-center gap-1.5">
+                      <Label htmlFor="seo-robots-index">
+                        Indexierung erlauben
+                      </Label>
+                      <InfoTooltip text="Steuert, ob Suchmaschinen diesen Inhalt in ihren Index aufnehmen dürfen." />
+                    </div>
                     <p className="text-sm text-muted-foreground">
                       Deaktiviert: Suchmaschinen wird `noindex` mitgeteilt.
                     </p>
@@ -847,9 +985,12 @@ export function ContentEditorForm({
 
                 <div className="flex items-center justify-between gap-4 py-2">
                   <div className="flex flex-col gap-0.5">
-                    <Label htmlFor="seo-robots-follow">
-                      Link-Folgen erlauben
-                    </Label>
+                    <div className="flex items-center gap-1.5">
+                      <Label htmlFor="seo-robots-follow">
+                        Link-Folgen erlauben
+                      </Label>
+                      <InfoTooltip text="Steuert, ob Suchmaschinen ausgehenden Links auf dieser Seite folgen dürfen." />
+                    </div>
                     <p className="text-sm text-muted-foreground">
                       Deaktiviert: Suchmaschinen wird `nofollow` mitgeteilt.
                     </p>
@@ -873,7 +1014,10 @@ export function ContentEditorForm({
                 <p className="text-sm font-medium">OpenGraph & Twitter-Card</p>
 
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="seo-og-title">OG-Titel</Label>
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="seo-og-title">OG-Titel</Label>
+                    <InfoTooltip text="Titel, der beim Teilen in sozialen Netzwerken angezeigt wird. Fällt auf den SEO-Titel zurück, wenn leer." />
+                  </div>
                   <Input
                     id="seo-og-title"
                     placeholder={
@@ -890,7 +1034,10 @@ export function ContentEditorForm({
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="seo-og-description">OG-Beschreibung</Label>
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="seo-og-description">OG-Beschreibung</Label>
+                    <InfoTooltip text="Beschreibungstext beim Teilen in sozialen Netzwerken. Fällt auf die Meta-Description zurück, wenn leer." />
+                  </div>
                   <Textarea
                     id="seo-og-description"
                     rows={3}
@@ -909,7 +1056,10 @@ export function ContentEditorForm({
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <Label>OG-Bild</Label>
+                  <div className="flex items-center gap-1.5">
+                    <Label>OG-Bild</Label>
+                    <InfoTooltip text="Vorschaubild, das beim Teilen in sozialen Netzwerken angezeigt wird." />
+                  </div>
                   <div className="flex items-center gap-3">
                     <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-muted/40">
                       {seoValues.ogImageUrl ? (
@@ -925,31 +1075,53 @@ export function ContentEditorForm({
                         </span>
                       )}
                     </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setOgImagePickerOpen(true)}
-                    >
-                      Bild wählen
-                    </Button>
-                    {seoValues.ogImageUrl && (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                        onChange={(e) =>
+                          setOgImageFile(e.target.files?.[0] ?? null)
+                        }
+                        className="max-w-xs"
+                      />
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        onClick={() =>
-                          setSeoValues((prev) => ({ ...prev, ogImageUrl: "" }))
-                        }
+                        disabled={!ogImageFile || isUploadingOgImage}
+                        onClick={handleOgImageUpload}
                       >
-                        Entfernen
+                        <Upload />
+                        {isUploadingOgImage ? "Lädt hoch…" : "Hochladen"}
                       </Button>
-                    )}
+                      {seoValues.ogImageUrl && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label="OG-Bild entfernen"
+                          onClick={() =>
+                            setSeoValues((prev) => ({
+                              ...prev,
+                              ogImageUrl: "",
+                            }))
+                          }
+                        >
+                          <Trash2 />
+                        </Button>
+                      )}
+                    </div>
                   </div>
+                  {ogImageError && (
+                    <p className="text-sm text-destructive">{ogImageError}</p>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="seo-twitter-card">Twitter-Card-Typ</Label>
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="seo-twitter-card">Twitter-Card-Typ</Label>
+                    <InfoTooltip text="Bestimmt, wie der Link bei Twitter/X dargestellt wird – „Summary“ zeigt ein kleines Vorschaubild, „Summary (großes Bild)“ ein großes." />
+                  </div>
                   <Select
                     value={seoValues.twitterCard}
                     onValueChange={(value) =>
@@ -979,14 +1151,6 @@ export function ContentEditorForm({
           </TabsContent>
         </Tabs>
         </fieldset>
-
-        <ImagePickerDialog
-          open={ogImagePickerOpen}
-          onOpenChange={setOgImagePickerOpen}
-          onSelect={(url) =>
-            setSeoValues((prev) => ({ ...prev, ogImageUrl: url }))
-          }
-        />
 
         {formError && <p className="text-sm text-destructive">{formError}</p>}
 

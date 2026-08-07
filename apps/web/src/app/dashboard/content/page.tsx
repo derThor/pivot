@@ -24,14 +24,14 @@ export default async function ContentPage({
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Inhalte</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Seiten</h1>
           <p className="text-sm text-muted-foreground">
             Alle Content-Einträge deines CMS an einem Ort.
           </p>
         </div>
         <Button render={<Link href="/dashboard/content/new" />}>
           <Plus />
-          Neuer Inhalt
+          Neue Seite
         </Button>
       </div>
 
