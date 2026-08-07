@@ -112,30 +112,44 @@ const navGroups = [
   },
 ] as const;
 
+const ALL_ITEM_URLS = navGroups.flatMap((group) =>
+  group.items.map((item) => item.url),
+);
+
 function fallbackInitials(companyName?: string | null) {
   const trimmed = companyName?.trim();
   return trimmed ? trimmed.slice(0, 2).toUpperCase() : "TW";
 }
 
 /**
- * Wählt die Gruppe des am genauesten passenden Nav-Items (längste
- * übereinstimmende URL) statt der ersten gefundenen – sonst würde "/dashboard"
+ * Wählt die am genauesten passende Item-URL (längste übereinstimmende
+ * URL, nicht nur die erste gefundene) – sonst würde z.B. "/dashboard"
  * (Dashboard-Link) als Präfix jeder anderen Route immer zuerst matchen.
+ * `startsWith(url + "/")` sorgt dafür, dass auch Detailseiten (Anlegen,
+ * Bearbeiten, [id]/...) ihr Eltern-Listen-Item als aktiv markieren –
+ * z.B. macht `/dashboard/content/new` oder
+ * `/dashboard/content/abc123/edit` den Menüpunkt "Seiten"
+ * (`/dashboard/content`) aktiv.
  */
-function findActiveGroupLabel(pathname: string): string | null {
-  let bestLabel: string | null = null;
+function findBestMatchingUrl(pathname: string, urls: string[]): string | null {
+  let best: string | null = null;
   let bestLength = -1;
-  for (const group of navGroups) {
-    for (const item of group.items) {
-      const matches =
-        pathname === item.url || pathname.startsWith(`${item.url}/`);
-      if (matches && item.url.length > bestLength) {
-        bestLabel = group.label;
-        bestLength = item.url.length;
-      }
+  for (const url of urls) {
+    const matches = pathname === url || pathname.startsWith(`${url}/`);
+    if (matches && url.length > bestLength) {
+      best = url;
+      bestLength = url.length;
     }
   }
-  return bestLabel;
+  return best;
+}
+
+function groupLabelForItemUrl(url: string | null): string | null {
+  if (!url) return null;
+  for (const group of navGroups) {
+    if (group.items.some((item) => item.url === url)) return group.label;
+  }
+  return null;
 }
 
 export function AppSidebar({
@@ -166,10 +180,16 @@ export function AppSidebar({
     .filter((group) => group.originalItemCount === 0 || group.items.length > 0);
   const canManageSettings = permissions.includes("settings:manage");
 
+  // Best-match aktive Item-URL für den aktuellen Pfad – wird sowohl für
+  // die Hervorhebung des Menüpunkts als auch für die fette
+  // Gruppen-Beschriftung verwendet (siehe `findBestMatchingUrl`).
+  const activeItemUrl = findBestMatchingUrl(pathname, ALL_ITEM_URLS);
+  const activeGroupLabel = groupLabelForItemUrl(activeItemUrl);
+
   // Akkordeon-Verhalten: immer höchstens eine Gruppe gleichzeitig
   // aufgeklappt – öffnet man eine, schließt sich die vorherige.
-  const [openGroup, setOpenGroup] = React.useState<string | null>(() =>
-    findActiveGroupLabel(pathname),
+  const [openGroup, setOpenGroup] = React.useState<string | null>(
+    () => activeGroupLabel,
   );
   // Beim Navigieren in eine andere Gruppe hinein diese aufklappen (löst
   // die vorherige ab) – als Render-Zeit-Anpassung statt Effekt, da es
@@ -177,9 +197,8 @@ export function AppSidebar({
   const [syncedPathname, setSyncedPathname] = React.useState(pathname);
   if (pathname !== syncedPathname) {
     setSyncedPathname(pathname);
-    const activeLabel = findActiveGroupLabel(pathname);
-    if (activeLabel && activeLabel !== openGroup) {
-      setOpenGroup(activeLabel);
+    if (activeGroupLabel && activeGroupLabel !== openGroup) {
+      setOpenGroup(activeGroupLabel);
     }
   }
 
@@ -243,7 +262,7 @@ export function AppSidebar({
           const isExpanded = openGroup === group.label;
           const isOpen = sidebarState === "collapsed" || isExpanded;
           const isEmphasized = group.items.some(
-            (item) => pathname === item.url,
+            (item) => item.url === activeItemUrl,
           );
           return (
             <SidebarGroup key={group.label}>
@@ -294,7 +313,7 @@ export function AppSidebar({
                           <SidebarMenuItem key={item.url}>
                             <SidebarMenuButton
                               render={<Link href={item.url} />}
-                              isActive={pathname === item.url}
+                              isActive={item.url === activeItemUrl}
                               tooltip={item.title}
                               className={navActiveClass}
                             >

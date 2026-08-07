@@ -69,6 +69,15 @@ Darstellungsreihenfolge:
   Bereich zu laufen. Die Rich-Text-Editor-Toolbar (`rich-text-editor.tsx`)
   ist aus demselben Grund `sticky top-0 z-10 bg-background` – bleibt bei
   langen Texten beim Scrollen innerhalb des Editors sichtbar.
+  **Stolperstein:** `overflow-y-auto` erzwingt laut CSS-Spec automatisch
+  auch `overflow-x: auto` (nicht `visible`), sobald eine Achse nicht
+  `visible` ist – ein zusätzliches `overflow-x-visible` daneben wird vom
+  Browser ignoriert. Der große `shadow-card` (`0 20px 40px`) der
+  Paletten-Kacheln wurde dadurch sichtbar hart abgeschnitten. Fix:
+  Paletten-Kacheln nutzen jetzt das kleinere `shadow-md` statt
+  `shadow-card` (passt ohnehin besser zu einer kompakten Kachel als der
+  für große Karten gedachte, dramatische Schatten), zusätzlich `md:p-2`
+  auf dem scrollenden Container als Sicherheitsabstand.
 - `apps/web/src/components/block-editor-field.tsx` – der Block-Editor,
   zweispaltig: links `Input`-Suchfeld + Grid aus draggable Icon+Name-
   Kacheln je `ModuleType` (immer sichtbar, **nur** per `draggable`/

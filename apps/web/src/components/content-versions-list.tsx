@@ -14,7 +14,75 @@ import { SelectionToolbar } from "@/components/selection-toolbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSelection } from "@/hooks/use-selection";
 import { formatName } from "@/lib/utils";
-import type { ContentVersion } from "@/lib/api-server";
+import {
+  BlockFieldOutput,
+  blockLayoutClasses,
+  resolveBlockLayout,
+} from "@/components/block-field-output";
+import type { ModuleInstance } from "@/components/block-editor-field";
+import type { ContentVersion, ModuleType } from "@/lib/api-server";
+
+function isModuleInstanceArray(value: unknown): value is ModuleInstance[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        typeof item === "object" &&
+        item !== null &&
+        "moduleTypeId" in item &&
+        "values" in item,
+    )
+  );
+}
+
+// Rein lesende Vorschau eines Modul-Felder-Werts (Version oder aktueller
+// Stand) – dieselbe Darstellungslogik wie der Block-Editor und die
+// öffentliche Vorschau-Seite (`BlockFieldOutput`/`resolveBlockLayout`),
+// damit "wie es aussehen muss" hier exakt übereinstimmt.
+function ModulesPreview({
+  value,
+  moduleTypes,
+}: {
+  value: unknown;
+  moduleTypes: ModuleType[];
+}) {
+  if (!isModuleInstanceArray(value) || value.length === 0) {
+    return (
+      <p className="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
+        Keine Bausteine.
+      </p>
+    );
+  }
+  const moduleTypeById = new Map(moduleTypes.map((mt) => [mt.id, mt]));
+  return (
+    <div className="flow-root space-y-6 rounded-md border bg-white p-4 dark:bg-neutral-950">
+      {value.map((instance) => {
+        const moduleType = moduleTypeById.get(instance.moduleTypeId);
+        if (!moduleType) return null;
+        const contentFields = moduleType.schema.fields.filter((f) => !f.option);
+        const layout = resolveBlockLayout(contentFields, instance.values, instance.layout);
+        return (
+          <div
+            key={instance.id}
+            className={blockLayoutClasses(layout.align)}
+            style={{ width: `${layout.width}%` }}
+          >
+            <div className="flow-root space-y-3">
+              {contentFields.map((field) => (
+                <BlockFieldOutput
+                  key={field.name}
+                  field={field}
+                  value={instance.values[field.name]}
+                  applyOwnLayout={contentFields.length > 1}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function stringifyValue(value: unknown): string {
   if (value == null) return "";
@@ -78,12 +146,17 @@ export function ContentVersionsList({
   currentData,
   versions,
   richtextFields = [],
+  moduleFields = [],
+  moduleTypes = [],
 }: {
   contentId: string;
   currentData: Record<string, unknown>;
   versions: ContentVersion[];
   /** Feldnamen, die laut ContentType.schema vom Typ "richtext" sind. */
   richtextFields?: string[];
+  /** Feldnamen, die laut ContentType.schema vom Typ "modules" sind. */
+  moduleFields?: string[];
+  moduleTypes?: ModuleType[];
 }) {
   const router = useRouter();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -214,6 +287,28 @@ export function ContentVersionsList({
                 {fieldNames.map((field) => {
                   const oldValue = version.data[field];
                   const newValue = currentData[field];
+
+                  if (moduleFields.includes(field)) {
+                    // Bausteine-Felder zeigen die Vorschau immer, auch
+                    // ohne Änderung (gleicher Grund wie bei Richtext
+                    // unten) – "Vorschau" rendert den historischen Stand
+                    // dieser Version genau wie Editor/öffentliche Seite
+                    // ihn zeigen würden, "JSON" den rohen Diff.
+                    return (
+                      <Tabs key={field} defaultValue="preview">
+                        <TabsList>
+                          <TabsTrigger value="preview">Vorschau</TabsTrigger>
+                          <TabsTrigger value="json">{field} (JSON)</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="json">
+                          <DiffBox oldValue={oldValue} newValue={newValue} />
+                        </TabsContent>
+                        <TabsContent value="preview">
+                          <ModulesPreview value={oldValue} moduleTypes={moduleTypes} />
+                        </TabsContent>
+                      </Tabs>
+                    );
+                  }
 
                   if (!richtextFields.includes(field)) {
                     // FieldDiff blendet sich selbst aus, wenn sich das

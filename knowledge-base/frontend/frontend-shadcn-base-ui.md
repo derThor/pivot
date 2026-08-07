@@ -69,6 +69,26 @@ automatisch `false`, sofern nicht explizit anders angegeben. Damit müssen
 einzelne `<Button render={<Link .../>}>`-Stellen das nicht mehr manuell
 setzen.
 
+**Vierter Stolperstein (2026-08-08):** Der aktive Menüpunkt in
+`app-sidebar.tsx` wurde ursprünglich per exaktem `pathname === item.url`
+bestimmt – funktioniert für Listen-Seiten, aber nicht für deren
+Detailseiten (`/dashboard/content/new`, `/dashboard/content/[id]/edit`
+etc.), die dadurch keinen aktiven Menüpunkt/keine fette Gruppen-
+Beschriftung zeigten. Fix: `findBestMatchingUrl(pathname, urls)` prüft
+`pathname === url || pathname.startsWith(\`${url}/\`)` und wählt bei
+mehreren Treffern die **längste** passende URL (sonst würde z.B.
+`/dashboard` als Präfix jeder anderen Route immer zuerst matchen). Ein
+gemeinsamer `activeItemUrl`-Wert treibt sowohl die Menüpunkt-
+Hervorhebung (`isActive`) als auch die fette Gruppen-Beschriftung
+(`isEmphasized`) – gilt automatisch für alle künftigen Detailseiten
+unter einem Listen-Item, ohne dass pro Route etwas ergänzt werden muss.
+Beim Verifizieren per `curl`+`grep` Vorsicht: Base-UI rendert `data-active`
+als leeres, aber vorhandenes Attribut (`data-active=""`), dessen Position
+im Tag relativ zu anderen Attributen variiert – ein fixes
+Zeichen-Lookbehind-Fenster im Grep-Pattern kann dadurch fälschlich
+"nicht gefunden" liefern; zuverlässig ist nur, den kompletten `<a ...>`-
+Tag zu extrahieren und darin zu suchen.
+
 ## Relevante Dateien
 
 - `apps/web/src/components/ui/*` (generierter shadcn-Code)

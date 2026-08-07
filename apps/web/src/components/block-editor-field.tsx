@@ -341,7 +341,12 @@ export function BlockEditorField({
 
   return (
     <div className="flex flex-col gap-4 md:flex-row">
-      <div className="flex w-full shrink-0 flex-col gap-3 self-start md:sticky md:top-4 md:max-h-[calc(100vh-2rem)] md:w-60 md:overflow-y-auto">
+      {/* `overflow-y-auto` erzwingt laut CSS-Spec auch `overflow-x: auto`
+          (nicht `visible`), sobald eine Achse nicht `visible` ist – ein
+          `overflow-x-visible` daneben würde also ignoriert. Einzige echte
+          Lösung gegen abgeschnittene Schatten: Innenabstand, der dem
+          Schatten Platz gibt, bevor der Container ihn kappt. */}
+      <div className="flex w-full shrink-0 flex-col gap-3 self-start md:sticky md:top-4 md:max-h-[calc(100vh-2rem)] md:w-60 md:overflow-y-auto md:p-2">
         <div className="relative shrink-0">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -364,7 +369,7 @@ export function BlockEditorField({
                 }}
                 onDragEnd={() => setDraggingPaletteId(null)}
                 className={cn(
-                  "flex cursor-grab flex-col items-center gap-1.5 rounded-lg border bg-card p-3 text-center shadow-card transition-colors hover:border-orange-400 active:cursor-grabbing",
+                  "flex cursor-grab flex-col items-center gap-1.5 rounded-lg border bg-card p-3 text-center shadow-md transition-colors hover:border-orange-400 active:cursor-grabbing",
                   draggingPaletteId === moduleType.id && "opacity-50",
                 )}
               >

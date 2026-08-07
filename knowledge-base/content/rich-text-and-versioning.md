@@ -280,6 +280,32 @@ Probleme, die alle in derselben Sitzung behoben wurden:
   Backend existierte schon) – die Versions-Seite lädt den `ContentType`
   des Contents und filtert `schema.fields` auf `type === "richtext"`.
 
+## Vorschau/JSON-Tabs auch für Modul-Felder (2026-08-08)
+
+Mit dem Seiten-Designer (siehe
+[page-designer.md](./page-designer.md)) bekam "Seite" ein Feld vom Typ
+`"modules"` (`blocks`) statt/zusätzlich zu `richtext`-Feldern. Die
+Versionshistorie kannte diesen Feldtyp nicht und zeigte ihn über den
+generischen `FieldDiff`-Zweig nur als rohen JSON-Text-Diff – die beiden
+Tabs ("Vorschau"/"HTML"), die es für `richtext`-Felder bereits gab,
+fehlten für `blocks` komplett. Vom Nutzer bemerkt anhand eines
+Screenshots der alten Versionshistorie-Optik.
+
+Fix, exakt nach demselben Muster wie bei `richtextFields` oben: neue
+`ContentVersionsList`-Props `moduleFields: string[]` und `moduleTypes:
+ModuleType[]` (`versions/page.tsx` filtert `contentType.schema.fields`
+zusätzlich auf `type === "modules"` und lädt `getModuleTypes()`). Neue
+`ModulesPreview`-Komponente rendert den historischen `blocks`-Wert einer
+Version **exakt** so, wie Editor und öffentliche Vorschau-Seite es auch
+tun würden – wiederverwendet bewusst dieselben Bausteine
+(`BlockFieldOutput`, `resolveBlockLayout`, `blockLayoutClasses` aus
+`block-field-output.tsx`) statt einer eigenen, drittendarstellungslogik,
+damit die drei Stellen (Editor-Canvas, öffentliche Vorschau,
+Versions-Historie) nie auseinanderlaufen können. Tab-Beschriftung
+`{field} (JSON)` statt `(HTML)`, weil `blocks` kein HTML-String, sondern
+ein Array serialisierter Modul-Instanzen ist – der `DiffBox`-Wort-Diff
+(unverändert wiederverwendet) zeigt dafür den JSON-Rohtext.
+
 ## Warum diese Lösung
 
 - **Tiptap statt Plate/Lexical**: liefert HTML-Strings, passt ohne

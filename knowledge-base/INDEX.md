@@ -31,7 +31,7 @@ Themenbereiche/Umgruppierungen: siehe [PROCESS.md](./PROCESS.md)).
 | [content-versioning.md](./content/content-versioning.md) | Content-Modell, automatische Versionierung | 2026-08-02 |
 | [content-editor-dynamic-forms.md](./content/content-editor-dynamic-forms.md) | Content-Types-API + dynamisch aus `ContentType.schema` generiertes Editor-Formular, zweispaltiges Layout (Einstellungen links, Editor rechts) | 2026-08-06 |
 | [content-edit-delete.md](./content/content-edit-delete.md) | Content bearbeiten (Edit-Formular) und löschen (mit Bestätigung, kaskadiert automatisch auf Versionen) | 2026-08-04 |
-| [rich-text-and-versioning.md](./content/rich-text-and-versioning.md) | Rich-Text-Editor (Tiptap, inkl. H1-H6/Code/Bilder) + Versions-Diff & Rollback-UI, HTML-Diff/Vorschau als Tabs | 2026-08-06 |
+| [rich-text-and-versioning.md](./content/rich-text-and-versioning.md) | Rich-Text-Editor (Tiptap, inkl. H1-H6/Code/Bilder) + Versions-Diff & Rollback-UI, HTML-Diff/Vorschau als Tabs (jetzt auch für `"modules"`-Felder: Vorschau/JSON-Tabs via `BlockFieldOutput`) | 2026-08-08 |
 | [content-categories.md](./content/content-categories.md) | Kategorien-Zuordnung im Content-Editor (n:m, `ContentCategory`), ausgewählte Kategorien als entfernbare Badges | 2026-08-06 |
 | [content-seo-fields.md](./content/content-seo-fields.md) | SEO-Tab im Content-Editor (SEO-Titel/Meta-Description/Excerpt/Canonical-URL/OpenGraph/Twitter-Card/Robots), Info-Tooltips, OG-Bild-Direkt-Upload | 2026-08-06 |
 | [content-autosave.md](./content/content-autosave.md) | Autosave (lokal, `localStorage`, debounced) + Entwurfs-Wiederherstellungs-Banner im Content-Editor, admin-abschaltbar | 2026-08-06 |
@@ -55,7 +55,7 @@ Themenbereiche/Umgruppierungen: siehe [PROCESS.md](./PROCESS.md)).
 
 | Datei | Thema | Zuletzt aktualisiert |
 |---|---|---|
-| [frontend-shadcn-base-ui.md](./frontend/frontend-shadcn-base-ui.md) | shadcn/ui auf Base-UI-Basis, `render`-statt-`asChild`-Pattern, `nativeButton`-Stolperstein | 2026-08-03 |
+| [frontend-shadcn-base-ui.md](./frontend/frontend-shadcn-base-ui.md) | shadcn/ui auf Base-UI-Basis, `render`-statt-`asChild`-Pattern, `nativeButton`-Stolperstein, Sidebar-Aktiv-Status per Präfix-Matching (Detailseiten aktivieren ihr Eltern-Listen-Item) | 2026-08-08 |
 | [ui-convention-crud-and-delete-confirmation.md](./frontend/ui-convention-crud-and-delete-confirmation.md) | Konvention: Anlegen→Bearbeiten+Löschen, Löschen immer mit Bestätigungs-Popup (`ConfirmDeleteDialog`) + Massenauswahl | 2026-08-04 |
 | [bulk-selection-and-delete.md](./frontend/bulk-selection-and-delete.md) | Massenauswahl + Sammel-Löschen für alle Listen-Ansichten (`useSelection`, `SelectionToolbar`) | 2026-08-04 |
 | [pagination.md](./frontend/pagination.md) | URL-getriebene Pagination (`?page=`) für alle Listen-Seiten (`PaginationControls`) | 2026-08-05 |

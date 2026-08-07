@@ -9,6 +9,7 @@ import {
   getContent,
   getContentType,
   getContentVersions,
+  getModuleTypes,
   getPublicSettings,
 } from "@/lib/api-server";
 
@@ -28,9 +29,10 @@ export default async function ContentVersionsPage({
     notFound();
   }
 
-  const [contentType, settings] = await Promise.all([
+  const [contentType, settings, moduleTypes] = await Promise.all([
     getContentType(content.contentType.id),
     getPublicSettings(),
+    getModuleTypes(),
   ]);
   const versions = await getContentVersions(id, {
     page,
@@ -39,6 +41,10 @@ export default async function ContentVersionsPage({
   const richtextFields =
     contentType?.schema.fields
       .filter((field) => field.type === "richtext")
+      .map((field) => field.name) ?? [];
+  const moduleFields =
+    contentType?.schema.fields
+      .filter((field) => field.type === "modules")
       .map((field) => field.name) ?? [];
 
   return (
@@ -63,6 +69,8 @@ export default async function ContentVersionsPage({
         currentData={content.data}
         versions={versions?.items ?? []}
         richtextFields={richtextFields}
+        moduleFields={moduleFields}
+        moduleTypes={moduleTypes ?? []}
       />
 
       {versions && (
