@@ -16,11 +16,16 @@ import { useSelection } from "@/hooks/use-selection";
 import { formatName } from "@/lib/utils";
 import {
   BlockFieldOutput,
+  DividerOutput,
+  TilesGridOutput,
   blockLayoutClasses,
+  isDividerModule,
+  isTilesModule,
   resolveBlockLayout,
+  resolveInstanceValues,
 } from "@/components/block-field-output";
 import type { ModuleInstance } from "@/components/block-editor-field";
-import type { ContentVersion, ModuleType } from "@/lib/api-server";
+import type { ContentVersion, GlobalModule, ModuleType } from "@/lib/api-server";
 
 function isModuleInstanceArray(value: unknown): value is ModuleInstance[] {
   return (
@@ -42,9 +47,11 @@ function isModuleInstanceArray(value: unknown): value is ModuleInstance[] {
 function ModulesPreview({
   value,
   moduleTypes,
+  globalModules,
 }: {
   value: unknown;
   moduleTypes: ModuleType[];
+  globalModules: GlobalModule[];
 }) {
   if (!isModuleInstanceArray(value) || value.length === 0) {
     return (
@@ -57,26 +64,33 @@ function ModulesPreview({
   return (
     <div className="flow-root space-y-6 rounded-md border bg-white p-4 dark:bg-neutral-950">
       {value.map((instance) => {
-        const moduleType = moduleTypeById.get(instance.moduleTypeId);
+        const resolved = resolveInstanceValues(instance, globalModules);
+        const moduleType = moduleTypeById.get(resolved.moduleTypeId);
         if (!moduleType) return null;
         const contentFields = moduleType.schema.fields.filter((f) => !f.option);
-        const layout = resolveBlockLayout(contentFields, instance.values, instance.layout);
+        const layout = resolveBlockLayout(contentFields, resolved.values, instance.layout);
         return (
           <div
             key={instance.id}
             className={blockLayoutClasses(layout.align)}
             style={{ width: `${layout.width}%` }}
           >
-            <div className="flow-root space-y-3">
-              {contentFields.map((field) => (
-                <BlockFieldOutput
-                  key={field.name}
-                  field={field}
-                  value={instance.values[field.name]}
-                  applyOwnLayout={contentFields.length > 1}
-                />
-              ))}
-            </div>
+            {isDividerModule(contentFields) ? (
+              <DividerOutput />
+            ) : isTilesModule(contentFields) ? (
+              <TilesGridOutput contentFields={contentFields} values={resolved.values} />
+            ) : (
+              <div className="flow-root space-y-3">
+                {contentFields.map((field) => (
+                  <BlockFieldOutput
+                    key={field.name}
+                    field={field}
+                    value={resolved.values[field.name]}
+                    applyOwnLayout={contentFields.length > 1}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         );
       })}
@@ -148,6 +162,7 @@ export function ContentVersionsList({
   richtextFields = [],
   moduleFields = [],
   moduleTypes = [],
+  globalModules = [],
 }: {
   contentId: string;
   currentData: Record<string, unknown>;
@@ -157,6 +172,7 @@ export function ContentVersionsList({
   /** Feldnamen, die laut ContentType.schema vom Typ "modules" sind. */
   moduleFields?: string[];
   moduleTypes?: ModuleType[];
+  globalModules?: GlobalModule[];
 }) {
   const router = useRouter();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -304,7 +320,11 @@ export function ContentVersionsList({
                           <DiffBox oldValue={oldValue} newValue={newValue} />
                         </TabsContent>
                         <TabsContent value="preview">
-                          <ModulesPreview value={oldValue} moduleTypes={moduleTypes} />
+                          <ModulesPreview
+                            value={oldValue}
+                            moduleTypes={moduleTypes}
+                            globalModules={globalModules}
+                          />
                         </TabsContent>
                       </Tabs>
                     );

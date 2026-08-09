@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { Fragment, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
 import {
   AlignCenter,
   AlignLeft,
@@ -9,12 +10,17 @@ import {
   Component,
   FileText,
   GripVertical,
+  HelpCircle,
   Image as ImageIcon,
+  Images,
+  LayoutGrid,
+  Lock,
   Maximize2,
   MousePointerClick,
   Pencil,
   Quote,
   Search,
+  SeparatorHorizontal,
   Square,
   Trash2,
 } from "lucide-react";
@@ -35,8 +41,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   BlockFieldOutput,
+  DividerOutput,
+  TilesGridOutput,
   blockLayoutClasses,
+  focalObjectPosition,
+  isDividerModule,
+  isTilesModule,
   resolveBlockLayout,
+  resolveInstanceValues,
   toImageValue,
   type BlockLayoutValue,
   type ImageAlign,
@@ -46,7 +58,7 @@ import { ImagePickerDialog } from "@/components/image-picker-dialog";
 import { ModuleFieldInput } from "@/components/module-field-input";
 import { resolveImageSrc } from "@/lib/media";
 import { cn } from "@/lib/utils";
-import type { ModuleType } from "@/lib/api-server";
+import type { GlobalModule, ModuleType } from "@/lib/api-server";
 
 const ALIGN_OPTIONS: { value: ImageAlign; label: string; icon: typeof Square }[] = [
   { value: "none", label: "Keine", icon: Square },
@@ -68,6 +80,7 @@ const ALIGN_OPTIONS: { value: ImageAlign; label: string; icon: typeof Square }[]
 function EditableImageField({
   value,
   onChange,
+  onReplace,
   // false bei Modulen, die NUR aus diesem einen Bild-Feld bestehen (z.B.
   // "Bild"): dort übernimmt bereits der äußere Block-Wrapper Breite/Float
   // (siehe `resolveBlockLayout`, liest denselben Feldwert) – würde dieses
@@ -77,6 +90,7 @@ function EditableImageField({
 }: {
   value: unknown;
   onChange: (value: ImageFieldValue) => void;
+  onReplace: () => void;
   applyOwnLayout?: boolean;
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -134,8 +148,20 @@ function EditableImageField({
         alt=""
         draggable={false}
         onClick={(e) => e.stopPropagation()}
+        style={{ objectPosition: focalObjectPosition(img) }}
         className="block max-h-[36rem] w-full rounded-md object-cover"
       />
+      <button
+        type="button"
+        draggable={false}
+        onClick={(e) => {
+          e.stopPropagation();
+          onReplace();
+        }}
+        className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm font-medium text-white opacity-0 transition-opacity group-hover:opacity-100"
+      >
+        Ersetzen
+      </button>
       <div
         onPointerDown={startResize}
         onDragStart={(e) => e.preventDefault()}
@@ -157,6 +183,12 @@ export interface ModuleInstance {
   // Zitat, …) – Breite/Ausrichtung des ganzen Blocks, siehe
   // `resolveBlockLayout` in block-field-output.tsx.
   layout?: BlockLayoutValue;
+  // Gesetzt, wenn dieser Block ein "globales Modul" referenziert statt
+  // eigenen Inhalt zu tragen (`values` ist dann leer/ungenutzt) – die
+  // tatsächlichen Werte kommen live aus `GlobalModule.values` (siehe
+  // `resolveInstanceValues` in block-field-output.tsx). Nur zentral unter
+  // /dashboard/global-modules bearbeitbar, hier nur einfüg-/entfernbar.
+  globalModuleId?: string;
 }
 
 const ICONS: Record<string, typeof Component> = {
@@ -165,6 +197,10 @@ const ICONS: Record<string, typeof Component> = {
   Columns2,
   MousePointerClick,
   Quote,
+  LayoutGrid,
+  SeparatorHorizontal,
+  HelpCircle,
+  Images,
 };
 
 function iconFor(moduleType: ModuleType | undefined) {
@@ -212,7 +248,7 @@ function DropZone({
         onDrop(e.dataTransfer.getData("text/plain"));
       }}
       className={cn(
-        "rounded transition-colors",
+        "clear-both rounded transition-colors",
         large ? "min-h-32" : "h-2",
         active && !large && "h-6",
         over
@@ -232,13 +268,16 @@ export function BlockEditorField({
   value,
   onChange,
   moduleTypes,
+  globalModules,
 }: {
   value: ModuleInstance[];
   onChange: (value: ModuleInstance[]) => void;
   moduleTypes: ModuleType[];
+  globalModules: GlobalModule[];
 }) {
   const [search, setSearch] = useState("");
   const [draggingPaletteId, setDraggingPaletteId] = useState<string | null>(null);
+  const [draggingGlobalId, setDraggingGlobalId] = useState<string | null>(null);
   const [draggingInstanceId, setDraggingInstanceId] = useState<string | null>(null);
   const [editingInstanceId, setEditingInstanceId] = useState<string | null>(null);
   const [resizingLayoutId, setResizingLayoutId] = useState<string | null>(null);
@@ -253,7 +292,10 @@ export function BlockEditorField({
   // geschrumpfte) Breite als 100%-Basis für weiteres Ziehen nehmen.
   const columnRef = useRef<HTMLDivElement>(null);
 
-  const isDragging = draggingPaletteId !== null || draggingInstanceId !== null;
+  const isDragging =
+    draggingPaletteId !== null ||
+    draggingGlobalId !== null ||
+    draggingInstanceId !== null;
 
   const filteredTypes = moduleTypes.filter((mt) =>
     mt.name.toLowerCase().includes(search.toLowerCase()),
@@ -264,6 +306,25 @@ export function BlockEditorField({
       id: crypto.randomUUID(),
       moduleTypeId: moduleType.id,
       values: exampleValues(moduleType),
+    };
+    const next = [...value];
+    next.splice(index, 0, instance);
+    onChange(next);
+  }
+
+  // Fügt eine Referenz auf ein globales Modul ein statt eigenen Inhalt –
+  // `values` bleibt leer, die tatsächlichen Werte werden immer live über
+  // `globalModuleId` aufgelöst (siehe `resolveInstanceValues`).
+  // `moduleTypeId` wird trotzdem gespiegelt (Modul-Typ eines globalen
+  // Moduls ist nach dem Anlegen unveränderlich, siehe global-module-
+  // dialog.tsx) – reine Bequemlichkeit für Stellen, die es ohne Auflösung
+  // lesen, keine zweite Quelle der Wahrheit.
+  function insertGlobalAt(index: number, globalModule: GlobalModule) {
+    const instance: ModuleInstance = {
+      id: crypto.randomUUID(),
+      moduleTypeId: globalModule.moduleTypeId,
+      globalModuleId: globalModule.id,
+      values: {},
     };
     const next = [...value];
     next.splice(index, 0, instance);
@@ -284,6 +345,9 @@ export function BlockEditorField({
     if (payload.startsWith("new:")) {
       const moduleType = moduleTypes.find((mt) => mt.id === payload.slice(4));
       if (moduleType) insertAt(index, moduleType);
+    } else if (payload.startsWith("global:")) {
+      const globalModule = globalModules.find((g) => g.id === payload.slice(7));
+      if (globalModule) insertGlobalAt(index, globalModule);
     } else if (payload.startsWith("move:")) {
       moveTo(payload.slice(5), index);
     }
@@ -384,6 +448,39 @@ export function BlockEditorField({
             </p>
           )}
         </div>
+
+        {globalModules.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium text-muted-foreground">
+              Globale Module
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {globalModules.map((globalModule) => {
+                const Icon = iconFor(
+                  moduleTypes.find((mt) => mt.id === globalModule.moduleTypeId),
+                );
+                return (
+                  <div
+                    key={globalModule.id}
+                    draggable
+                    onDragStart={(e) => {
+                      setDraggingGlobalId(globalModule.id);
+                      e.dataTransfer.setData("text/plain", `global:${globalModule.id}`);
+                    }}
+                    onDragEnd={() => setDraggingGlobalId(null)}
+                    className={cn(
+                      "flex cursor-grab flex-col items-center gap-1.5 rounded-lg border bg-card p-3 text-center shadow-md transition-colors hover:border-orange-400 active:cursor-grabbing",
+                      draggingGlobalId === globalModule.id && "opacity-50",
+                    )}
+                  >
+                    <Icon className="size-5 text-orange-500" />
+                    <span className="text-xs font-medium">{globalModule.name}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="mx-auto flex w-full max-w-3xl flex-col rounded-lg border bg-white shadow-card dark:bg-neutral-950">
@@ -405,14 +502,22 @@ export function BlockEditorField({
           )}
 
           {value.map((instance, index) => {
-            const moduleType = moduleTypes.find((mt) => mt.id === instance.moduleTypeId);
+            // Globale Module: `values` kommt live vom referenzierten
+            // `GlobalModule` statt aus der Instanz selbst (siehe
+            // `resolveInstanceValues`) – Inhalt hier nur lesend, Bearbeiten
+            // ausschließlich zentral unter /dashboard/global-modules.
+            const isGlobal = Boolean(instance.globalModuleId);
+            const resolved = resolveInstanceValues(instance, globalModules);
+            const moduleType = moduleTypes.find((mt) => mt.id === resolved.moduleTypeId);
             const Icon = iconFor(moduleType);
             const contentFields = moduleType?.schema.fields.filter((f) => !f.option) ?? [];
+            const isTiles = isTilesModule(contentFields);
+            const isDivider = isDividerModule(contentFields);
             const imageField = contentFields.find((f) => f.type === "image");
             const imageValue = imageField
-              ? toImageValue(instance.values[imageField.name])
+              ? toImageValue(resolved.values[imageField.name])
               : null;
-            const blockLayout = resolveBlockLayout(contentFields, instance.values, instance.layout);
+            const blockLayout = resolveBlockLayout(contentFields, resolved.values, instance.layout);
             // Kein eigenes Bild-Feld (Rich-Text, CTA-Button, Zitat, …):
             // Ausrichtung/Größe des ganzen Blocks kommen aus
             // `instance.layout` – eigener Zieh-Griff + Menü unten.
@@ -422,7 +527,7 @@ export function BlockEditorField({
                 (o) => o.value === (imageField ? (imageValue?.align ?? "none") : blockLayout.align),
               ) ?? ALIGN_OPTIONS[0];
             return (
-              <div key={instance.id}>
+              <Fragment key={instance.id}>
                 <div
                   draggable
                   onDragStart={(e) => {
@@ -445,7 +550,19 @@ export function BlockEditorField({
                       <Icon className="size-3.5" />
                       {moduleType?.name}
                     </span>
-                    {imageField && (
+                    {isGlobal && (
+                      <Link
+                        href="/dashboard/global-modules"
+                        target="_blank"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1 rounded-sm px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+                        title="Globales Modul – Inhalt wird zentral unter Globale Module gepflegt"
+                      >
+                        <Lock className="size-3" />
+                        Global
+                      </Link>
+                    )}
+                    {imageField && !isTiles && !isGlobal && (
                       <>
                         <DropdownMenu>
                           <DropdownMenuTrigger
@@ -526,18 +643,20 @@ export function BlockEditorField({
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="Bearbeiten"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingInstanceId(instance.id);
-                      }}
-                    >
-                      <Pencil />
-                    </Button>
+                    {!isGlobal && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Bearbeiten"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingInstanceId(instance.id);
+                        }}
+                      >
+                        <Pencil />
+                      </Button>
+                    )}
                     <Button
                       type="button"
                       variant="ghost"
@@ -551,7 +670,66 @@ export function BlockEditorField({
                       <Trash2 />
                     </Button>
                   </div>
-                  {moduleType && (
+                  {moduleType && isTiles && !isGlobal && (
+                    // Kacheln-artiges Modul (mehrere Bild-Felder, z.B. der
+                    // "Kacheln"-Baustein): festes 2-Spalten-Raster statt
+                    // der Float-/Resize-Logik von EditableImageField –
+                    // jede Kachel ist immer quadratisch und fest im Raster
+                    // platziert, kein individuelles Ausrichten/Skalieren.
+                    <div className="grid grid-cols-2 gap-2">
+                      {contentFields.map((field) => {
+                        const img = toImageValue(resolved.values[field.name]);
+                        if (!img.url) {
+                          return (
+                            <button
+                              key={field.name}
+                              type="button"
+                              draggable={false}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setImagePicker({ instanceId: instance.id, fieldName: field.name });
+                              }}
+                              className="flex aspect-square flex-col items-center justify-center gap-1 rounded-md border border-dashed text-sm text-muted-foreground transition-colors hover:border-orange-400"
+                            >
+                              <ImageIcon className="size-6" />
+                              Bild wählen
+                            </button>
+                          );
+                        }
+                        return (
+                          <div
+                            key={field.name}
+                            className="group/tile relative aspect-square overflow-hidden rounded-md"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={resolveImageSrc(img.thumbnailUrl ?? img.url)}
+                              alt=""
+                              draggable={false}
+                              className="size-full object-cover"
+                            />
+                            <button
+                              type="button"
+                              draggable={false}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setImagePicker({ instanceId: instance.id, fieldName: field.name });
+                              }}
+                              className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm font-medium text-white opacity-0 transition-opacity group-hover/tile:opacity-100"
+                            >
+                              Ersetzen
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {moduleType && isDivider && (
+                    <div className="py-2">
+                      <DividerOutput />
+                    </div>
+                  )}
+                  {moduleType && !isTiles && !isDivider && !isGlobal && (
                     // `flow-root` statt `flex flex-col`: Bild-Felder mit
                     // Links-/Rechtsbündig floaten (siehe EditableImageField)
                     // – Flex-Kinder ignorieren `float` komplett, außerdem
@@ -594,10 +772,31 @@ export function BlockEditorField({
                             key={field.name}
                             value={instance.values[field.name]}
                             onChange={(next) => updateField(instance.id, field.name, next)}
+                            onReplace={() =>
+                              setImagePicker({ instanceId: instance.id, fieldName: field.name })
+                            }
                             applyOwnLayout={contentFields.length > 1}
                           />
                         );
                       })}
+                    </div>
+                  )}
+                  {isGlobal && isTiles && (
+                    <TilesGridOutput
+                      contentFields={contentFields}
+                      values={resolved.values}
+                    />
+                  )}
+                  {isGlobal && !isTiles && !isDivider && (
+                    <div className="flow-root space-y-3">
+                      {contentFields.map((field) => (
+                        <BlockFieldOutput
+                          key={field.name}
+                          field={field}
+                          value={resolved.values[field.name]}
+                          showPlaceholders
+                        />
+                      ))}
                     </div>
                   )}
                   {hasBlockLayoutControls && (
@@ -615,7 +814,7 @@ export function BlockEditorField({
                   )}
                 </div>
                 <DropZone active={isDragging} onDrop={(p) => handleDropAt(index + 1, p)} />
-              </div>
+              </Fragment>
             );
           })}
         </div>
@@ -652,12 +851,20 @@ export function BlockEditorField({
       <ImagePickerDialog
         open={imagePicker !== null}
         onOpenChange={(open) => !open && setImagePicker(null)}
-        onSelect={(url) => {
+        onSelect={(url, _alt, item) => {
           if (!imagePicker) return;
           const instance = value.find((i) => i.id === imagePicker.instanceId);
           if (!instance) return;
           const current = toImageValue(instance.values[imagePicker.fieldName]);
-          updateField(imagePicker.instanceId, imagePicker.fieldName, { ...current, url });
+          updateField(imagePicker.instanceId, imagePicker.fieldName, {
+            ...current,
+            url,
+            mediaId: item?.id,
+            variants: item?.variants,
+            thumbnailUrl: item?.thumbnailUrl ?? undefined,
+            focalX: item?.focalX ?? undefined,
+            focalY: item?.focalY ?? undefined,
+          });
           setImagePicker(null);
         }}
       />

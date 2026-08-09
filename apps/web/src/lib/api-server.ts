@@ -156,7 +156,11 @@ export interface ContentTypeField {
   // Nur für Modul-Felder relevant: Beispielwert, mit dem eine neu
   // eingefügte Modul-Instanz vorbefüllt wird, damit man beim Einfügen
   // sofort sieht, wie der Baustein aussieht, statt eine leere Fläche.
-  example?: string;
+  // `unknown` statt `string`, weil Repeater-Beispieldaten Arrays sind.
+  example?: unknown;
+  // Nur für `type: "repeater"`: Schema der Unterfelder pro Listen-Eintrag
+  // (z.B. Frage/Antwort bei FAQ, Bild/Bildunterschrift bei einer Galerie).
+  fields?: ContentTypeField[];
 }
 
 export interface ContentType {
@@ -188,6 +192,24 @@ export interface ModuleType {
 // kann, um `Content.data.blocks` zu rendern.
 export function getModuleTypes() {
   return publicApiFetch<ModuleType[]>("/module-types");
+}
+
+export interface GlobalModule {
+  id: string;
+  name: string;
+  values: Record<string, unknown>;
+  moduleTypeId: string;
+  moduleType: { id: string; name: string; icon: string | null };
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Öffentlicher Endpoint (siehe GlobalModulesController) – aus demselben
+// Grund wie `getModuleTypes()`: Block-Editor UND die anonyme Vorschau-Seite
+// müssen die aktuellen Werte eines eingebundenen globalen Moduls live
+// auflösen können.
+export function getGlobalModules() {
+  return publicApiFetch<GlobalModule[]>("/global-modules");
 }
 
 export interface ContentDetail extends ContentListItem {
@@ -275,16 +297,37 @@ export function getContentVersions(
   );
 }
 
+export interface MediaVariant {
+  id: string;
+  width: number;
+  format: string;
+  url: string;
+  size: number;
+}
+
+export interface MediaTagRef {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export interface MediaItem {
   id: string;
   filename: string;
   url: string;
   mimeType: string;
   size: number;
+  width: number | null;
+  height: number | null;
   alt: string | null;
+  focalX: number | null;
+  focalY: number | null;
+  thumbnailUrl: string | null;
   createdAt: string;
   uploadedBy: AuthorRef;
   folderId: string | null;
+  variants: MediaVariant[];
+  tags: MediaTagRef[];
 }
 
 export interface MediaListResponse {
@@ -296,14 +339,27 @@ export function getMediaList(params?: {
   page?: number;
   pageSize?: number;
   folderId?: string;
+  type?: string;
+  minSize?: number;
+  maxSize?: number;
+  tagIds?: string[];
 }) {
   const search = new URLSearchParams();
   if (params?.page) search.set("page", String(params.page));
   if (params?.pageSize) search.set("pageSize", String(params.pageSize));
   if (params?.folderId) search.set("folderId", params.folderId);
+  if (params?.type) search.set("type", params.type);
+  if (params?.minSize) search.set("minSize", String(params.minSize));
+  if (params?.maxSize) search.set("maxSize", String(params.maxSize));
+  if (params?.tagIds && params.tagIds.length > 0)
+    search.set("tagIds", params.tagIds.join(","));
   const query = search.toString();
 
   return apiFetch<MediaListResponse>(`/media${query ? `?${query}` : ""}`);
+}
+
+export function getUnusedMedia() {
+  return apiFetch<{ items: MediaItem[] }>("/media/unused");
 }
 
 export interface MediaFolder {
@@ -401,6 +457,7 @@ export interface AppSettings {
   allowEmailChange: boolean;
   requireAdminActivation: boolean;
   autosaveEnabled: boolean;
+  mediaResponsiveVariantsEnabled: boolean;
   passwordMinLength: number;
   passwordRequireUppercase: boolean;
   passwordRequireLowercase: boolean;

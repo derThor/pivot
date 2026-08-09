@@ -19,6 +19,7 @@ import {
   Layers,
   ChevronRight,
   Puzzle,
+  Blocks,
   Wrench,
   LogOut,
 } from "lucide-react";
@@ -53,7 +54,12 @@ const navFooterActiveClass =
 const navLabelClass =
   "overflow-hidden whitespace-nowrap transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0";
 
-const navGroups = [
+// Exportiert, damit `dashboard-breadcrumbs.tsx` dieselbe Gruppen-/Item-
+// Struktur wiederverwenden kann – eine einzige Quelle für "welche Seite
+// gehört zu welchem Menüpunkt/welcher Gruppe" statt sie zweimal zu
+// pflegen (Sidebar-Aktiv-Status und Breadcrumbs würden sonst leicht
+// auseinanderlaufen).
+export const navGroups = [
   {
     label: "Übersicht",
     icon: LayoutDashboard,
@@ -83,7 +89,14 @@ const navGroups = [
   {
     label: "Erweiterungen",
     icon: Puzzle,
-    items: [],
+    items: [
+      {
+        title: "Globale Module",
+        url: "/dashboard/global-modules",
+        icon: Blocks,
+        permission: "settings:manage",
+      },
+    ],
   },
   {
     label: "Verwaltung",

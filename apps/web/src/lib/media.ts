@@ -14,3 +14,12 @@ export function resolveImageSrc(url: string) {
   if (/^(data:|https?:)/.test(url)) return url;
   return `${API_ORIGIN}${url}`;
 }
+
+// Muss mit RASTER_MIME_TYPES in apps/api/src/media/media-image-processing.service.ts
+// synchron gehalten werden – nur diese Typen laufen durch die Verarbeitungs-
+// Pipeline (Zuschneiden/Fokuspunkt setzen daher hier ebenfalls voraus).
+const CROPPABLE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+export function isCroppableImage(mimeType: string) {
+  return CROPPABLE_MIME_TYPES.has(mimeType);
+}

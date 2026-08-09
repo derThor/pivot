@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getIndentedFolderOptions } from "@/lib/media-folders";
+import { ACCEPTED_MEDIA_MIME_TYPES } from "@/lib/media-type";
 import type { MediaFolder } from "@/lib/api-server";
 
 export function MediaUploadDialog({
@@ -106,7 +107,7 @@ export function MediaUploadDialog({
             <Input
               id="media-file"
               type="file"
-              accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+              accept={ACCEPTED_MEDIA_MIME_TYPES}
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             />
           </div>

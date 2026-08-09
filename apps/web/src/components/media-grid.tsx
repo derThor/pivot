@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FolderInput } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { HighlightText } from "@/components/highlight-text";
@@ -13,14 +14,16 @@ import { SelectionToolbar } from "@/components/selection-toolbar";
 import { useSelection } from "@/hooks/use-selection";
 import { useHighlightParam } from "@/hooks/use-highlight-param";
 import { formatBytes } from "@/lib/utils";
-import type { MediaFolder, MediaItem } from "@/lib/api-server";
+import type { MediaFolder, MediaItem, TaxonomyItem } from "@/lib/api-server";
 
 export function MediaGrid({
   items,
   folders = [],
+  availableTags = [],
 }: {
   items: MediaItem[];
   folders?: MediaFolder[];
+  availableTags?: TaxonomyItem[];
 }) {
   const router = useRouter();
   const { activeId, query: highlightQuery } = useHighlightParam("media-item");
@@ -97,7 +100,16 @@ export function MediaGrid({
               <span className="text-xs text-muted-foreground">
                 {formatBytes(item.size)}
               </span>
-              <MediaCardActions item={item} folders={folders} />
+              {item.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {item.tags.map((tag) => (
+                    <Badge key={tag.id} variant="outline" className="text-[10px]">
+                      {tag.name}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <MediaCardActions item={item} folders={folders} availableTags={availableTags} />
             </figcaption>
           </figure>
         ))}

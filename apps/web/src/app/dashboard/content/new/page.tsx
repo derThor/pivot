@@ -2,17 +2,20 @@ import { ContentEditorForm } from "@/components/content-editor-form";
 import {
   getCategories,
   getContentTypes,
+  getGlobalModules,
   getModuleTypes,
   getPublicSettings,
 } from "@/lib/api-server";
 
 export default async function NewContentPage() {
-  const [contentTypes, moduleTypes, categories, settings] = await Promise.all([
-    getContentTypes(),
-    getModuleTypes(),
-    getCategories({ pageSize: 100 }),
-    getPublicSettings(),
-  ]);
+  const [contentTypes, moduleTypes, globalModules, categories, settings] =
+    await Promise.all([
+      getContentTypes(),
+      getModuleTypes(),
+      getGlobalModules(),
+      getCategories({ pageSize: 100 }),
+      getPublicSettings(),
+    ]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -34,6 +37,7 @@ export default async function NewContentPage() {
         <ContentEditorForm
           contentTypes={contentTypes}
           moduleTypes={moduleTypes ?? []}
+          globalModules={globalModules ?? []}
           categories={categories?.items ?? []}
           autosaveEnabled={settings?.autosaveEnabled ?? true}
         />

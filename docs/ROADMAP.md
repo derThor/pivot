@@ -167,17 +167,28 @@ Details: [rich-text-and-versioning.md](../knowledge-base/content/rich-text-and-v
 
 ### 2b.7 – Medienmanagement
 
-- [ ] Bild zuschneiden
-- [ ] Bildgrößen automatisch generieren
-- [ ] WebP/AVIF-Konvertierung
-- [ ] Fokuspunkt für Responsive Images
-- [ ] Bildkompression
-- [ ] EXIF-Daten entfernen
-- [ ] PDF-, Video- und Office-Dateien in der Medienbibliothek hinzufügen, sowie im Seiteneditor auswählen und einbinden.
-- [ ] PDF-, Video- und Office-Datei-Vorschau
-- [ ] Mediensuche nach Dateityp, Größe und Tags
-- [ ] Medien duplizieren
-- [ ] Erkennung ungenutzter Medien
+- [x] Bild zuschneiden – erzeugt bewusst ein neues, eigenständiges Medium
+      statt das Original zu überschreiben (2026-08-08)
+- [x] Bildgrößen automatisch generieren – WebP/AVIF-Varianten bei festen
+      Breakpoints (320/640/1024/1920px), admin-abschaltbar über
+      `Einstellungen → Zugriff & Funktionen → Automatische Bildvarianten`
+      (2026-08-08)
+- [x] WebP/AVIF-Konvertierung (2026-08-08)
+- [x] Fokuspunkt für Responsive Images – wirkt auf künftig generierte
+      Varianten/Zuschnitte (2026-08-08)
+- [x] Bildkompression – Re-Encoding beim Upload-Normalisieren (2026-08-08)
+- [x] EXIF-Daten entfernen (2026-08-08)
+- [x] PDF-, Video- und Office-Dateien in der Medienbibliothek hinzufügen,
+      sowie im Seiteneditor auswählen und einbinden – Rich-Text-Toolbar
+      "Datei einfügen" (2026-08-08)
+- [x] PDF-, Video- und Office-Datei-Vorschau – leichtgewichtig/nativ
+      (`<iframe>`/`<video>`/Icon+Download-Link, kein ffmpeg/LibreOffice)
+      (2026-08-08)
+- [x] Mediensuche nach Dateityp, Größe und Tags – Medien-Tags nutzen den
+      bestehenden, gemeinsamen Tag-Pool (2026-08-08)
+- [x] Medien duplizieren (2026-08-08)
+- [x] Erkennung ungenutzter Medien – On-Demand-Scan, keine automatische
+      Löschung (2026-08-08)
 
 ### 2b.8 – Content-Struktur
 
@@ -243,15 +254,35 @@ tatsächlich). Details siehe
       `float`), sodass Text bzw. andere, ebenfalls schmal eingestellte
       Bausteine (z.B. Zitat, per eigenem Block-Zieh-Griff) sich daneben
       einreihen statt in eigener Zeile darunter zu stehen.
-- [ ] Basis-Modul-Bibliothek – bisher 5 von 8 geplanten Typen umgesetzt
-      (Rich-Text, Bild, Bild+Text, CTA-Button, Zitat); noch offen:
-      Trenner, Akkordeon/FAQ, Bildergalerie
-- [ ] Globale Module – ein Modul lässt sich als "global" markieren
-      (einmal pflegen, auf mehreren Seiten eingebunden – deckt Footer/
-      Header/Banner und wiederverwendbare Inhaltsblöcke gleichzeitig ab,
-      statt sie als separate Features zu bauen)
-- [ ] Live-Vorschau der zusammengesetzten Seite – Integration mit den
-      bestehenden Content-Vorschau-Links
+- [x] Basis-Modul-Bibliothek – jetzt alle 8 geplanten Typen umgesetzt
+      (Rich-Text, Bild, Bild+Text, CTA-Button, Zitat, Trenner, Akkordeon/
+      FAQ, Bildergalerie). Trenner/FAQ/Galerie brachten einen neuen
+      Feldtyp `"repeater"` (variable Anzahl Unterfeld-Gruppen pro Eintrag,
+      Hinzufügen/Auf/Ab/Entfernen im Bearbeiten-Popup) – FAQ rendert als
+      natives `<details>`-Akkordeon, Galerie als Bild-Raster mit
+      Fokuspunkt-Unterstützung; beides über Formerkennung (Repeater mit
+      bzw. ohne Bild-Unterfeld) statt Modul-Slug unterschieden, analog zum
+      bestehenden "Kacheln"-Muster. Trenner braucht gar kein Feld (leeres
+      Schema), erkannt über "Modul ohne sichtbares Feld". (2026-08-09)
+- [x] Globale Module – neues `GlobalModule`-Modell, per Fremdschlüssel aus
+      einer Modul-Instanz referenziert (`globalModuleId`) statt als
+      Snapshot in der Content-JSON gespeichert, Werte werden bei jedem
+      Request live aufgelöst – Muster von der bestehenden
+      Navigation→Content-Referenz übernommen statt vom (bewusst
+      snapshot-basierten) `ImageFieldValue`. Eigene Verwaltungsseite
+      (`/dashboard/global-modules`, Sidebar unter "Erweiterungen"), im
+      Seiten-Designer per Drag&Drop aus eigenem Paletten-Abschnitt
+      einbindbar. Bewusst nur zentral bearbeitbar (auf der Seite selbst
+      nur einfüg-/entfernbar, schreibgeschützt mit "Global"-Badge) –
+      vermeidet zwei parallele Speicherwege im selben Formular.
+      (2026-08-09)
+- [x] Live-Vorschau der zusammengesetzten Seite – "Vorschau öffnen"-
+      Button im Content-Editor (nur beim Bearbeiten bestehender Inhalte)
+      sowie ein Vorschau-Icon direkt in der Inhalte-Liste: erstellt im
+      Hintergrund einen kurzlebigen Vorschau-Link über den bestehenden
+      Endpoint (`POST /content/:id/preview-links`) und öffnet ihn sofort
+      in neuem Tab, statt manuell über den Vorschau-Link-Dialog zu gehen.
+      (2026-08-09)
 
 ### 2b.9 – Workflow
 
@@ -393,7 +424,7 @@ schaffen gleichzeitig die Grundlage für die späteren Enterprise-Features:
 4. ~~Autosave (2b.5)~~ ✅ 2026-08-06
 5. ~~Content Locking (2b.9)~~ ✅ 2026-08-06
 6. Workflow/Freigaben (2b.9)
-7. ~~Seiten-Designer – freiflächiges Drag&Drop-Canvas (2b.8)~~ ✅ 2026-08-07 (Basis-Modul-Bibliothek, globale Module, Live-Vorschau-Integration noch offen)
+7. ~~Seiten-Designer – freiflächiges Drag&Drop-Canvas (2b.8)~~ ✅ 2026-08-07, Basis-Modul-Bibliothek/globale Module/Live-Vorschau-Integration ✅ 2026-08-09
 8. Bildoptimierung – WebP/AVIF (2b.7)
 9. API-Keys für externe Anwendungen (Phase 3)
 10. Dashboard mit Statistiken (4.3)

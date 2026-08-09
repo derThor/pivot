@@ -19,6 +19,7 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { MediaService } from './media.service';
+import { CropMediaDto } from './dto/crop-media.dto';
 import { QueryMediaDto } from './dto/query-media.dto';
 import { UpdateMediaDto } from './dto/update-media.dto';
 import { multerOptions } from './media.config';
@@ -43,6 +44,12 @@ export class MediaController {
   @Get(':id/page')
   findPage(@Param('id') id: string, @Query() query: FindPageDto) {
     return this.mediaService.findPage(id, query.pageSize);
+  }
+
+  @RequirePermission('media:read')
+  @Get('unused')
+  findUnused() {
+    return this.mediaService.findUnused();
   }
 
   @RequirePermission('media:create')
@@ -75,6 +82,22 @@ export class MediaController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateMediaDto) {
     return this.mediaService.update(id, dto);
+  }
+
+  @RequirePermission('media:update')
+  @Post(':id/crop')
+  crop(
+    @Param('id') id: string,
+    @Body() dto: CropMediaDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.mediaService.crop(id, dto, user.sub);
+  }
+
+  @RequirePermission('media:create')
+  @Post(':id/duplicate')
+  duplicate(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.mediaService.duplicate(id, user.sub);
   }
 
   @RequirePermission('media:delete')

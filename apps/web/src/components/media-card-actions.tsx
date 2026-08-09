@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FolderInput, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Copy, Crop, FolderInput, MoreVertical, Pencil, Tag, Target, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,22 +22,33 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { MoveToFolderDialog } from "@/components/move-to-folder-dialog";
-import type { MediaFolder, MediaItem } from "@/lib/api-server";
+import { MediaCropDialog } from "@/components/media-crop-dialog";
+import { MediaFocalPointDialog } from "@/components/media-focal-point-dialog";
+import { MediaTagsDialog } from "@/components/media-tags-dialog";
+import type { MediaFolder, MediaItem, TaxonomyItem } from "@/lib/api-server";
+import { isCroppableImage } from "@/lib/media";
 
 export function MediaCardActions({
   item,
   folders,
+  availableTags = [],
 }: {
   item: MediaItem;
   folders: MediaFolder[];
+  availableTags?: TaxonomyItem[];
 }) {
   const router = useRouter();
   const [altOpen, setAltOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [cropOpen, setCropOpen] = useState(false);
+  const [focalOpen, setFocalOpen] = useState(false);
+  const [tagsOpen, setTagsOpen] = useState(false);
   const [alt, setAlt] = useState(item.alt ?? "");
   const [isSaving, setIsSaving] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const croppable = isCroppableImage(item.mimeType);
 
   async function handleSaveAlt(event: React.FormEvent) {
     event.preventDefault();
@@ -68,6 +79,16 @@ export function MediaCardActions({
     router.refresh();
   }
 
+  async function handleDuplicate() {
+    setIsDuplicating(true);
+    try {
+      await fetch(`/api/media/${item.id}/duplicate`, { method: "POST" });
+      router.refresh();
+    } finally {
+      setIsDuplicating(false);
+    }
+  }
+
   return (
     <div className="flex justify-end">
       <div className="hidden items-center gap-1 md:flex">
@@ -88,6 +109,47 @@ export function MediaCardActions({
           onClick={() => setMoveOpen(true)}
         >
           <FolderInput />
+        </Button>
+        {croppable && (
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label={`${item.filename} zuschneiden`}
+              onClick={() => setCropOpen(true)}
+            >
+              <Crop />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label={`Fokuspunkt für ${item.filename} setzen`}
+              onClick={() => setFocalOpen(true)}
+            >
+              <Target />
+            </Button>
+          </>
+        )}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`Tags für ${item.filename} bearbeiten`}
+          onClick={() => setTagsOpen(true)}
+        >
+          <Tag />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`${item.filename} duplizieren`}
+          disabled={isDuplicating}
+          onClick={handleDuplicate}
+        >
+          <Copy />
         </Button>
         <Button
           type="button"
@@ -122,6 +184,26 @@ export function MediaCardActions({
             <DropdownMenuItem onClick={() => setMoveOpen(true)}>
               <FolderInput />
               Verschieben
+            </DropdownMenuItem>
+            {croppable && (
+              <>
+                <DropdownMenuItem onClick={() => setCropOpen(true)}>
+                  <Crop />
+                  Zuschneiden
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFocalOpen(true)}>
+                  <Target />
+                  Fokuspunkt setzen
+                </DropdownMenuItem>
+              </>
+            )}
+            <DropdownMenuItem onClick={() => setTagsOpen(true)}>
+              <Tag />
+              Tags bearbeiten
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={isDuplicating} onClick={handleDuplicate}>
+              <Copy />
+              Duplizieren
             </DropdownMenuItem>
             <DropdownMenuItem
               variant="destructive"
@@ -171,6 +253,24 @@ export function MediaCardActions({
         title={`„${item.filename}“ löschen?`}
         description="Diese Aktion kann nicht rückgängig gemacht werden."
         onConfirm={handleDelete}
+      />
+
+      {croppable && (
+        <>
+          <MediaCropDialog item={item} open={cropOpen} onOpenChange={setCropOpen} />
+          <MediaFocalPointDialog
+            item={item}
+            open={focalOpen}
+            onOpenChange={setFocalOpen}
+          />
+        </>
+      )}
+
+      <MediaTagsDialog
+        item={item}
+        availableTags={availableTags}
+        open={tagsOpen}
+        onOpenChange={setTagsOpen}
       />
     </div>
   );

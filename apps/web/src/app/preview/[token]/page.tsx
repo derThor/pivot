@@ -2,12 +2,21 @@ import { Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   BlockFieldOutput,
+  DividerOutput,
+  TilesGridOutput,
   blockLayoutClasses,
+  isDividerModule,
+  isTilesModule,
   resolveBlockLayout,
+  resolveInstanceValues,
   type BlockLayoutValue,
 } from "@/components/block-field-output";
 import { RichTextDisplay } from "@/components/rich-text-display";
-import { getContentByPreviewToken, getModuleTypes } from "@/lib/api-server";
+import {
+  getContentByPreviewToken,
+  getGlobalModules,
+  getModuleTypes,
+} from "@/lib/api-server";
 import type { ContentStatus, ModuleType } from "@/lib/api-server";
 
 interface ModuleInstance {
@@ -15,6 +24,7 @@ interface ModuleInstance {
   moduleTypeId: string;
   values: Record<string, unknown>;
   layout?: BlockLayoutValue;
+  globalModuleId?: string;
 }
 
 function isModuleInstanceArray(value: unknown): value is ModuleInstance[] {
@@ -43,9 +53,10 @@ export default async function ContentPreviewPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const [content, moduleTypes] = await Promise.all([
+  const [content, moduleTypes, globalModules] = await Promise.all([
     getContentByPreviewToken(token),
     getModuleTypes(),
+    getGlobalModules(),
   ]);
 
   if (!content) {
@@ -92,26 +103,36 @@ export default async function ContentPreviewPage({
             return (
               <div key={field} className="flow-root space-y-6">
                 {value.map((instance) => {
-                  const moduleType = moduleTypeById.get(instance.moduleTypeId);
+                  const resolved = resolveInstanceValues(instance, globalModules ?? []);
+                  const moduleType = moduleTypeById.get(resolved.moduleTypeId);
                   if (!moduleType) return null;
                   const contentFields = moduleType.schema.fields.filter((f) => !f.option);
-                  const layout = resolveBlockLayout(contentFields, instance.values, instance.layout);
+                  const layout = resolveBlockLayout(contentFields, resolved.values, instance.layout);
                   return (
                     <div
                       key={instance.id}
                       className={blockLayoutClasses(layout.align)}
                       style={{ width: `${layout.width}%` }}
                     >
-                      <div className="flow-root space-y-3">
-                        {contentFields.map((moduleField) => (
-                          <BlockFieldOutput
-                            key={moduleField.name}
-                            field={moduleField}
-                            value={instance.values[moduleField.name]}
-                            applyOwnLayout={contentFields.length > 1}
-                          />
-                        ))}
-                      </div>
+                      {isDividerModule(contentFields) ? (
+                        <DividerOutput />
+                      ) : isTilesModule(contentFields) ? (
+                        <TilesGridOutput
+                          contentFields={contentFields}
+                          values={resolved.values}
+                        />
+                      ) : (
+                        <div className="flow-root space-y-3">
+                          {contentFields.map((moduleField) => (
+                            <BlockFieldOutput
+                              key={moduleField.name}
+                              field={moduleField}
+                              value={resolved.values[moduleField.name]}
+                              applyOwnLayout={contentFields.length > 1}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ChevronRight, Folder, FolderTree, Home, Image, Upload } from "lucide-react";
+import { useState } from "react";
+import { Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,13 +20,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mediaUrl } from "@/lib/media";
-import {
-  getFolderBreadcrumb,
-  getFolderChildren,
-  getIndentedFolderOptions,
-} from "@/lib/media-folders";
-import type { MediaFolder, MediaItem, MediaListResponse } from "@/lib/api-server";
+import { MediaBrowserPanel } from "@/components/media-browser-panel";
+import { getIndentedFolderOptions } from "@/lib/media-folders";
+import { ACCEPTED_IMAGE_MIME_TYPES } from "@/lib/media-type";
+import type { MediaFolder, MediaItem } from "@/lib/api-server";
+
+function isImage(item: MediaItem) {
+  return item.mimeType.startsWith("image/");
+}
 
 export function ImagePickerDialog({
   open,
@@ -35,48 +36,20 @@ export function ImagePickerDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSelect: (url: string, alt?: string) => void;
+  // `item` liefert u.a. die beim Upload generierten Responsive-Varianten
+  // mit (siehe `MediaItem.variants`) – Aufrufer, die daraus ein
+  // `<picture>`-`srcSet` bauen wollen (Seiten-Designer), nutzen den
+  // dritten Parameter; einfachere Aufrufer (Rich-Text) ignorieren ihn.
+  onSelect: (url: string, alt?: string, item?: MediaItem) => void;
 }) {
-  const [items, setItems] = useState<MediaItem[] | null>(null);
-  const [folders, setFolders] = useState<MediaFolder[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [folders, setFolders] = useState<MediaFolder[]>([]);
 
   const [file, setFile] = useState<File | null>(null);
   const [alt, setAlt] = useState("");
   const [uploadFolderId, setUploadFolderId] = useState("root");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    setItems(null);
-    setCurrentFolderId(null);
-    setLoadError(null);
-    Promise.all([
-      fetch("/api/media?pageSize=100").then((res) =>
-        res.ok ? (res.json() as Promise<MediaListResponse>) : null,
-      ),
-      fetch("/api/media-folders").then((res) =>
-        res.ok ? (res.json() as Promise<MediaFolder[]>) : null,
-      ),
-    ])
-      .then(([mediaData, folderData]) => {
-        if (!mediaData) {
-          setLoadError("Medien konnten nicht geladen werden.");
-          return;
-        }
-        setItems(
-          mediaData.items.filter((item) => item.mimeType.startsWith("image/")),
-        );
-        setFolders(folderData ?? []);
-      })
-      .catch(() => setLoadError("Server nicht erreichbar."));
-  }, [open]);
-
-  useEffect(() => {
-    setUploadFolderId(currentFolderId ?? "root");
-  }, [currentFolderId]);
 
   function resetUploadForm() {
     setFile(null);
@@ -117,7 +90,7 @@ export function ImagePickerDialog({
 
       resetUploadForm();
       onOpenChange(false);
-      onSelect(body.url, body.alt ?? undefined);
+      onSelect(body.url, body.alt ?? undefined, body as MediaItem);
     } catch {
       setUploadError("Server nicht erreichbar. Bitte später erneut versuchen.");
     } finally {
@@ -125,11 +98,6 @@ export function ImagePickerDialog({
     }
   }
 
-  const breadcrumb = getFolderBreadcrumb(folders, currentFolderId);
-  const childFolders = getFolderChildren(folders, currentFolderId);
-  const visibleItems = items?.filter(
-    (item) => item.folderId === currentFolderId,
-  );
   const folderOptions = getIndentedFolderOptions(folders);
 
   return (
@@ -137,7 +105,8 @@ export function ImagePickerDialog({
       open={open}
       onOpenChange={(next) => {
         onOpenChange(next);
-        if (!next) resetUploadForm();
+        if (next) setCurrentFolderId(null);
+        else resetUploadForm();
       }}
     >
       <DialogContent className="sm:max-w-lg">
@@ -151,104 +120,18 @@ export function ImagePickerDialog({
           </TabsList>
 
           <TabsContent value="library" className="flex flex-col gap-2">
-            {loadError && (
-              <p className="text-sm text-destructive">{loadError}</p>
-            )}
-            {!loadError && items === null && (
-              <p className="text-sm text-muted-foreground">Lädt…</p>
-            )}
-            {items && (
-              <>
-                <nav className="flex flex-wrap items-center gap-1 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentFolderId(null)}
-                    className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
-                  >
-                    <Home className="size-3.5" />
-                    Medien
-                  </button>
-                  {breadcrumb.map((folder) => (
-                    <span key={folder.id} className="flex items-center gap-1">
-                      <ChevronRight className="size-3.5 text-muted-foreground" />
-                      <button
-                        type="button"
-                        onClick={() => setCurrentFolderId(folder.id)}
-                        className={
-                          folder.id === currentFolderId
-                            ? "font-medium text-foreground"
-                            : "text-muted-foreground hover:text-foreground"
-                        }
-                      >
-                        {folder.name}
-                      </button>
-                    </span>
-                  ))}
-                </nav>
-                {childFolders.length > 0 && (
-                  <div className="flex flex-wrap gap-3">
-                    {childFolders.map((folder) => (
-                      <button
-                        key={folder.id}
-                        type="button"
-                        onClick={() => setCurrentFolderId(folder.id)}
-                        className="flex w-16 flex-col items-center gap-1"
-                      >
-                        <span className="relative flex size-14 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm">
-                          <Folder
-                            className="size-7 text-white"
-                            fill="currentColor"
-                            strokeWidth={1.5}
-                          />
-                          {folder.mediaCount > 0 && (
-                            <span className="absolute -bottom-1.5 -left-1.5 flex h-4 min-w-4 items-center justify-center gap-0.5 rounded-full border-2 border-background bg-secondary px-1 text-[9px] font-semibold text-secondary-foreground">
-                              <Image className="size-2.5" />
-                              {folder.mediaCount}
-                            </span>
-                          )}
-                          {folder.childCount > 0 && (
-                            <span className="absolute -bottom-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center gap-0.5 rounded-full border-2 border-background bg-secondary px-1 text-[9px] font-semibold text-secondary-foreground">
-                              <FolderTree className="size-2.5" />
-                              {folder.childCount}
-                            </span>
-                          )}
-                        </span>
-                        <span className="w-full truncate text-center text-xs">
-                          {folder.name}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {visibleItems?.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    Keine Bilder in diesem Ordner.
-                  </p>
-                )}
-                {visibleItems && visibleItems.length > 0 && (
-                  <div className="grid max-h-80 grid-cols-4 gap-2 overflow-y-auto">
-                    {visibleItems.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        className="aspect-square overflow-hidden rounded-md border border-input transition-colors hover:border-ring"
-                        onClick={() => {
-                          onOpenChange(false);
-                          onSelect(item.url, item.alt ?? undefined);
-                        }}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={mediaUrl(item)}
-                          alt={item.alt ?? item.filename}
-                          className="h-full w-full object-cover"
-                        />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
+            <MediaBrowserPanel
+              open={open}
+              accept={isImage}
+              emptyLabel="Keine Bilder in diesem Ordner."
+              currentFolderId={currentFolderId}
+              onFolderChange={setCurrentFolderId}
+              onFoldersLoaded={setFolders}
+              onSelect={(item) => {
+                onOpenChange(false);
+                onSelect(item.url, item.alt ?? undefined, item);
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="upload">
@@ -258,7 +141,7 @@ export function ImagePickerDialog({
                 <Input
                   id="image-picker-file"
                   type="file"
-                  accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+                  accept={ACCEPTED_IMAGE_MIME_TYPES}
                   onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 />
               </div>

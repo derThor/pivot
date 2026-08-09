@@ -89,10 +89,36 @@ Zeichen-Lookbehind-Fenster im Grep-Pattern kann dadurch fälschlich
 "nicht gefunden" liefern; zuverlässig ist nur, den kompletten `<a ...>`-
 Tag zu extrahieren und darin zu suchen.
 
+**Breadcrumbs (2026-08-08):** `components/ui/breadcrumb.tsx` (shadcn-
+Primitive) lag seit Projektanlage ungenutzt im Repo. Neue Komponente
+`dashboard-breadcrumbs.tsx` baut den Pfad **wieder aus derselben
+`navGroups`-Struktur** wie der Sidebar-Aktiv-Status (dafür wurde
+`navGroups` in `app-sidebar.tsx` exportiert – eine einzige Quelle statt
+zweier Kopien, die auseinanderlaufen könnten): längste passende
+Item-URL gewinnt, IDs im Pfad (`/^[a-z0-9]{20,}$/i`, cuid/cuid2) werden
+herausgefiltert, bekannte Aktions-Segmente (`new`/`edit`/`versions`)
+bekommen deutsche Labels über eine kleine `ACTION_LABELS`-Map,
+Gruppen-Crumb entfällt bei Gruppen mit nur einem Item (aktuell nur
+"Übersicht" → "Dashboard", sonst stünde dort zweimal derselbe Name).
+Zwei Routen liegen außerhalb der Sidebar-Struktur (`/dashboard/account`,
+nur über das Nutzer-Menü erreichbar; `/dashboard/settings`, im
+Sidebar-Footer statt einer regulären Gruppe) – eigene
+`STANDALONE_ROUTES`-Map als Fallback.
+
+Eingebunden in `dashboard-header.tsx` (SidebarTrigger → Separator →
+Breadcrumbs → GlobalSearch → Nutzer-Menü). Wegen der Projekt-Regel "kein
+horizontales Scrollen, nirgends" (mehrfach vom Nutzer bekräftigt, u.a. am
+Beispiel der Tabellen-Spalten): Breadcrumb-Container hat `min-w-0
+shrink` und einzelne Labels `truncate` statt zu umbrechen, komplett
+`hidden` unterhalb `sm` (Header ist ohnehin mit SidebarTrigger + Suche +
+Avatar auf Mobile schon eng).
+
 ## Relevante Dateien
 
 - `apps/web/src/components/ui/*` (generierter shadcn-Code)
 - `apps/web/src/components/app-sidebar.tsx`
+- `apps/web/src/components/dashboard-breadcrumbs.tsx`
+- `apps/web/src/components/dashboard-header.tsx`
 - `apps/web/src/app/dashboard/content/page.tsx`
 - `apps/web/components.json` (shadcn-Konfiguration)
 

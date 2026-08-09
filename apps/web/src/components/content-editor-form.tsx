@@ -40,6 +40,7 @@ import type {
   ContentType,
   ContentStatus,
   ContentDetail,
+  GlobalModule,
   ModuleType,
 } from "@/lib/api-server";
 import { cn, formatName, slugify } from "@/lib/utils";
@@ -176,6 +177,7 @@ function isDraftWorthSaving(snapshot: DraftSnapshot) {
 export function ContentEditorForm({
   contentTypes,
   moduleTypes,
+  globalModules,
   categories,
   content,
   autosaveEnabled = true,
@@ -183,6 +185,7 @@ export function ContentEditorForm({
 }: {
   contentTypes: ContentType[];
   moduleTypes: ModuleType[];
+  globalModules: GlobalModule[];
   categories: CategoryRef[];
   content?: ContentDetail;
   autosaveEnabled?: boolean;
@@ -247,9 +250,31 @@ export function ContentEditorForm({
       (field) => field.type !== "richtext" && field.type !== "modules",
     ) ?? [];
 
+  // Beim Neuanlegen ist der Tab-Wechsel ein geführter Schritt-für-Schritt-
+  // Ablauf (Einstellungen -> Designer -> SEO, je nachdem ob der Content-Type
+  // ein "modules"-Feld hat): spätere Tabs sind erst klickbar, sobald der
+  // vorherige Schritt erfolgreich validiert wurde (siehe `maxWizardStepIndex`).
+  // Beim Bearbeiten eines bestehenden Inhalts bleiben alle Tabs wie bisher
+  // frei wählbar.
+  const isWizard = !isEditing;
+  const wizardSteps =
+    moduleFields.length > 0
+      ? (["settings", "design", "seo"] as const)
+      : (["settings", "seo"] as const);
+
   const [activeTab, setActiveTab] = useState(() =>
-    moduleFields.length > 0 ? "design" : "settings",
+    !isEditing || moduleFields.length === 0 ? "settings" : "design",
   );
+  const [maxWizardStepIndex, setMaxWizardStepIndex] = useState(0);
+
+  function wizardStepIndex(step: string) {
+    return (wizardSteps as readonly string[]).indexOf(step);
+  }
+
+  function goToTab(next: string) {
+    if (isWizard && wizardStepIndex(next) > maxWizardStepIndex) return;
+    setActiveTab(next);
+  }
 
   // Wechselt automatisch zurück, falls der Design-Tab durch einen
   // Content-Type-Wechsel wegfällt (kein "modules"-Feld mehr vorhanden).
@@ -477,7 +502,85 @@ export function ContentEditorForm({
   const lockBlocksEditing =
     isEditing && (lockState === "checking" || lockState === "locked-by-other");
 
-  async function onSubmit(values: MetaValues) {
+  // Validiert nur die Felder des "Einstellungen"-Schritts (Meta-Formular +
+  // dynamische Nicht-Modul-Felder + Veröffentlichungszeitpunkt) – dieselben
+  // Regeln wie in `onSubmit`, aber ohne die Modul-Felder-Prüfung, die erst
+  // im "Designer"-Schritt greift.
+  async function validateSettingsStep(): Promise<boolean> {
+    const metaValid = await form.trigger([
+      "contentTypeId",
+      "title",
+      "slug",
+      "status",
+    ]);
+    if (!metaValid) return false;
+
+    const fields = selectedType?.schema.fields ?? [];
+    const nextDataErrors: Record<string, string> = {};
+    for (const field of fields) {
+      if (field.type === "modules") continue;
+      const raw = dataValues[field.name]?.trim() ?? "";
+      if (field.required && !raw) {
+        nextDataErrors[field.name] = "Pflichtfeld";
+      }
+    }
+    if (Object.keys(nextDataErrors).length > 0) {
+      setDataErrors((prev) => ({ ...prev, ...nextDataErrors }));
+      return false;
+    }
+
+    if (form.getValues("status") === "SCHEDULED" && !scheduledForValue) {
+      setScheduledForError(
+        "Für einen geplanten Inhalt ist ein Veröffentlichungszeitpunkt erforderlich.",
+      );
+      return false;
+    }
+    setScheduledForError(null);
+    return true;
+  }
+
+  // Validiert nur die Modul-Felder des "Designer"-Schritts.
+  function validateDesignStep(): boolean {
+    const fields = selectedType?.schema.fields ?? [];
+    const nextDataErrors: Record<string, string> = {};
+    for (const field of fields) {
+      if (field.type !== "modules") continue;
+      const instances = moduleValues[field.name] ?? [];
+      if (field.required && instances.length === 0) {
+        nextDataErrors[field.name] = "Mindestens ein Baustein erforderlich";
+      }
+    }
+    if (Object.keys(nextDataErrors).length > 0) {
+      setDataErrors((prev) => ({ ...prev, ...nextDataErrors }));
+      return false;
+    }
+    return true;
+  }
+
+  async function handleWizardNext() {
+    if (activeTab === "settings") {
+      if (!(await validateSettingsStep())) return;
+    } else if (activeTab === "design") {
+      if (!validateDesignStep()) return;
+    }
+    const nextIndex = wizardStepIndex(activeTab) + 1;
+    if (nextIndex >= wizardSteps.length) return;
+    setMaxWizardStepIndex((prev) => Math.max(prev, nextIndex));
+    setActiveTab(wizardSteps[nextIndex]);
+  }
+
+  function handleWizardBack() {
+    const prevIndex = wizardStepIndex(activeTab) - 1;
+    if (prevIndex < 0) return;
+    setActiveTab(wizardSteps[prevIndex]);
+  }
+
+  // Baut Payload + Validierung wie zuvor `onSubmit`, gibt aber die
+  // gespeicherte Content-ID zurück statt zu redirecten – wiederverwendet
+  // sowohl vom normalen Speichern-Button als auch von "Vorschau öffnen"
+  // (Phase B: Live-Vorschau-Integration), die nach dem Speichern auf der
+  // Seite bleiben will statt zur Content-Liste zu wechseln.
+  async function saveContent(values: MetaValues): Promise<string | null> {
     setFormError(null);
 
     const fields = selectedType?.schema.fields ?? [];
@@ -510,7 +613,7 @@ export function ContentEditorForm({
 
     if (Object.keys(nextDataErrors).length > 0) {
       setDataErrors(nextDataErrors);
-      return;
+      return null;
     }
     setDataErrors({});
 
@@ -518,7 +621,7 @@ export function ContentEditorForm({
       setScheduledForError(
         "Für einen geplanten Inhalt ist ein Veröffentlichungszeitpunkt erforderlich.",
       );
-      return;
+      return null;
     }
     setScheduledForError(null);
 
@@ -551,13 +654,13 @@ export function ContentEditorForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+      const resBody = await res.json().catch(() => null);
 
       if (!res.ok) {
-        const errorBody = await res.json().catch(() => null);
         setFormError(
-          errorBody?.message ?? "Inhalt konnte nicht gespeichert werden.",
+          resBody?.message ?? "Inhalt konnte nicht gespeichert werden.",
         );
-        return;
+        return null;
       }
 
       try {
@@ -566,13 +669,51 @@ export function ContentEditorForm({
         // ignore
       }
 
-      router.push("/dashboard/content");
-      router.refresh();
+      return isEditing ? content!.id : (resBody?.id ?? null);
     } catch {
       setFormError("Server nicht erreichbar. Bitte später erneut versuchen.");
+      return null;
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  async function onSubmit(values: MetaValues) {
+    const id = await saveContent(values);
+    if (!id) return;
+    router.push("/dashboard/content");
+    router.refresh();
+  }
+
+  // "Vorschau öffnen": speichert wie der normale Submit, bleibt aber auf
+  // der Bearbeiten-Seite und öffnet stattdessen einen frischen
+  // Vorschau-Link in neuem Tab – Wiederverwendung desselben Endpoints, den
+  // auch `PreviewLinksDialog` nutzt (siehe preview-links-dialog.tsx).
+  const [isOpeningPreview, setIsOpeningPreview] = useState(false);
+
+  async function handleOpenPreview() {
+    await form.handleSubmit(async (values) => {
+      setIsOpeningPreview(true);
+      try {
+        const id = await saveContent(values);
+        if (!id) return;
+        const res = await fetch(`/api/content/${id}/preview-links`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ expiresInHours: 24 }),
+        });
+        const body = await res.json().catch(() => null);
+        if (!res.ok) {
+          setFormError(
+            body?.message ?? "Vorschau-Link konnte nicht erstellt werden.",
+          );
+          return;
+        }
+        window.open(`/preview/${body.token}`, "_blank");
+      } finally {
+        setIsOpeningPreview(false);
+      }
+    })();
   }
 
   return (
@@ -630,13 +771,23 @@ export function ContentEditorForm({
         )}
 
         <fieldset disabled={lockBlocksEditing} className="contents">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={goToTab}>
           <TabsList>
-            {moduleFields.length > 0 && (
-              <TabsTrigger value="design">Design</TabsTrigger>
-            )}
             <TabsTrigger value="settings">Einstellungen</TabsTrigger>
-            <TabsTrigger value="seo">SEO</TabsTrigger>
+            {moduleFields.length > 0 && (
+              <TabsTrigger
+                value="design"
+                disabled={isWizard && wizardStepIndex("design") > maxWizardStepIndex}
+              >
+                Designer
+              </TabsTrigger>
+            )}
+            <TabsTrigger
+              value="seo"
+              disabled={isWizard && wizardStepIndex("seo") > maxWizardStepIndex}
+            >
+              SEO
+            </TabsTrigger>
           </TabsList>
 
           {moduleFields.length > 0 && (
@@ -653,6 +804,7 @@ export function ContentEditorForm({
                         }))
                       }
                       moduleTypes={moduleTypes}
+                      globalModules={globalModules}
                     />
                     {dataErrors[field.name] && (
                       <p className="text-center text-sm text-destructive">
@@ -1244,13 +1396,51 @@ export function ContentEditorForm({
         {formError && <p className="text-sm text-destructive">{formError}</p>}
 
         <div className="flex items-center gap-3">
-          <Button type="submit" disabled={isSubmitting || lockBlocksEditing}>
-            {isSubmitting
-              ? "Speichert…"
-              : isEditing
-                ? "Änderungen speichern"
-                : "Inhalt speichern"}
-          </Button>
+          {isWizard && activeTab !== wizardSteps[0] && (
+            <Button
+              key="wizard-back"
+              type="button"
+              variant="outline"
+              disabled={lockBlocksEditing}
+              onClick={handleWizardBack}
+            >
+              Zurück
+            </Button>
+          )}
+          {isWizard && activeTab !== wizardSteps[wizardSteps.length - 1] ? (
+            <Button
+              key="wizard-next"
+              type="button"
+              disabled={lockBlocksEditing}
+              onClick={handleWizardNext}
+            >
+              Weiter
+            </Button>
+          ) : (
+            <Button
+              key="submit"
+              type="submit"
+              disabled={isSubmitting || lockBlocksEditing}
+            >
+              {isSubmitting
+                ? "Speichert…"
+                : isEditing
+                  ? "Änderungen speichern"
+                  : "Inhalt speichern"}
+            </Button>
+          )}
+          {isEditing &&
+            (!isWizard || activeTab === wizardSteps[wizardSteps.length - 1]) && (
+              <Button
+                key="open-preview"
+                type="button"
+                variant="outline"
+                disabled={isSubmitting || isOpeningPreview || lockBlocksEditing}
+                onClick={handleOpenPreview}
+              >
+                {isOpeningPreview ? "Öffnet…" : "Vorschau öffnen"}
+              </Button>
+            )}
           {autosaveEnabled && lastAutosavedAt && (
             <p className="text-xs text-muted-foreground">
               Entwurf lokal gespeichert um{" "}

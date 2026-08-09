@@ -21,6 +21,7 @@ import { MailerModule } from './mailer/mailer.module';
 import { SearchModule } from './search/search.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { NavigationModule } from './navigation/navigation.module';
+import { GlobalModulesModule } from './global-modules/global-modules.module';
 import { validateEnv } from './common/config/env.validation';
 
 @Module({
@@ -50,6 +51,7 @@ import { validateEnv } from './common/config/env.validation';
     SearchModule,
     WebhooksModule,
     NavigationModule,
+    GlobalModulesModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

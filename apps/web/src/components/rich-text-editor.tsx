@@ -15,6 +15,7 @@ import {
   Code2,
   FileCode,
   ImagePlus,
+  Paperclip,
   AlignLeft,
   AlignCenter,
   AlignRight,
@@ -32,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ImagePickerDialog } from "@/components/image-picker-dialog";
+import { FilePickerDialog } from "@/components/file-picker-dialog";
 import { ResizableImageNodeView } from "@/components/resizable-image-node-view";
 import { mediaUrl } from "@/lib/media";
 import { cn } from "@/lib/utils";
@@ -134,6 +136,7 @@ export function RichTextEditor({
   const [sourceMode, setSourceMode] = useState(false);
   const [sourceValue, setSourceValue] = useState("");
   const [imagePickerOpen, setImagePickerOpen] = useState(false);
+  const [filePickerOpen, setFilePickerOpen] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -322,6 +325,13 @@ export function RichTextEditor({
           <ImagePlus />
         </ToolbarButton>
         <ToolbarButton
+          label="Datei einfügen"
+          disabled={sourceMode}
+          onClick={() => setFilePickerOpen(true)}
+        >
+          <Paperclip />
+        </ToolbarButton>
+        <ToolbarButton
           label="Rückgängig"
           disabled={sourceMode}
           onClick={() => editor.chain().focus().undo().run()}
@@ -410,6 +420,34 @@ export function RichTextEditor({
             .chain()
             .focus()
             .setImage({ src: mediaUrl({ url }), alt })
+            .run();
+        }}
+      />
+
+      <FilePickerDialog
+        open={filePickerOpen}
+        onOpenChange={setFilePickerOpen}
+        onSelect={(item) => {
+          // Als Textknoten mit Link-Mark eingefügt statt als HTML-String
+          // geparst – vermeidet, dass ein (grundsätzlich freier)
+          // Dateiname als Markup interpretiert werden könnte.
+          editor
+            .chain()
+            .focus()
+            .insertContent({
+              type: "text",
+              text: item.filename,
+              marks: [
+                {
+                  type: "link",
+                  attrs: {
+                    href: mediaUrl(item),
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                  },
+                },
+              ],
+            })
             .run();
         }}
       />

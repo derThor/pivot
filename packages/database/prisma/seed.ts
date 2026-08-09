@@ -153,10 +153,7 @@ async function main() {
       name: "Seite",
       slug: "page",
       schema: {
-        fields: [
-          { name: "title", type: "string", required: true },
-          { name: "blocks", type: "modules" },
-        ],
+        fields: [{ name: "blocks", type: "modules" }],
       },
     },
   });
@@ -173,20 +170,23 @@ async function main() {
   const loremIpsumShort =
     "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat.";
 
+  interface ModuleField {
+    name: string;
+    type: string;
+    required?: boolean;
+    option?: boolean;
+    variant?: "button" | "quote" | "caption";
+    // `unknown` statt `string`, weil Repeater-Beispieldaten Arrays sind.
+    example?: unknown;
+    // Nur für `type: "repeater"`: Schema der Unterfelder pro Eintrag.
+    fields?: ModuleField[];
+  }
+
   const moduleTypes: {
     name: string;
     slug: string;
     icon: string;
-    schema: {
-      fields: {
-        name: string;
-        type: string;
-        required?: boolean;
-        option?: boolean;
-        variant?: "button" | "quote" | "caption";
-        example?: string;
-      }[];
-    };
+    schema: { fields: ModuleField[] };
   }[] = [
     {
       name: "Rich-Text",
@@ -266,6 +266,96 @@ async function main() {
             type: "string",
             variant: "caption",
             example: "Max Mustermann",
+          },
+        ],
+      },
+    },
+    {
+      // Feste Anzahl (4) quadratischer Bild-Kacheln im Raster – kein
+      // Repeater-Feldtyp, bewusst einfach als vier normale "image"-Felder
+      // modelliert (siehe knowledge-base/media/). Die 2x2-Grid-Darstellung
+      // wird generisch anhand "mehr als ein Bild-Feld im selben Modul"
+      // erkannt (block-field-output.tsx `isTilesModule`), nicht am Slug.
+      name: "Kacheln",
+      slug: "tiles",
+      icon: "LayoutGrid",
+      schema: {
+        fields: [
+          { name: "image1", type: "image", required: true, example: dummyImage },
+          { name: "image2", type: "image", required: true, example: dummyImage },
+          { name: "image3", type: "image", required: true, example: dummyImage },
+          { name: "image4", type: "image", required: true, example: dummyImage },
+        ],
+      },
+    },
+    {
+      // Kein eigenes Feld nötig – wird generisch über "Modul ohne
+      // sichtbares Feld" erkannt (`isDividerModule` in
+      // block-field-output.tsx), nicht über den Slug.
+      name: "Trenner",
+      slug: "divider",
+      icon: "SeparatorHorizontal",
+      schema: { fields: [] },
+    },
+    {
+      // Repeater-Feldtyp (variable Anzahl Einträge) ohne Bild-Unterfeld ->
+      // wird generisch als Akkordeon gerendert (`BlockFieldOutput`,
+      // Gegenstück zu `isGalleryRepeater`).
+      name: "Akkordeon/FAQ",
+      slug: "faq",
+      icon: "HelpCircle",
+      schema: {
+        fields: [
+          {
+            name: "items",
+            type: "repeater",
+            required: true,
+            fields: [
+              { name: "question", type: "string", required: true },
+              { name: "answer", type: "richtext", required: true },
+            ],
+            example: [
+              {
+                id: crypto.randomUUID(),
+                values: {
+                  question: "Wie lange dauert der Versand?",
+                  answer: `<p>${loremIpsumShort}</p>`,
+                },
+              },
+              {
+                id: crypto.randomUUID(),
+                values: {
+                  question: "Kann ich meine Bestellung stornieren?",
+                  answer: `<p>${loremIpsumShort}</p>`,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      // Repeater-Feldtyp mit Bild-Unterfeld -> wird generisch als
+      // Bild-Raster gerendert (`isGalleryRepeater` in
+      // block-field-output.tsx).
+      name: "Bildergalerie",
+      slug: "gallery",
+      icon: "Images",
+      schema: {
+        fields: [
+          {
+            name: "items",
+            type: "repeater",
+            required: true,
+            fields: [
+              { name: "image", type: "image", required: true },
+              { name: "caption", type: "text", option: true },
+            ],
+            example: [
+              { id: crypto.randomUUID(), values: { image: dummyImage } },
+              { id: crypto.randomUUID(), values: { image: dummyImage } },
+              { id: crypto.randomUUID(), values: { image: dummyImage } },
+            ],
           },
         ],
       },

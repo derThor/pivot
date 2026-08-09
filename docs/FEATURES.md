@@ -32,7 +32,7 @@ Legende: ✅ umgesetzt (Grundgerüst) · 🚧 vorbereitet, aber unvollständig �
 | Mehrsprachigkeit (Locale-Feld) | 🚧 | Feld vorhanden, kein Locale-Switching in UI |
 | SEO-Felder | ✅ | Pro Content-Eintrag im eigenen "SEO"-Tab des Editors: SEO-Titel, Meta-Description, Excerpt, Canonical-URL, OpenGraph (Titel/Beschreibung/Bild), Twitter-Card-Typ, Robots-Attribute (index/follow) – Felder existierten teils schon im Schema, waren aber bis 2026-08-06 nirgends im UI editierbar |
 | Rich-Text/Block-Editor | ✅ | Tiptap (Core + StarterKit); Überschriften H1-H6, Code-Block, HTML-Quellcode-Ansicht, Bild einfügen (Medienbibliothek/Upload) + Ausrichtung |
-| Medienverwaltung (Upload, Alt-Text) | ✅ | `POST /media`, lokale Speicherung, Bild-Whitelist (10 MB) |
+| Medienverwaltung (Upload, Alt-Text) | ✅ | `POST /media`, lokale Speicherung, Bild/PDF/Video/Office-Whitelist (10/25/200 MB je Kategorie) |
 | Content-Vorschau (Preview-Links) | ✅ | Zeitlich begrenzte Links (`/preview/[token]`) für unveröffentlichte/geplante Inhalte, ohne Login abrufbar; erstellen/kopieren/verlängern/widerrufen über Dialog im Content-Editor oder inhaltsübergreifend über `/dashboard/content/preview-links` |
 | Automatische Veröffentlichung geplanter Inhalte | ✅ | `Content.scheduledFor` + `@nestjs/schedule`-Cron (jede Minute), schaltet fällige `SCHEDULED`-Inhalte automatisch auf `PUBLISHED` |
 | Webhooks bei Publish/Update | ✅ | `/dashboard/webhooks`, Events `content.published`/`content.updated`, fire-and-forget-Zustellung (5s Timeout, kein Retry) |
@@ -68,7 +68,7 @@ Legende: ✅ umgesetzt (Grundgerüst) · 🚧 vorbereitet, aber unvollständig �
 | Content-Editor (Formular je ContentType) | ✅ | Anlegen und Bearbeiten, dynamisch aus `ContentType.schema`; Löschen mit Bestätigung |
 | Autosave & Entwurfs-Wiederherstellung | ✅ | Lokaler Autosave im Browser (`localStorage`, debounced), Wiederherstellungs-Banner beim erneuten Öffnen; admin-abschaltbar in den Einstellungen |
 | Content Locking | ✅ | Weiche Bearbeitungssperre pro Inhalt (2-Minuten-TTL, Heartbeat), schreibgeschütztes Formular + Banner bei Fremdsperre, Admin-Override; keine Konfliktauflösung/Merge (separates offenes Roadmap-Item) |
-| Medien-Bibliothek (Grid, Upload) | ✅ | Alt-Text bearbeiten, Löschen mit Bestätigung (inkl. Datei), Vorschau-Popup; verschachtelte Ordner (anlegen/umbenennen/verschieben/löschen); keine Bild-Dimensionen |
+| Medien-Bibliothek (Grid, Upload) | ✅ | Alt-Text bearbeiten, Löschen mit Bestätigung (inkl. Datei), Vorschau-Popup (Bild/PDF/Video/Office); verschachtelte Ordner (anlegen/umbenennen/verschieben/löschen); Bild-Dimensionen, Zuschneiden (neues Medium), Fokuspunkt (steuert das quadratische Thumbnail), Duplizieren, Tags (gemeinsamer Pool mit Content), Filter nach Dateityp/Größe/Tags, Erkennung ungenutzter Medien; automatische EXIF-Entfernung/Kompression/WebP-AVIF-Varianten + quadratisches 400px-Thumbnail beim Upload; Seiten-Designer-Baustein „Kacheln" (4 feste Bild-Slots im 2×2-Raster) |
 | Benutzerverwaltung-UI | ✅ | Liste, Anlegen, vollständig bearbeiten (Name/E-Mail/Status/Rolle), Löschen mit Bestätigung + Selbstlöschschutz |
 | Rollen-/Rechteverwaltung-UI | ✅ | `/dashboard/roles`, Checkbox-Matrix für Rechte pro Rolle |
 | Einstellungen-UI | ✅ | Passwort-Policy, Feature-Schalter, Darstellung, Firma (Logo-Upload aus-/eingeklappt + Impressum-/Datenschutz-Angaben) |

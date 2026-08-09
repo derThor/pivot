@@ -50,12 +50,14 @@ Themenbereiche/Umgruppierungen: siehe [PROCESS.md](./PROCESS.md)).
 | [media-edit-delete.md](./media/media-edit-delete.md) | Medien bearbeiten (Alt-Text) und löschen (inkl. Datei von Disk) | 2026-08-02 |
 | [media-preview.md](./media/media-preview.md) | Medien-Vorschau-Popup; `next/headers`-Stolperstein in Client-Komponenten | 2026-08-02 |
 | [media-folders.md](./media/media-folders.md) | Verschachtelte Ordner in der Medienbibliothek, Verschieben, Ordner-Navigation im Bild-Picker | 2026-08-04 |
+| [media-processing-and-management.md](./media/media-processing-and-management.md) | Bildverarbeitung (Zuschneiden, Responsive-Varianten, WebP/AVIF, Kompression, EXIF-Entfernung, Fokuspunkt), PDF/Video/Office-Support inkl. leichtgewichtiger Vorschau, Medien-Tags (gemeinsamer Pool), Suche/Filter, Duplizieren, Erkennung ungenutzter Medien | 2026-08-08 |
+| [media-square-thumbnails-and-tiles-block.md](./media/media-square-thumbnails-and-tiles-block.md) | Quadratisches, fokuspunkt-verankertes 400px-Thumbnail (`Media.thumbnailUrl`) + neuer Seiten-Designer-Baustein „Kacheln" (4 feste Bild-Slots) als erste Verbraucher des Fokuspunkts | 2026-08-09 |
 
 ## Frontend – allgemein (`frontend/`)
 
 | Datei | Thema | Zuletzt aktualisiert |
 |---|---|---|
-| [frontend-shadcn-base-ui.md](./frontend/frontend-shadcn-base-ui.md) | shadcn/ui auf Base-UI-Basis, `render`-statt-`asChild`-Pattern, `nativeButton`-Stolperstein, Sidebar-Aktiv-Status per Präfix-Matching (Detailseiten aktivieren ihr Eltern-Listen-Item) | 2026-08-08 |
+| [frontend-shadcn-base-ui.md](./frontend/frontend-shadcn-base-ui.md) | shadcn/ui auf Base-UI-Basis, `render`-statt-`asChild`-Pattern, `nativeButton`-Stolperstein, Sidebar-Aktiv-Status per Präfix-Matching, Breadcrumbs im Dashboard-Header (wiederverwendet `navGroups`) | 2026-08-08 |
 | [ui-convention-crud-and-delete-confirmation.md](./frontend/ui-convention-crud-and-delete-confirmation.md) | Konvention: Anlegen→Bearbeiten+Löschen, Löschen immer mit Bestätigungs-Popup (`ConfirmDeleteDialog`) + Massenauswahl | 2026-08-04 |
 | [bulk-selection-and-delete.md](./frontend/bulk-selection-and-delete.md) | Massenauswahl + Sammel-Löschen für alle Listen-Ansichten (`useSelection`, `SelectionToolbar`) | 2026-08-04 |
 | [pagination.md](./frontend/pagination.md) | URL-getriebene Pagination (`?page=`) für alle Listen-Seiten (`PaginationControls`) | 2026-08-05 |

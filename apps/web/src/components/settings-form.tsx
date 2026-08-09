@@ -44,6 +44,7 @@ const settingsSchema = z.object({
   allowEmailChange: z.boolean(),
   requireAdminActivation: z.boolean(),
   autosaveEnabled: z.boolean(),
+  mediaResponsiveVariantsEnabled: z.boolean(),
   passwordMinLength: z.number().int().min(4).max(128),
   passwordRequireUppercase: z.boolean(),
   passwordRequireLowercase: z.boolean(),
@@ -103,6 +104,7 @@ export function SettingsForm({
       allowEmailChange: settings.allowEmailChange,
       requireAdminActivation: settings.requireAdminActivation,
       autosaveEnabled: settings.autosaveEnabled,
+      mediaResponsiveVariantsEnabled: settings.mediaResponsiveVariantsEnabled,
       passwordMinLength: settings.passwordMinLength,
       passwordRequireUppercase: settings.passwordRequireUppercase,
       passwordRequireLowercase: settings.passwordRequireLowercase,
@@ -279,6 +281,20 @@ export function SettingsForm({
                       <SwitchRow
                         label="Autosave im Content-Editor"
                         description="Speichert Entwürfe während der Bearbeitung automatisch lokal im Browser und bietet beim erneuten Öffnen an, nicht gespeicherte Änderungen wiederherzustellen."
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="mediaResponsiveVariantsEnabled"
+                  render={({ field }) => (
+                    <FormItem>
+                      <SwitchRow
+                        label="Automatische Bildvarianten"
+                        description="Erzeugt beim Hochladen von Bildern automatisch verkleinerte WebP/AVIF-Varianten für responsive Darstellung. Deaktiviert: Bilder werden nur normalisiert (EXIF entfernt, komprimiert) gespeichert, ohne zusätzliche Größenvarianten."
                         checked={field.value}
                         onCheckedChange={field.onChange}
                       />

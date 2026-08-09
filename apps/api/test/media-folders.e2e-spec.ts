@@ -104,11 +104,20 @@ describe('Medien-Ordner-Flow (e2e)', () => {
   });
 
   it('lädt ein Bild in den Unterordner hoch', async () => {
+    // Echte (wenn auch minimale) PNG-Bytes nötig – seit der
+    // Upload-Verarbeitungs-Pipeline (siehe media-processing-and-management.md)
+    // versucht MediaService.create() jedes image/*-Upload mit sharp zu
+    // normalisieren; nicht-dekodierbare Fake-Bytes würden mit 400
+    // abgelehnt statt (wie früher) unverändert durchgereicht.
+    const onePixelPng = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+      'base64',
+    );
     const res = await request(app.getHttpServer())
       .post('/v1/media')
       .set(auth())
       .field('folderId', subFolderId)
-      .attach('file', Buffer.from('fake-png-data'), {
+      .attach('file', onePixelPng, {
         filename: 'e2e-test.png',
         contentType: 'image/png',
       })

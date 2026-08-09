@@ -9,6 +9,7 @@ import {
   getContent,
   getContentType,
   getContentVersions,
+  getGlobalModules,
   getModuleTypes,
   getPublicSettings,
 } from "@/lib/api-server";
@@ -29,10 +30,11 @@ export default async function ContentVersionsPage({
     notFound();
   }
 
-  const [contentType, settings, moduleTypes] = await Promise.all([
+  const [contentType, settings, moduleTypes, globalModules] = await Promise.all([
     getContentType(content.contentType.id),
     getPublicSettings(),
     getModuleTypes(),
+    getGlobalModules(),
   ]);
   const versions = await getContentVersions(id, {
     page,
@@ -71,6 +73,7 @@ export default async function ContentVersionsPage({
         richtextFields={richtextFields}
         moduleFields={moduleFields}
         moduleTypes={moduleTypes ?? []}
+        globalModules={globalModules ?? []}
       />
 
       {versions && (

@@ -54,6 +54,7 @@ model AppSettings {
   allowEmailChange           Boolean  @default(true)
   requireAdminActivation     Boolean  @default(false)
   autosaveEnabled            Boolean  @default(true)
+  mediaResponsiveVariantsEnabled Boolean @default(true)
   passwordMinLength          Int      @default(8)
   passwordRequireUppercase   Boolean  @default(true)
   passwordRequireLowercase   Boolean  @default(true)
@@ -179,7 +180,29 @@ model ModuleType {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  globalModules GlobalModule[]
+
   @@map("module_types")
+}
+
+// Ein einmal gepflegter Modul-Inhalt, der per Referenz (`globalModuleId`
+// auf `ModuleInstance` im Block-Editor) auf beliebig vielen Seiten
+// eingebunden werden kann – anders als ein normaler Baustein-Inhalt, der
+// als Snapshot direkt in `Content.data` liegt. `values` wird bei jedem
+// Request live aufgelöst (siehe apps/web BlockEditorField/BlockFieldOutput
+// `resolveInstanceValues`), nicht als Kopie in die einbindenden Seiten
+// geschrieben – Änderungen wirken sich dadurch sofort überall aus.
+model GlobalModule {
+  id        String   @id @default(cuid())
+  name      String
+  values    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  moduleTypeId String
+  moduleType   ModuleType @relation(fields: [moduleTypeId], references: [id])
+
+  @@map("global_modules")
 }
 
 model Content {
@@ -278,6 +301,7 @@ model Tag {
   name     String       @unique
   slug     String       @unique
   contents ContentTag[]
+  media    MediaTag[]
 
   @@map("tags")
 }
@@ -355,7 +379,11 @@ model Media {
   width       Int?
   height      Int?
   alt         String?
+  focalX      Float?
+  focalY      Float?
+  thumbnailUrl String?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 
   uploadedById String
   uploadedBy   User   @relation(fields: [uploadedById], references: [id])
@@ -363,7 +391,34 @@ model Media {
   folderId String?
   folder   MediaFolder? @relation(fields: [folderId], references: [id])
 
+  variants MediaVariant[]
+  tags     MediaTag[]
+
   @@map("media")
+}
+
+model MediaVariant {
+  id        String   @id @default(cuid())
+  mediaId   String
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  width     Int
+  format    String
+  url       String
+  size      Int
+  createdAt DateTime @default(now())
+
+  @@unique([mediaId, width, format])
+  @@map("media_variants")
+}
+
+model MediaTag {
+  mediaId String
+  tagId   String
+  media   Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  tag     Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([mediaId, tagId])
+  @@map("media_tags")
 }
 
 // ---------- Audit Log ----------

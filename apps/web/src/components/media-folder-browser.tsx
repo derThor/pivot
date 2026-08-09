@@ -4,16 +4,18 @@ import { ChevronRight, Folder, FolderTree, Home, Image } from "lucide-react";
 import { FolderTileMenu } from "@/components/folder-tile-menu";
 import { MediaGrid } from "@/components/media-grid";
 import { getFolderBreadcrumb, getFolderChildren } from "@/lib/media-folders";
-import type { MediaFolder, MediaItem } from "@/lib/api-server";
+import type { MediaFolder, MediaItem, TaxonomyItem } from "@/lib/api-server";
 
 export function MediaFolderBrowser({
   folders,
   currentFolderId,
   items,
+  availableTags = [],
 }: {
   folders: MediaFolder[];
   currentFolderId: string | null;
   items: MediaItem[];
+  availableTags?: TaxonomyItem[];
 }) {
   const breadcrumb = getFolderBreadcrumb(folders, currentFolderId);
   const children = getFolderChildren(folders, currentFolderId);
@@ -89,7 +91,7 @@ export function MediaFolderBrowser({
         </div>
       )}
 
-      <MediaGrid items={items} folders={folders} />
+      <MediaGrid items={items} folders={folders} availableTags={availableTags} />
     </div>
   );
 }

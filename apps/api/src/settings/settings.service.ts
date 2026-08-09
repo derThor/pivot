@@ -22,6 +22,7 @@ export class SettingsService {
       allowEmailChange: settings.allowEmailChange,
       requireAdminActivation: settings.requireAdminActivation,
       autosaveEnabled: settings.autosaveEnabled,
+      mediaResponsiveVariantsEnabled: settings.mediaResponsiveVariantsEnabled,
       passwordMinLength: settings.passwordMinLength,
       passwordRequireUppercase: settings.passwordRequireUppercase,
       passwordRequireLowercase: settings.passwordRequireLowercase,
