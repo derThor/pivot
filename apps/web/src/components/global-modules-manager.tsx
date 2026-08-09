@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Pencil, Trash2 } from "lucide-react";
 
@@ -20,9 +21,18 @@ import type { GlobalModule, ModuleType } from "@/lib/api-server";
 export function GlobalModulesManager({
   items,
   moduleType,
+  editHrefBase,
 }: {
   items: GlobalModule[];
   moduleType: ModuleType;
+  // Gesetzt (z.B. bei Galerien): Bearbeiten öffnet `${editHrefBase}/${item.id}`
+  // als eigene Seite statt des Popups (mehr Platz, siehe
+  // global-module-page-form.tsx). Ohne (z.B. bei FAQs) bleibt es beim
+  // bisherigen `GlobalModuleDialog`-Popup. Bewusst ein String statt einer
+  // Callback-Funktion: diese Komponente wird von einer Server Component
+  // aus verwendet, Funktionen lassen sich über die RSC-Grenze nicht
+  // übergeben ("Functions cannot be passed directly to Client Components").
+  editHrefBase?: string;
 }) {
   const router = useRouter();
   const [deleteTarget, setDeleteTarget] = useState<GlobalModule | null>(null);
@@ -62,16 +72,27 @@ export function GlobalModulesManager({
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-1">
-                    <GlobalModuleDialog
-                      moduleType={moduleType}
-                      globalModule={item}
-                      triggerButtonProps={{
-                        variant: "ghost",
-                        size: "icon-sm",
-                        "aria-label": `${item.name} bearbeiten`,
-                      }}
-                      triggerContent={<Pencil />}
-                    />
+                    {editHrefBase ? (
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`${item.name} bearbeiten`}
+                        render={<Link href={`${editHrefBase}/${item.id}`} />}
+                      >
+                        <Pencil />
+                      </Button>
+                    ) : (
+                      <GlobalModuleDialog
+                        moduleType={moduleType}
+                        globalModule={item}
+                        triggerButtonProps={{
+                          variant: "ghost",
+                          size: "icon-sm",
+                          "aria-label": `${item.name} bearbeiten`,
+                        }}
+                        triggerContent={<Pencil />}
+                      />
+                    )}
                     <Button
                       type="button"
                       variant="ghost"

@@ -47,6 +47,13 @@ export function InsertSharedBlockDialog({
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    // Der Dialog wird per Portal gerendert, liegt aber (Content-Editor →
+    // BlockEditorField → InsertSharedBlockDialog) innerhalb des äußeren
+    // Content-Formulars. React lässt Submit-Events trotz Portal über den
+    // React-Baum bubbeln – ohne stopPropagation() würde dieser Submit
+    // zusätzlich das äußere Formular auslösen und den ganzen Content-
+    // Eintrag speichern (siehe image-picker-dialog.tsx für dasselbe Muster).
+    e.stopPropagation();
     if (!moduleType) return;
     if (!name.trim()) {
       setError("Bitte einen Namen angeben.");

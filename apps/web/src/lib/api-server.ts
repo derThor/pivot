@@ -212,6 +212,10 @@ export function getGlobalModules() {
   return publicApiFetch<GlobalModule[]>("/global-modules");
 }
 
+export function getGlobalModule(id: string) {
+  return publicApiFetch<GlobalModule>(`/global-modules/${id}`);
+}
+
 export interface ContentDetail extends ContentListItem {
   data: Record<string, unknown>;
   excerpt: string | null;

@@ -1,5 +1,7 @@
+import Link from "next/link";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { GlobalModulesManager } from "@/components/global-modules-manager";
-import { GlobalModuleDialog } from "@/components/global-module-dialog";
 import { PageHeader } from "@/components/page-header";
 import { isGalleryModuleType } from "@/components/block-field-output";
 import { getGlobalModules, getModuleTypes } from "@/lib/api-server";
@@ -21,10 +23,19 @@ export default async function GalleriesPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <PageHeader title="Galerien" />
-        {galleryType && <GlobalModuleDialog moduleType={galleryType} />}
+        {galleryType && (
+          <Button render={<Link href="/dashboard/content/galleries/new" />}>
+            <Plus />
+            Neu anlegen
+          </Button>
+        )}
       </div>
       {galleryType ? (
-        <GlobalModulesManager items={items} moduleType={galleryType} />
+        <GlobalModulesManager
+          items={items}
+          moduleType={galleryType}
+          editHrefBase="/dashboard/content/galleries"
+        />
       ) : (
         <p className="text-sm text-muted-foreground">
           Kein Galerie-Modul-Typ vorhanden.

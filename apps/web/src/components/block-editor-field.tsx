@@ -415,7 +415,7 @@ export function BlockEditorField({
   const editingType = moduleTypes.find((mt) => mt.id === editingInstance?.moduleTypeId);
 
   return (
-    <div className="flex flex-col gap-4 md:flex-row">
+    <div className="flex flex-col gap-4 md:flex-row md:gap-8">
       {/* `overflow-y-auto` erzwingt laut CSS-Spec auch `overflow-x: auto`
           (nicht `visible`), sobald eine Achse nicht `visible` ist – ein
           `overflow-x-visible` daneben würde also ignoriert. Einzige echte
@@ -461,7 +461,7 @@ export function BlockEditorField({
         </div>
       </div>
 
-      <div className="mx-auto flex w-full max-w-3xl flex-col rounded-lg border bg-white shadow-card dark:bg-neutral-950">
+      <div className="flex w-full min-w-0 flex-1 flex-col rounded-lg border bg-white shadow-card dark:bg-neutral-950">
         {/* `flow-root` statt `flex flex-col`: Blöcke mit Links-/
             Rechtsbündig floaten (siehe `blockLayoutClasses`) – Flex-Kinder
             ignorieren `float` komplett, außerdem fängt `flow-root` das
