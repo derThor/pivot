@@ -1,5 +1,6 @@
 import { TaxonomyManager } from "@/components/taxonomy-manager";
 import { TaxonomyItemDialog } from "@/components/taxonomy-item-dialog";
+import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 import { getPublicSettings, getTags } from "@/lib/api-server";
 
@@ -19,12 +20,7 @@ export default async function TagsPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Tags</h1>
-          <p className="text-sm text-muted-foreground">
-            Tags zur Einordnung von Inhalten.
-          </p>
-        </div>
+        <PageHeader title="Tags" />
         <TaxonomyItemDialog
           apiPath="tags"
           newLabel="Neuer Tag"

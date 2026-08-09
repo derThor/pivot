@@ -1,5 +1,6 @@
 import { CreateUserDialog } from "@/components/create-user-dialog";
 import { UsersTable } from "@/components/users-table";
+import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 import { getCurrentUser, getRoles, getSettings, getUsers } from "@/lib/api-server";
 
@@ -25,14 +26,7 @@ export default async function UsersPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Benutzer
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Wer Zugriff auf das CMS hat und mit welcher Rolle.
-          </p>
-        </div>
+        <PageHeader title="Benutzer" />
         {roles && settings && (
           <CreateUserDialog roles={roles.items} passwordPolicy={settings} />
         )}

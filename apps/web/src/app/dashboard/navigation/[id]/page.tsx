@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
 import { NavigationDialog } from "@/components/navigation-dialog";
 import { NavigationItemDialog } from "@/components/navigation-item-dialog";
 import { NavigationItemsEditor } from "@/components/navigation-items-editor";
@@ -37,6 +38,7 @@ export default async function NavigationDetailPage({
             {navigation.name}
           </h1>
           <p className="text-sm text-muted-foreground">/{navigation.slug}</p>
+          <DashboardBreadcrumbs />
         </div>
         <div className="flex gap-2">
           <NavigationDialog navigation={navigation} />

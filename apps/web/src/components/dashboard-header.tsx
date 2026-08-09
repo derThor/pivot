@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
+import { CommandPalette } from "@/components/command-palette";
 import { GlobalSearch } from "@/components/global-search";
 import {
   DropdownMenu,
@@ -55,8 +55,8 @@ export function DashboardHeader({
     <header className="flex h-16 min-w-0 shrink-0 items-center gap-3 bg-background px-4">
       <SidebarTrigger className="shrink-0" />
       <Separator orientation="vertical" className="hidden h-6 sm:block" />
-      <DashboardBreadcrumbs />
       <GlobalSearch defaultPageSize={defaultPageSize} />
+      <CommandPalette user={user} defaultPageSize={defaultPageSize} />
       <div className="ml-auto flex items-center gap-1">
         <Button variant="ghost" size="icon" className="rounded-full" disabled>
           <Bell />

@@ -12,7 +12,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { navGroups } from "@/components/app-sidebar";
+import { navGroups, ROUTE_ALIASES } from "@/components/app-sidebar";
 
 // Aktionen/Unterseiten unterhalb eines Listen-Items (z.B.
 // "/dashboard/content/new" oder "/dashboard/content/[id]/edit") –
@@ -30,12 +30,13 @@ const STANDALONE_ROUTES: Record<string, string> = {
   "/dashboard/settings": "Einstellungen",
 };
 
-// Erkennt IDs (cuid/cuid2) in der URL, damit sie nicht als eigenes,
-// unlesbares Breadcrumb-Segment auftauchen (z.B. bei
-// "/dashboard/content/cmsjfwp1y.../edit" nur "Bearbeiten" zeigen, nicht
-// zusätzlich die rohe ID).
+// Erkennt IDs in der URL, damit sie nicht als eigenes, unlesbares
+// Breadcrumb-Segment auftauchen (z.B. bei "/dashboard/content/cmsjfwp1y.../
+// edit" nur "Bearbeiten" zeigen, nicht zusätzlich die rohe ID) – sowohl
+// cuid/cuid2 (Content, Kategorien, …) als auch Bindestrich-UUIDs
+// (`crypto.randomUUID()`, z.B. Baustein-Instanz-IDs im Seiten-Designer).
 function isLikelyId(segment: string) {
-  return /^[a-z0-9]{20,}$/i.test(segment);
+  return /^[a-z0-9-]{20,}$/i.test(segment);
 }
 
 function humanizeSegment(segment: string) {
@@ -57,43 +58,70 @@ function buildCrumbs(pathname: string): Crumb[] {
 
   const crumbs: Crumb[] = [{ label: "Dashboard", href: "/dashboard" }];
 
-  if (pathname in STANDALONE_ROUTES) {
-    crumbs.push({ label: STANDALONE_ROUTES[pathname] });
-    return crumbs;
-  }
+  // Aliasierte Routen (siehe ROUTE_ALIASES) suchen Gruppe/Item unter der
+  // Ziel-URL statt der tatsächlichen – das eigene Konto taucht so als
+  // "Verwaltung > Benutzer > Konto" auf, obwohl es kein Unterpfad von
+  // "/dashboard/users" ist.
+  const matchPathname = ROUTE_ALIASES[pathname] ?? pathname;
 
   // Item mit der längsten passenden URL gewinnt (dieselbe Logik wie der
   // Sidebar-Aktiv-Status), sonst würde z.B. "/dashboard" als Präfix
-  // jeder anderen Route immer zuerst matchen.
+  // jeder anderen Route immer zuerst matchen – berücksichtigt dabei auch
+  // Unterpunkte (z.B. "FAQs"/"Galerien" unter "Seiten").
   let bestItem: { url: string; title: string } | null = null;
+  let bestParent: { url: string; title: string } | null = null;
   let bestGroup: { label: string; items: readonly { url: string }[] } | null =
     null;
   let bestLength = -1;
   for (const group of navGroups) {
     for (const item of group.items) {
-      const matches =
-        pathname === item.url || pathname.startsWith(`${item.url}/`);
-      if (matches && item.url.length > bestLength) {
+      const itemMatches =
+        matchPathname === item.url || matchPathname.startsWith(`${item.url}/`);
+      if (itemMatches && item.url.length > bestLength) {
         bestItem = item;
+        bestParent = null;
         bestGroup = group;
         bestLength = item.url.length;
+      }
+      if ("children" in item) {
+        for (const child of item.children) {
+          const childMatches =
+            matchPathname === child.url ||
+            matchPathname.startsWith(`${child.url}/`);
+          if (childMatches && child.url.length > bestLength) {
+            bestItem = child;
+            bestParent = item;
+            bestGroup = group;
+            bestLength = child.url.length;
+          }
+        }
       }
     }
   }
 
-  if (!bestItem || !bestGroup) {
+  if (bestItem && bestGroup) {
+    // Gruppen mit nur einem Item (aktuell nur "Übersicht" → "Dashboard")
+    // würden als Gruppen-Crumb nur das Item-Label wiederholen.
+    if (bestGroup.items.length > 1) {
+      crumbs.push({ label: bestGroup.label });
+    }
+    if (bestParent) {
+      crumbs.push({ label: bestParent.title, href: bestParent.url });
+    }
+    crumbs.push({
+      label: bestItem.title,
+      href: pathname === bestItem.url ? undefined : bestItem.url,
+    });
+  }
+
+  if (pathname in STANDALONE_ROUTES) {
+    crumbs.push({ label: STANDALONE_ROUTES[pathname] });
     return crumbs;
   }
 
-  // Gruppen mit nur einem Item (aktuell nur "Übersicht" → "Dashboard")
-  // würden als Gruppen-Crumb nur das Item-Label wiederholen.
-  if (bestGroup.items.length > 1) {
-    crumbs.push({ label: bestGroup.label });
+  if (!bestItem) {
+    return crumbs;
   }
-  crumbs.push({
-    label: bestItem.title,
-    href: pathname === bestItem.url ? undefined : bestItem.url,
-  });
 
   const remainder = pathname.slice(bestItem.url.length);
   const segments = remainder
@@ -112,27 +140,22 @@ export function DashboardBreadcrumbs() {
   const crumbs = buildCrumbs(pathname);
 
   return (
-    <Breadcrumb className="hidden min-w-0 shrink sm:block">
-      <BreadcrumbList className="flex-nowrap overflow-hidden">
+    <Breadcrumb>
+      <BreadcrumbList>
         {crumbs.map((crumb, index) => {
           const isLast = index === crumbs.length - 1;
           return (
             <Fragment key={`${crumb.label}-${index}`}>
-              <BreadcrumbItem className="min-w-0 shrink">
+              <BreadcrumbItem>
                 {isLast || !crumb.href ? (
-                  <BreadcrumbPage className="truncate">
-                    {crumb.label}
-                  </BreadcrumbPage>
+                  <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
                 ) : (
-                  <BreadcrumbLink
-                    render={<Link href={crumb.href} />}
-                    className="truncate"
-                  >
+                  <BreadcrumbLink render={<Link href={crumb.href} />}>
                     {crumb.label}
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
-              {!isLast && <BreadcrumbSeparator className="shrink-0" />}
+              {!isLast && <BreadcrumbSeparator />}
             </Fragment>
           );
         })}

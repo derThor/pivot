@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { getContentList, getPublicSettings } from "@/lib/api-server";
 import { ContentTable } from "@/components/content-table";
+import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 
 export default async function ContentPage({
@@ -23,12 +24,7 @@ export default async function ContentPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Seiten</h1>
-          <p className="text-sm text-muted-foreground">
-            Alle Content-Einträge deines CMS an einem Ort.
-          </p>
-        </div>
+        <PageHeader title="Seiten" />
         <Button render={<Link href="/dashboard/content/new" />}>
           <Plus />
           Neue Seite

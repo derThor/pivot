@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ContentVersionsList } from "@/components/content-versions-list";
+import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
 import { PaginationControls } from "@/components/pagination-controls";
 import {
   getContent,
@@ -65,6 +66,7 @@ export default async function ContentVersionsPage({
           Versionshistorie
         </h1>
         <p className="text-sm text-muted-foreground">{content.title}</p>
+        <DashboardBreadcrumbs />
       </div>
       <ContentVersionsList
         contentId={id}

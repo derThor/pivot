@@ -2,137 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  FileText,
-  FolderTree,
-  Image as ImageIcon,
-  Link2,
-  Search,
-  ShieldCheck,
-  Tag as TagIcon,
-  Users,
-} from "lucide-react";
+import { Search } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
+import {
+  searchResultHref,
+  searchTypeMeta,
+  type SearchResult,
+} from "@/lib/search";
 
 const MIN_QUERY_LENGTH = 3;
-
-type SearchResultType =
-  | "content"
-  | "category"
-  | "tag"
-  | "media"
-  | "user"
-  | "role"
-  | "previewLink";
-
-interface SearchResult {
-  type: SearchResultType;
-  id: string;
-  title: string;
-  subtitle?: string;
-  status?: string;
-}
-
-const typeMeta: Record<
-  SearchResultType,
-  {
-    label: string;
-    icon: typeof FileText;
-    href: string;
-    badgeClassName: string;
-  }
-> = {
-  content: {
-    label: "Inhalt",
-    icon: FileText,
-    href: "/dashboard/content",
-    badgeClassName:
-      "bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-400",
-  },
-  category: {
-    label: "Kategorie",
-    icon: FolderTree,
-    href: "/dashboard/categories",
-    badgeClassName:
-      "bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400",
-  },
-  tag: {
-    label: "Tag",
-    icon: TagIcon,
-    href: "/dashboard/tags",
-    badgeClassName:
-      "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",
-  },
-  media: {
-    label: "Medium",
-    icon: ImageIcon,
-    href: "/dashboard/media",
-    badgeClassName:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400",
-  },
-  user: {
-    label: "Benutzer",
-    icon: Users,
-    href: "/dashboard/users",
-    badgeClassName:
-      "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400",
-  },
-  role: {
-    label: "Rolle",
-    icon: ShieldCheck,
-    href: "/dashboard/roles",
-    badgeClassName:
-      "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400",
-  },
-  previewLink: {
-    label: "Vorschau-Link",
-    icon: Link2,
-    href: "/dashboard/content/preview-links",
-    badgeClassName:
-      "bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-400",
-  },
-};
-
-/**
- * Ermittelt für Nicht-Inhalte-Treffer (die keine eigene Detailseite
- * haben, nur eine per Dialog bearbeitbare Listen-Zeile/-Kachel), auf
- * welcher Seite der paginierten Liste der Treffer tatsächlich liegt –
- * sonst würde man immer auf Seite 1 landen und die Markierung liefe bei
- * größeren Listen ins Leere.
- */
-async function locateResult(result: SearchResult, defaultPageSize: number) {
-  const res = await fetch(
-    `/api/search/locate?type=${result.type}&id=${result.id}&pageSize=${defaultPageSize}`,
-  );
-  const data = await res.json().catch(() => null);
-  return data as { page?: number; folderId?: string | null } | null;
-}
-
-async function resultHref(
-  result: SearchResult,
-  searchTerm: string,
-  defaultPageSize: number,
-) {
-  // Inhalte haben eine eigene Detailseite (Editor) – dahin springt man
-  // direkt, ohne Markierung. Alle anderen Bereiche werden nur per Dialog
-  // auf ihrer Listen-Seite bearbeitet, dort wird stattdessen der
-  // gesuchte Begriff im Treffer-Text markiert (siehe useHighlightParam)
-  // und – bei Bedarf – zur richtigen Seite navigiert.
-  if (result.type === "content") {
-    return `/dashboard/content/${result.id}/edit`;
-  }
-
-  const location = await locateResult(result, defaultPageSize);
-  const params = new URLSearchParams({ highlight: result.id, q: searchTerm });
-  if (location?.page && location.page > 1) {
-    params.set("page", String(location.page));
-  }
-  if (result.type === "media" && location?.folderId) {
-    params.set("folder", location.folderId);
-  }
-  return `${typeMeta[result.type].href}?${params.toString()}`;
-}
 
 export function GlobalSearch({
   defaultPageSize,
@@ -159,7 +38,8 @@ export function GlobalSearch({
   useEffect(() => {
     const trimmed = query.trim();
     if (trimmed.length < MIN_QUERY_LENGTH) {
-      setResults(null);
+      // Kein Reset von `results` nötig: das Dropdown ist über `open`
+      // ausgeblendet, ein veralteter Wert bleibt also unsichtbar.
       setOpen(false);
       return;
     }
@@ -180,7 +60,7 @@ export function GlobalSearch({
     const searchTerm = query.trim();
     setOpen(false);
     setQuery("");
-    router.push(await resultHref(result, searchTerm, defaultPageSize));
+    router.push(await searchResultHref(result, searchTerm, defaultPageSize));
   }
 
   return (
@@ -204,7 +84,7 @@ export function GlobalSearch({
           ) : results && results.length > 0 ? (
             <ul className="divide-y">
               {results.map((result) => {
-                const meta = typeMeta[result.type];
+                const meta = searchTypeMeta[result.type];
                 const Icon = meta.icon;
                 return (
                   <li key={`${result.type}-${result.id}`}>

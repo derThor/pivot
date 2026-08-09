@@ -23,31 +23,10 @@ export function ContentRowActions({
 }) {
   const router = useRouter();
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [isOpeningPreview, setIsOpeningPreview] = useState(false);
 
   async function handleDelete() {
     await fetch(`/api/content/${id}`, { method: "DELETE" });
     router.refresh();
-  }
-
-  // Erstellt (wie `PreviewLinksDialog`) einen kurzlebigen Vorschau-Link und
-  // öffnet ihn direkt in neuem Tab – Wiederverwendung desselben Endpoints,
-  // kein Umweg über den Bearbeiten-Dialog nötig.
-  async function handleOpenPreview() {
-    setIsOpeningPreview(true);
-    try {
-      const res = await fetch(`/api/content/${id}/preview-links`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ expiresInHours: 24 }),
-      });
-      const body = await res.json().catch(() => null);
-      if (res.ok && body?.token) {
-        window.open(`/preview/${body.token}`, "_blank");
-      }
-    } finally {
-      setIsOpeningPreview(false);
-    }
   }
 
   return (
@@ -59,8 +38,7 @@ export function ContentRowActions({
           variant="ghost"
           size="icon-sm"
           aria-label={`Vorschau von ${title}`}
-          disabled={isOpeningPreview}
-          onClick={handleOpenPreview}
+          render={<Link href={`/dashboard/content/${id}/preview`} target="_blank" />}
         >
           <Eye />
         </Button>
@@ -100,7 +78,9 @@ export function ContentRowActions({
             <MoreVertical />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem disabled={isOpeningPreview} onClick={handleOpenPreview}>
+            <DropdownMenuItem
+              render={<Link href={`/dashboard/content/${id}/preview`} target="_blank" />}
+            >
               <Eye />
               Vorschau
             </DropdownMenuItem>

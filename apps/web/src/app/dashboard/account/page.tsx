@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AccountForm } from "@/components/account-form";
 import { ChangePasswordForm } from "@/components/change-password-form";
+import { PageHeader } from "@/components/page-header";
 import { getCurrentUser, getPublicSettings } from "@/lib/api-server";
 
 export default async function AccountPage() {
@@ -23,12 +24,7 @@ export default async function AccountPage() {
 
   return (
     <div className="flex max-w-2xl flex-col gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Konto</h1>
-        <p className="text-sm text-muted-foreground">
-          Profil und Passwort verwalten.
-        </p>
-      </div>
+      <PageHeader title="Konto" />
 
       <AccountForm
         user={user}

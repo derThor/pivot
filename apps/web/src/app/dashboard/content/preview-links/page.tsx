@@ -1,4 +1,5 @@
 import { PreviewLinksTable } from "@/components/preview-links-table";
+import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 import { getAllPreviewLinks, getPublicSettings } from "@/lib/api-server";
 
@@ -17,16 +18,7 @@ export default async function PreviewLinksPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Vorschau-Links
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Alle aktiven Vorschau-Links über sämtliche Inhalte hinweg –
-          erstellen lässt sich ein neuer Link direkt im Editor des jeweiligen
-          Inhalts.
-        </p>
-      </div>
+      <PageHeader title="Vorschau-Links" />
       <PreviewLinksTable items={previewLinks?.items ?? []} />
 
       {previewLinks && (

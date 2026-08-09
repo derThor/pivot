@@ -1,5 +1,6 @@
 import { RoleFormDialog } from "@/components/role-form-dialog";
 import { RolesTable } from "@/components/roles-table";
+import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 import { getPermissionsCatalog, getPublicSettings, getRoles } from "@/lib/api-server";
 
@@ -23,14 +24,7 @@ export default async function RolesPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Rollen & Rechte
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Definiere, welche Rolle welche Aktionen ausführen darf.
-          </p>
-        </div>
+        <PageHeader title="Rollen & Rechte" />
         {permissionsCatalog && (
           <RoleFormDialog permissionsCatalog={permissionsCatalog} />
         )}

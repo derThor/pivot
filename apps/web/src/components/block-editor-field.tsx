@@ -45,7 +45,9 @@ import {
   TilesGridOutput,
   blockLayoutClasses,
   focalObjectPosition,
+  isComplexModuleType,
   isDividerModule,
+  isGalleryModuleType,
   isTilesModule,
   resolveBlockLayout,
   resolveInstanceValues,
@@ -55,6 +57,7 @@ import {
   type ImageFieldValue,
 } from "@/components/block-field-output";
 import { ImagePickerDialog } from "@/components/image-picker-dialog";
+import { InsertSharedBlockDialog } from "@/components/insert-shared-block-dialog";
 import { ModuleFieldInput } from "@/components/module-field-input";
 import { resolveImageSrc } from "@/lib/media";
 import { cn } from "@/lib/utils";
@@ -186,8 +189,9 @@ export interface ModuleInstance {
   // Gesetzt, wenn dieser Block ein "globales Modul" referenziert statt
   // eigenen Inhalt zu tragen (`values` ist dann leer/ungenutzt) – die
   // tatsächlichen Werte kommen live aus `GlobalModule.values` (siehe
-  // `resolveInstanceValues` in block-field-output.tsx). Nur zentral unter
-  // /dashboard/global-modules bearbeitbar, hier nur einfüg-/entfernbar.
+  // `resolveInstanceValues` in block-field-output.tsx). Nur zentral über
+  // den "Globale Module"-Tab im Content-Editor bearbeitbar (siehe
+  // `onOpenGlobalModulesTab`), hier nur einfüg-/entfernbar.
   globalModuleId?: string;
 }
 
@@ -277,13 +281,20 @@ export function BlockEditorField({
 }) {
   const [search, setSearch] = useState("");
   const [draggingPaletteId, setDraggingPaletteId] = useState<string | null>(null);
-  const [draggingGlobalId, setDraggingGlobalId] = useState<string | null>(null);
   const [draggingInstanceId, setDraggingInstanceId] = useState<string | null>(null);
   const [editingInstanceId, setEditingInstanceId] = useState<string | null>(null);
   const [resizingLayoutId, setResizingLayoutId] = useState<string | null>(null);
   const [imagePicker, setImagePicker] = useState<{
     instanceId: string;
     fieldName: string;
+  } | null>(null);
+  // Beim Ziehen eines FAQ-/Galerie-Bausteins auf die Fläche (siehe
+  // isComplexModuleType) wird nicht sofort eingefügt, sondern erst per
+  // `InsertSharedBlockDialog` ausgewählt/angelegt – Position merken, bis
+  // der Dialog aufgelöst ist.
+  const [pendingInsert, setPendingInsert] = useState<{
+    index: number;
+    moduleType: ModuleType;
   } | null>(null);
   // Referenz-Breite für alle Zieh-Größenänderungen (Bild-Feld UND
   // Block-Layout) – bewusst EIN gemeinsamer Ref auf die stabile
@@ -292,10 +303,7 @@ export function BlockEditorField({
   // geschrumpfte) Breite als 100%-Basis für weiteres Ziehen nehmen.
   const columnRef = useRef<HTMLDivElement>(null);
 
-  const isDragging =
-    draggingPaletteId !== null ||
-    draggingGlobalId !== null ||
-    draggingInstanceId !== null;
+  const isDragging = draggingPaletteId !== null || draggingInstanceId !== null;
 
   const filteredTypes = moduleTypes.filter((mt) =>
     mt.name.toLowerCase().includes(search.toLowerCase()),
@@ -344,10 +352,13 @@ export function BlockEditorField({
   function handleDropAt(index: number, payload: string) {
     if (payload.startsWith("new:")) {
       const moduleType = moduleTypes.find((mt) => mt.id === payload.slice(4));
-      if (moduleType) insertAt(index, moduleType);
-    } else if (payload.startsWith("global:")) {
-      const globalModule = globalModules.find((g) => g.id === payload.slice(7));
-      if (globalModule) insertGlobalAt(index, globalModule);
+      if (!moduleType) return;
+      const contentFields = moduleType.schema.fields.filter((f) => !f.option);
+      if (isComplexModuleType(contentFields)) {
+        setPendingInsert({ index, moduleType });
+      } else {
+        insertAt(index, moduleType);
+      }
     } else if (payload.startsWith("move:")) {
       moveTo(payload.slice(5), index);
     }
@@ -448,39 +459,6 @@ export function BlockEditorField({
             </p>
           )}
         </div>
-
-        {globalModules.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium text-muted-foreground">
-              Globale Module
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {globalModules.map((globalModule) => {
-                const Icon = iconFor(
-                  moduleTypes.find((mt) => mt.id === globalModule.moduleTypeId),
-                );
-                return (
-                  <div
-                    key={globalModule.id}
-                    draggable
-                    onDragStart={(e) => {
-                      setDraggingGlobalId(globalModule.id);
-                      e.dataTransfer.setData("text/plain", `global:${globalModule.id}`);
-                    }}
-                    onDragEnd={() => setDraggingGlobalId(null)}
-                    className={cn(
-                      "flex cursor-grab flex-col items-center gap-1.5 rounded-lg border bg-card p-3 text-center shadow-md transition-colors hover:border-orange-400 active:cursor-grabbing",
-                      draggingGlobalId === globalModule.id && "opacity-50",
-                    )}
-                  >
-                    <Icon className="size-5 text-orange-500" />
-                    <span className="text-xs font-medium">{globalModule.name}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="mx-auto flex w-full max-w-3xl flex-col rounded-lg border bg-white shadow-card dark:bg-neutral-950">
@@ -502,10 +480,10 @@ export function BlockEditorField({
           )}
 
           {value.map((instance, index) => {
-            // Globale Module: `values` kommt live vom referenzierten
-            // `GlobalModule` statt aus der Instanz selbst (siehe
-            // `resolveInstanceValues`) – Inhalt hier nur lesend, Bearbeiten
-            // ausschließlich zentral unter /dashboard/global-modules.
+            // FAQ/Galerie-Bausteine sind immer Referenzen auf eine zentral
+            // gepflegte Bibliothek (siehe `resolveInstanceValues`) – Inhalt
+            // hier nur lesend, Bearbeiten ausschließlich über die
+            // "FAQs"-/"Galerien"-Unterseite bei "Seiten" bzw. beim Einfügen.
             const isGlobal = Boolean(instance.globalModuleId);
             const resolved = resolveInstanceValues(instance, globalModules);
             const moduleType = moduleTypes.find((mt) => mt.id === resolved.moduleTypeId);
@@ -552,14 +530,18 @@ export function BlockEditorField({
                     </span>
                     {isGlobal && (
                       <Link
-                        href="/dashboard/global-modules"
+                        href={
+                          isGalleryModuleType(contentFields)
+                            ? "/dashboard/content/galleries"
+                            : "/dashboard/content/faqs"
+                        }
                         target="_blank"
                         onClick={(e) => e.stopPropagation()}
                         className="flex items-center gap-1 rounded-sm px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
-                        title="Globales Modul – Inhalt wird zentral unter Globale Module gepflegt"
+                        title={`Wird zentral unter „${isGalleryModuleType(contentFields) ? "Galerien" : "FAQs"}“ gepflegt`}
                       >
                         <Lock className="size-3" />
-                        Global
+                        {isGalleryModuleType(contentFields) ? "Galerie" : "FAQ"}
                       </Link>
                     )}
                     {imageField && !isTiles && !isGlobal && (
@@ -824,12 +806,12 @@ export function BlockEditorField({
         open={editingInstanceId !== null}
         onOpenChange={(open) => !open && setEditingInstanceId(null)}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-md">
+          <DialogHeader className="shrink-0">
             <DialogTitle>{editingType?.name ?? "Baustein bearbeiten"}</DialogTitle>
           </DialogHeader>
           {editingInstance && editingType && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 overflow-y-auto">
               {editingType.schema.fields.map((field) => (
                 <ModuleFieldInput
                   key={field.name}
@@ -866,6 +848,21 @@ export function BlockEditorField({
             focalY: item?.focalY ?? undefined,
           });
           setImagePicker(null);
+        }}
+      />
+
+      <InsertSharedBlockDialog
+        open={pendingInsert !== null}
+        onOpenChange={(open) => !open && setPendingInsert(null)}
+        moduleType={pendingInsert?.moduleType ?? null}
+        items={
+          pendingInsert
+            ? globalModules.filter((gm) => gm.moduleTypeId === pendingInsert.moduleType.id)
+            : []
+        }
+        onSelect={(globalModule) => {
+          if (pendingInsert) insertGlobalAt(pendingInsert.index, globalModule);
+          setPendingInsert(null);
         }}
       />
     </div>

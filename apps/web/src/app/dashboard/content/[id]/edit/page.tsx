@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ContentEditorForm } from "@/components/content-editor-form";
+import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
 import { PreviewLinksDialog } from "@/components/preview-links-dialog";
 import {
   getCategories,
@@ -43,6 +44,7 @@ export default async function EditContentPage({
             Inhalt bearbeiten
           </h1>
           <p className="text-sm text-muted-foreground">{content.title}</p>
+          <DashboardBreadcrumbs />
         </div>
         <div className="flex shrink-0 gap-2">
           <PreviewLinksDialog contentId={id} />

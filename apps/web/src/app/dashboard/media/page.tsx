@@ -3,6 +3,7 @@ import { MediaFilters } from "@/components/media-filters";
 import { MediaFolderBrowser } from "@/components/media-folder-browser";
 import { MediaGrid } from "@/components/media-grid";
 import { MediaUploadDialog } from "@/components/media-upload-dialog";
+import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 import {
   getMediaFolders,
@@ -61,12 +62,7 @@ export default async function MediaPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Medien</h1>
-          <p className="text-sm text-muted-foreground">
-            Bilder und Dateien deines CMS.
-          </p>
-        </div>
+        <PageHeader title="Medien" />
         <div className="flex gap-2">
           <FolderDialog parentId={currentFolderId} />
           <MediaUploadDialog

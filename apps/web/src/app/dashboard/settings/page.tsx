@@ -1,4 +1,5 @@
 import { SettingsForm } from "@/components/settings-form";
+import { PageHeader } from "@/components/page-header";
 import { getMediaFolders, getSettings } from "@/lib/api-server";
 
 export default async function SettingsPage() {
@@ -11,14 +12,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Einstellungen
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Globale Konfiguration für Zugriff und Passwort-Regeln.
-        </p>
-      </div>
+      <PageHeader title="Einstellungen" />
 
       {settings === null ? (
         <p className="text-sm text-muted-foreground">

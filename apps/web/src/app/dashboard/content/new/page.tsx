@@ -1,4 +1,5 @@
 import { ContentEditorForm } from "@/components/content-editor-form";
+import { PageHeader } from "@/components/page-header";
 import {
   getCategories,
   getContentTypes,
@@ -19,14 +20,7 @@ export default async function NewContentPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Neuer Inhalt
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Lege einen neuen Content-Eintrag an.
-        </p>
-      </div>
+      <PageHeader title="Neuer Inhalt" />
 
       {!contentTypes || contentTypes.length === 0 ? (
         <p className="text-sm text-muted-foreground">

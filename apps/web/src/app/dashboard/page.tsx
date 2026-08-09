@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { PageHeader } from "@/components/page-header";
 import { getContentList, getMediaList, getUsers } from "@/lib/api-server";
 
 export default async function DashboardPage() {
@@ -27,12 +28,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Willkommen zurück. Hier ist ein Überblick über dein CMS.
-        </p>
-      </div>
+      <PageHeader title="Dashboard" />
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
           <Card key={stat.label}>

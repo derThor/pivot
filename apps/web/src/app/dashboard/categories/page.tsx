@@ -1,5 +1,6 @@
 import { TaxonomyManager } from "@/components/taxonomy-manager";
 import { TaxonomyItemDialog } from "@/components/taxonomy-item-dialog";
+import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 import { getCategories, getPublicSettings } from "@/lib/api-server";
 
@@ -19,14 +20,7 @@ export default async function CategoriesPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Kategorien
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Kategorien zur Einordnung von Inhalten.
-          </p>
-        </div>
+        <PageHeader title="Kategorien" />
         <TaxonomyItemDialog
           apiPath="categories"
           withDescription

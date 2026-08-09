@@ -145,8 +145,15 @@ Details: [rich-text-and-versioning.md](../knowledge-base/content/rich-text-and-v
 - [x] Wiederherstellung nicht gespeicherter Entwürfe – Banner beim
       Öffnen eines Inhalts, falls ein neuerer lokaler Entwurf existiert
       (Wiederherstellen/Verwerfen) (2026-08-06)
-- [ ] Keyboard-Shortcuts (Strg+S, Strg+K, Esc usw.)
-- [ ] Command Palette (ähnlich VS Code)
+- [ ] Keyboard-Shortcuts (Strg+S, Strg+K, Esc usw.) – Strg+K/Esc bereits
+      über die Command Palette abgedeckt, Strg+S usw. weiterhin offen
+- [x] Command Palette (ähnlich VS Code) – globaler Strg/Cmd+K-Shortcut
+      öffnet ein Overlay mit drei Bereichen: Schnellaktionen (Neuer
+      Inhalt, Konto, Einstellungen, Abmelden), permission-gefilterte
+      Navigation (dieselbe Quelle wie die Sidebar) und Live-Suche
+      (wiederverwendet den bestehenden `/search`-Endpoint aus 2b.4),
+      Tastatur-Navigation per Pfeiltasten/Enter, Substring-Filter der
+      statischen Einträge während der Eingabe (2026-08-09)
 
 ### 2b.6 – SEO
 
@@ -196,16 +203,6 @@ Details: [rich-text-and-versioning.md](../knowledge-base/content/rich-text-and-v
       Modelle, `/dashboard/navigation`, mehrere benannte Menüs mit
       beliebig tief verschachtelbaren Einträgen, die auf Inhalte oder
       externe URLs zeigen (2026-08-06)
-- [ ] Seitenbaum / Parent-/Child-Seiten / URL-Hierarchien / Reihenfolge
-      per Drag & Drop am Inhalt selbst / Startseite definieren –
-      **bewusst nicht umgesetzt**: ein erster Versuch (`Content.parentId`/
-      `sortOrder`/`path`, `/dashboard/content/tree`) wurde noch am
-      selben Tag auf Nutzerwunsch wieder zurückgebaut, da die Trennung
-      von Seitenbaum und Navigation nicht nachvollziehbar war – die
-      Navigationsverwaltung deckt den eigentlichen Bedarf ("Seiten
-      organisieren und verschachteln") vollständig ab. Details siehe
-      [navigation-management.md](../knowledge-base/content/navigation-management.md)
-      Abschnitt "Verworfener Ansatz".
 
 #### Seiten-Designer (modul-basierter Drag&Drop-Editor)
 

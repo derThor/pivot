@@ -282,7 +282,6 @@ export function ContentEditorForm({
     if (moduleFields.length === 0) {
       setActiveTab((prev) => (prev === "design" ? "settings" : prev));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleFields.length]);
 
   // Prüft beim Öffnen einmalig, ob im Browser noch ein nicht gespeicherter
@@ -686,9 +685,10 @@ export function ContentEditorForm({
   }
 
   // "Vorschau öffnen": speichert wie der normale Submit, bleibt aber auf
-  // der Bearbeiten-Seite und öffnet stattdessen einen frischen
-  // Vorschau-Link in neuem Tab – Wiederverwendung desselben Endpoints, den
-  // auch `PreviewLinksDialog` nutzt (siehe preview-links-dialog.tsx).
+  // der Bearbeiten-Seite und öffnet die interne, authentifizierte Vorschau
+  // (`/dashboard/content/[id]/preview`) in neuem Tab – kein Freigabe-Link,
+  // keine zeitliche Begrenzung. Freigabe-Links für Außenstehende erstellt
+  // ausschließlich `PreviewLinksDialog` (siehe preview-links-dialog.tsx).
   const [isOpeningPreview, setIsOpeningPreview] = useState(false);
 
   async function handleOpenPreview() {
@@ -697,19 +697,7 @@ export function ContentEditorForm({
       try {
         const id = await saveContent(values);
         if (!id) return;
-        const res = await fetch(`/api/content/${id}/preview-links`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ expiresInHours: 24 }),
-        });
-        const body = await res.json().catch(() => null);
-        if (!res.ok) {
-          setFormError(
-            body?.message ?? "Vorschau-Link konnte nicht erstellt werden.",
-          );
-          return;
-        }
-        window.open(`/preview/${body.token}`, "_blank");
+        window.open(`/dashboard/content/${id}/preview`, "_blank");
       } finally {
         setIsOpeningPreview(false);
       }

@@ -201,6 +201,29 @@ export function isDividerModule(contentFields: ContentTypeField[]): boolean {
   return contentFields.length === 0;
 }
 
+// Erkennt Module mit variabler Eintragsanzahl (Akkordeon/FAQ, Galerie) über
+// den Feldtyp "repeater" – diese sind immer zentral gepflegte, wiederver-
+// wendbare Bausteine (siehe isFaqModuleType/isGalleryModuleType unten und
+// block-editor-field.tsx), keine seiteneigenen Instanzen.
+export function isComplexModuleType(contentFields: ContentTypeField[]): boolean {
+  return contentFields.some((f) => f.type === "repeater");
+}
+
+// Unterscheidet die beiden aktuell einzigen komplexen Modul-Typen wieder
+// über die Form statt über Name/Slug: Galerie hat ein Bild-Unterfeld im
+// Repeater, FAQ/Akkordeon nicht. Bestimmt, unter welcher Bibliothek
+// ("FAQs" bzw. "Galerien", je eigener Sidebar-Unterpunkt bei "Seiten")
+// eine Instanz zentral verwaltet wird.
+export function isGalleryModuleType(contentFields: ContentTypeField[]): boolean {
+  if (!isComplexModuleType(contentFields)) return false;
+  const repeaterField = contentFields.find((f) => f.type === "repeater");
+  return repeaterField?.fields?.some((f) => f.type === "image") ?? false;
+}
+
+export function isFaqModuleType(contentFields: ContentTypeField[]): boolean {
+  return isComplexModuleType(contentFields) && !isGalleryModuleType(contentFields);
+}
+
 export function DividerOutput() {
   return <hr className="my-6 border-t border-border" />;
 }
