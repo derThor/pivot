@@ -1,7 +1,9 @@
 import {
   FileText,
   FolderTree,
+  HelpCircle,
   Image as ImageIcon,
+  Images,
   Link2,
   ShieldCheck,
   Tag as TagIcon,
@@ -15,7 +17,21 @@ export type SearchResultType =
   | "media"
   | "user"
   | "role"
-  | "previewLink";
+  | "previewLink"
+  | "faq"
+  | "gallery";
+
+export const ALL_SEARCH_RESULT_TYPES: readonly SearchResultType[] = [
+  "content",
+  "faq",
+  "gallery",
+  "category",
+  "tag",
+  "media",
+  "user",
+  "role",
+  "previewLink",
+];
 
 export interface SearchResult {
   type: SearchResultType;
@@ -23,6 +39,13 @@ export interface SearchResult {
   title: string;
   subtitle?: string;
   status?: string;
+}
+
+/** Antwort von `GET /search/paged` – ein einzelner Bereich mit
+ * Gesamtzahl, für die Pagination auf der Detailsuche-Ergebnisseite. */
+export interface PagedSearchResult {
+  items: SearchResult[];
+  total: number;
 }
 
 export const searchTypeMeta: Record<
@@ -83,6 +106,20 @@ export const searchTypeMeta: Record<
     badgeClassName:
       "bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-400",
   },
+  faq: {
+    label: "FAQ",
+    icon: HelpCircle,
+    href: "/dashboard/content/faqs",
+    badgeClassName:
+      "bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400",
+  },
+  gallery: {
+    label: "Galerie",
+    icon: Images,
+    href: "/dashboard/content/galleries",
+    badgeClassName:
+      "bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-400",
+  },
 };
 
 /**
@@ -105,13 +142,19 @@ export async function searchResultHref(
   searchTerm: string,
   defaultPageSize: number,
 ) {
-  // Inhalte haben eine eigene Detailseite (Editor) – dahin springt man
-  // direkt, ohne Markierung. Alle anderen Bereiche werden nur per Dialog
-  // auf ihrer Listen-Seite bearbeitet, dort wird stattdessen der
-  // gesuchte Begriff im Treffer-Text markiert (siehe useHighlightParam)
-  // und – bei Bedarf – zur richtigen Seite navigiert.
+  // Inhalte sowie FAQ/Galerie haben eine eigene Detailseite (Editor) –
+  // dahin springt man direkt, ohne Markierung. Alle anderen Bereiche
+  // werden nur per Dialog auf ihrer Listen-Seite bearbeitet, dort wird
+  // stattdessen der gesuchte Begriff im Treffer-Text markiert (siehe
+  // useHighlightParam) und – bei Bedarf – zur richtigen Seite navigiert.
   if (result.type === "content") {
     return `/dashboard/content/${result.id}/edit`;
+  }
+  if (result.type === "faq") {
+    return `/dashboard/content/faqs/${result.id}`;
+  }
+  if (result.type === "gallery") {
+    return `/dashboard/content/galleries/${result.id}`;
   }
 
   const location = await locateResult(result, defaultPageSize);

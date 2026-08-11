@@ -10,6 +10,7 @@ import { UpdateNavigationDto } from './dto/update-navigation.dto';
 import { CreateNavigationItemDto } from './dto/create-navigation-item.dto';
 import { UpdateNavigationItemDto } from './dto/update-navigation-item.dto';
 import { ReorderNavigationItemsDto } from './dto/reorder-navigation-items.dto';
+import { QueryNavigationDto } from './dto/query-navigation.dto';
 
 const itemSelect = {
   id: true,
@@ -25,11 +26,21 @@ const itemSelect = {
 export class NavigationService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll() {
-    return this.prisma.navigation.findMany({
-      orderBy: { name: 'asc' },
-      include: { _count: { select: { items: true } } },
-    });
+  async findAll(query: QueryNavigationDto) {
+    const { page, pageSize } = query;
+    const [items, total] = await Promise.all([
+      this.prisma.navigation.findMany({
+        orderBy: { name: 'asc' },
+        include: { _count: { select: { items: true } } },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.navigation.count(),
+    ]);
+    return {
+      items,
+      meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
+    };
   }
 
   async findOne(id: string) {

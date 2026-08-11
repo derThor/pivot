@@ -129,3 +129,53 @@
     @apply font-sans;
   }
 }
+
+/* Nutzerdefinierter Innen-/Außenabstand eines Bausteins, je Seite einzeln
+   (Seiten-Designer, siehe block-field-output.tsx `BlockSpacingWrapper`) –
+   Mobil-Wert gilt als Standard (mobile-first), ab 640px übernimmt der
+   Desktop-Wert je Seite, sofern gesetzt (sonst bleibt der Mobil-Wert). Nur
+   die tatsächlich vom Nutzer gesetzten CSS-Variablen wirken sich aus (kein
+   Fallback auf 0), damit ein Baustein ohne eigene Angabe nicht plötzlich
+   seinen Abstand verliert. */
+.block-spacing {
+  padding-top: var(--block-padding-top-mobile);
+  padding-right: var(--block-padding-right-mobile);
+  padding-bottom: var(--block-padding-bottom-mobile);
+  padding-left: var(--block-padding-left-mobile);
+  margin-top: var(--block-margin-top-mobile);
+  margin-right: var(--block-margin-right-mobile);
+  margin-bottom: var(--block-margin-bottom-mobile);
+  margin-left: var(--block-margin-left-mobile);
+}
+@media (width >= 40rem) {
+  .block-spacing {
+    padding-top: var(--block-padding-top-desktop, var(--block-padding-top-mobile));
+    padding-right: var(--block-padding-right-desktop, var(--block-padding-right-mobile));
+    padding-bottom: var(--block-padding-bottom-desktop, var(--block-padding-bottom-mobile));
+    padding-left: var(--block-padding-left-desktop, var(--block-padding-left-mobile));
+    margin-top: var(--block-margin-top-desktop, var(--block-margin-top-mobile));
+    margin-right: var(--block-margin-right-desktop, var(--block-margin-right-mobile));
+    margin-bottom: var(--block-margin-bottom-desktop, var(--block-margin-bottom-mobile));
+    margin-left: var(--block-margin-left-desktop, var(--block-margin-left-mobile));
+  }
+}
+
+/* Bausteine im Seiten-Designer/in der Ausgabe (siehe blockLayoutClasses in
+   block-field-output.tsx) haben Desktop-Breiten/-Ausrichtungen in Prozent
+   per Inline-Style + Float-Klassen (`float-left`/`float-right` +
+   `mr-4`/`ml-4`) – auf einem schmalen Mobil-Bildschirm ergeben mehrere
+   nebeneinander gedachte 20-60%-Spalten nur noch unlesbare, teils
+   überlappende Mini-Spalten und sprengen den Bildschirm horizontal.
+   Deshalb unabhängig von der Desktop-Einstellung unterhalb von 640px
+   IMMER volle Breite, kein Float – Bausteine stapeln sich einfach
+   untereinander. `!important` nötig: muss sowohl die inline gesetzte
+   Breite als auch die Tailwind-Float-Utility-Klassen zuverlässig
+   überschreiben, unabhängig von deren Reihenfolge im Stylesheet. */
+@media (width < 40rem) {
+  .block-layout {
+    width: 100% !important;
+    float: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}

@@ -99,3 +99,5 @@ export const ACCEPTED_MEDIA_MIME_TYPES = [
 
 export const ACCEPTED_IMAGE_MIME_TYPES =
   "image/jpeg,image/png,image/gif,image/webp,image/svg+xml";
+
+export const ACCEPTED_VIDEO_MIME_TYPES = "video/mp4,video/webm,video/quicktime";

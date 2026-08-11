@@ -28,6 +28,7 @@ const ACTION_LABELS: Record<string, string> = {
 const STANDALONE_ROUTES: Record<string, string> = {
   "/dashboard/account": "Konto",
   "/dashboard/settings": "Einstellungen",
+  "/dashboard/search": "Suche",
 };
 
 // Erkennt IDs in der URL, damit sie nicht als eigenes, unlesbares
@@ -75,6 +76,12 @@ function buildCrumbs(pathname: string): Crumb[] {
   let bestLength = -1;
   for (const group of navGroups) {
     for (const item of group.items) {
+      // "/dashboard" selbst wird schon oben (exakter Pfad, frühes Return)
+      // behandelt – als Präfix für ALLE anderen Routen matchen lassen
+      // würde jede Route ohne eigenen navGroups-Eintrag (Konto,
+      // Einstellungen, Suche, …) fälschlich zusätzlich "Dashboard" als
+      // (Eltern-)Crumb bekommen, z.B. "Dashboard > Dashboard > Suche".
+      if (item.url === "/dashboard") continue;
       const itemMatches =
         matchPathname === item.url || matchPathname.startsWith(`${item.url}/`);
       if (itemMatches && item.url.length > bestLength) {
@@ -124,10 +131,20 @@ function buildCrumbs(pathname: string): Crumb[] {
   }
 
   const remainder = pathname.slice(bestItem.url.length);
-  const segments = remainder
-    .split("/")
-    .filter(Boolean)
-    .filter((segment) => !isLikelyId(segment));
+  const rawSegments = remainder.split("/").filter(Boolean);
+  const segments = rawSegments.filter((segment) => !isLikelyId(segment));
+
+  if (segments.length === 0 && rawSegments.length > 0) {
+    // Detailseite direkt unter einer ID, ohne eigenes Namens-Segment (z.B.
+    // "/dashboard/navigation/[id]" oder "/dashboard/content/galleries/[id]",
+    // anders als z.B. "/dashboard/content/[id]/edit"). Ohne diesen Fall
+    // würden alle Segmente herausgefiltert, der Eltern-Crumb (z.B.
+    // "Menüs"/"Galerien") würde dadurch fälschlich als letztes/aktuelles
+    // Element gelten und wäre nicht mehr anklickbar.
+    crumbs.push({ label: "Bearbeiten" });
+    return crumbs;
+  }
+
   for (const segment of segments) {
     crumbs.push({ label: humanizeSegment(segment) });
   }

@@ -13,12 +13,14 @@ import { RichTextEditor } from "@/components/rich-text-editor";
 import { SelectionToolbar } from "@/components/selection-toolbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSelection } from "@/hooks/use-selection";
-import { formatName } from "@/lib/utils";
+import { cn, formatName } from "@/lib/utils";
 import {
   BlockFieldOutput,
+  CoverOutput,
   DividerOutput,
   TilesGridOutput,
   blockLayoutClasses,
+  isCoverModuleType,
   isDividerModule,
   isTilesModule,
   resolveBlockLayout,
@@ -72,13 +74,15 @@ function ModulesPreview({
         return (
           <div
             key={instance.id}
-            className={blockLayoutClasses(layout.align)}
+            className={cn("block-layout", blockLayoutClasses(layout.align, layout.width))}
             style={{ width: `${layout.width}%` }}
           >
             {isDividerModule(contentFields) ? (
               <DividerOutput />
             ) : isTilesModule(contentFields) ? (
               <TilesGridOutput contentFields={contentFields} values={resolved.values} />
+            ) : isCoverModuleType(contentFields) ? (
+              <CoverOutput contentFields={contentFields} values={resolved.values} />
             ) : (
               <div className="flow-root space-y-3">
                 {contentFields.map((field) => (

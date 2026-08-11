@@ -14,19 +14,22 @@ import {
   Image as ImageIcon,
   Images,
   LayoutGrid,
-  Lock,
+  LayoutTemplate,
   Maximize2,
   MousePointerClick,
   Pencil,
   Quote,
+  Ruler,
   Search,
   SeparatorHorizontal,
   Square,
   Trash2,
+  Video as VideoIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -41,26 +44,37 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   BlockFieldOutput,
+  BlockSpacingWrapper,
+  CoverOutput,
   DividerOutput,
   TilesGridOutput,
   blockLayoutClasses,
   focalObjectPosition,
   isComplexModuleType,
+  isCoverModuleType,
   isDividerModule,
   isGalleryModuleType,
   isTilesModule,
   resolveBlockLayout,
   resolveInstanceValues,
   toImageValue,
+  toVideoValue,
+  videoEmbedSrc,
+  SPACING_SIDES,
   type BlockLayoutValue,
+  type BoxSpacing,
   type ImageAlign,
   type ImageFieldValue,
+  type ResponsiveSpacing,
+  type SpacingSide,
 } from "@/components/block-field-output";
 import { ImagePickerDialog } from "@/components/image-picker-dialog";
+import { VideoPickerDialog } from "@/components/video-picker-dialog";
 import { InsertSharedBlockDialog } from "@/components/insert-shared-block-dialog";
 import { ModuleFieldInput } from "@/components/module-field-input";
 import { resolveImageSrc } from "@/lib/media";
 import { cn } from "@/lib/utils";
+import { toGallerySettings } from "@/lib/gallery-settings";
 import type { GlobalModule, ModuleType } from "@/lib/api-server";
 
 const ALIGN_OPTIONS: { value: ImageAlign; label: string; icon: typeof Square }[] = [
@@ -205,6 +219,8 @@ const ICONS: Record<string, typeof Component> = {
   SeparatorHorizontal,
   HelpCircle,
   Images,
+  Video: VideoIcon,
+  LayoutTemplate,
 };
 
 function iconFor(moduleType: ModuleType | undefined) {
@@ -227,6 +243,7 @@ function DropZone({
   onDrop,
   large,
   children,
+  className,
 }: {
   active: boolean;
   onDrop: (payload: string) => void;
@@ -234,6 +251,9 @@ function DropZone({
   // schmalen Trennstrichs zwischen zwei Blöcken.
   large?: boolean;
   children?: ReactNode;
+  // Für an einen einzelnen (geflotteten) Block angehängte Drop-Zonen
+  // (siehe unten): überschreibt Positionierung/Größe der Standard-Variante.
+  className?: string;
 }) {
   const [over, setOver] = useState(false);
 
@@ -252,18 +272,79 @@ function DropZone({
         onDrop(e.dataTransfer.getData("text/plain"));
       }}
       className={cn(
-        "clear-both rounded transition-colors",
-        large ? "min-h-32" : "h-2",
+        "flow-root rounded transition-colors",
+        large ? "min-h-32 clear-both" : "h-2",
         active && !large && "h-6",
-        over
-          ? "bg-orange-100 dark:bg-orange-500/10"
-          : active
-            ? "bg-orange-50/50 dark:bg-orange-500/5"
-            : "bg-transparent",
-        active && "outline-2 outline-dashed outline-orange-300",
+        // Während eines aktiven Drags ist jede gültige Einfüge-Position
+        // sichtbar (schwacher Rahmen/Hintergrund) – wer nicht schon weiß,
+        // wo man droppen kann, sieht sonst gar nichts. Direkt getroffene
+        // Zone (`over`) sticht zusätzlich kräftiger hervor.
+        active &&
+          (over
+            ? "bg-orange-100 outline-2 outline-dashed outline-orange-400 dark:bg-orange-500/15"
+            : "bg-orange-50/60 outline outline-dashed outline-orange-200 dark:bg-orange-500/5 dark:outline-orange-500/20"),
+        className,
       )}
     >
       {children}
+    </div>
+  );
+}
+
+const SPACING_SIDE_LABELS: Record<SpacingSide, string> = {
+  top: "Oben",
+  right: "Rechts",
+  bottom: "Unten",
+  left: "Links",
+};
+
+// Vier Eingabefelder für einen Breakpoint (Mobil oder Desktop) eines
+// Innen-/Außenabstands – als Kreuz angeordnet (Oben/Rechts/Unten/Links um
+// ein Mittelfeld, wie ein Box-Modell), statt einer schlichten 4er-Reihe –
+// macht auf den ersten Blick klar, welches Feld welche Seite meint (siehe
+// Spacing-Dialog unten).
+function SpacingCrossInputs({
+  idPrefix,
+  box,
+  onChange,
+}: {
+  idPrefix: string;
+  box: BoxSpacing | undefined;
+  onChange: (side: SpacingSide, value: string) => void;
+}) {
+  function field(side: SpacingSide) {
+    return (
+      <div className="flex flex-col items-center gap-1">
+        <Label htmlFor={`${idPrefix}-${side}`} className="text-xs text-muted-foreground">
+          {SPACING_SIDE_LABELS[side]}
+        </Label>
+        <Input
+          id={`${idPrefix}-${side}`}
+          type="number"
+          min={0}
+          value={box?.[side] ?? ""}
+          onChange={(e) => onChange(side, e.target.value)}
+          // Kein festes `w-*`: die Basis-`Input`-Komponente bringt schon
+          // `w-full min-w-0` mit – ein fester Pixelwert hier würde das
+          // überschreiben und auf sehr schmalen Bildschirmen erzwungenes
+          // horizontales Scrollen verursachen (das Feld könnte nicht mehr
+          // schrumpfen, egal wie wenig Platz tatsächlich da ist).
+          className="min-w-0 text-center"
+        />
+      </div>
+    );
+  }
+  return (
+    <div className="grid grid-cols-3 items-center justify-items-center gap-2">
+      <div />
+      {field("top")}
+      <div />
+      {field("left")}
+      <Square className="size-5 text-muted-foreground" aria-hidden />
+      {field("right")}
+      <div />
+      {field("bottom")}
+      <div />
     </div>
   );
 }
@@ -283,8 +364,13 @@ export function BlockEditorField({
   const [draggingPaletteId, setDraggingPaletteId] = useState<string | null>(null);
   const [draggingInstanceId, setDraggingInstanceId] = useState<string | null>(null);
   const [editingInstanceId, setEditingInstanceId] = useState<string | null>(null);
+  const [spacingInstanceId, setSpacingInstanceId] = useState<string | null>(null);
   const [resizingLayoutId, setResizingLayoutId] = useState<string | null>(null);
   const [imagePicker, setImagePicker] = useState<{
+    instanceId: string;
+    fieldName: string;
+  } | null>(null);
+  const [videoPicker, setVideoPicker] = useState<{
     instanceId: string;
     fieldName: string;
   } | null>(null);
@@ -295,6 +381,12 @@ export function BlockEditorField({
   const [pendingInsert, setPendingInsert] = useState<{
     index: number;
     moduleType: ModuleType;
+    // Gesetzt, wenn über der Einfüge-Markierung eines links/rechts
+    // ausgerichteten Blocks fallen gelassen wurde (siehe `handleDropAt`)
+    // – der neu angelegte Block übernimmt dieselbe Ausrichtung, statt
+    // "Keine" zu bleiben, sonst reiht er sich optisch nicht in dieselbe
+    // Zeile ein.
+    matchAlign?: ImageAlign;
   } | null>(null);
   // Referenz-Breite für alle Zieh-Größenänderungen (Bild-Feld UND
   // Block-Layout) – bewusst EIN gemeinsamer Ref auf die stabile
@@ -305,15 +397,35 @@ export function BlockEditorField({
 
   const isDragging = draggingPaletteId !== null || draggingInstanceId !== null;
 
+  // Vorab berechnete Ausrichtung jeder Instanz – wird gebraucht, um beim
+  // Rendern zu wissen, ob der vorherige/nächste Block geflotet ist (siehe
+  // Drop-Zonen-Logik unten): eine separate Drop-Zone *zwischen* zwei
+  // Blöcken funktioniert mit CSS-Floats nicht zuverlässig (Floats schieben
+  // nachfolgende normale Blockelemente im Fluss nicht nach unten, die
+  // Drop-Zone würde dadurch an der falschen Stelle rendern) – für
+  // geflotete Blöcke wird die Einfüge-Markierung deshalb direkt an den
+  // (bereits korrekt positionierten) Block selbst angehängt statt als
+  // eigenes Geschwister-Element.
+  const instanceAligns = value.map((instance) => {
+    const resolved = resolveInstanceValues(instance, globalModules);
+    const moduleType = moduleTypes.find((mt) => mt.id === resolved.moduleTypeId);
+    const contentFields = moduleType?.schema.fields.filter((f) => !f.option) ?? [];
+    return resolveBlockLayout(contentFields, resolved.values, instance.layout).align;
+  });
+  function isFloatedAlign(align: ImageAlign | undefined) {
+    return align === "left" || align === "right";
+  }
+
   const filteredTypes = moduleTypes.filter((mt) =>
     mt.name.toLowerCase().includes(search.toLowerCase()),
   );
 
-  function insertAt(index: number, moduleType: ModuleType) {
+  function insertAt(index: number, moduleType: ModuleType, matchAlign?: ImageAlign) {
     const instance: ModuleInstance = {
       id: crypto.randomUUID(),
       moduleTypeId: moduleType.id,
       values: exampleValues(moduleType),
+      ...(matchAlign && { layout: { align: matchAlign } }),
     };
     const next = [...value];
     next.splice(index, 0, instance);
@@ -327,40 +439,50 @@ export function BlockEditorField({
   // Moduls ist nach dem Anlegen unveränderlich, siehe global-module-
   // dialog.tsx) – reine Bequemlichkeit für Stellen, die es ohne Auflösung
   // lesen, keine zweite Quelle der Wahrheit.
-  function insertGlobalAt(index: number, globalModule: GlobalModule) {
+  function insertGlobalAt(index: number, globalModule: GlobalModule, matchAlign?: ImageAlign) {
     const instance: ModuleInstance = {
       id: crypto.randomUUID(),
       moduleTypeId: globalModule.moduleTypeId,
       globalModuleId: globalModule.id,
       values: {},
+      ...(matchAlign && { layout: { align: matchAlign } }),
     };
     const next = [...value];
     next.splice(index, 0, instance);
     onChange(next);
   }
 
-  function moveTo(instanceId: string, targetIndex: number) {
+  function moveTo(instanceId: string, targetIndex: number, matchAlign?: ImageAlign) {
     const fromIndex = value.findIndex((i) => i.id === instanceId);
     if (fromIndex === -1) return;
     const next = [...value];
     const [moved] = next.splice(fromIndex, 1);
     const insertIndex = fromIndex < targetIndex ? targetIndex - 1 : targetIndex;
-    next.splice(insertIndex, 0, moved);
+    // Beim Fallenlassen auf die Einfüge-Markierung eines links/rechts
+    // ausgerichteten Blocks übernimmt der verschobene Block dieselbe
+    // Ausrichtung – seine bisherige Breite bleibt dabei erhalten (die
+    // meist schon reduziert war, wenn er selbst ausgerichtet war), sonst
+    // reiht er sich trotz korrekter Position optisch nicht in dieselbe
+    // Zeile ein.
+    const updated = matchAlign
+      ? { ...moved, layout: { ...moved.layout, align: matchAlign } }
+      : moved;
+    next.splice(insertIndex, 0, updated);
     onChange(next);
   }
 
-  function handleDropAt(index: number, payload: string) {
+  function handleDropAt(index: number, payload: string, matchAlign?: ImageAlign) {
     if (payload.startsWith("new:")) {
       const moduleType = moduleTypes.find((mt) => mt.id === payload.slice(4));
       if (!moduleType) return;
       const contentFields = moduleType.schema.fields.filter((f) => !f.option);
       if (isComplexModuleType(contentFields)) {
-        setPendingInsert({ index, moduleType });
+        setPendingInsert({ index, moduleType, matchAlign });
       } else {
-        insertAt(index, moduleType);
+        insertAt(index, moduleType, matchAlign);
       }
     } else if (payload.startsWith("move:")) {
-      moveTo(payload.slice(5), index);
+      moveTo(payload.slice(5), index, matchAlign);
     }
   }
 
@@ -381,6 +503,26 @@ export function BlockEditorField({
 
   function updateInstanceLayout(instanceId: string, layout: BlockLayoutValue) {
     onChange(value.map((instance) => (instance.id === instanceId ? { ...instance, layout } : instance)));
+  }
+
+  // Aktualisiert Innen- (`padding`) oder Außenabstand (`margin`) für eine
+  // einzelne Seite (oben/rechts/unten/links) bei einem Breakpoint (Mobil/
+  // Desktop) – leeres Feld löscht den Wert dieser Seite wieder (kein
+  // eigener Wert = keine Wirkung, siehe `.block-spacing` in globals.css).
+  function updateSpacing(
+    instanceId: string,
+    kind: "padding" | "margin",
+    breakpoint: keyof ResponsiveSpacing,
+    side: SpacingSide,
+    rawValue: string,
+  ) {
+    const instance = value.find((i) => i.id === instanceId);
+    if (!instance) return;
+    const numericValue = rawValue.trim() === "" ? undefined : Number(rawValue);
+    const currentResponsive = instance.layout?.[kind];
+    const nextBox: BoxSpacing = { ...currentResponsive?.[breakpoint], [side]: numericValue };
+    const nextResponsive: ResponsiveSpacing = { ...currentResponsive, [breakpoint]: nextBox };
+    updateInstanceLayout(instanceId, { ...instance.layout, [kind]: nextResponsive });
   }
 
   // Block-weite Größenänderung per Zieh-Griff (für Module ohne eigenes
@@ -413,6 +555,7 @@ export function BlockEditorField({
 
   const editingInstance = value.find((i) => i.id === editingInstanceId);
   const editingType = moduleTypes.find((mt) => mt.id === editingInstance?.moduleTypeId);
+  const spacingInstance = value.find((i) => i.id === spacingInstanceId);
 
   return (
     <div className="flex flex-col gap-4 md:flex-row md:gap-8">
@@ -475,9 +618,13 @@ export function BlockEditorField({
                 <p>Baustein von links hierher ziehen.</p>
               </div>
             </DropZone>
-          ) : (
-            <DropZone active={isDragging} onDrop={(p) => handleDropAt(0, p)} />
-          )}
+          ) : !isFloatedAlign(instanceAligns[0]) ? (
+            <DropZone
+              active={isDragging}
+              onDrop={(p) => handleDropAt(0, p)}
+              className="clear-both"
+            />
+          ) : null}
 
           {value.map((instance, index) => {
             // FAQ/Galerie-Bausteine sind immer Referenzen auf eine zentral
@@ -491,6 +638,7 @@ export function BlockEditorField({
             const contentFields = moduleType?.schema.fields.filter((f) => !f.option) ?? [];
             const isTiles = isTilesModule(contentFields);
             const isDivider = isDividerModule(contentFields);
+            const isCover = isCoverModuleType(contentFields);
             const imageField = contentFields.find((f) => f.type === "image");
             const imageValue = imageField
               ? toImageValue(resolved.values[imageField.name])
@@ -507,44 +655,95 @@ export function BlockEditorField({
             return (
               <Fragment key={instance.id}>
                 <div
-                  draggable
-                  onDragStart={(e) => {
-                    setDraggingInstanceId(instance.id);
-                    e.dataTransfer.setData("text/plain", `move:${instance.id}`);
-                  }}
-                  onDragEnd={() => setDraggingInstanceId(null)}
                   style={{ width: `${blockLayout.width}%` }}
                   className={cn(
-                    "group relative cursor-grab rounded-lg border border-transparent px-3 py-3 transition-colors hover:border-border focus-within:border-orange-400 active:cursor-grabbing",
-                    blockLayoutClasses(blockLayout.align),
+                    "block-layout group relative rounded-lg border border-transparent px-3 py-3 transition-colors hover:border-border focus-within:border-orange-400",
+                    blockLayoutClasses(blockLayout.align, blockLayout.width),
                     draggingInstanceId === instance.id && "opacity-40",
                   )}
                 >
-                  <div className="absolute -top-3 left-2 z-10 flex items-center gap-0.5 rounded-md border bg-card px-1 py-0.5 opacity-0 shadow-card transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-                    <span className="flex cursor-grab items-center px-0.5 active:cursor-grabbing">
+                  {isDragging && isFloatedAlign(blockLayout.align) && (
+                    // Links-/rechts ausgerichtete (geflotete) Blöcke können
+                    // im Designer nebeneinander stehen (auch zu dritt oder
+                    // mehr) – eine separate Drop-Zone *zwischen* solchen
+                    // Blöcken funktioniert mit CSS-Floats nicht zuverlässig
+                    // (siehe `instanceAligns` oben). Die Einfüge-Markierung
+                    // hängt deshalb direkt am eigenen, bereits korrekt
+                    // positionierten Block – oberhalb, in der Zeile, wo
+                    // sonst die (während des Ziehens ausgeblendete)
+                    // Toolbar sitzt.
+                    <DropZone
+                      active={isDragging}
+                      onDrop={(p) => handleDropAt(index, p, blockLayout.align)}
+                      className="absolute inset-x-0 -top-3 z-20 h-3"
+                    />
+                  )}
+                  <div
+                    className={cn(
+                      "absolute -top-3 left-2 z-10 flex items-center gap-0.5 rounded-md border bg-card px-1 py-0.5 opacity-0 shadow-card transition-opacity",
+                      // Während irgendein Block gezogen wird, bleibt JEDE
+                      // Toolbar ausgeblendet – sonst kollidiert die
+                      // schwebende Toolbar (per `-top-3` bewusst oberhalb
+                      // des eigenen Blocks positioniert) sichtbar mit der
+                      // währenddessen größeren, aktiven Drop-Zone darüber
+                      // (siehe DropZone `active && !large && "h-6"`).
+                      // Betrifft nicht nur FAQ/Galerie, sondern jeden
+                      // Baustein-Typ.
+                      !isDragging &&
+                        "group-hover:opacity-100 group-focus-within:opacity-100",
+                    )}
+                  >
+                    <span
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData("text/plain", `move:${instance.id}`);
+                        // React-State (und damit ein Re-Render vieler
+                        // Bausteine) NICHT synchron im dragstart-Handler
+                        // setzen: der Browser erstellt direkt im Anschluss
+                        // an dragstart synchron seinen Drag-Bild-Snapshot –
+                        // kollidiert das mit einem eigenen, teuren
+                        // Re-Render (z.B. durch Rich-Text-/Galerie-
+                        // Bausteine), kann das den Tab abstürzen lassen
+                        // (per echtem Browsertest reproduziert). Per
+                        // setTimeout(0) läuft der State-Update erst, nachdem
+                        // der Browser seinen Snapshot fertig hat.
+                        setTimeout(() => setDraggingInstanceId(instance.id), 0);
+                      }}
+                      onDragEnd={() => setDraggingInstanceId(null)}
+                      className="flex cursor-grab items-center px-0.5 active:cursor-grabbing"
+                    >
                       <GripVertical className="size-3.5 text-muted-foreground" />
                     </span>
-                    <span className="flex items-center gap-1 px-1 text-xs text-muted-foreground">
+                    <span
+                      data-block-drag-label
+                      className="flex items-center gap-1 px-1 text-xs text-muted-foreground"
+                    >
                       <Icon className="size-3.5" />
                       {moduleType?.name}
                     </span>
                     {isGlobal && (
-                      <Link
-                        href={
-                          isGalleryModuleType(contentFields)
-                            ? "/dashboard/content/galleries"
-                            : "/dashboard/content/faqs"
-                        }
-                        target="_blank"
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Zentral gepflegten Eintrag bearbeiten"
+                        title={`Wird zentral unter „${isGalleryModuleType(contentFields) ? "Galerien" : "FAQs"}“ gepflegt – zum Bearbeiten öffnen`}
                         onClick={(e) => e.stopPropagation()}
-                        className="flex items-center gap-1 rounded-sm px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
-                        title={`Wird zentral unter „${isGalleryModuleType(contentFields) ? "Galerien" : "FAQs"}“ gepflegt`}
+                        render={
+                          <Link
+                            href={`${
+                              isGalleryModuleType(contentFields)
+                                ? "/dashboard/content/galleries"
+                                : "/dashboard/content/faqs"
+                            }/${instance.globalModuleId}`}
+                            target="_blank"
+                          />
+                        }
                       >
-                        <Lock className="size-3" />
-                        {isGalleryModuleType(contentFields) ? "Galerie" : "FAQ"}
-                      </Link>
+                        <Pencil />
+                      </Button>
                     )}
-                    {imageField && !isTiles && !isGlobal && (
+                    {imageField && !isTiles && !isCover && !isGlobal && (
                       <>
                         <DropdownMenu>
                           <DropdownMenuTrigger
@@ -625,6 +824,19 @@ export function BlockEditorField({
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Innen-/Außenabstand"
+                      title="Innen-/Außenabstand"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSpacingInstanceId(instance.id);
+                      }}
+                    >
+                      <Ruler />
+                    </Button>
                     {!isGlobal && (
                       <Button
                         type="button"
@@ -652,6 +864,7 @@ export function BlockEditorField({
                       <Trash2 />
                     </Button>
                   </div>
+                  <BlockSpacingWrapper layout={instance.layout}>
                   {moduleType && isTiles && !isGlobal && (
                     // Kacheln-artiges Modul (mehrere Bild-Felder, z.B. der
                     // "Kacheln"-Baustein): festes 2-Spalten-Raster statt
@@ -690,6 +903,11 @@ export function BlockEditorField({
                               draggable={false}
                               className="size-full object-cover"
                             />
+                            {/* Kleiner Button in der Ecke statt (wie vorher)
+                                die ganze Kachel als Overlay abzudecken – ein
+                                `inset-0`-Button über der kompletten Fläche
+                                ließ praktisch keinen Platz mehr übrig, um
+                                den Baustein per Drag&Drop zu greifen. */}
                             <button
                               type="button"
                               draggable={false}
@@ -697,7 +915,7 @@ export function BlockEditorField({
                                 e.stopPropagation();
                                 setImagePicker({ instanceId: instance.id, fieldName: field.name });
                               }}
-                              className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm font-medium text-white opacity-0 transition-opacity group-hover/tile:opacity-100"
+                              className="absolute top-1.5 right-1.5 rounded-md bg-black/60 px-1.5 py-1 text-xs font-medium text-white opacity-0 transition-opacity group-hover/tile:opacity-100"
                             >
                               Ersetzen
                             </button>
@@ -711,7 +929,16 @@ export function BlockEditorField({
                       <DividerOutput />
                     </div>
                   )}
-                  {moduleType && !isTiles && !isDivider && !isGlobal && (
+                  {moduleType && isCover && !isGlobal && (
+                    // Wie Kacheln: feste, read-only Vorschau statt der
+                    // Feld-für-Feld-Bearbeitung unten – Hintergrundbild
+                    // fließt bei Cover nicht neben dem Text, sondern liegt
+                    // vollflächig dahinter, das passt nicht zur
+                    // EditableImageField-Float-Logik. Bearbeitet wird über
+                    // den Stift-Button (Dialog unten).
+                    <CoverOutput contentFields={contentFields} values={instance.values} />
+                  )}
+                  {moduleType && !isTiles && !isDivider && !isCover && !isGlobal && (
                     // `flow-root` statt `flex flex-col`: Bild-Felder mit
                     // Links-/Rechtsbündig floaten (siehe EditableImageField)
                     // – Flex-Kinder ignorieren `float` komplett, außerdem
@@ -719,6 +946,72 @@ export function BlockEditorField({
                     // Blocks ein, statt in nachfolgende Blöcke "auszulaufen".
                     <div className="flow-root space-y-3">
                       {contentFields.map((field) => {
+                        if (field.type === "video") {
+                          const video = toVideoValue(instance.values[field.name]);
+                          if (!video.url) {
+                            return (
+                              <button
+                                key={field.name}
+                                type="button"
+                                draggable={false}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setVideoPicker({ instanceId: instance.id, fieldName: field.name });
+                                }}
+                                className="block w-full overflow-hidden rounded-md border border-dashed text-left transition-colors hover:border-orange-400"
+                              >
+                                <div className="flex flex-col items-center justify-center gap-1 py-10 text-sm text-muted-foreground">
+                                  <VideoIcon className="size-6" />
+                                  Video auswählen
+                                </div>
+                              </button>
+                            );
+                          }
+                          const embedSrc = videoEmbedSrc(video.url);
+                          return (
+                            <div key={field.name} className="relative">
+                              {/* Im Designer-Canvas bewusst OHNE native
+                                  Steuerleiste/iframe-Interaktion (`controls`
+                                  weggelassen, iframe mit `pointer-events-none`)
+                                  – Browser-eigene Video-/Embed-Bedienelemente
+                                  können Maus-Events abfangen, bevor sie den
+                                  Drag am Baustein-Rahmen auslösen. In der
+                                  echten Ausgabe (BlockFieldOutput) bleibt
+                                  alles voll interaktiv. */}
+                              {embedSrc ? (
+                                <div className="pointer-events-none aspect-video w-full overflow-hidden rounded-md bg-black">
+                                  <iframe
+                                    src={embedSrc}
+                                    title="Video"
+                                    tabIndex={-1}
+                                    className="size-full"
+                                  />
+                                </div>
+                              ) : (
+                                // eslint-disable-next-line jsx-a11y/media-has-caption
+                                <video
+                                  src={resolveImageSrc(video.url)}
+                                  muted
+                                  playsInline
+                                  preload="metadata"
+                                  draggable={false}
+                                  className="pointer-events-none block max-h-[36rem] w-full rounded-md bg-black"
+                                />
+                              )}
+                              <button
+                                type="button"
+                                draggable={false}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setVideoPicker({ instanceId: instance.id, fieldName: field.name });
+                                }}
+                                className="absolute top-2 right-2 rounded-md bg-black/60 px-2 py-1 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100"
+                              >
+                                Ersetzen
+                              </button>
+                            </div>
+                          );
+                        }
                         if (field.type !== "image") {
                           return (
                             <BlockFieldOutput
@@ -777,10 +1070,14 @@ export function BlockEditorField({
                           field={field}
                           value={resolved.values[field.name]}
                           showPlaceholders
+                          interactive
+                          gallerySettings={toGallerySettings(resolved.settings)}
+                          swiperAllowTouchMove={false}
                         />
                       ))}
                     </div>
                   )}
+                  </BlockSpacingWrapper>
                   {hasBlockLayoutControls && (
                     <div
                       onPointerDown={(e) =>
@@ -795,7 +1092,13 @@ export function BlockEditorField({
                     />
                   )}
                 </div>
-                <DropZone active={isDragging} onDrop={(p) => handleDropAt(index + 1, p)} />
+                {!isFloatedAlign(instanceAligns[index + 1]) && (
+                  <DropZone
+                    active={isDragging}
+                    onDrop={(p) => handleDropAt(index + 1, p)}
+                    className="clear-both"
+                  />
+                )}
               </Fragment>
             );
           })}
@@ -830,6 +1133,93 @@ export function BlockEditorField({
         </DialogContent>
       </Dialog>
 
+      <Dialog
+        open={spacingInstanceId !== null}
+        onOpenChange={(open) => !open && setSpacingInstanceId(null)}
+      >
+        <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-xl">
+          <DialogHeader className="shrink-0">
+            <DialogTitle>Innen-/Außenabstand</DialogTitle>
+          </DialogHeader>
+          {spacingInstance && (
+            <div className="flex flex-col gap-5 overflow-y-auto">
+              <p className="text-sm text-muted-foreground">
+                Mobil-Wert gilt als Standard, der Desktop-Wert überschreibt ihn
+                je Seite ab 640px Bildschirmbreite. Leer lassen für keinen
+                eigenen Wert.
+              </p>
+              <div className="flex flex-col gap-2">
+                <Label>Innenabstand (px)</Label>
+                {/* `flex-wrap` statt Container-Query: bricht rein anhand
+                    des tatsächlich beim Rendern verfügbaren Platzes um,
+                    unabhängig von Breiten-Messungen des (portalierten)
+                    Dialogs – Mobil-/Desktop-Kreuz stehen nebeneinander,
+                    sobald beide nebeneinander passen (min. ~16rem je
+                    Kreuz), sonst untereinander. */}
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex min-w-64 flex-1 flex-col items-center gap-2">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Mobil
+                    </span>
+                    <SpacingCrossInputs
+                      idPrefix="padding-mobile"
+                      box={spacingInstance.layout?.padding?.mobile}
+                      onChange={(side, v) =>
+                        updateSpacing(spacingInstance.id, "padding", "mobile", side, v)
+                      }
+                    />
+                  </div>
+                  <div className="flex min-w-64 flex-1 flex-col items-center gap-2">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Desktop
+                    </span>
+                    <SpacingCrossInputs
+                      idPrefix="padding-desktop"
+                      box={spacingInstance.layout?.padding?.desktop}
+                      onChange={(side, v) =>
+                        updateSpacing(spacingInstance.id, "padding", "desktop", side, v)
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label>Außenabstand (px)</Label>
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex min-w-64 flex-1 flex-col items-center gap-2">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Mobil
+                    </span>
+                    <SpacingCrossInputs
+                      idPrefix="margin-mobile"
+                      box={spacingInstance.layout?.margin?.mobile}
+                      onChange={(side, v) =>
+                        updateSpacing(spacingInstance.id, "margin", "mobile", side, v)
+                      }
+                    />
+                  </div>
+                  <div className="flex min-w-64 flex-1 flex-col items-center gap-2">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Desktop
+                    </span>
+                    <SpacingCrossInputs
+                      idPrefix="margin-desktop"
+                      box={spacingInstance.layout?.margin?.desktop}
+                      onChange={(side, v) =>
+                        updateSpacing(spacingInstance.id, "margin", "desktop", side, v)
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+              <Button type="button" onClick={() => setSpacingInstanceId(null)}>
+                Fertig
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <ImagePickerDialog
         open={imagePicker !== null}
         onOpenChange={(open) => !open && setImagePicker(null)}
@@ -851,6 +1241,19 @@ export function BlockEditorField({
         }}
       />
 
+      <VideoPickerDialog
+        open={videoPicker !== null}
+        onOpenChange={(open) => !open && setVideoPicker(null)}
+        onSelect={(url, item) => {
+          if (!videoPicker) return;
+          updateField(videoPicker.instanceId, videoPicker.fieldName, {
+            url,
+            mediaId: item?.id,
+          });
+          setVideoPicker(null);
+        }}
+      />
+
       <InsertSharedBlockDialog
         open={pendingInsert !== null}
         onOpenChange={(open) => !open && setPendingInsert(null)}
@@ -861,7 +1264,9 @@ export function BlockEditorField({
             : []
         }
         onSelect={(globalModule) => {
-          if (pendingInsert) insertGlobalAt(pendingInsert.index, globalModule);
+          if (pendingInsert) {
+            insertGlobalAt(pendingInsert.index, globalModule, pendingInsert.matchAlign);
+          }
           setPendingInsert(null);
         }}
       />

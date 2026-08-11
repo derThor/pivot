@@ -87,14 +87,8 @@ export class ContentService {
    * ist. Mit `:*` matcht jedes Wort, das mit dem eingegebenen Präfix
    * beginnt, was für Such-als-du-tippst-UX nötig ist.
    */
-  async search(q: string, limit: number) {
-    const tsQuery = q
-      .trim()
-      .split(/\s+/)
-      .map((term) => term.replace(/[^\p{L}\p{N}]/gu, ''))
-      .filter(Boolean)
-      .map((term) => `${term}:*`)
-      .join(' & ');
+  async search(q: string, limit: number, skip: number = 0) {
+    const tsQuery = this.toTsQuery(q);
     if (!tsQuery) {
       return [];
     }
@@ -128,8 +122,39 @@ export class ContentService {
         to_tsquery('german', ${tsQuery})
       ) DESC
       LIMIT ${limit}
+      OFFSET ${skip}
     `);
     return results;
+  }
+
+  /** Gesamtzahl der Treffer für `search()` (dieselbe Bedingung, ohne
+   * LIMIT/OFFSET/ORDER) – für die Pagination der Detailsuche-Ergebnisseite
+   * (siehe SearchService.searchPaged). */
+  async searchCount(q: string) {
+    const tsQuery = this.toTsQuery(q);
+    if (!tsQuery) return 0;
+
+    const rows = await this.prisma.$queryRaw<Array<{ count: bigint }>>(Prisma.sql`
+      SELECT COUNT(*)::bigint AS count
+      FROM contents c
+      JOIN content_types ct ON ct.id = c."contentTypeId"
+      WHERE to_tsvector('german',
+              c.title || ' ' || coalesce(c.excerpt, '') || ' ' ||
+              coalesce(c."seoTitle", '') || ' ' ||
+              coalesce(c."seoDescription", '') || ' ' || c.data::text
+            ) @@ to_tsquery('german', ${tsQuery})
+    `);
+    return Number(rows[0]?.count ?? 0);
+  }
+
+  private toTsQuery(q: string) {
+    return q
+      .trim()
+      .split(/\s+/)
+      .map((term) => term.replace(/[^\p{L}\p{N}]/gu, ''))
+      .filter(Boolean)
+      .map((term) => `${term}:*`)
+      .join(' & ');
   }
 
   async findOne(id: string) {

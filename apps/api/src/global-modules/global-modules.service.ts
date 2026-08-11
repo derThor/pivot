@@ -3,16 +3,42 @@ import { Prisma } from '@strasev/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateGlobalModuleDto } from './dto/create-global-module.dto';
 import { UpdateGlobalModuleDto } from './dto/update-global-module.dto';
+import { QueryGlobalModuleDto } from './dto/query-global-module.dto';
 
 @Injectable()
 export class GlobalModulesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
-    return this.prisma.globalModule.findMany({
-      orderBy: { name: 'asc' },
-      include: { moduleType: { select: { id: true, name: true, icon: true } } },
-    });
+  // Ohne `page` (Standardfall für Block-Editor/Content-Auflösung): flaches
+  // Array wie bisher, optional nach `moduleTypeId` gefiltert. Mit `page`
+  // (Galerien-/FAQ-Übersicht): paginiertes `{items, meta}`, siehe
+  // QueryGlobalModuleDto.
+  findAll(query: QueryGlobalModuleDto = new QueryGlobalModuleDto()) {
+    const where = query.moduleTypeId ? { moduleTypeId: query.moduleTypeId } : undefined;
+    const include = { moduleType: { select: { id: true, name: true, icon: true } } } as const;
+
+    if (query.page == null) {
+      return this.prisma.globalModule.findMany({
+        where,
+        orderBy: { name: 'asc' },
+        include,
+      });
+    }
+
+    const { page, pageSize } = query;
+    return Promise.all([
+      this.prisma.globalModule.findMany({
+        where,
+        orderBy: { name: 'asc' },
+        include,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.globalModule.count({ where }),
+    ]).then(([items, total]) => ({
+      items,
+      meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
+    }));
   }
 
   async findOne(id: string) {
@@ -39,7 +65,11 @@ export class GlobalModulesService {
   async create(dto: CreateGlobalModuleDto) {
     await this.assertModuleTypeExists(dto.moduleTypeId);
     const created = await this.prisma.globalModule.create({
-      data: { ...dto, values: dto.values as Prisma.InputJsonValue },
+      data: {
+        ...dto,
+        values: dto.values as Prisma.InputJsonValue,
+        settings: dto.settings as Prisma.InputJsonValue | undefined,
+      },
     });
     return this.findOne(created.id);
   }
@@ -48,7 +78,11 @@ export class GlobalModulesService {
     await this.assertExists(id);
     await this.prisma.globalModule.update({
       where: { id },
-      data: { ...dto, values: dto.values as Prisma.InputJsonValue | undefined },
+      data: {
+        ...dto,
+        values: dto.values as Prisma.InputJsonValue | undefined,
+        settings: dto.settings as Prisma.InputJsonValue | undefined,
+      },
     });
     return this.findOne(id);
   }

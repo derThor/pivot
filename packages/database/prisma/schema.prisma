@@ -196,6 +196,13 @@ model GlobalModule {
   id        String   @id @default(cuid())
   name      String
   values    Json
+  // Anzeige-Einstellungen der einzelnen Modul-Instanz (z.B. Swiper-Effekt/
+  // Autoplay/Navigation bei Galerien) – bewusst getrennt von `values`
+  // (dem eigentlichen Inhalt), da diese Einstellungen nicht Teil des
+  // ModuleType-Schemas sind, sondern pro Galerie individuell gesetzt
+  // werden (siehe gallery-settings.ts). `null`/fehlende Keys fallen im
+  // Frontend auf Defaults zurück.
+  settings  Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

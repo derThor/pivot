@@ -1,7 +1,10 @@
-import { Image as ImageIcon } from "lucide-react";
+import type { CSSProperties, ReactNode } from "react";
+import { Image as ImageIcon, Video as VideoIcon } from "lucide-react";
 import { RichTextDisplay } from "@/components/rich-text-display";
+import { GallerySwiper } from "@/components/gallery-swiper";
 import { resolveImageSrc } from "@/lib/media";
 import { cn } from "@/lib/utils";
+import { DEFAULT_GALLERY_SETTINGS, type GallerySettings } from "@/lib/gallery-settings";
 import type { ContentTypeField, GlobalModule, MediaVariant } from "@/lib/api-server";
 
 // Löst eine Modul-Instanz auf ihren *effektiven* Modul-Typ + Werte auf:
@@ -20,7 +23,11 @@ export function resolveInstanceValues(
     globalModuleId?: string;
   },
   globalModules: GlobalModule[],
-): { moduleTypeId: string; values: Record<string, unknown> } {
+): {
+  moduleTypeId: string;
+  values: Record<string, unknown>;
+  settings?: Record<string, unknown> | null;
+} {
   if (!instance.globalModuleId) {
     return { moduleTypeId: instance.moduleTypeId, values: instance.values };
   }
@@ -30,7 +37,11 @@ export function resolveInstanceValues(
   if (!globalModule) {
     return { moduleTypeId: instance.moduleTypeId, values: {} };
   }
-  return { moduleTypeId: globalModule.moduleTypeId, values: globalModule.values };
+  return {
+    moduleTypeId: globalModule.moduleTypeId,
+    values: globalModule.values,
+    settings: globalModule.settings,
+  };
 }
 
 export type ImageAlign = "none" | "full" | "left" | "center" | "right";
@@ -122,9 +133,114 @@ export function focalObjectPosition(
   return `${img.focalX * 100}% ${img.focalY * 100}%`;
 }
 
+export interface VideoFieldValue {
+  url: string;
+  mediaId?: string;
+}
+
+export function toVideoValue(raw: unknown): VideoFieldValue {
+  if (typeof raw === "string") return { url: raw };
+  if (raw && typeof raw === "object" && "url" in (raw as Record<string, unknown>)) {
+    const obj = raw as Record<string, unknown>;
+    return {
+      url: typeof obj.url === "string" ? obj.url : "",
+      mediaId: typeof obj.mediaId === "string" ? obj.mediaId : undefined,
+    };
+  }
+  return { url: "" };
+}
+
+const YOUTUBE_URL_RE =
+  /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/;
+const VIMEO_URL_RE = /vimeo\.com\/(?:video\/)?(\d+)/;
+
+/** Erkennt YouTube-/Vimeo-Links (aus dem "Per Link"-Tab des
+ * `VideoPickerDialog`) und liefert die passende iframe-Embed-URL – für
+ * eigene, per Medienbibliothek hochgeladene Videodateien (mp4/webm/…)
+ * `null`, die werden stattdessen direkt per `<video>` abgespielt. */
+export function videoEmbedSrc(url: string): string | null {
+  const youtube = url.match(YOUTUBE_URL_RE);
+  if (youtube) return `https://www.youtube-nocookie.com/embed/${youtube[1]}`;
+  const vimeo = url.match(VIMEO_URL_RE);
+  if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`;
+  return null;
+}
+
+export type SpacingSide = "top" | "right" | "bottom" | "left";
+
+export const SPACING_SIDES: readonly SpacingSide[] = ["top", "right", "bottom", "left"];
+
+// Einzelne Werte je Seite (oben/rechts/unten/links) – `undefined` je Seite
+// bedeutet kein eigener Wert für diese Seite, keine Auswirkung.
+export type BoxSpacing = Partial<Record<SpacingSide, number>>;
+
+// Mobil gilt als Standard (mobile-first) – der Desktop-Wert überschreibt
+// ihn je Seite erst ab 640px, sofern gesetzt (siehe `.block-spacing` in
+// globals.css). Fehlt ein Breakpoint komplett, hat er keinen Effekt.
+export interface ResponsiveSpacing {
+  mobile?: BoxSpacing;
+  desktop?: BoxSpacing;
+}
+
 export interface BlockLayoutValue {
   width?: number;
   align?: ImageAlign;
+  // Nutzerdefinierter Innen-/Außenabstand eines Bausteins, je Seite
+  // einzeln einstellbar, bewusst responsiv mit Mobil-/Desktop-Wert statt
+  // einem einzigen Wert ("mobile Optimierung"). Außenabstand links/rechts
+  // kommt zusätzlich zum bereits durch die Ausrichtung gesetzten
+  // `mr-4`/`ml-4` (siehe `blockLayoutClasses`) hinzu – beide sitzen auf
+  // unterschiedlichen Elementen (äußerer Float-Wrapper vs. dieser innere
+  // Spacing-Wrapper) und addieren sich, statt sich zu überschreiben.
+  padding?: ResponsiveSpacing;
+  margin?: ResponsiveSpacing;
+}
+
+function spacingStyleVars(
+  value: ResponsiveSpacing | undefined,
+  kind: "padding" | "margin",
+): Record<string, string> {
+  const vars: Record<string, string> = {};
+  for (const breakpoint of ["mobile", "desktop"] as const) {
+    const box = value?.[breakpoint];
+    if (!box) continue;
+    for (const side of SPACING_SIDES) {
+      const sideValue = box[side];
+      if (sideValue != null) {
+        vars[`--block-${kind}-${side}-${breakpoint}`] = `${sideValue}px`;
+      }
+    }
+  }
+  return vars;
+}
+
+/** Rendert den eigentlichen Block-Inhalt in einem eigenen Wrapper, der den
+ * nutzerdefinierten Innen-/Außenabstand trägt (siehe `.block-spacing` in
+ * globals.css) – bewusst ein zusätzlicher, innerer Wrapper statt die Werte
+ * direkt auf den äußeren (Float-/Breiten-/Drag-)Wrapper zu setzen, damit
+ * sich das nicht mit dessen eigenen Tailwind-Klassen (z.B. `px-3 py-3` im
+ * Designer-Canvas) überschneidet. Ohne gesetzte Werte hat die Klasse keine
+ * sichtbare Wirkung. */
+export function BlockSpacingWrapper({
+  layout,
+  className,
+  children,
+}: {
+  layout: BlockLayoutValue | undefined;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={cn("block-spacing", className)}
+      style={{
+        ...spacingStyleVars(layout?.padding, "padding"),
+        ...spacingStyleVars(layout?.margin, "margin"),
+      } as CSSProperties}
+    >
+      {children}
+    </div>
+  );
 }
 
 // Bestimmt Breite/Ausrichtung eines ganzen Blocks (nicht nur eines
@@ -138,6 +254,24 @@ export interface BlockLayoutValue {
 // 3. Alle anderen Module (Rich-Text, CTA-Button, Zitat, …): Breite/
 //    Ausrichtung kommen aus `instance.layout` (per Zieh-Griff am Block
 //    selbst gesetzt).
+// "Keine Ausrichtung" (align "none") wird laut `blockLayoutClasses` NICHT
+// als Float gerendert – bei voller Breite (100%) ist das korrekt (ein
+// normaler Block braucht kein Float). Wurde die Breite aber per Zieh-Griff
+// unter 100% reduziert, OHNE dass explizit links/rechts/zentriert gewählt
+// wurde, entsteht ein inkonsistenter Zustand: ein schmaler, aber nicht
+// floatender Block. Ein nachfolgender links/rechts ausgerichteter (also
+// floatender) Block darf laut CSS nicht neben einem vorangehenden
+// NICHT-floatenden Block hochrutschen – er rutscht stattdessen darunter
+// und dann ganz an seinen Rand, was wie ein großes Loch auf der Seite
+// aussieht. Heilt automatisch zu "links" (behält die bisherige, an den
+// linken Rand angelehnte Optik bei `align: none` bei), sobald die Breite
+// reduziert ist – sowohl für neu gezogene als auch für bereits
+// gespeicherte Alt-Zustände, da rein aus den Werten berechnet statt
+// gespeichert.
+function healAlign(align: ImageAlign, width: number): ImageAlign {
+  return align === "none" && width < 100 ? "left" : align;
+}
+
 export function resolveBlockLayout(
   contentFields: ContentTypeField[],
   values: Record<string, unknown>,
@@ -150,10 +284,12 @@ export function resolveBlockLayout(
   if (imageFields.length === 1) {
     const img = toImageValue(values[imageFields[0].name]);
     const align = img.align ?? "none";
-    return { align, width: align === "full" ? 100 : (img.width ?? 100), hasIntraBlockImage: false };
+    const width = align === "full" ? 100 : (img.width ?? 100);
+    return { align: healAlign(align, width), width, hasIntraBlockImage: false };
   }
   const align = layout?.align ?? "none";
-  return { align, width: align === "full" ? 100 : (layout?.width ?? 100), hasIntraBlockImage: false };
+  const width = align === "full" ? 100 : (layout?.width ?? 100);
+  return { align: healAlign(align, width), width, hasIntraBlockImage: false };
 }
 
 // Erkennt Module mit mehreren Bild-Feldern (z.B. den "Kacheln"-Baustein)
@@ -228,6 +364,70 @@ export function DividerOutput() {
   return <hr className="my-6 border-t border-border" />;
 }
 
+// Erkennt den Cover-/Hero-Baustein über sein Bild-Feld mit
+// `variant: "cover"` (siehe ContentTypeField.variant in api-server.ts) –
+// im Gegensatz zu "Bild + Text" (Form-Erkennung: Bild-Feld + weitere
+// Felder, siehe `resolveBlockLayout`) soll das Bild hier nicht *neben*
+// dem Text fließen, sondern als Vollflächen-Hintergrund dahinter liegen.
+export function isCoverModuleType(contentFields: ContentTypeField[]): boolean {
+  return contentFields.some((f) => f.type === "image" && f.variant === "cover");
+}
+
+// Vollflächiges Hero-/Cover-Modul: Hintergrundbild, Überschrift, optionaler
+// Untertext und optionaler Button, alle mittig übereinander. Feldrollen
+// werden über Typ/Variant statt fester Feldnamen bestimmt, damit der
+// Baustein wie alle anderen rein über sein Schema erkannt wird – so bleibt
+// er konsistent mit Kacheln/Trenner/Akkordeon (auch dort keine Slug-
+// Abfrage, siehe die jeweiligen Kommentare).
+export function CoverOutput({
+  contentFields,
+  values,
+}: {
+  contentFields: ContentTypeField[];
+  values: Record<string, unknown>;
+}) {
+  const imageField = contentFields.find(
+    (f) => f.type === "image" && f.variant === "cover",
+  );
+  const buttonField = contentFields.find((f) => f.variant === "button");
+  const textFields = contentFields.filter(
+    (f) => f !== imageField && f !== buttonField && (f.type === "string" || f.type === "text"),
+  );
+  const headingField = textFields[0];
+  const subtextField = textFields[1];
+
+  const img = imageField ? toImageValue(values[imageField.name]) : null;
+  const heading = headingField ? String(values[headingField.name] ?? "") : "";
+  const subtext = subtextField ? String(values[subtextField.name] ?? "") : "";
+  const buttonLabel = buttonField ? String(values[buttonField.name] ?? "") : "";
+
+  return (
+    <div className="relative flex min-h-80 items-center justify-center overflow-hidden rounded-md bg-muted">
+      {img?.url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={resolveImageSrc(img.url)}
+          alt=""
+          style={{ objectPosition: focalObjectPosition(img) }}
+          className="absolute inset-0 size-full object-cover"
+        />
+      ) : (
+        <ImageIcon className="absolute size-10 text-muted-foreground" />
+      )}
+      <div className="absolute inset-0 bg-black/40" />
+      <div className="relative flex max-w-2xl flex-col items-center gap-3 px-6 py-12 text-center text-white">
+        <h2 className="text-3xl font-bold text-balance">{heading || "…"}</h2>
+        {subtext && <p className="text-lg text-white/90 text-balance">{subtext}</p>}
+        {buttonLabel && (
+          <span className="mt-2 inline-flex w-fit rounded-md bg-gradient-to-r from-orange-400 to-rose-500 px-4 py-2 text-sm font-medium text-white">
+            {buttonLabel}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Erkennt Repeater-Felder, deren Unterfelder ein Bild enthalten (die
 // "Bildergalerie") – Form-Erkennung statt Slug, analog zu `isTilesModule`.
 // Ein Repeater ohne Bild-Unterfeld (z.B. FAQ) wird stattdessen als
@@ -244,10 +444,17 @@ export function isGalleryRepeater(field: ContentTypeField): boolean {
 // Ausrichtung daneben umbrechen kann), `clear-both` sonst (Standardfall
 // – ein Block ohne explizite Ausrichtung soll sich nie unerwartet neben
 // ein vorheriges Float quetschen).
-export function blockLayoutClasses(align: ImageAlign) {
+// `width` bewusst mit einbezogen: bei 100% Breite ergäbe `mr-4`/`ml-4`
+// zusätzlich zur vollen Breite eine Gesamtbreite von 100% + 16px – der
+// Block würde seinen Elternrahmen überlaufen und auf der ganzen Seite
+// horizontales Scrollen erzwingen (siehe strasev-Vorgabe: nie horizontal
+// scrollbar). Der Rand ergibt bei voller Breite ohnehin keinen Sinn (kein
+// Nachbar-Inhalt, an dem er vorbeifließen könnte), deshalb hier weglassen.
+export function blockLayoutClasses(align: ImageAlign, width: number = 100) {
+  const hasHorizontalMargin = width < 100;
   return cn(
-    align === "left" && "float-left mr-4 mb-3",
-    align === "right" && "float-right ml-4 mb-3",
+    align === "left" && cn("float-left mb-3", hasHorizontalMargin && "mr-4"),
+    align === "right" && cn("float-right mb-3", hasHorizontalMargin && "ml-4"),
     align === "center" && "mx-auto clear-both",
     (align === "none" || align === "full") && "clear-both",
   );
@@ -267,11 +474,22 @@ export function BlockFieldOutput({
   // `resolveBlockLayout`) – sonst würde die Breite doppelt angewendet
   // (z.B. 40% eines bereits auf 40% geschrumpften Elternteils).
   applyOwnLayout = true,
+  // Nur für Galerie-Repeater relevant: rendert den echten Swiper-Slider
+  // statt der statischen Vorschau-Raster-Ansicht.
+  interactive = false,
+  gallerySettings,
+  // Siehe `GallerySwiper` – im Seiten-Designer-Canvas auf `false` gesetzt,
+  // damit Swipers Wisch-Ziehen nicht mit dem Drag&Drop-Umsortieren der
+  // Bausteine kollidiert.
+  swiperAllowTouchMove = true,
 }: {
   field: ContentTypeField;
   value: unknown;
   showPlaceholders?: boolean;
   applyOwnLayout?: boolean;
+  interactive?: boolean;
+  gallerySettings?: GallerySettings;
+  swiperAllowTouchMove?: boolean;
 }) {
   const stringValue = typeof value === "string" ? value : "";
 
@@ -328,6 +546,41 @@ export function BlockFieldOutput({
     );
   }
 
+  if (field.type === "video") {
+    const video = toVideoValue(value);
+    if (!video.url) {
+      if (!showPlaceholders) return null;
+      return (
+        <div className="flex flex-col items-center justify-center gap-1 rounded-md border border-dashed py-10 text-sm text-muted-foreground">
+          <VideoIcon className="size-6" />
+          Kein Video
+        </div>
+      );
+    }
+    const embedSrc = videoEmbedSrc(video.url);
+    if (embedSrc) {
+      return (
+        <div className="aspect-video w-full overflow-hidden rounded-md bg-black">
+          <iframe
+            src={embedSrc}
+            title="Video"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="size-full"
+          />
+        </div>
+      );
+    }
+    return (
+      // eslint-disable-next-line jsx-a11y/media-has-caption
+      <video
+        src={resolveImageSrc(video.url)}
+        controls
+        className="block max-h-[36rem] w-full rounded-md bg-black"
+      />
+    );
+  }
+
   if (field.type === "repeater") {
     const items = toRepeaterItems(value);
     if (items.length === 0) {
@@ -344,6 +597,25 @@ export function BlockFieldOutput({
     if (isGalleryRepeater(field)) {
       const imageField = subFields.find((f) => f.type === "image");
       const captionField = subFields.find((f) => f.type !== "image");
+
+      if (interactive) {
+        const images = items.flatMap((item) => {
+          const img = imageField ? toImageValue(item.values[imageField.name]) : null;
+          if (!img?.url) return [];
+          const caption = captionField
+            ? String(item.values[captionField.name] ?? "")
+            : "";
+          return [{ url: img.url, focalX: img.focalX, focalY: img.focalY, caption }];
+        });
+        return (
+          <GallerySwiper
+            images={images}
+            settings={gallerySettings ?? DEFAULT_GALLERY_SETTINGS}
+            allowTouchMove={swiperAllowTouchMove}
+          />
+        );
+      }
+
       return (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {items.map((item) => {

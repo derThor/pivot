@@ -72,7 +72,19 @@ export function GlobalSearch({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Escape") setOpen(false);
+          if (e.key === "Escape") {
+            setOpen(false);
+            return;
+          }
+          // Enter -> vollständige Detailsuche-Seite statt der nur auf
+          // wenige Treffer je Bereich begrenzten Dropdown-Vorschau.
+          if (e.key === "Enter") {
+            const trimmed = query.trim();
+            if (trimmed.length < MIN_QUERY_LENGTH) return;
+            e.preventDefault();
+            setOpen(false);
+            router.push(`/dashboard/search?q=${encodeURIComponent(trimmed)}`);
+          }
         }}
       />
       {open && (

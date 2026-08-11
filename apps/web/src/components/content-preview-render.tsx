@@ -1,9 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import {
   BlockFieldOutput,
+  BlockSpacingWrapper,
+  CoverOutput,
   DividerOutput,
   TilesGridOutput,
   blockLayoutClasses,
+  isCoverModuleType,
   isDividerModule,
   isTilesModule,
   resolveBlockLayout,
@@ -11,6 +14,8 @@ import {
   type BlockLayoutValue,
 } from "@/components/block-field-output";
 import { RichTextDisplay } from "@/components/rich-text-display";
+import { toGallerySettings } from "@/lib/gallery-settings";
+import { cn } from "@/lib/utils";
 import type { ContentStatus, GlobalModule, ModuleType } from "@/lib/api-server";
 
 interface ModuleInstance {
@@ -100,28 +105,37 @@ export function ContentPreviewRender({
                   return (
                     <div
                       key={instance.id}
-                      className={blockLayoutClasses(layout.align)}
+                      className={cn("block-layout", blockLayoutClasses(layout.align, layout.width))}
                       style={{ width: `${layout.width}%` }}
                     >
-                      {isDividerModule(contentFields) ? (
-                        <DividerOutput />
-                      ) : isTilesModule(contentFields) ? (
-                        <TilesGridOutput
-                          contentFields={contentFields}
-                          values={resolved.values}
-                        />
-                      ) : (
-                        <div className="flow-root space-y-3">
-                          {contentFields.map((moduleField) => (
-                            <BlockFieldOutput
-                              key={moduleField.name}
-                              field={moduleField}
-                              value={resolved.values[moduleField.name]}
-                              applyOwnLayout={contentFields.length > 1}
-                            />
-                          ))}
-                        </div>
-                      )}
+                      <BlockSpacingWrapper layout={instance.layout}>
+                        {isDividerModule(contentFields) ? (
+                          <DividerOutput />
+                        ) : isTilesModule(contentFields) ? (
+                          <TilesGridOutput
+                            contentFields={contentFields}
+                            values={resolved.values}
+                          />
+                        ) : isCoverModuleType(contentFields) ? (
+                          <CoverOutput
+                            contentFields={contentFields}
+                            values={resolved.values}
+                          />
+                        ) : (
+                          <div className="flow-root space-y-3">
+                            {contentFields.map((moduleField) => (
+                              <BlockFieldOutput
+                                key={moduleField.name}
+                                field={moduleField}
+                                value={resolved.values[moduleField.name]}
+                                applyOwnLayout={contentFields.length > 1}
+                                interactive
+                                gallerySettings={toGallerySettings(resolved.settings)}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </BlockSpacingWrapper>
                     </div>
                   );
                 })}

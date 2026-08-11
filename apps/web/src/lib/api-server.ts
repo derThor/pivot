@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE } from "./auth";
+import type { SearchResult } from "./search";
 
 const API_URL = process.env.API_URL ?? "http://localhost:3001/v1";
 
@@ -105,8 +106,17 @@ export interface NavigationDetail {
   items: NavigationItemNode[];
 }
 
-export function getNavigations() {
-  return apiFetch<NavigationSummary[]>("/navigations");
+export interface NavigationListResponse {
+  items: NavigationSummary[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
+export function getNavigations(params?: { page?: number; pageSize?: number }) {
+  const query = new URLSearchParams();
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.pageSize) query.set("pageSize", String(params.pageSize));
+  const qs = query.toString();
+  return apiFetch<NavigationListResponse>(`/navigations${qs ? `?${qs}` : ""}`);
 }
 
 export function getNavigation(id: string) {
@@ -152,7 +162,10 @@ export interface ContentTypeField {
   // Nur für Modul-Felder relevant: reine CSS-Darstellungs-Hinweise für die
   // Inline-Vorschau im Block-Editor (kein echtes Rendering der späteren
   // Frontend-Optik, dafür ist strasev als Headless-CMS zu themenunabhängig).
-  variant?: "button" | "quote" | "caption";
+  // "cover" gilt nur für `type: "image"`-Felder: markiert das Bild eines
+  // Cover-Bausteins als Vollflächen-Hintergrund statt normaler
+  // Fließ-/Ausrichtungs-Logik (siehe isCoverModuleType).
+  variant?: "button" | "quote" | "caption" | "cover";
   // Nur für Modul-Felder relevant: Beispielwert, mit dem eine neu
   // eingefügte Modul-Instanz vorbefüllt wird, damit man beim Einfügen
   // sofort sieht, wie der Baustein aussieht, statt eine leere Fläche.
@@ -198,6 +211,9 @@ export interface GlobalModule {
   id: string;
   name: string;
   values: Record<string, unknown>;
+  // Anzeige-Einstellungen der Instanz (z.B. Swiper-Konfiguration bei
+  // Galerien) – siehe gallery-settings.ts für Parsing/Defaults.
+  settings?: Record<string, unknown> | null;
   moduleTypeId: string;
   moduleType: { id: string; name: string; icon: string | null };
   createdAt: string;
@@ -214,6 +230,36 @@ export function getGlobalModules() {
 
 export function getGlobalModule(id: string) {
   return publicApiFetch<GlobalModule>(`/global-modules/${id}`);
+}
+
+export interface GlobalModuleListResponse {
+  items: GlobalModule[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
+// Für die Galerien-/FAQ-Übersicht: paginiert und nach Modul-Typ gefiltert,
+// im Gegensatz zu `getGlobalModules()` (liefert immer ALLE globalen Module
+// unpaginiert – gebraucht von Stellen, die alle Referenzen zum Auflösen
+// brauchen, z.B. Block-Editor und Content-Vorschau).
+export function getGlobalModulesPaged(params: {
+  moduleTypeId: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const query = new URLSearchParams({ moduleTypeId: params.moduleTypeId });
+  query.set("page", String(params.page ?? 1));
+  if (params.pageSize) query.set("pageSize", String(params.pageSize));
+  return publicApiFetch<GlobalModuleListResponse>(
+    `/global-modules?${query.toString()}`,
+  );
+}
+
+// Für die Detailsuche-Ergebnisseite (dashboard/search) – höheres Limit als
+// die Dropdown-/Command-Palette-Vorschau (max. 50, siehe GlobalSearchDto).
+export function getSearchResults(q: string, limit = 50) {
+  return apiFetch<SearchResult[]>(
+    `/search?q=${encodeURIComponent(q)}&limit=${limit}`,
+  );
 }
 
 export interface ContentDetail extends ContentListItem {

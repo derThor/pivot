@@ -91,7 +91,15 @@ export function MediaCardActions({
 
   return (
     <div className="flex justify-end">
-      <div className="hidden items-center gap-1 md:flex">
+      {/* `flex-wrap` statt einer einzelnen, nicht umbrechenden Zeile: das
+          übergeordnete `<figure>` hat `overflow-hidden` (für die
+          abgerundeten Bildecken) – ohne Umbruch wurden bei schmalen
+          Kacheln (viele Icons, wenig Platz) die ersten Buttons einfach
+          unsichtbar abgeschnitten statt sichtbar zu bleiben. Mit
+          `flex-wrap` rutschen überzählige Icons stattdessen in eine
+          zweite Zeile, die Kachel wächst dafür einfach etwas in der
+          Höhe – nie mehr verschwindende Icons. */}
+      <div className="hidden flex-wrap items-center justify-end gap-1 md:flex">
         <Button
           type="button"
           variant="ghost"

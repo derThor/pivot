@@ -157,6 +157,7 @@ interface DraftSnapshot {
   scheduledForValue: string;
   categoryIds: string[];
   dataValues: Record<string, string>;
+  moduleValues: Record<string, ModuleInstance[]>;
   seoValues: SeoValues;
 }
 
@@ -170,7 +171,8 @@ function draftStorageKey(
 function isDraftWorthSaving(snapshot: DraftSnapshot) {
   return (
     snapshot.title.trim().length > 0 ||
-    Object.values(snapshot.dataValues).some((value) => value.trim().length > 0)
+    Object.values(snapshot.dataValues).some((value) => value.trim().length > 0) ||
+    Object.values(snapshot.moduleValues).some((instances) => instances.length > 0)
   );
 }
 
@@ -322,6 +324,7 @@ export function ContentEditorForm({
         scheduledForValue,
         categoryIds,
         dataValues,
+        moduleValues,
         seoValues,
       };
       if (!isDraftWorthSaving(snapshot)) return;
@@ -348,6 +351,7 @@ export function ContentEditorForm({
     scheduledForValue,
     categoryIds,
     dataValues,
+    moduleValues,
     seoValues,
   ]);
 
@@ -445,6 +449,7 @@ export function ContentEditorForm({
     setScheduledForValue(draftBanner.scheduledForValue);
     setCategoryIds(draftBanner.categoryIds);
     setDataValues(draftBanner.dataValues);
+    setModuleValues(draftBanner.moduleValues ?? {});
     setSeoValues(draftBanner.seoValues);
     setDraftBanner(null);
   }

@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { GlobalModulesService } from './global-modules.service';
 import { CreateGlobalModuleDto } from './dto/create-global-module.dto';
 import { UpdateGlobalModuleDto } from './dto/update-global-module.dto';
+import { QueryGlobalModuleDto } from './dto/query-global-module.dto';
 import { Public } from '../auth/decorators/public.decorator';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
 
@@ -20,8 +21,8 @@ export class GlobalModulesController {
 
   @Public()
   @Get()
-  findAll() {
-    return this.globalModulesService.findAll();
+  findAll(@Query() query: QueryGlobalModuleDto) {
+    return this.globalModulesService.findAll(query);
   }
 
   @Public()

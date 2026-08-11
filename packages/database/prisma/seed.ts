@@ -175,7 +175,7 @@ async function main() {
     type: string;
     required?: boolean;
     option?: boolean;
-    variant?: "button" | "quote" | "caption";
+    variant?: "button" | "quote" | "caption" | "cover";
     // `unknown` statt `string`, weil Repeater-Beispieldaten Arrays sind.
     example?: unknown;
     // Nur für `type: "repeater"`: Schema der Unterfelder pro Eintrag.
@@ -228,6 +228,53 @@ async function main() {
             required: true,
             example: `<p>${loremIpsumShort}</p>`,
           },
+        ],
+      },
+    },
+    {
+      name: "Video",
+      slug: "video",
+      icon: "Video",
+      schema: {
+        fields: [{ name: "video", type: "video", required: true }],
+      },
+    },
+    {
+      // Vollflächiges Hero-/Cover-Modul: Bild-Feld mit `variant: "cover"`
+      // markiert das Hintergrundbild als Vollflächen-Hintergrund statt
+      // normaler Fließ-/Ausrichtungs-Logik (siehe isCoverModuleType/
+      // CoverOutput in block-field-output.tsx – Form-/Variant-Erkennung
+      // statt Slug-Abfrage, wie bei allen anderen Bausteinen hier).
+      name: "Cover",
+      slug: "cover",
+      icon: "LayoutTemplate",
+      schema: {
+        fields: [
+          {
+            name: "backgroundImage",
+            type: "image",
+            required: true,
+            variant: "cover",
+            example: dummyImage,
+          },
+          {
+            name: "heading",
+            type: "string",
+            required: true,
+            example: "Überschrift",
+          },
+          {
+            name: "subtext",
+            type: "string",
+            example: "Kurzer Untertext für den Cover-Bereich.",
+          },
+          {
+            name: "buttonLabel",
+            type: "string",
+            variant: "button",
+            example: "Jetzt entdecken",
+          },
+          { name: "buttonUrl", type: "string", option: true, example: "/" },
         ],
       },
     },

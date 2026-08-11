@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { NavigationService } from './navigation.service';
@@ -14,6 +15,7 @@ import { UpdateNavigationDto } from './dto/update-navigation.dto';
 import { CreateNavigationItemDto } from './dto/create-navigation-item.dto';
 import { UpdateNavigationItemDto } from './dto/update-navigation-item.dto';
 import { ReorderNavigationItemsDto } from './dto/reorder-navigation-items.dto';
+import { QueryNavigationDto } from './dto/query-navigation.dto';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
 
 // Navigationen sind site-weite Struktur-Konfiguration (analog zu
@@ -27,8 +29,8 @@ export class NavigationController {
   constructor(private readonly navigationService: NavigationService) {}
 
   @Get()
-  findAll() {
-    return this.navigationService.findAll();
+  findAll(@Query() query: QueryNavigationDto) {
+    return this.navigationService.findAll(query);
   }
 
   @Get(':id')

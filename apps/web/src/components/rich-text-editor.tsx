@@ -126,12 +126,21 @@ export function RichTextEditor({
   onChange,
   id,
   editable = true,
+  maxHeight,
 }: {
   value: string;
   onChange?: (html: string) => void;
   id?: string;
   /** false = schreibgeschützte Vorschau ohne Toolbar (z.B. Versionshistorie). */
   editable?: boolean;
+  /** Feste Editor-Höhe (z.B. "16rem", als min- UND max-height gesetzt)
+   * statt beliebig mit dem Inhalt zu wachsen/schrumpfen – nur der Inhalt
+   * scrollt bei Überlänge, die Toolbar bleibt dank `sticky` oben sichtbar.
+   * Für FAQ-/Galerie-Kacheln gedacht (siehe module-field-input.tsx): dort
+   * sollen alle Kacheln im Grid gleich hoch bleiben, unabhängig davon wie
+   * viel Text ein einzelner Eintrag hat. Ohne Angabe wächst der Editor wie
+   * bisher unbegrenzt mit dem Inhalt. */
+  maxHeight?: string;
 }) {
   const [sourceMode, setSourceMode] = useState(false);
   const [sourceValue, setSourceValue] = useState("");
@@ -189,7 +198,11 @@ export function RichTextEditor({
     return (
       <div
         id={id}
-        className="rounded-lg border border-input bg-transparent dark:bg-input/30"
+        className={cn(
+          "rounded-lg border border-input bg-transparent dark:bg-input/30",
+          maxHeight && "overflow-y-auto",
+        )}
+        style={maxHeight ? { minHeight: maxHeight, maxHeight } : undefined}
       >
         <EditorContent editor={editor} className={editorContentClassName} />
       </div>
@@ -215,7 +228,11 @@ export function RichTextEditor({
   return (
     <div
       id={id}
-      className="flex h-full min-h-0 flex-1 flex-col gap-1 rounded-lg border border-input bg-transparent transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30"
+      className={cn(
+        "flex h-full min-h-0 flex-1 flex-col gap-1 rounded-lg border border-input bg-transparent transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30",
+        maxHeight && "overflow-y-auto",
+      )}
+      style={maxHeight ? { minHeight: maxHeight, maxHeight } : undefined}
     >
       <div className="sticky top-0 z-10 flex shrink-0 flex-wrap items-center gap-0.5 rounded-t-lg border-b border-input bg-background p-1">
         <Select

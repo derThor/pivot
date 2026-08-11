@@ -459,7 +459,13 @@ export function AppSidebar({
                             );
                           }
 
-                          const isSubOpen = openSubItems.has(item.url);
+                          // Ist dieses Item selbst (oder eines seiner Kinder)
+                          // aktiv, bleiben die Unterpunkte immer aufgeklappt
+                          // – unabhängig vom manuellen Auf-/Zuklapp-Status.
+                          // Der Toggle-Button wird in diesem Fall ausgeblendet,
+                          // da er ohnehin wirkungslos wäre.
+                          const isForcedOpen = itemMatchesActive(item, activeItemUrl);
+                          const isSubOpen = isForcedOpen || openSubItems.has(item.url);
                           return (
                             <SidebarMenuItem key={item.url}>
                               <div className="relative">
@@ -480,7 +486,7 @@ export function AppSidebar({
                                     {item.title}
                                   </span>
                                 </SidebarMenuButton>
-                                {hasChildren && (
+                                {hasChildren && !isForcedOpen && (
                                   <button
                                     type="button"
                                     onClick={(e) => {
