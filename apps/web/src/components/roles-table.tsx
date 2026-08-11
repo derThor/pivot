@@ -50,7 +50,7 @@ export function RolesTable({
         onDelete={handleBulkDelete}
         onClear={clear}
       />
-      <div className="rounded-2xl bg-card shadow-card overflow-hidden">
+      <div className="overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -67,7 +67,7 @@ export function RolesTable({
               <TableHead>Rechte</TableHead>
               <TableHead>Dashboard</TableHead>
               <TableHead>Benutzer</TableHead>
-              <TableHead className="text-right">Aktionen</TableHead>
+              <TableHead className="text-center">Aktionen</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

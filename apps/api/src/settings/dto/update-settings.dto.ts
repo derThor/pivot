@@ -76,6 +76,11 @@ export class UpdateSettingsDto {
   @IsString()
   logoCollapsedUrl?: string | null;
 
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @IsString()
+  authImageUrl?: string | null;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

@@ -30,74 +30,41 @@ export function ContentRowActions({
   }
 
   return (
-    <div className="flex justify-end">
-      {/* Ab md: einzelne Icons direkt in der Zeile. */}
-      <div className="hidden items-center gap-1 md:flex">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`Vorschau von ${title}`}
-          render={<Link href={`/dashboard/content/${id}/preview`} target="_blank" />}
+    <div className="flex justify-center">
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="rounded-full"
+              aria-label={`Aktionen für ${title}`}
+            />
+          }
         >
-          <Eye />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`${title} bearbeiten`}
-          render={<Link href={`/dashboard/content/${id}/edit`} />}
-        >
-          <Pencil />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`${title} löschen`}
-          onClick={() => setDeleteOpen(true)}
-        >
-          <Trash2 />
-        </Button>
-      </div>
-
-      {/* Unter md: Kebab-Menü, um in schmalen Zeilen Platz zu sparen. */}
-      <div className="md:hidden">
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="rounded-full"
-                aria-label={`Aktionen für ${title}`}
-              />
-            }
+          <MoreVertical />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            render={<Link href={`/dashboard/content/${id}/preview`} target="_blank" />}
           >
-            <MoreVertical />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              render={<Link href={`/dashboard/content/${id}/preview`} target="_blank" />}
-            >
-              <Eye />
-              Vorschau
-            </DropdownMenuItem>
-            <DropdownMenuItem render={<Link href={`/dashboard/content/${id}/edit`} />}>
-              <Pencil />
-              Bearbeiten
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={() => setDeleteOpen(true)}
-            >
-              <Trash2 />
-              Löschen
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+            <Eye />
+            Vorschau
+          </DropdownMenuItem>
+          <DropdownMenuItem render={<Link href={`/dashboard/content/${id}/edit`} />}>
+            <Pencil />
+            Bearbeiten
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 />
+            Löschen
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <ConfirmDeleteDialog
         open={deleteOpen}

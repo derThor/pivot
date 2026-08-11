@@ -31,6 +31,7 @@ export class SettingsService {
       defaultPageSize: settings.defaultPageSize,
       logoExpandedUrl: settings.logoExpandedUrl,
       logoCollapsedUrl: settings.logoCollapsedUrl,
+      authImageUrl: settings.authImageUrl,
       companyName: settings.companyName,
       companyStreet: settings.companyStreet,
       companyPostalCode: settings.companyPostalCode,

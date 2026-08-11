@@ -44,25 +44,33 @@ import { cn } from "@/lib/utils";
 import type { CurrentUser } from "@/lib/api-server";
 import { mediaUrl } from "@/lib/media";
 
+// Referenzbild: aktiver Eintrag ist ein moderat gerundetes Rechteck (kein
+// volles Pillen-Oval wie bei Buttons), Text/Icon fett und dunkel auf Lime.
 const navActiveClass =
-  "h-auto w-full gap-2 overflow-hidden rounded-none pl-10 pr-4 py-3 transition-[gap,padding] duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:pl-4 data-active:bg-gradient-to-r data-active:from-orange-400 data-active:to-rose-500 data-active:text-white data-active:shadow-sm data-active:hover:text-white";
+  "h-auto w-full gap-3 overflow-hidden rounded-xl pl-3 pr-4 py-2.5 transition-[gap,padding] duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:pl-3 data-active:bg-primary data-active:font-semibold data-active:text-primary-foreground data-active:hover:text-primary-foreground";
 
 // Footer-Einträge (Einstellungen/Abmelden) liegen direkt im gepolsterten
-// SidebarFooter, nicht in dem eigenen Voll-Breite-Wrapper der
-// Akkordeon-Gruppen – bekommen deshalb ihren eigenen Rand-zu-Rand-Trick
-// und dieselbe Einrückung wie die erste Ebene (Gruppen-Header).
+// SidebarFooter (hat bereits eigenes `p-2`, siehe ui/sidebar.tsx) –
+// bekommen dieselbe Optik wie die Haupt-Items, keinen Rand-zu-Rand-Trick
+// mehr nötig, da das Rechteck ohnehin innerhalb des Footer-Innenabstands
+// sitzt.
 const navFooterActiveClass =
-  "-mx-2 h-auto w-[calc(100%+1rem)] gap-2 overflow-hidden rounded-none px-4 py-3 transition-[gap,padding] duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 data-active:bg-gradient-to-r data-active:from-orange-400 data-active:to-rose-500 data-active:text-white data-active:shadow-sm data-active:hover:text-white";
+  "h-auto w-full gap-3 overflow-hidden rounded-xl px-3 py-2.5 transition-[gap,padding] duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 data-active:bg-primary data-active:font-semibold data-active:text-primary-foreground data-active:hover:text-primary-foreground";
 
 const navLabelClass =
   "overflow-hidden whitespace-nowrap transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0";
 
+// Icons OHNE eigenen Hintergrund-Chip (Nutzervorgabe) – nur Größe/Farbe
+// vereinheitlicht, damit Icon und Label sauber ausgerichtet bleiben.
+const navIconChipClass =
+  "flex size-7 shrink-0 items-center justify-center text-sidebar-foreground/70 transition-colors group-data-active/menu-button:text-primary-foreground [&_svg]:size-4";
+
 // Unterpunkte (z.B. "FAQs"/"Galerien" unter "Seiten") – deutlich tiefer
-// eingerückt als `navActiveClass` (pl-10), sonst wirken sie bei diesem
-// stark angepassten, randlosen Zeilen-Design nicht wie eine verschachtelte
-// Ebene, sondern wie normale gleichrangige Einträge.
+// eingerückt als `navActiveClass` (pl-3), sonst wirken sie bei diesem
+// Rechteck-Zeilen-Design nicht wie eine verschachtelte Ebene, sondern wie
+// normale gleichrangige Einträge.
 const navSubActiveClass =
-  "h-auto w-full gap-2 overflow-hidden rounded-none pl-16 pr-4 py-2 text-sm transition-[gap,padding] duration-200 ease-linear data-active:bg-gradient-to-r data-active:from-orange-400 data-active:to-rose-500 data-active:text-white data-active:shadow-sm data-active:hover:text-white";
+  "h-auto w-full gap-2 overflow-hidden rounded-xl pl-10 pr-4 py-2 text-sm transition-[gap,padding] duration-200 ease-linear data-active:bg-primary data-active:font-semibold data-active:text-primary-foreground data-active:hover:text-primary-foreground";
 
 // Exportiert, damit `dashboard-breadcrumbs.tsx` dieselbe Gruppen-/Item-
 // Struktur wiederverwenden kann – eine einzige Quelle für "welche Seite
@@ -183,19 +191,6 @@ function findBestMatchingUrl(pathname: string, urls: string[]): string | null {
   return best;
 }
 
-function groupLabelForItemUrl(url: string | null): string | null {
-  if (!url) return null;
-  for (const group of navGroups) {
-    for (const item of group.items) {
-      if (item.url === url) return group.label;
-      if ("children" in item && item.children.some((c) => c.url === url)) {
-        return group.label;
-      }
-    }
-  }
-  return null;
-}
-
 /** Ist `activeItemUrl` das Item selbst ODER eines seiner Unterpunkte
  * (siehe `SidebarMenuSub` unten) – steuert sowohl die Hervorhebung des
  * Eltern-Items als auch die fette Gruppen-Beschriftung. */
@@ -237,19 +232,13 @@ export function AppSidebar({
     .filter((group) => group.originalItemCount === 0 || group.items.length > 0);
   const canManageSettings = permissions.includes("settings:manage");
 
-  // Best-match aktive Item-URL für den aktuellen Pfad – wird sowohl für
-  // die Hervorhebung des Menüpunkts als auch für die fette
-  // Gruppen-Beschriftung verwendet (siehe `findBestMatchingUrl`).
+  // Best-match aktive Item-URL für den aktuellen Pfad – steuert die
+  // Hervorhebung des Menüpunkts (siehe `findBestMatchingUrl`). Gruppen
+  // selbst klappen nicht mehr auf/zu (siehe Kommentar bei `isOpen` unten),
+  // daher wird hier keine aktive Gruppen-Beschriftung mehr gebraucht.
   const activeItemUrl = findBestMatchingUrl(
     ROUTE_ALIASES[pathname] ?? pathname,
     ALL_ITEM_URLS,
-  );
-  const activeGroupLabel = groupLabelForItemUrl(activeItemUrl);
-
-  // Akkordeon-Verhalten: immer höchstens eine Gruppe gleichzeitig
-  // aufgeklappt – öffnet man eine, schließt sich die vorherige.
-  const [openGroup, setOpenGroup] = React.useState<string | null>(
-    () => activeGroupLabel,
   );
   // Unterpunkte (z.B. "FAQs"/"Galerien" unter "Seiten") klappen unabhängig
   // von den Gruppen auf/zu, mehrere gleichzeitig möglich – Set statt
@@ -279,9 +268,6 @@ export function AppSidebar({
   const [syncedPathname, setSyncedPathname] = React.useState(pathname);
   if (pathname !== syncedPathname) {
     setSyncedPathname(pathname);
-    if (activeGroupLabel && activeGroupLabel !== openGroup) {
-      setOpenGroup(activeGroupLabel);
-    }
     for (const group of navGroups) {
       for (const item of group.items) {
         if (
@@ -293,10 +279,6 @@ export function AppSidebar({
         }
       }
     }
-  }
-
-  function toggleGroup(label: string) {
-    setOpenGroup((prev) => (prev === label ? null : label));
   }
 
   function toggleSubItem(url: string) {
@@ -320,7 +302,7 @@ export function AppSidebar({
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b">
+      <SidebarHeader className="border-b px-[25px] transition-[padding] duration-200 ease-linear group-data-[collapsible=icon]:px-[10px]">
         <div className="flex items-center gap-2 py-2 transition-[gap] duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
           <div className="flex h-12 w-0 shrink-0 items-center justify-center overflow-hidden rounded-xl opacity-0 shadow-sm transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:opacity-100">
             {logoCollapsedUrl ? (
@@ -331,7 +313,7 @@ export function AppSidebar({
                 className="size-full object-contain"
               />
             ) : (
-              <div className="flex size-full items-center justify-center bg-gradient-to-br from-orange-400 to-rose-500 text-sm font-semibold text-white">
+              <div className="flex size-full items-center justify-center bg-primary text-sm font-semibold text-primary-foreground">
                 {fallbackInitials(companyName)}
               </div>
             )}
@@ -362,36 +344,20 @@ export function AppSidebar({
           if (sidebarState === "collapsed" && group.items.length === 0) {
             return null;
           }
-          const isExpanded = openGroup === group.label;
-          const isOpen = sidebarState === "collapsed" || isExpanded;
-          const isEmphasized = group.items.some((item) =>
-            itemMatchesActive(item, activeItemUrl),
-          );
+          // Maglo-Referenz zeigt eine flache Liste ohne Auf-/Zuklapp-
+          // Menü – bei ~13 Menüpunkten braucht strasev weiterhin eine
+          // Gruppierung fürs Auffinden, aber nicht mehr als interaktives
+          // Akkordeon: Gruppen sind immer aufgeklappt, die Beschriftung
+          // ist nur noch ein schlichtes, nicht klickbares Abschnitts-Label
+          // (kein Icon, kein Pfeil, keine Hintergrund-/Rand-zu-Rand-Optik).
+          const isOpen = true;
           return (
-            <SidebarGroup key={group.label}>
-              <SidebarGroupLabel
-                render={<button type="button" />}
-                onClick={() => toggleGroup(group.label)}
-                className="-mx-2 w-[calc(100%+1rem)] cursor-pointer justify-between gap-2 rounded-none px-4 text-sm font-normal text-sidebar-foreground"
-              >
-                <span className="flex min-w-0 items-center gap-2">
-                  <group.icon className="size-4 shrink-0" />
-                  <span
-                    className={cn(
-                      navLabelClass,
-                      isEmphasized && "font-semibold",
-                    )}
-                  >
-                    {group.label}
-                  </span>
-                </span>
-                <ChevronRight
-                  className={cn(
-                    "size-4 shrink-0 transition-transform duration-200 ease-linear",
-                    navLabelClass,
-                    isOpen && "rotate-90",
-                  )}
-                />
+            <SidebarGroup
+              key={group.label}
+              className="px-[25px] transition-[padding] duration-200 ease-linear group-data-[collapsible=icon]:px-[10px]"
+            >
+              <SidebarGroupLabel className="px-1 pt-2 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
+                <span className={navLabelClass}>{group.label}</span>
               </SidebarGroupLabel>
               <div
                 className={cn(
@@ -432,7 +398,9 @@ export function AppSidebar({
                                     tooltip={item.title}
                                     className={navActiveClass}
                                   >
-                                    <item.icon />
+                                    <span className={navIconChipClass}>
+                                      <item.icon />
+                                    </span>
                                     <span className={navLabelClass}>
                                       {item.title}
                                     </span>
@@ -448,7 +416,9 @@ export function AppSidebar({
                                         tooltip={child.title}
                                         className={navActiveClass}
                                       >
-                                        <child.icon />
+                                        <span className={navIconChipClass}>
+                                          <child.icon />
+                                        </span>
                                         <span className={navLabelClass}>
                                           {child.title}
                                         </span>
@@ -475,7 +445,9 @@ export function AppSidebar({
                                   tooltip={item.title}
                                   className={cn(navActiveClass, hasChildren && "pr-9")}
                                 >
-                                  <item.icon />
+                                  <span className={navIconChipClass}>
+                                    <item.icon />
+                                  </span>
                                   <span
                                     className={cn(
                                       navLabelClass,
@@ -550,7 +522,7 @@ export function AppSidebar({
           );
         })}
       </SidebarContent>
-      <SidebarFooter className="border-t">
+      <SidebarFooter className="border-t px-[25px] transition-[padding] duration-200 ease-linear group-data-[collapsible=icon]:px-[10px]">
         <SidebarMenu>
           {canManageSettings && (
             <SidebarMenuItem>
@@ -560,7 +532,9 @@ export function AppSidebar({
                 tooltip="Einstellungen"
                 className={navFooterActiveClass}
               >
-                <Settings />
+                <span className={navIconChipClass}>
+                  <Settings />
+                </span>
                 <span className={navLabelClass}>Einstellungen</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -572,7 +546,9 @@ export function AppSidebar({
               tooltip="Abmelden"
               className={navFooterActiveClass}
             >
-              <LogOut />
+              <span className={navIconChipClass}>
+                <LogOut />
+              </span>
               <span className={navLabelClass}>
                 {isLoggingOut ? "Wird abgemeldet…" : "Abmelden"}
               </span>

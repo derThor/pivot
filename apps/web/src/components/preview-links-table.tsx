@@ -90,7 +90,7 @@ export function PreviewLinksTable({
         onDelete={handleBulkDelete}
         onClear={clear}
       />
-      <div className="rounded-2xl bg-card shadow-card overflow-hidden">
+      <div className="overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -105,7 +105,7 @@ export function PreviewLinksTable({
               <TableHead>Inhalt</TableHead>
               <TableHead>Läuft ab</TableHead>
               <TableHead>Erstellt von</TableHead>
-              <TableHead className="text-right">Aktionen</TableHead>
+              <TableHead className="text-center">Aktionen</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -145,70 +145,47 @@ export function PreviewLinksTable({
                   </TableCell>
                   <TableCell>{formatName(link.createdBy)}</TableCell>
                   <TableCell>
-                    <div className="flex justify-end">
-                      <div className="hidden items-center gap-1 md:flex">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label="Link kopieren"
-                          onClick={() => handleCopy(link)}
-                        >
-                          {copiedId === link.id ? <Check /> : <Copy />}
-                        </Button>
-                        <EditPreviewLinkDialog link={link} />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label="Link widerrufen"
-                          onClick={() => setDeleteTarget(link)}
-                        >
-                          <Trash2 />
-                        </Button>
-                      </div>
-
-                      <div className="md:hidden">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger
-                            render={
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                className="rounded-full"
-                                aria-label={`Aktionen für Vorschau-Link „${link.content.title}“`}
-                              />
-                            }
-                          >
-                            <MoreVertical />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleCopy(link)}>
-                              <Copy />
-                              Link kopieren
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setEditOpenId(link.id)}>
-                              <Pencil />
-                              Bearbeiten
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={() => setDeleteTarget(link)}
-                            >
-                              <Trash2 />
-                              Widerrufen
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        <EditPreviewLinkDialog
-                          link={link}
-                          hideTrigger
-                          open={editOpenId === link.id}
-                          onOpenChange={(next) =>
-                            setEditOpenId(next ? link.id : null)
+                    <div className="flex justify-center">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              className="rounded-full"
+                              aria-label={`Aktionen für Vorschau-Link „${link.content.title}“`}
+                            />
                           }
-                        />
-                      </div>
+                        >
+                          <MoreVertical />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleCopy(link)}>
+                            {copiedId === link.id ? <Check /> : <Copy />}
+                            Link kopieren
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setEditOpenId(link.id)}>
+                            <Pencil />
+                            Bearbeiten
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => setDeleteTarget(link)}
+                          >
+                            <Trash2 />
+                            Widerrufen
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <EditPreviewLinkDialog
+                        link={link}
+                        hideTrigger
+                        open={editOpenId === link.id}
+                        onOpenChange={(next) =>
+                          setEditOpenId(next ? link.id : null)
+                        }
+                      />
                     </div>
                   </TableCell>
                 </TableRow>

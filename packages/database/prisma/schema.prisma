@@ -63,6 +63,7 @@ model AppSettings {
   defaultPageSize            Int      @default(10)
   logoExpandedUrl            String?
   logoCollapsedUrl           String?
+  authImageUrl               String?
   companyName                String?
   companyStreet              String?
   companyPostalCode          String?

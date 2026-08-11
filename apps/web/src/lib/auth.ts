@@ -19,7 +19,11 @@ export interface TokenPair {
   refreshToken: string;
 }
 
-export function buildAuthCookies(tokens: TokenPair) {
+// `remember=false` (Login-Formular "Angemeldet bleiben" abgewählt): das
+// Refresh-Cookie bekommt keine `maxAge` und wird damit zum reinen
+// Session-Cookie (verschwindet beim Schließen des Browsers), statt wie im
+// Standardfall 30 Tage zu gelten.
+export function buildAuthCookies(tokens: TokenPair, remember = true) {
   return [
     {
       name: ACCESS_TOKEN_COOKIE,
@@ -29,7 +33,9 @@ export function buildAuthCookies(tokens: TokenPair) {
     {
       name: REFRESH_TOKEN_COOKIE,
       value: tokens.refreshToken,
-      options: { ...baseCookieOptions, maxAge: 30 * 24 * 60 * 60 },
+      options: remember
+        ? { ...baseCookieOptions, maxAge: 30 * 24 * 60 * 60 }
+        : baseCookieOptions,
     },
   ];
 }

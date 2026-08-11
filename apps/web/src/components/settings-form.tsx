@@ -144,7 +144,7 @@ export function SettingsForm({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="flex w-full flex-col gap-4"
+        className="flex w-full max-w-[1000px] flex-col gap-4"
       >
         <Tabs defaultValue="company">
           <TabsList>
@@ -202,6 +202,24 @@ export function SettingsForm({
                   field="logoCollapsedUrl"
                   label="Logo (eingeklappt)"
                   currentUrl={settings.logoCollapsedUrl}
+                  folderId={logoFolderId}
+                />
+              </CardContent>
+            </Card>
+
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Anmelde-Bild</CardTitle>
+                <CardDescription>
+                  Wird auf der Login- und Registrierungsseite rechts neben
+                  dem Formular angezeigt.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <LogoUploadField
+                  field="authImageUrl"
+                  label="Bild"
+                  currentUrl={settings.authImageUrl}
                   folderId={logoFolderId}
                 />
               </CardContent>

@@ -516,6 +516,7 @@ export interface AppSettings {
   defaultPageSize: number;
   logoExpandedUrl: string | null;
   logoCollapsedUrl: string | null;
+  authImageUrl: string | null;
   companyName: string | null;
   companyStreet: string | null;
   companyPostalCode: string | null;

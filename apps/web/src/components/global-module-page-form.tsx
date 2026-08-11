@@ -264,7 +264,7 @@ export function GlobalModulePageForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex w-full max-w-[1000px] flex-col gap-4">
       <Card>
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">

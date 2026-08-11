@@ -56,7 +56,7 @@ export function UsersTable({
         onDelete={handleBulkDelete}
         onClear={clear}
       />
-      <div className="rounded-2xl bg-card shadow-card overflow-hidden">
+      <div className="overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -72,7 +72,7 @@ export function UsersTable({
               <TableHead>E-Mail</TableHead>
               <TableHead>Rolle</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Aktionen</TableHead>
+              <TableHead className="text-center">Aktionen</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

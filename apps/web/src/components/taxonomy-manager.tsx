@@ -47,54 +47,32 @@ function TaxonomyRowActions({
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   return (
-    <div className="flex justify-end">
-      <div className="hidden items-center gap-1 md:flex">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`${item.name} bearbeiten`}
-          onClick={() => setEditOpen(true)}
+    <div className="flex justify-center">
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="rounded-full"
+              aria-label={`Aktionen für ${item.name}`}
+            />
+          }
         >
-          <Pencil />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`${item.name} löschen`}
-          onClick={() => setDeleteOpen(true)}
-        >
-          <Trash2 />
-        </Button>
-      </div>
-
-      <div className="md:hidden">
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="rounded-full"
-                aria-label={`Aktionen für ${item.name}`}
-              />
-            }
-          >
-            <MoreVertical />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setEditOpen(true)}>
-              <Pencil />
-              Bearbeiten
-            </DropdownMenuItem>
-            <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
-              <Trash2 />
-              Löschen
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+          <MoreVertical />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setEditOpen(true)}>
+            <Pencil />
+            Bearbeiten
+          </DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
+            <Trash2 />
+            Löschen
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <TaxonomyItemDialog
         apiPath={apiPath}
@@ -161,7 +139,7 @@ export function TaxonomyManager({
         onDelete={handleBulkDelete}
         onClear={clear}
       />
-      <div className="rounded-2xl bg-card shadow-card overflow-hidden">
+      <div className="overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -176,7 +154,7 @@ export function TaxonomyManager({
               <TableHead>Name</TableHead>
               <TableHead>Slug</TableHead>
               {withDescription && <TableHead>Beschreibung</TableHead>}
-              <TableHead className="text-right">Aktionen</TableHead>
+              <TableHead className="text-center">Aktionen</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

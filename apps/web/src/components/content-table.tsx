@@ -62,7 +62,7 @@ export function ContentTable({ entries }: { entries: ContentListItem[] }) {
         onDelete={handleBulkDelete}
         onClear={clear}
       />
-      <div className="rounded-2xl bg-card shadow-card overflow-hidden">
+      <div className="overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -79,7 +79,7 @@ export function ContentTable({ entries }: { entries: ContentListItem[] }) {
               <TableHead>Status</TableHead>
               <TableHead>Kategorien</TableHead>
               <TableHead>Zuletzt bearbeitet</TableHead>
-              <TableHead className="text-right">Aktionen</TableHead>
+              <TableHead className="text-center">Aktionen</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

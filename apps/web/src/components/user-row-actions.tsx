@@ -36,61 +36,37 @@ export function UserRowActions({
   }
 
   return (
-    <div className="flex justify-end">
-      <div className="hidden items-center gap-1 md:flex">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`${name} bearbeiten`}
-          onClick={() => setEditOpen(true)}
+    <div className="flex justify-center">
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="rounded-full"
+              aria-label={`Aktionen für ${name}`}
+            />
+          }
         >
-          <Pencil />
-        </Button>
-        {!isSelf && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label={`${name} löschen`}
-            onClick={() => setDeleteOpen(true)}
-          >
-            <Trash2 />
-          </Button>
-        )}
-      </div>
-
-      <div className="md:hidden">
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="rounded-full"
-                aria-label={`Aktionen für ${name}`}
-              />
-            }
-          >
-            <MoreVertical />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setEditOpen(true)}>
-              <Pencil />
-              Bearbeiten
+          <MoreVertical />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setEditOpen(true)}>
+            <Pencil />
+            Bearbeiten
+          </DropdownMenuItem>
+          {!isSelf && (
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 />
+              Löschen
             </DropdownMenuItem>
-            {!isSelf && (
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => setDeleteOpen(true)}
-              >
-                <Trash2 />
-                Löschen
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <EditUserDialog
         user={user}

@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -22,6 +23,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 const loginSchema = z.object({
   email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben."),
   password: z.string().min(1, "Passwort ist erforderlich."),
+  remember: z.boolean(),
 });
 
 type LoginValues = z.infer<typeof loginSchema>;
@@ -39,7 +41,7 @@ export function LoginForm({
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { email: "", password: "", remember: true },
   });
 
   async function onSubmit(values: LoginValues) {
@@ -109,6 +111,21 @@ export function LoginForm({
                 <PasswordInput {...field} />
               </FormControl>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="remember"
+          render={({ field }) => (
+            <FormItem>
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={(checked) => field.onChange(checked === true)}
+                />
+                Angemeldet bleiben (30 Tage)
+              </label>
             </FormItem>
           )}
         />

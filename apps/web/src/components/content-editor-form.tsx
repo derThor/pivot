@@ -814,7 +814,12 @@ export function ContentEditorForm({
             <div
               className={cn(
                 "grid grid-cols-1 gap-6",
-                editorFields.length > 0 && "lg:grid-cols-[360px_1fr]",
+                // Max-Breite 550px (Nutzervorgabe) nur im einspaltigen
+                // Standardfall – hat ein Content-Type zusätzliche eigene
+                // Felder, braucht die zweispaltige Grid mehr Platz.
+                editorFields.length > 0
+                  ? "lg:grid-cols-[360px_1fr]"
+                  : "max-w-[550px]",
               )}
             >
               <Card>
@@ -1117,7 +1122,7 @@ export function ContentEditorForm({
             </div>
           </TabsContent>
 
-          <TabsContent value="seo">
+          <TabsContent value="seo" className="max-w-[550px]">
             <Card>
               <CardContent className="flex flex-col gap-6">
                 <div className="flex flex-col gap-2">

@@ -38,14 +38,14 @@ export function NavigationsManager({ items }: { items: NavigationSummary[] }) {
   }
 
   return (
-    <div className="rounded-2xl bg-card shadow-card overflow-hidden">
+    <div className="overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Slug</TableHead>
             <TableHead>Einträge</TableHead>
-            <TableHead className="text-right">Aktionen</TableHead>
+            <TableHead className="text-center">Aktionen</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -74,76 +74,51 @@ export function NavigationsManager({ items }: { items: NavigationSummary[] }) {
                 </TableCell>
                 <TableCell>{navigation._count.items}</TableCell>
                 <TableCell>
-                  <div className="flex justify-end">
-                    <div className="hidden items-center gap-1 md:flex">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={`${navigation.name} öffnen`}
+                  <div className="flex justify-center">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
                         render={
-                          <Link href={`/dashboard/navigation/${navigation.id}`} />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="rounded-full"
+                            aria-label={`Aktionen für ${navigation.name}`}
+                          />
                         }
                       >
-                        <ArrowRight />
-                      </Button>
-                      <NavigationDialog navigation={navigation} />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={`${navigation.name} löschen`}
-                        onClick={() => setDeleteTarget(navigation)}
-                      >
-                        <Trash2 />
-                      </Button>
-                    </div>
-
-                    <div className="md:hidden">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
+                        <MoreVertical />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
                           render={
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              className="rounded-full"
-                              aria-label={`Aktionen für ${navigation.name}`}
-                            />
+                            <Link href={`/dashboard/navigation/${navigation.id}`} />
                           }
                         >
-                          <MoreVertical />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            render={
-                              <Link href={`/dashboard/navigation/${navigation.id}`} />
-                            }
-                          >
-                            <ArrowRight />
-                            Öffnen
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setEditOpenId(navigation.id)}>
-                            <Pencil />
-                            Bearbeiten
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onClick={() => setDeleteTarget(navigation)}
-                          >
-                            <Trash2 />
-                            Löschen
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <NavigationDialog
-                        navigation={navigation}
-                        hideTrigger
-                        open={editOpenId === navigation.id}
-                        onOpenChange={(next) =>
-                          setEditOpenId(next ? navigation.id : null)
-                        }
-                      />
-                    </div>
+                          <ArrowRight />
+                          Öffnen
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setEditOpenId(navigation.id)}>
+                          <Pencil />
+                          Bearbeiten
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => setDeleteTarget(navigation)}
+                        >
+                          <Trash2 />
+                          Löschen
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <NavigationDialog
+                      navigation={navigation}
+                      hideTrigger
+                      open={editOpenId === navigation.id}
+                      onOpenChange={(next) =>
+                        setEditOpenId(next ? navigation.id : null)
+                      }
+                    />
                   </div>
                 </TableCell>
               </TableRow>
