@@ -98,8 +98,12 @@ export function MediaCardActions({
           unsichtbar abgeschnitten statt sichtbar zu bleiben. Mit
           `flex-wrap` rutschen überzählige Icons stattdessen in eine
           zweite Zeile, die Kachel wächst dafür einfach etwas in der
-          Höhe – nie mehr verschwindende Icons. */}
-      <div className="hidden flex-wrap items-center justify-end gap-1 md:flex">
+          Höhe – nie mehr verschwindende Icons. Zusätzlich `max-w-[132px]`:
+          ohne feste Breite würden bei breiten Kacheln bis zu 5-6 Icons in
+          eine Zeile passen – die Breite ist hier bewusst auf knapp 4
+          Icon-Buttons (je `size-7` + `gap-1`) gedeckelt, damit maximal 4
+          pro Zeile stehen, unabhängig von der Kachelbreite. */}
+      <div className="hidden max-w-[132px] flex-wrap items-center justify-end gap-1 md:flex">
         <Button
           type="button"
           variant="ghost"
