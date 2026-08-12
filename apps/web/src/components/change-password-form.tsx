@@ -95,7 +95,7 @@ export function ChangePasswordForm({
   }
 
   return (
-    <Card>
+    <Card className="border-none bg-transparent shadow-none">
       <CardHeader>
         <CardTitle>Passwort ändern</CardTitle>
         <CardDescription>
@@ -107,7 +107,7 @@ export function ChangePasswordForm({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col gap-4"
+            className="flex flex-col gap-10"
           >
             <FormField
               control={form.control}

@@ -85,7 +85,7 @@ export function AccountForm({
   }
 
   return (
-    <Card>
+    <Card className="border-none bg-transparent shadow-none">
       <CardHeader>
         <CardTitle>Profil</CardTitle>
         <CardDescription>Deine Kontodaten.</CardDescription>
@@ -94,9 +94,9 @@ export function AccountForm({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col gap-4"
+            className="flex flex-col gap-10"
           >
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-x-10 gap-y-10 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="firstName"

@@ -458,6 +458,19 @@ export function AppSidebar({
                                     {item.title}
                                   </span>
                                 </SidebarMenuButton>
+                                {hasChildren && isForcedOpen && (
+                                  // Aktiv (erzwungen aufgeklappt): der Pfeil
+                                  // bleibt sichtbar und zeigt den offenen
+                                  // Zustand (nach unten gedreht) – nur ohne
+                                  // Klick-Handler, da Zu-/Aufklappen hier
+                                  // ohnehin wirkungslos wäre.
+                                  <span
+                                    aria-hidden
+                                    className="absolute top-1/2 right-2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-sidebar-foreground"
+                                  >
+                                    <ChevronRight className="size-4 rotate-90" />
+                                  </span>
+                                )}
                                 {hasChildren && !isForcedOpen && (
                                   <button
                                     type="button"

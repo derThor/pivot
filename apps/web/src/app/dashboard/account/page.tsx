@@ -24,10 +24,13 @@ export default async function AccountPage() {
   };
 
   return (
-    <div className="flex max-w-[550px] flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <PageHeader title="Konto" />
 
-      <Tabs defaultValue="profile">
+      <Tabs
+        defaultValue="profile"
+        className="w-full max-w-[1000px] rounded-[10px] bg-[#FAFAFA] p-6"
+      >
         <TabsList>
           <TabsTrigger value="profile">Profil</TabsTrigger>
           <TabsTrigger value="security">Sicherheit</TabsTrigger>

@@ -32,15 +32,15 @@ export default async function NavigationDetailPage({
           Zurück zur Übersicht
         </Button>
       </div>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight break-words">
             {navigation.name}
           </h1>
-          <p className="text-sm text-muted-foreground">/{navigation.slug}</p>
+          <p className="text-sm text-muted-foreground break-words">/{navigation.slug}</p>
           <DashboardBreadcrumbs />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <NavigationDialog navigation={navigation} />
           <NavigationItemDialog
             navigationId={navigation.id}
@@ -54,11 +54,13 @@ export default async function NavigationDetailPage({
           />
         </div>
       </div>
-      <NavigationItemsEditor
-        navigationId={navigation.id}
-        items={navigation.items}
-        contentItems={content?.items ?? []}
-      />
+      <div className="w-full max-w-[1000px] rounded-[10px] bg-[#FAFAFA] p-6">
+        <NavigationItemsEditor
+          navigationId={navigation.id}
+          items={navigation.items}
+          contentItems={content?.items ?? []}
+        />
+      </div>
     </div>
   );
 }

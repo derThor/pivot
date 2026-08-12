@@ -144,7 +144,7 @@ export function SettingsForm({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="flex w-full max-w-[1000px] flex-col gap-4"
+        className="flex w-full max-w-[1000px] flex-col gap-4 rounded-[10px] bg-[#FAFAFA] p-6"
       >
         <Tabs defaultValue="company">
           <TabsList>
@@ -157,14 +157,14 @@ export function SettingsForm({
           </TabsList>
 
           <TabsContent value="company">
-            <Card>
+            <Card className="border-none bg-transparent shadow-none">
               <CardHeader>
                 <CardTitle>Firmenangaben</CardTitle>
                 <CardDescription>
                   Für Impressum und Datenschutzhinweise.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="grid grid-cols-2 gap-4">
+              <CardContent className="grid grid-cols-1 gap-x-10 gap-y-10 sm:grid-cols-2">
                 {companyFields.map(({ key, label }) => (
                   <div key={key} className="flex flex-col gap-2">
                     <Label htmlFor={key}>{label}</Label>
@@ -183,15 +183,15 @@ export function SettingsForm({
               </CardContent>
             </Card>
 
-            <Card className="mt-6">
+            <Card className="mt-6 border-none bg-transparent shadow-none">
               <CardHeader>
                 <CardTitle>Logo</CardTitle>
                 <CardDescription>
-                  Wird in der Seitenleiste angezeigt – je ein Logo für den
-                  aus- und eingeklappten Zustand.
+                  Aus-/eingeklapptes Logo für die Seitenleiste sowie das Bild
+                  neben dem Formular auf der Login- und Registrierungsseite.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col gap-4">
+              <CardContent className="grid grid-cols-1 gap-x-10 gap-y-10 sm:grid-cols-3">
                 <LogoUploadField
                   field="logoExpandedUrl"
                   label="Logo (ausgeklappt)"
@@ -204,21 +204,9 @@ export function SettingsForm({
                   currentUrl={settings.logoCollapsedUrl}
                   folderId={logoFolderId}
                 />
-              </CardContent>
-            </Card>
-
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Anmelde-Bild</CardTitle>
-                <CardDescription>
-                  Wird auf der Login- und Registrierungsseite rechts neben
-                  dem Formular angezeigt.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
                 <LogoUploadField
                   field="authImageUrl"
-                  label="Bild"
+                  label="Anmelde-Bild"
                   currentUrl={settings.authImageUrl}
                   folderId={logoFolderId}
                 />
@@ -227,14 +215,14 @@ export function SettingsForm({
           </TabsContent>
 
           <TabsContent value="access">
-            <Card>
+            <Card className="border-none bg-transparent shadow-none">
               <CardHeader>
                 <CardTitle>Zugriff & Funktionen</CardTitle>
                 <CardDescription>
                   Steuert, welche Selbstbedienungs-Funktionen verfügbar sind.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col divide-y">
+              <CardContent className="flex flex-col gap-10">
                 <FormField
                   control={form.control}
                   name="allowRegistration"
@@ -324,7 +312,7 @@ export function SettingsForm({
           </TabsContent>
 
           <TabsContent value="password-policy">
-            <Card>
+            <Card className="border-none bg-transparent shadow-none">
               <CardHeader>
                 <CardTitle>Passwort-Richtlinie</CardTitle>
                 <CardDescription>
@@ -332,13 +320,13 @@ export function SettingsForm({
                   Passwort-Reset.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col gap-2">
+              <CardContent className="flex flex-col gap-10">
                 <FormField
                   control={form.control}
                   name="passwordMinLength"
                   render={({ field }) => (
                     <FormItem>
-                      <div className="flex items-center justify-between gap-4 py-2">
+                      <div className="flex items-center justify-between gap-4">
                         <Label htmlFor="passwordMinLength">Mindestlänge</Label>
                         <FormControl>
                           <Input
@@ -357,7 +345,7 @@ export function SettingsForm({
                     </FormItem>
                   )}
                 />
-                <div className="divide-y">
+                <div className="flex flex-col gap-10">
                   <FormField
                     control={form.control}
                     name="passwordRequireUppercase"
@@ -420,7 +408,7 @@ export function SettingsForm({
           </TabsContent>
 
           <TabsContent value="display">
-            <Card>
+            <Card className="border-none bg-transparent shadow-none">
               <CardHeader>
                 <CardTitle>Darstellung</CardTitle>
                 <CardDescription>
@@ -435,7 +423,7 @@ export function SettingsForm({
                   name="defaultPageSize"
                   render={({ field }) => (
                     <FormItem>
-                      <div className="flex items-center justify-between gap-4 py-2">
+                      <div className="flex items-center justify-between gap-4">
                         <Label htmlFor="defaultPageSize">
                           Einträge pro Seite
                         </Label>

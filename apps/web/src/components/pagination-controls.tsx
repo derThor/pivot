@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type PageItem = number | "ellipsis";
 
@@ -51,7 +52,10 @@ export function PaginationControls({
               key={item}
               variant={item === page ? "default" : "ghost"}
               size="icon-sm"
-              className="rounded-full"
+              className={cn(
+                "rounded-full",
+                item === page && "disabled:opacity-100",
+              )}
               disabled={item === page}
               aria-current={item === page ? "page" : undefined}
               render={

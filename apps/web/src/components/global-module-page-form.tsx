@@ -69,12 +69,12 @@ function GallerySettingsEditor({
   }
 
   return (
-    <Card>
+    <Card className="border-none bg-transparent shadow-none">
       <CardHeader>
         <CardTitle>Anzeige-Einstellungen</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <CardContent className="flex flex-col gap-10">
+        <div className="grid grid-cols-1 gap-x-10 gap-y-10 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
             <Label>Effekt</Label>
             <Select
@@ -264,9 +264,12 @@ export function GlobalModulePageForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full max-w-[1000px] flex-col gap-4">
-      <Card>
-        <CardContent className="flex flex-col gap-4">
+    <form
+      onSubmit={handleSubmit}
+      className="flex w-full max-w-[1000px] flex-col gap-10 rounded-[10px] bg-[#FAFAFA] p-6"
+    >
+      <Card className="border-none bg-transparent shadow-none">
+        <CardContent className="flex flex-col gap-10">
           <div className="flex flex-col gap-2">
             <Label htmlFor="global-module-page-name">Name</Label>
             <Input

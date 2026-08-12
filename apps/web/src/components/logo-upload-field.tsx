@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, Upload } from "lucide-react";
+import { ImageIcon, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { mediaUrl } from "@/lib/media";
 import type { MediaListResponse } from "@/lib/api-server";
@@ -22,7 +21,6 @@ export function LogoUploadField({
   folderId: string | null;
 }) {
   const router = useRouter();
-  const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
@@ -57,8 +55,7 @@ export function LogoUploadField({
     }
   }
 
-  async function handleUpload() {
-    if (!file) return;
+  async function handleUpload(file: File) {
     setError(null);
     setIsUploading(true);
     try {
@@ -84,7 +81,6 @@ export function LogoUploadField({
         await deleteMediaByUrl(currentUrl);
       }
 
-      setFile(null);
       router.refresh();
     } catch (err) {
       setError(
@@ -119,49 +115,50 @@ export function LogoUploadField({
   return (
     <div className="flex flex-col gap-2">
       <Label>{label}</Label>
-      <div className="flex items-center gap-3">
-        <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-muted/40">
-          {currentUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={mediaUrl({ url: currentUrl })}
-              alt={label}
-              className="size-full object-contain"
-            />
-          ) : (
-            <span className="text-xs text-muted-foreground">Kein Bild</span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Input
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="group/upload relative block size-32 shrink-0 cursor-pointer overflow-hidden rounded-md border border-dashed text-left transition-colors hover:border-orange-400 has-disabled:pointer-events-none has-disabled:opacity-50">
+          <input
             type="file"
             accept="image/jpeg,image/png,image/webp,image/svg+xml"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="max-w-xs"
+            className="hidden"
+            disabled={isUploading}
+            onChange={(e) => {
+              const nextFile = e.target.files?.[0];
+              e.target.value = "";
+              if (nextFile) void handleUpload(nextFile);
+            }}
           />
+          {currentUrl ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={mediaUrl({ url: currentUrl })}
+                alt={label}
+                className="size-full object-contain"
+              />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm font-medium text-white opacity-0 transition-opacity group-hover/upload:opacity-100">
+                {isUploading ? "Lädt hoch…" : "Ersetzen"}
+              </div>
+            </>
+          ) : (
+            <div className="flex size-full flex-col items-center justify-center gap-1 text-sm text-muted-foreground">
+              <ImageIcon className="size-5" />
+              {isUploading ? "Lädt hoch…" : "Bild hinzufügen"}
+            </div>
+          )}
+        </label>
+        {currentUrl && (
           <Button
             type="button"
-            variant="outline"
-            size="sm"
-            disabled={!file || isUploading}
-            onClick={handleUpload}
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`${label} löschen`}
+            disabled={isRemoving}
+            onClick={handleRemove}
           >
-            <Upload />
-            {isUploading ? "Lädt hoch…" : "Hochladen"}
+            <Trash2 />
           </Button>
-          {currentUrl && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`${label} löschen`}
-              disabled={isRemoving}
-              onClick={handleRemove}
-            >
-              <Trash2 />
-            </Button>
-          )}
-        </div>
+        )}
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
     </div>

@@ -38,15 +38,15 @@ export default async function EditContentPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight break-words">
             Inhalt bearbeiten
           </h1>
-          <p className="text-sm text-muted-foreground">{content.title}</p>
+          <p className="text-sm text-muted-foreground break-words">{content.title}</p>
           <DashboardBreadcrumbs />
         </div>
-        <div className="flex shrink-0 gap-2">
+        <div className="flex flex-wrap gap-2">
           <PreviewLinksDialog contentId={id} />
           <Button
             variant="outline"

@@ -36,7 +36,7 @@ export default async function FaqsPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader title="FAQs" />
         {faqType && (
           <Button render={<Link href="/dashboard/content/faqs/new" />}>
@@ -50,6 +50,7 @@ export default async function FaqsPage({
           <GlobalModulesManager
             items={globalModules?.items ?? []}
             editHrefBase="/dashboard/content/faqs"
+            entityLabelPlural="FAQ-Einträge"
           />
           {globalModules && (
             <PaginationControls

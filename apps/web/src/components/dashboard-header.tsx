@@ -52,23 +52,34 @@ export function DashboardHeader({
   }
 
   return (
-    <header className="flex h-16 min-w-0 shrink-0 items-center gap-3 bg-background px-4">
+    <header className="flex min-h-16 min-w-0 shrink-0 items-center gap-3 bg-background px-4 pt-[30px]">
       <SidebarTrigger className="shrink-0" />
       <Separator orientation="vertical" className="hidden h-6 sm:block" />
-      <GlobalSearch defaultPageSize={defaultPageSize} />
-      <CommandPalette user={user} defaultPageSize={defaultPageSize} />
-      <div className="ml-auto flex items-center gap-1">
-        <Button variant="ghost" size="icon" className="rounded-full" disabled>
+      <div className="ml-auto flex min-w-0 items-center gap-1">
+        <CommandPalette user={user} defaultPageSize={defaultPageSize} />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-12 shrink-0 rounded-full"
+          disabled
+        >
           <Bell />
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={<Button variant="ghost" className="gap-2 rounded-full pl-1.5 pr-2" />}
+            render={
+              <Button
+                variant="ghost"
+                className="h-12 shrink-0 gap-2 rounded-full bg-muted/60 pl-1.5 pr-3 hover:bg-muted"
+              />
+            }
           >
-            <Avatar size="sm">
+            <Avatar>
               <AvatarFallback>{initials(user)}</AvatarFallback>
             </Avatar>
-            <span className="text-sm font-medium">{formatName(user)}</span>
+            <span className="hidden text-sm font-medium sm:inline">
+              {formatName(user)}
+            </span>
             <ChevronDown className="size-4 text-muted-foreground" />
           </DropdownMenuTrigger>
           <DropdownMenuContent side="bottom" align="end">
@@ -83,6 +94,18 @@ export function DashboardHeader({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        {/* Zuletzt im DOM: die einzige Komponente, die sich per Hover/
+            Fokus nach LINKS ausfährt (siehe global-search.tsx) – ihr
+            fixer 48px-Anker muss die tatsächliche rechte Kante der
+            Kopfzeile sein, sonst würde die ausgefahrene Box auf schmalen
+            Bildschirmen über den linken Rand hinaus (negative x-Position)
+            gerendert und die Seite horizontal aufreißen. Ab `sm` bleibt
+            der Anker zwar rechts (fürs Ausfahren), visuell wandert die
+            Lupe per `order` aber wieder an den Anfang, wie auf Desktop
+            gewünscht (nur mobil soll sie ganz rechts stehen). */}
+        <div className="sm:order-first">
+          <GlobalSearch defaultPageSize={defaultPageSize} />
+        </div>
       </div>
     </header>
   );

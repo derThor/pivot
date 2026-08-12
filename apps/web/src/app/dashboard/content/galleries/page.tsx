@@ -36,7 +36,7 @@ export default async function GalleriesPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader title="Galerien" />
         {galleryType && (
           <Button render={<Link href="/dashboard/content/galleries/new" />}>
@@ -50,6 +50,7 @@ export default async function GalleriesPage({
           <GlobalModulesManager
             items={globalModules?.items ?? []}
             editHrefBase="/dashboard/content/galleries"
+            entityLabelPlural="Galerien"
           />
           {globalModules && (
             <PaginationControls

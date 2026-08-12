@@ -716,7 +716,7 @@ export function ContentEditorForm({
         className="flex w-full flex-col gap-6"
       >
         {isLockedByOther && (
-          <div className="flex items-center justify-between gap-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm">
             <p>
               {lockInfo?.lockedBy
                 ? `Wird gerade bearbeitet von ${formatName(lockInfo.lockedBy)}`
@@ -742,7 +742,7 @@ export function ContentEditorForm({
         )}
 
         {draftBanner && (
-          <div className="flex items-center justify-between gap-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm dark:border-amber-500/30 dark:bg-amber-500/10">
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm dark:border-amber-500/30 dark:bg-amber-500/10">
             <p>
               Es gibt einen nicht gespeicherten Entwurf vom{" "}
               {new Date(draftBanner.savedAt).toLocaleString("de-DE")}.
@@ -823,7 +823,7 @@ export function ContentEditorForm({
               )}
             >
               <Card>
-                <CardContent className="flex flex-col gap-6">
+                <CardContent className="flex flex-col gap-10">
                   <FormField
                     control={form.control}
                     name="contentTypeId"
@@ -1086,7 +1086,7 @@ export function ContentEditorForm({
 
               {editorFields.length > 0 && (
                 <Card className="flex h-full flex-col">
-                  <CardContent className="flex flex-1 flex-col gap-6">
+                  <CardContent className="flex flex-1 flex-col gap-10">
                     {editorFields.map((field) => (
                       <div
                         key={field.name}
@@ -1124,7 +1124,7 @@ export function ContentEditorForm({
 
           <TabsContent value="seo" className="max-w-[550px]">
             <Card>
-              <CardContent className="flex flex-col gap-6">
+              <CardContent className="flex flex-col gap-10">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-1.5">
                     <Label htmlFor="seo-excerpt">
@@ -1249,7 +1249,7 @@ export function ContentEditorForm({
             </Card>
 
             <Card className="mt-6">
-              <CardContent className="flex flex-col gap-6">
+              <CardContent className="flex flex-col gap-10">
                 <p className="text-sm font-medium">OpenGraph & Twitter-Card</p>
 
                 <div className="flex flex-col gap-2">
@@ -1299,7 +1299,7 @@ export function ContentEditorForm({
                     <Label>OG-Bild</Label>
                     <InfoTooltip text="Vorschaubild, das beim Teilen in sozialen Netzwerken angezeigt wird." />
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-muted/40">
                       {seoValues.ogImageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -1314,14 +1314,14 @@ export function ContentEditorForm({
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
                       <Input
                         type="file"
                         accept="image/jpeg,image/png,image/webp,image/svg+xml"
                         onChange={(e) =>
                           setOgImageFile(e.target.files?.[0] ?? null)
                         }
-                        className="max-w-xs"
+                        className="w-full max-w-xs"
                       />
                       <Button
                         type="button"
@@ -1393,7 +1393,7 @@ export function ContentEditorForm({
 
         {formError && <p className="text-sm text-destructive">{formError}</p>}
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {isWizard && activeTab !== wizardSteps[0] && (
             <Button
               key="wizard-back"

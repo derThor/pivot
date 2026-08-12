@@ -22,7 +22,7 @@ export function SelectionToolbar({
   if (count === 0) return null;
 
   return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/50 px-3 py-2">
+    <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/50 px-8 py-3.5">
       <p className="text-sm font-medium">{count} ausgewählt</p>
       <div className="flex gap-2">
         {children}
