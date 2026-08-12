@@ -29,7 +29,7 @@ export default async function AccountPage() {
 
       <Tabs
         defaultValue="profile"
-        className="w-full max-w-[1000px] rounded-[10px] bg-[#FAFAFA] p-6"
+        className="w-full max-w-[1000px] rounded-[10px] p-6"
       >
         <TabsList>
           <TabsTrigger value="profile">Profil</TabsTrigger>

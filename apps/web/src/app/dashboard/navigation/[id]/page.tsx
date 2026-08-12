@@ -54,7 +54,7 @@ export default async function NavigationDetailPage({
           />
         </div>
       </div>
-      <div className="w-full max-w-[1000px] rounded-[10px] bg-[#FAFAFA] p-6">
+      <div className="w-full max-w-[1000px] rounded-[10px] p-6">
         <NavigationItemsEditor
           navigationId={navigation.id}
           items={navigation.items}

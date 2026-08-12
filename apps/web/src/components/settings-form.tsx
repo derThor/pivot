@@ -144,7 +144,7 @@ export function SettingsForm({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="flex w-full max-w-[1000px] flex-col gap-4 rounded-[10px] bg-[#FAFAFA] p-6"
+        className="flex w-full max-w-[1000px] flex-col gap-4 rounded-[10px] p-6"
       >
         <Tabs defaultValue="company">
           <TabsList>

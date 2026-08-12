@@ -75,7 +75,7 @@ function GallerySettingsEditor({
       </CardHeader>
       <CardContent className="flex flex-col gap-10">
         <div className="grid grid-cols-1 gap-x-10 gap-y-10 sm:grid-cols-2">
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             <Label>Effekt</Label>
             <Select
               value={settings.effect}
@@ -96,7 +96,7 @@ function GallerySettingsEditor({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             <Label htmlFor="gallery-slides-per-view">
               Bilder gleichzeitig sichtbar
             </Label>
@@ -116,7 +116,7 @@ function GallerySettingsEditor({
               </p>
             )}
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             <Label htmlFor="gallery-space-between">Abstand zwischen Bildern (px)</Label>
             <Input
               id="gallery-space-between"
@@ -128,7 +128,7 @@ function GallerySettingsEditor({
               onChange={(e) => set("spaceBetween", Number(e.target.value) || 0)}
             />
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             <Label htmlFor="gallery-autoplay-delay">
               Automatischer Wechsel nach (ms)
             </Label>
@@ -266,11 +266,11 @@ export function GlobalModulePageForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex w-full max-w-[1000px] flex-col gap-10 rounded-[10px] bg-[#FAFAFA] p-6"
+      className="flex w-full max-w-[1000px] flex-col gap-10 rounded-[10px] p-6"
     >
       <Card className="border-none bg-transparent shadow-none">
         <CardContent className="flex flex-col gap-10">
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             <Label htmlFor="global-module-page-name">Name</Label>
             <Input
               id="global-module-page-name"
@@ -279,21 +279,23 @@ export function GlobalModulePageForm({
               placeholder="Interner Name zur Wiedererkennung"
             />
           </div>
-          {fields.map((field) => (
-            <ModuleFieldInput
-              key={field.name}
-              field={field}
-              value={values[field.name]}
-              onChange={(v) =>
-                setValues((prev) => ({ ...prev, [field.name]: v }))
-              }
-              // Nur hier (FAQ-/Galerie-Detailseiten): Rich-Text-Unterfelder
-              // in den Kacheln bekommen eine feste, scrollbare Höhe, damit
-              // ein langer Text nicht die Kachel-Höhe sprengt und das Grid
-              // uneinheitlich macht (siehe module-field-input.tsx).
-              richTextMaxHeight="16rem"
-            />
-          ))}
+          {(isGallery ? fields.filter((f) => f.type !== "repeater") : fields).map(
+            (field) => (
+              <ModuleFieldInput
+                key={field.name}
+                field={field}
+                value={values[field.name]}
+                onChange={(v) =>
+                  setValues((prev) => ({ ...prev, [field.name]: v }))
+                }
+                // Nur hier (FAQ-/Galerie-Detailseiten): Rich-Text-Unterfelder
+                // in den Kacheln bekommen eine feste, scrollbare Höhe, damit
+                // ein langer Text nicht die Kachel-Höhe sprengt und das Grid
+                // uneinheitlich macht (siehe module-field-input.tsx).
+                richTextMaxHeight="16rem"
+              />
+            ),
+          )}
         </CardContent>
       </Card>
       {isGallery && (
@@ -302,6 +304,20 @@ export function GlobalModulePageForm({
           onChange={setSettings}
           previewImages={buildPreviewImages(repeaterField, values)}
         />
+      )}
+      {isGallery && repeaterField && (
+        <Card className="border-none bg-transparent shadow-none">
+          <CardContent className="flex flex-col gap-10">
+            <ModuleFieldInput
+              field={repeaterField}
+              value={values[repeaterField.name]}
+              onChange={(v) =>
+                setValues((prev) => ({ ...prev, [repeaterField.name]: v }))
+              }
+              richTextMaxHeight="16rem"
+            />
+          </CardContent>
+        </Card>
       )}
       {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex gap-2">
