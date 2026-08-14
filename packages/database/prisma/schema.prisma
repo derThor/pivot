@@ -61,9 +61,7 @@ model AppSettings {
   passwordRequireNumber      Boolean  @default(true)
   passwordRequireSpecialChar Boolean  @default(true)
   defaultPageSize            Int      @default(10)
-  logoExpandedUrl            String?
-  logoCollapsedUrl           String?
-  authImageUrl               String?
+  companyLogoUrl             String?
   companyName                String?
   companyStreet              String?
   companyPostalCode          String?

@@ -11,8 +11,8 @@ describe('Globale Suche (e2e)', () => {
   let contentOnlyToken: string;
 
   const token = 'zzzglobalsearchmarker';
-  const adminEmail = 'e2e-global-search-admin@strasev.dev';
-  const scopedEmail = 'e2e-global-search-scoped@strasev.dev';
+  const adminEmail = 'e2e-global-search-admin@pivot.dev';
+  const scopedEmail = 'e2e-global-search-scoped@pivot.dev';
   const password = 'ChangeMe123!';
   const contentTypeSlug = 'e2e-global-search-type';
   const scopedRoleName = 'E2E Global Search Scoped Role';
@@ -25,7 +25,7 @@ describe('Globale Suche (e2e)', () => {
   let targetUserId: string;
   let targetRoleId: string;
 
-  const targetUserEmail = `${token}@strasev.dev`;
+  const targetUserEmail = `${token}@pivot.dev`;
   const targetRoleName = `${token} Rolle`;
 
   async function cleanup() {

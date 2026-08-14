@@ -14,7 +14,7 @@ describe('Medienverarbeitung & -verwaltung (e2e)', () => {
   let accessToken: string;
   let twoByTwoPng: Buffer;
 
-  const userEmail = 'e2e-media-processing-test@strasev.dev';
+  const userEmail = 'e2e-media-processing-test@pivot.dev';
   const password = 'ChangeMe123!';
 
   async function cleanup() {

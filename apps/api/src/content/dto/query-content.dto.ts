@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
-import { ContentStatus } from '@strasev/database';
+import { ContentStatus } from '@pivot/database';
 
 export class QueryContentDto {
   @ApiPropertyOptional({ enum: ContentStatus })

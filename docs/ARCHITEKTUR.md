@@ -1,14 +1,14 @@
-# Architektur – strasev CMS
+# Architektur – pivot CMS
 
 ## Monorepo-Übersicht
 
 ```
 apps/api      NestJS REST-API (Port 3001, Swagger unter /docs)
 apps/web      Next.js Admin-Dashboard (Port 3000, App Router)
-packages/database  Prisma-Schema + generierter Client (@strasev/database)
+packages/database  Prisma-Schema + generierter Client (@pivot/database)
 ```
 
-`apps/api` und `apps/web` referenzieren `@strasev/database` als
+`apps/api` und `apps/web` referenzieren `@pivot/database` als
 Workspace-Paket (`workspace:*`), sodass Backend und ggf. Frontend
 (Server Components/Server Actions) denselben Prisma-Client und dieselben
 generierten Typen nutzen.

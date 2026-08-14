@@ -161,7 +161,7 @@ export interface ContentTypeField {
   option?: boolean;
   // Nur für Modul-Felder relevant: reine CSS-Darstellungs-Hinweise für die
   // Inline-Vorschau im Block-Editor (kein echtes Rendering der späteren
-  // Frontend-Optik, dafür ist strasev als Headless-CMS zu themenunabhängig).
+  // Frontend-Optik, dafür ist pivot als Headless-CMS zu themenunabhängig).
   // "cover" gilt nur für `type: "image"`-Felder: markiert das Bild eines
   // Cover-Bausteins als Vollflächen-Hintergrund statt normaler
   // Fließ-/Ausrichtungs-Logik (siehe isCoverModuleType).
@@ -514,9 +514,7 @@ export interface AppSettings {
   passwordRequireNumber: boolean;
   passwordRequireSpecialChar: boolean;
   defaultPageSize: number;
-  logoExpandedUrl: string | null;
-  logoCollapsedUrl: string | null;
-  authImageUrl: string | null;
+  companyLogoUrl: string | null;
   companyName: string | null;
   companyStreet: string | null;
   companyPostalCode: string | null;

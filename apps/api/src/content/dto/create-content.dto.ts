@@ -10,7 +10,7 @@ import {
   IsString,
   MinLength,
 } from 'class-validator';
-import { ContentStatus } from '@strasev/database';
+import { ContentStatus } from '@pivot/database';
 
 export class CreateContentDto {
   @ApiProperty()

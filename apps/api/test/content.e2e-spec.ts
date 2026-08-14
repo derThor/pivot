@@ -10,7 +10,7 @@ describe('Content-Flow (e2e)', () => {
   let prisma: PrismaService;
   let accessToken: string;
 
-  const userEmail = 'e2e-content-test@strasev.dev';
+  const userEmail = 'e2e-content-test@pivot.dev';
   const password = 'ChangeMe123!';
   const contentTypeSlug = 'e2e-test-type';
 

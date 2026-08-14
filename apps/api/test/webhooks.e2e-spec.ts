@@ -12,8 +12,8 @@ describe('Webhooks (e2e)', () => {
   let scopedToken: string;
 
   const password = 'ChangeMe123!';
-  const adminEmail = 'e2e-webhooks-admin@strasev.dev';
-  const scopedEmail = 'e2e-webhooks-scoped@strasev.dev';
+  const adminEmail = 'e2e-webhooks-admin@pivot.dev';
+  const scopedEmail = 'e2e-webhooks-scoped@pivot.dev';
   const scopedRoleName = 'E2E Webhooks Scoped Role';
   const testUrl = 'http://127.0.0.1:9/e2e-webhook-does-not-exist';
 

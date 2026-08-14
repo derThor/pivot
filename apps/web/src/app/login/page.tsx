@@ -7,9 +7,6 @@ export default async function LoginPage() {
 
   return (
     <AuthShell
-      logoUrl={settings?.logoExpandedUrl}
-      companyName={settings?.companyName}
-      imageUrl={settings?.authImageUrl}
       title="Willkommen zurück"
       description="Bitte gib deine Zugangsdaten ein."
     >

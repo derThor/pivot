@@ -1,4 +1,4 @@
-# Feature-Katalog – strasev CMS
+# Feature-Katalog – pivot CMS
 
 Legende: ✅ umgesetzt (Grundgerüst) · 🚧 vorbereitet, aber unvollständig · ⏳ geplant
 

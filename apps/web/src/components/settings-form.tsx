@@ -189,29 +189,18 @@ export function SettingsForm({
 
               <Card className="mt-6 border-none bg-transparent shadow-none">
                 <CardHeader>
-                  <CardTitle>Logo</CardTitle>
+                  <CardTitle>Firmenlogo</CardTitle>
                   <CardDescription>
-                    Aus-/eingeklapptes Logo für die Seitenleiste sowie das Bild
-                    neben dem Formular auf der Login- und Registrierungsseite.
+                    Wird aktuell an keiner Stelle im Dashboard angezeigt
+                    (Sidebar-Logo und Anmelde-Bild sind fest hinterlegt und
+                    nicht veränderbar).
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 gap-x-10 gap-y-10 sm:grid-cols-3">
                   <LogoUploadField
-                    field="logoExpandedUrl"
-                    label="Logo (ausgeklappt)"
-                    currentUrl={settings.logoExpandedUrl}
-                    folderId={logoFolderId}
-                  />
-                  <LogoUploadField
-                    field="logoCollapsedUrl"
-                    label="Logo (eingeklappt)"
-                    currentUrl={settings.logoCollapsedUrl}
-                    folderId={logoFolderId}
-                  />
-                  <LogoUploadField
-                    field="authImageUrl"
-                    label="Anmelde-Bild"
-                    currentUrl={settings.authImageUrl}
+                    field="companyLogoUrl"
+                    label="Firmenlogo"
+                    currentUrl={settings.companyLogoUrl}
                     folderId={logoFolderId}
                   />
                 </CardContent>

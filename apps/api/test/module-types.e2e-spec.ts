@@ -12,7 +12,7 @@ describe('Modul-Typen / Seiten-Designer (e2e)', () => {
   let richTextModuleTypeId: string;
 
   const password = 'ChangeMe123!';
-  const adminEmail = 'e2e-module-types-admin@strasev.dev';
+  const adminEmail = 'e2e-module-types-admin@pivot.dev';
   const contentTypeSlug = 'e2e-module-types-type';
   const moduleTypeSlug = 'e2e-module-types-rich-text';
 

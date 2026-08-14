@@ -1,4 +1,4 @@
-import type { AppSettings } from '@strasev/database';
+import type { AppSettings } from '@pivot/database';
 
 export function validatePasswordAgainstPolicy(
   password: string,

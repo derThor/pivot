@@ -278,7 +278,7 @@ alle Row-Action-Komponenten der Listen-Ansichten)
 > zusammen mit dem `w-8`-Logo-Quadrat (32px) die verfügbare Breite
 > (16+32+16=64px > 48px) – entfernt, `SidebarHeader`s eigenes `p-2`
 > reicht (ergibt exakt dieselben 48px wie bei den Nav-Buttons weiter
-> unten). (2) Der Text "strasev CMS" nutzte
+> unten). (2) Der Text "pivot CMS" nutzte
 > `group-data-[collapsible=icon]:hidden` (`display:none`) – anders als
 > die Nav-Item-Beschriftungen (die über die animierte Breiten-
 > Verkleinerung des ganzen Buttons + `overflow-hidden` weich
@@ -346,10 +346,10 @@ alle Row-Action-Komponenten der Listen-Ansichten)
 
 ## Logo & Firmenangaben (2026-08-05)
 
-Sidebar-Logo und "strasev CMS"-Text sind jetzt admin-konfigurierbar
+Sidebar-Logo und "pivot CMS"-Text sind jetzt admin-konfigurierbar
 statt hartkodiert: neuer Tab "Firma" in den Einstellungen erlaubt den
 Upload eines Logos für den ausgeklappten Zustand (`logoExpandedUrl`,
-ersetzt "strasev CMS"-Text) und eines für den eingeklappten Zustand
+ersetzt "pivot CMS"-Text) und eines für den eingeklappten Zustand
 (`logoCollapsedUrl`, ersetzt die "S"-Verlaufs-Kachel), plus
 Firmenangaben für Impressum/Datenschutz (Name, Adresse, Vertretung,
 Kontakt, Handelsregister, USt-IdNr.). Ohne hochgeladenes Logo bleibt der

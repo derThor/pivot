@@ -33,12 +33,7 @@ export default async function DashboardLayout({
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar
-        user={user}
-        logoExpandedUrl={settings?.logoExpandedUrl}
-        logoCollapsedUrl={settings?.logoCollapsedUrl}
-        companyName={settings?.companyName}
-      />
+      <AppSidebar user={user} />
       <SidebarInset>
         {!user.emailVerifiedAt && <EmailVerificationBanner />}
         <DashboardHeader

@@ -23,7 +23,7 @@ describe('Pagination-Sprung für Suchtreffer (e2e)', () => {
   let adminToken: string;
 
   const token = 'zzzfindpagemarker';
-  const adminEmail = 'e2e-find-page-admin@strasev.dev';
+  const adminEmail = 'e2e-find-page-admin@pivot.dev';
   const password = 'ChangeMe123!';
   const contentTypeSlug = 'e2e-find-page-type';
 
@@ -216,7 +216,7 @@ describe('Pagination-Sprung für Suchtreffer (e2e)', () => {
     const pageSize = 20;
     const user = await prisma.user.create({
       data: {
-        email: `${token}-user@strasev.dev`,
+        email: `${token}-user@pivot.dev`,
         firstName: token,
         lastName: 'Aaa Zuerst Alphabetisch',
         roleId: (await prisma.role.findFirstOrThrow({ where: { name: 'Admin' } })).id,

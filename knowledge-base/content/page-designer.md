@@ -159,7 +159,7 @@ relevante, optionale Eigenschaften:
   des CTA-Buttons wie ein echter, ausgefüllter Button aussieht statt wie
   reiner Text, und `quote`/`author` beim Zitat wie ein Blockzitat mit
   Bildunterschrift. **Kein** echtes Rendering der späteren Frontend-Optik
-  – strasev ist headless, das konsumierende Frontend hat sein eigenes
+  – pivot ist headless, das konsumierende Frontend hat sein eigenes
   Styling. Die Variante ist nur eine Annäherung im Editor.
 - **`example?: string`** – Beispielwert, mit dem `insertAt()` in
   `block-editor-field.tsx` eine frisch eingefügte Modul-Instanz

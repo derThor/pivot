@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "strasev CMS",
+  title: "pivot CMS",
   description: "Modernes Headless CMS – NestJS + Next.js + shadcn/ui",
 };
 

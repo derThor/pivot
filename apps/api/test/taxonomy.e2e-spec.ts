@@ -9,7 +9,7 @@ describe('Kategorien/Tags-Flow (e2e)', () => {
   let prisma: PrismaService;
   let accessToken: string;
 
-  const userEmail = 'e2e-taxonomy-test@strasev.dev';
+  const userEmail = 'e2e-taxonomy-test@pivot.dev';
   const password = 'ChangeMe123!';
 
   async function cleanup() {
@@ -174,7 +174,7 @@ describe('Kategorien/Tags-Flow (e2e)', () => {
     const autorRole = await prisma.role.findFirstOrThrow({
       where: { name: 'Autor' },
     });
-    const autorEmail = 'e2e-taxonomy-autor@strasev.dev';
+    const autorEmail = 'e2e-taxonomy-autor@pivot.dev';
     await prisma.user.deleteMany({ where: { email: autorEmail } });
     await prisma.user.create({
       data: {

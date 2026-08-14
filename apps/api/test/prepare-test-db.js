@@ -2,7 +2,7 @@ const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 
 const TEST_DATABASE_URL =
-  'postgresql://strasev:strasev@localhost:5432/strasev_test?schema=public';
+  'postgresql://pivot:pivot@localhost:5432/pivot_test?schema=public';
 
 const schemaPath = path.resolve(
   __dirname,

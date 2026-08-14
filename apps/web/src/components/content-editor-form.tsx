@@ -151,7 +151,7 @@ function toModuleValues(
   return result;
 }
 
-const DRAFT_STORAGE_PREFIX = "strasev:content-draft:";
+const DRAFT_STORAGE_PREFIX = "pivot:content-draft:";
 
 interface DraftSnapshot {
   savedAt: string;

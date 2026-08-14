@@ -15,7 +15,7 @@ export function LogoUploadField({
   currentUrl,
   folderId,
 }: {
-  field: "logoExpandedUrl" | "logoCollapsedUrl" | "authImageUrl";
+  field: "companyLogoUrl";
   label: string;
   currentUrl: string | null;
   folderId: string | null;

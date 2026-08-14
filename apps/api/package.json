@@ -1,5 +1,5 @@
 {
-  "name": "@strasev/api",
+  "name": "@pivot/api",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -20,7 +20,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "pretest:e2e": "cross-env NODE_ENV=test node test/prepare-test-db.js",
-    "test:e2e": "cross-env NODE_ENV=test DATABASE_URL=postgresql://strasev:strasev@localhost:5432/strasev_test?schema=public jest --config ./test/jest-e2e.json"
+    "test:e2e": "cross-env NODE_ENV=test DATABASE_URL=postgresql://pivot:pivot@localhost:5432/pivot_test?schema=public jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -32,7 +32,7 @@
     "@nestjs/schedule": "^6.1.3",
     "@nestjs/swagger": "^11.4.6",
     "@nestjs/throttler": "^6.5.0",
-    "@strasev/database": "workspace:*",
+    "@pivot/database": "workspace:*",
     "argon2": "^0.41.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",

@@ -7,7 +7,7 @@ import { CropMediaDto } from './dto/crop-media.dto';
 import { QueryMediaDto } from './dto/query-media.dto';
 import { UpdateMediaDto } from './dto/update-media.dto';
 import { UPLOAD_DIR, maxSizeForMimeType, mimeTypesForCategory } from './media.config';
-import { Prisma } from '@strasev/database';
+import { Prisma } from '@pivot/database';
 import { MediaImageProcessingService, type FocalPoint } from './media-image-processing.service';
 
 type VariantInput = { width: number; format: string; url: string; size: number };
@@ -119,8 +119,7 @@ export class MediaService {
       collectReferencedUrls(content.data, referenced);
       if (content.ogImageUrl) referenced.add(normalizeUrl(content.ogImageUrl));
     }
-    if (settings?.logoExpandedUrl) referenced.add(normalizeUrl(settings.logoExpandedUrl));
-    if (settings?.logoCollapsedUrl) referenced.add(normalizeUrl(settings.logoCollapsedUrl));
+    if (settings?.companyLogoUrl) referenced.add(normalizeUrl(settings.companyLogoUrl));
 
     const unused = allMedia.filter((media) => !referenced.has(normalizeUrl(media.url)));
     return { items: unused.map(mapMediaTags) };

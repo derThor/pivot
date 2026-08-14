@@ -13,9 +13,9 @@ describe('Content-Locking (e2e)', () => {
   let contentId: string;
 
   const password = 'ChangeMe123!';
-  const holderEmail = 'e2e-lock-holder@strasev.dev';
-  const otherEmail = 'e2e-lock-other@strasev.dev';
-  const adminEmail = 'e2e-lock-admin@strasev.dev';
+  const holderEmail = 'e2e-lock-holder@pivot.dev';
+  const otherEmail = 'e2e-lock-other@pivot.dev';
+  const adminEmail = 'e2e-lock-admin@pivot.dev';
   const contentTypeSlug = 'e2e-lock-type';
 
   async function cleanup() {

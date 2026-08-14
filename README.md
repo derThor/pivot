@@ -1,4 +1,4 @@
-# strasev CMS
+# pivot CMS
 
 Modernes, headless-fähiges CMS als Monorepo: NestJS-Backend (REST-API,
 PostgreSQL/Prisma) + Next.js-Admin-Dashboard (shadcn/ui).
@@ -21,7 +21,7 @@ pnpm install
 # 3. Datenbank vorbereiten
 pnpm db:generate
 pnpm db:migrate
-pnpm --filter @strasev/database seed   # optional: Admin-User + Beispiel-ContentType
+pnpm --filter @pivot/database seed   # optional: Admin-User + Beispiel-ContentType
 
 # 4. Beide Apps starten
 pnpm dev
@@ -35,7 +35,7 @@ pnpm dev
 ```
 apps/api        NestJS Backend
 apps/web        Next.js Admin-Dashboard
-packages/database  Gemeinsames Prisma-Package (@strasev/database)
+packages/database  Gemeinsames Prisma-Package (@pivot/database)
 docs/           Projektplan, Architektur, Roadmap, Features
 knowledge-base/ Laufend aktualisierte technische Wissensdatenbank
 ```

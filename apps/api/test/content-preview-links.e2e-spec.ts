@@ -12,8 +12,8 @@ describe('Content-Vorschau-Links (e2e)', () => {
   let contentId: string;
 
   const password = 'ChangeMe123!';
-  const adminEmail = 'e2e-preview-links-admin@strasev.dev';
-  const scopedEmail = 'e2e-preview-links-scoped@strasev.dev';
+  const adminEmail = 'e2e-preview-links-admin@pivot.dev';
+  const scopedEmail = 'e2e-preview-links-scoped@pivot.dev';
   const scopedRoleName = 'E2E Preview-Links Scoped Role';
   const contentTypeSlug = 'e2e-preview-links-type';
 

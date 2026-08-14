@@ -12,8 +12,8 @@ describe('Navigation (e2e)', () => {
   let contentId: string;
 
   const token = 'zzznavigationmarker';
-  const adminEmail = 'e2e-navigation-admin@strasev.dev';
-  const scopedEmail = 'e2e-navigation-scoped@strasev.dev';
+  const adminEmail = 'e2e-navigation-admin@pivot.dev';
+  const scopedEmail = 'e2e-navigation-scoped@pivot.dev';
   const scopedRoleName = 'E2E Navigation Scoped Role';
   const password = 'ChangeMe123!';
   const contentTypeSlug = 'e2e-navigation-type';

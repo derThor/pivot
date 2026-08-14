@@ -1,4 +1,4 @@
-# Roadmap – strasev CMS
+# Roadmap – pivot CMS
 
 ## Phase 0 – Grundgerüst (abgeschlossen, 2026-08-02)
 

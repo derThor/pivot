@@ -9,7 +9,7 @@ Ein pnpm-Workspace mit Turborepo als Task-Runner:
 - `apps/api` – NestJS 11, generiert via `@nestjs/cli@latest new`
 - `apps/web` – Next.js 16 (App Router, Turbopack), generiert via
   `create-next-app@latest`
-- `packages/database` – gemeinsames Prisma-Package (`@strasev/database`)
+- `packages/database` – gemeinsames Prisma-Package (`@pivot/database`)
 - `docker-compose.yml` für lokale PostgreSQL 17 + Redis 7
 
 Root-Skripte (`pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm type-check`)
@@ -33,9 +33,9 @@ Projektverantwortlichen abgestimmt.
   Freigaben stehen in `pnpm-workspace.yaml` unter `allowBuilds`. Details:
   [tooling-pnpm-build-approvals.md](./tooling-pnpm-build-approvals.md).
 - **Interne Packages nicht per `pnpm add` aus der Registry auflösbar**:
-  `pnpm add @strasev/database` schlägt mit 404 fehl, da das Paket nicht
+  `pnpm add @pivot/database` schlägt mit 404 fehl, da das Paket nicht
   veröffentlicht ist. Workspace-Abhängigkeiten müssen manuell als
-  `"@strasev/database": "workspace:*"` in die `package.json` eingetragen und
+  `"@pivot/database": "workspace:*"` in die `package.json` eingetragen und
   danach per `pnpm install` (vom Root aus) verlinkt werden.
 - `create-next-app` legt bei Ausführung außerhalb des Zielordners eine eigene
   `pnpm-workspace.yaml`/`pnpm-lock.yaml`/`node_modules` im neuen Unterordner

@@ -1,5 +1,5 @@
 {
-  "name": "strasev",
+  "name": "pivot",
   "private": true,
   "version": "0.1.0",
   "packageManager": "pnpm@11.18.0",
@@ -13,9 +13,9 @@
     "test": "turbo run test",
     "type-check": "turbo run type-check",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "db:generate": "pnpm --filter @strasev/database generate",
-    "db:migrate": "pnpm --filter @strasev/database migrate",
-    "db:studio": "pnpm --filter @strasev/database studio"
+    "db:generate": "pnpm --filter @pivot/database generate",
+    "db:migrate": "pnpm --filter @pivot/database migrate",
+    "db:studio": "pnpm --filter @pivot/database studio"
   },
   "devDependencies": {
     "turbo": "^2.3.0",

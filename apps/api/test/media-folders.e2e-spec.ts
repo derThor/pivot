@@ -9,7 +9,7 @@ describe('Medien-Ordner-Flow (e2e)', () => {
   let prisma: PrismaService;
   let accessToken: string;
 
-  const userEmail = 'e2e-media-folders-test@strasev.dev';
+  const userEmail = 'e2e-media-folders-test@pivot.dev';
   const password = 'ChangeMe123!';
   const rootFolderName = 'E2E Medien-Ordner Test';
 

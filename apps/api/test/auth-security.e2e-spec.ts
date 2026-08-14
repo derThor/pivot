@@ -30,7 +30,7 @@ describe('Auth-Härtung (e2e)', () => {
   }
 
   describe('Passwort-Policy', () => {
-    const email = 'e2e-policy-test@strasev.dev';
+    const email = 'e2e-policy-test@pivot.dev';
 
     beforeAll(() => cleanupUsers(email));
     afterAll(() => cleanupUsers(email));
@@ -38,7 +38,7 @@ describe('Auth-Härtung (e2e)', () => {
     it('lehnt Registrierung mit zu schwachem Passwort ab', async () => {
       const res = await request(app.getHttpServer())
         .post('/v1/auth/register')
-        .send({ email, password: 'schwach', lastName: 'Policy Test' })
+        .send({ email, password: 'schwach', firstName: 'Policy', lastName: 'Policy Test' })
         .expect(400);
 
       expect(res.body.message).toMatch(/Zeichen|Großbuchstabe|Ziffer|Sonderzeichen/);
@@ -47,7 +47,7 @@ describe('Auth-Härtung (e2e)', () => {
     it('akzeptiert Registrierung mit konformem Passwort und liefert Dev-Verifikationslink', async () => {
       const res = await request(app.getHttpServer())
         .post('/v1/auth/register')
-        .send({ email, password, lastName: 'Policy Test' })
+        .send({ email, password, firstName: 'Policy', lastName: 'Policy Test' })
         .expect(201);
 
       expect(res.body).toHaveProperty('accessToken');
@@ -56,7 +56,7 @@ describe('Auth-Härtung (e2e)', () => {
   });
 
   describe('Passwort ändern', () => {
-    const email = 'e2e-changepw-test@strasev.dev';
+    const email = 'e2e-changepw-test@pivot.dev';
     let accessToken: string;
     let firstRefreshToken: string;
 
@@ -64,7 +64,7 @@ describe('Auth-Härtung (e2e)', () => {
       await cleanupUsers(email);
       const register = await request(app.getHttpServer())
         .post('/v1/auth/register')
-        .send({ email, password, lastName: 'ChangePW Test' })
+        .send({ email, password, firstName: 'ChangePW', lastName: 'ChangePW Test' })
         .expect(201);
       accessToken = register.body.accessToken;
       firstRefreshToken = register.body.refreshToken;
@@ -101,7 +101,7 @@ describe('Auth-Härtung (e2e)', () => {
   });
 
   describe('E-Mail-Verifikation', () => {
-    const email = 'e2e-verify-test@strasev.dev';
+    const email = 'e2e-verify-test@pivot.dev';
 
     beforeAll(() => cleanupUsers(email));
     afterAll(() => cleanupUsers(email));
@@ -109,7 +109,7 @@ describe('Auth-Härtung (e2e)', () => {
     it('verifiziert die E-Mail-Adresse über den Dev-Link-Token', async () => {
       const register = await request(app.getHttpServer())
         .post('/v1/auth/register')
-        .send({ email, password, lastName: 'Verify Test' })
+        .send({ email, password, firstName: 'Verify', lastName: 'Verify Test' })
         .expect(201);
 
       const token = new URL(
@@ -131,13 +131,13 @@ describe('Auth-Härtung (e2e)', () => {
   });
 
   describe('Passwort vergessen / zurücksetzen', () => {
-    const email = 'e2e-forgot-test@strasev.dev';
+    const email = 'e2e-forgot-test@pivot.dev';
 
     beforeAll(async () => {
       await cleanupUsers(email);
       await request(app.getHttpServer())
         .post('/v1/auth/register')
-        .send({ email, password, lastName: 'Forgot Test' })
+        .send({ email, password, firstName: 'Forgot', lastName: 'Forgot Test' })
         .expect(201);
     });
 
@@ -146,7 +146,7 @@ describe('Auth-Härtung (e2e)', () => {
     it('liefert für unbekannte E-Mail dieselbe generische Antwort (kein User-Enumeration-Leck)', async () => {
       const res = await request(app.getHttpServer())
         .post('/v1/auth/forgot-password')
-        .send({ email: 'unbekannt@strasev.dev' })
+        .send({ email: 'unbekannt@pivot.dev' })
         .expect(200);
 
       expect(res.body).not.toHaveProperty('resetLinkDevOnly');
@@ -179,7 +179,7 @@ describe('Auth-Härtung (e2e)', () => {
   });
 
   describe('Granulare Rechte (custom Rolle)', () => {
-    const email = 'e2e-permission-test@strasev.dev';
+    const email = 'e2e-permission-test@pivot.dev';
     let roleId: string;
     let accessToken: string;
 
@@ -253,7 +253,7 @@ describe('Auth-Härtung (e2e)', () => {
     it('kann eine Rolle mit zugewiesenem User nicht löschen', async () => {
       const adminLogin = await request(app.getHttpServer())
         .post('/v1/auth/login')
-        .send({ email: 'admin@strasev.dev', password: 'ChangeMe123!' })
+        .send({ email: 'admin@pivot.dev', password: 'ChangeMe123!' })
         .expect(200);
 
       await request(app.getHttpServer())
@@ -268,11 +268,11 @@ describe('Auth-Härtung (e2e)', () => {
       const settings = await prisma.appSettings.findFirstOrThrow();
       expect(settings).toBeDefined();
 
-      const email = 'e2e-settings-noauth@strasev.dev';
+      const email = 'e2e-settings-noauth@pivot.dev';
       await cleanupUsers(email);
       const register = await request(app.getHttpServer())
         .post('/v1/auth/register')
-        .send({ email, password, lastName: 'Settings Test' })
+        .send({ email, password, firstName: 'Settings', lastName: 'Settings Test' })
         .expect(201);
 
       await request(app.getHttpServer())
@@ -291,10 +291,10 @@ describe('Auth-Härtung (e2e)', () => {
       expect(res.body).not.toHaveProperty('passwordMinLength', undefined);
     });
 
-    it('Logo- und Firmenangaben werden gespeichert und sind über /settings/public sichtbar', async () => {
+    it('Firmenlogo- und Firmenangaben werden gespeichert und sind über /settings/public sichtbar', async () => {
       const adminLogin = await request(app.getHttpServer())
         .post('/v1/auth/login')
-        .send({ email: 'admin@strasev.dev', password: 'ChangeMe123!' })
+        .send({ email: 'admin@pivot.dev', password: 'ChangeMe123!' })
         .expect(200);
       const adminToken = adminLogin.body.accessToken as string;
 
@@ -302,8 +302,7 @@ describe('Auth-Härtung (e2e)', () => {
         .patch('/v1/settings')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          logoExpandedUrl: '/uploads/e2e-logo-expanded.png',
-          logoCollapsedUrl: '/uploads/e2e-logo-collapsed.png',
+          companyLogoUrl: '/uploads/e2e-company-logo.png',
           companyName: 'E2E Test GmbH',
           companyStreet: 'Teststraße 1',
           companyPostalCode: '12345',
@@ -315,8 +314,7 @@ describe('Auth-Härtung (e2e)', () => {
       const res = await request(app.getHttpServer())
         .get('/v1/settings/public')
         .expect(200);
-      expect(res.body.logoExpandedUrl).toBe('/uploads/e2e-logo-expanded.png');
-      expect(res.body.logoCollapsedUrl).toBe('/uploads/e2e-logo-collapsed.png');
+      expect(res.body.companyLogoUrl).toBe('/uploads/e2e-company-logo.png');
       expect(res.body.companyName).toBe('E2E Test GmbH');
       expect(res.body.companyCity).toBe('Teststadt');
 
@@ -325,8 +323,7 @@ describe('Auth-Härtung (e2e)', () => {
         .patch('/v1/settings')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          logoExpandedUrl: '',
-          logoCollapsedUrl: '',
+          companyLogoUrl: '',
           companyName: '',
           companyStreet: '',
           companyPostalCode: '',
@@ -339,7 +336,7 @@ describe('Auth-Härtung (e2e)', () => {
     it('autosaveEnabled ist per Default true und über /settings/public umschaltbar', async () => {
       const adminLogin = await request(app.getHttpServer())
         .post('/v1/auth/login')
-        .send({ email: 'admin@strasev.dev', password: 'ChangeMe123!' })
+        .send({ email: 'admin@pivot.dev', password: 'ChangeMe123!' })
         .expect(200);
       const adminToken = adminLogin.body.accessToken as string;
 
@@ -370,8 +367,8 @@ describe('Auth-Härtung (e2e)', () => {
 
   describe('Pagination (Users/Roles)', () => {
     const emails = [
-      'e2e-pagination-user-1@strasev.dev',
-      'e2e-pagination-user-2@strasev.dev',
+      'e2e-pagination-user-1@pivot.dev',
+      'e2e-pagination-user-2@pivot.dev',
     ];
     let adminAccessToken: string;
     let roleId: string;
@@ -382,7 +379,7 @@ describe('Auth-Härtung (e2e)', () => {
 
       const adminLogin = await request(app.getHttpServer())
         .post('/v1/auth/login')
-        .send({ email: 'admin@strasev.dev', password: 'ChangeMe123!' })
+        .send({ email: 'admin@pivot.dev', password: 'ChangeMe123!' })
         .expect(200);
       adminAccessToken = adminLogin.body.accessToken;
 
@@ -447,13 +444,13 @@ describe('Auth-Härtung (e2e)', () => {
   });
 
   describe('Admin-Freischaltung (requireAdminActivation)', () => {
-    const email = 'e2e-activation-test@strasev.dev';
+    const email = 'e2e-activation-test@pivot.dev';
     let adminAccessToken: string;
 
     async function loginAdmin() {
       const res = await request(app.getHttpServer())
         .post('/v1/auth/login')
-        .send({ email: 'admin@strasev.dev', password: 'ChangeMe123!' })
+        .send({ email: 'admin@pivot.dev', password: 'ChangeMe123!' })
         .expect(200);
       return res.body.accessToken as string;
     }
@@ -480,7 +477,7 @@ describe('Auth-Härtung (e2e)', () => {
     it('legt neu registrierte Benutzer inaktiv an und meldet sie nicht automatisch an', async () => {
       const res = await request(app.getHttpServer())
         .post('/v1/auth/register')
-        .send({ email, password, lastName: 'Activation Test' })
+        .send({ email, password, firstName: 'Activation', lastName: 'Activation Test' })
         .expect(201);
 
       expect(res.body.pendingActivation).toBe(true);

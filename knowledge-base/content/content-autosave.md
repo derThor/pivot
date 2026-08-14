@@ -15,7 +15,7 @@
 - `ContentEditorForm` speichert den aktuellen Bearbeitungsstand (Titel,
   Slug, Status, Kategorien, dynamische Feldwerte, alle SEO-Werte) 1.5s
   nach der letzten Änderung automatisch in `localStorage`, Key
-  `strasev:content-draft:<contentId>` (bzw. `new-<contentTypeId>` für
+  `pivot:content-draft:<contentId>` (bzw. `new-<contentTypeId>` für
   noch nicht angelegte Inhalte). Leere/inhaltslose Entwürfe werden nicht
   gespeichert (kein Titel und keine gefüllten dynamischen Felder).
 - Beim Öffnen eines Inhalts (neu oder bestehend) wird geprüft, ob unter
@@ -27,7 +27,7 @@
 
 ## Warum diese Lösung
 
-- **Rein clientseitig (`localStorage`) statt Server-Autosave**: strasev
+- **Rein clientseitig (`localStorage`) statt Server-Autosave**: pivot
   hat aktuell weder Content Locking noch Echtzeit-Kollaboration
   (beide noch offen, Phase 2b.9) – ein Server-Autosave würde entweder
   bei jedem Tick eine `ContentVersion` erzeugen (Versionshistorie würde

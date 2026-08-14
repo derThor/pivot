@@ -447,7 +447,7 @@ export function isGalleryRepeater(field: ContentTypeField): boolean {
 // `width` bewusst mit einbezogen: bei 100% Breite ergäbe `mr-4`/`ml-4`
 // zusätzlich zur vollen Breite eine Gesamtbreite von 100% + 16px – der
 // Block würde seinen Elternrahmen überlaufen und auf der ganzen Seite
-// horizontales Scrollen erzwingen (siehe strasev-Vorgabe: nie horizontal
+// horizontales Scrollen erzwingen (siehe pivot-Vorgabe: nie horizontal
 // scrollbar). Der Rand ergibt bei voller Breite ohnehin keinen Sinn (kein
 // Nachbar-Inhalt, an dem er vorbeifließen könnte), deshalb hier weglassen.
 export function blockLayoutClasses(align: ImageAlign, width: number = 100) {

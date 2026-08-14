@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
-import { ContentStatus, Prisma } from '@strasev/database';
+import { ContentStatus, Prisma } from '@pivot/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { CreateContentDto } from './dto/create-content.dto';

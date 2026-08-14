@@ -32,8 +32,8 @@ async function bootstrap() {
   );
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('strasev CMS API')
-    .setDescription('REST API des strasev Headless CMS')
+    .setTitle('pivot CMS API')
+    .setDescription('REST API des pivot Headless CMS')
     .setVersion('1.0')
     .addBearerAuth()
     .build();

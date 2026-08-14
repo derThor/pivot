@@ -11,7 +11,7 @@ describe('Content-Versionierung & Rollback (e2e)', () => {
   let contentId: string;
   let contentTypeId: string;
 
-  const userEmail = 'e2e-content-versions-test@strasev.dev';
+  const userEmail = 'e2e-content-versions-test@pivot.dev';
   const password = 'ChangeMe123!';
   const contentTypeSlug = 'e2e-content-versions-type';
 
@@ -176,7 +176,7 @@ describe('Content-Versionierung & Rollback (e2e)', () => {
     await prisma.rolePermission.create({
       data: { roleId: betrachterRole.id, permissionId: readPermission.id },
     });
-    const readerEmail = 'e2e-content-versions-reader@strasev.dev';
+    const readerEmail = 'e2e-content-versions-reader@pivot.dev';
     await prisma.user.deleteMany({ where: { email: readerEmail } });
     await prisma.user.create({
       data: {
@@ -261,7 +261,7 @@ describe('Content-Versionierung & Rollback (e2e)', () => {
   });
 
   it('verweigert DELETE einer Version ohne content:update-Recht (403)', async () => {
-    const readerEmail = 'e2e-content-versions-delete-reader@strasev.dev';
+    const readerEmail = 'e2e-content-versions-delete-reader@pivot.dev';
     const readerRole = await prisma.role.create({
       data: { name: 'E2E Versions Delete Nur-Lesen-Rolle' },
     });

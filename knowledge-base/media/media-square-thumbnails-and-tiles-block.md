@@ -77,7 +77,7 @@ tatsächlich konsumiert:
 - **`prisma migrate dev` seedet nicht, wenn "Already in sync" gemeldet
   wird** (keine neue Migration) – nach reinen `seed.ts`-Änderungen ohne
   Schema-Änderung muss der Seed explizit über `pnpm --filter
-  @strasev/database seed` erneut ausgeführt werden.
+  @pivot/database seed` erneut ausgeführt werden.
 - **Windows `EPERM` beim `prisma generate`** (siehe auch
   [media-processing-and-management.md](./media-processing-and-management.md)):
   trat hier erneut auf, weil eine reine `seed.ts`-Änderung den laufenden

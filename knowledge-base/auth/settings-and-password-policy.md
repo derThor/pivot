@@ -65,7 +65,7 @@
 > Änderungen schlugen plötzlich 4 unabhängig wirkende E2E-Tests fehl
 > (`P2022: column "app_settings.defaultPageSize" does not exist`).
 > Ursache war **nicht** der neue Code, sondern dass die Test-Datenbank
-> (`strasev_test`) nie mit den neuesten Migrationen synchronisiert
+> (`pivot_test`) nie mit den neuesten Migrationen synchronisiert
 > wurde – `package.json` hat einen `pretest:e2e`-Hook
 > (`node test/prepare-test-db.js`, führt `prisma db push` gegen die
 > Test-DB aus), der nur bei `pnpm test:e2e` automatisch feuert, nicht
@@ -110,8 +110,8 @@
 > **Update 2026-08-06 (Test-DB-Verwechslung – echte Ursache gefunden,
 > Korrektur des obigen Fehlalarms):** Der oben dokumentierte "vermutlich
 > Turbopack-Stale-State"-Befund war **falsch**. Tatsächliche Ursache:
-> ein `pnpm test:e2e`-Lauf hat gegen die **Dev-Datenbank** (`strasev`)
-> statt gegen `strasev_test` gearbeitet und dabei den
+> ein `pnpm test:e2e`-Lauf hat gegen die **Dev-Datenbank** (`pivot`)
+> statt gegen `pivot_test` gearbeitet und dabei den
 > `auth-security.e2e-spec.ts`-Settings-Test inkl. dessen Aufräum-`PATCH`
 > (`logoExpandedUrl: '', logoCollapsedUrl: '', companyName: '', ...`)
 > gegen echte Nutzerdaten ausgeführt – das zuvor hochgeladene Logo wurde
@@ -126,13 +126,13 @@
 >
 > **Root Cause:** `AppModule`s `ConfigModule.forRoot({ envFilePath:
 > NODE_ENV === 'test' ? '.env.test' : '.env' })` wählt zwar korrekt die
-> Datei aus, aber `@strasev/database`s `package.json#main` zeigt direkt
+> Datei aus, aber `@pivot/database`s `package.json#main` zeigt direkt
 > auf den generierten Prisma-Client (`generated/client/index.js`).
 > Prisma-Clients laden beim ersten `require()` **selbst** automatisch
 > eine `.env`-Datei relativ zum Schema-Verzeichnis
 > (`packages/database/.env`, enthält die **Dev**-`DATABASE_URL`) – und
 > das passiert, weil TypeScripts Import-zu-`require()`-Kompilierung alle
-> Top-Level-Imports (inkl. `PrismaModule` → `@strasev/database`) vor den
+> Top-Level-Imports (inkl. `PrismaModule` → `@pivot/database`) vor den
 > Code im Modul-Body hebt, **bevor** `ConfigModule.forRoot()` überhaupt
 > ausgeführt wird. `dotenv` überschreibt keine bereits gesetzten
 > `process.env`-Variablen – der später ladende `.env.test`-Versuch von
@@ -144,7 +144,7 @@
 > **Fix (zwei Ebenen):**
 > 1. `apps/api/package.json`: `test:e2e`-Skript setzt jetzt
 >    `DATABASE_URL` **direkt** als Prozess-Umgebungsvariable
->    (`cross-env NODE_ENV=test DATABASE_URL=...strasev_test... jest
+>    (`cross-env NODE_ENV=test DATABASE_URL=...pivot_test... jest
 >    --config ./test/jest-e2e.json`) – umgeht das Dotenv-Wettrennen
 >    komplett, exakt das gleiche Muster, das `prepare-test-db.js` für
 >    den `prisma db push`-Schritt bereits einsetzte (dort war es nie ein

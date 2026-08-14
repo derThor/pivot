@@ -1,4 +1,4 @@
-# Knowledge Base – strasev CMS
+# Knowledge Base – pivot CMS
 
 Diese Knowledge Base hält technisches Wissen fest, das sich nicht allein aus
 dem Code erschließt: Entscheidungen, Stolpersteine, Konventionen und der

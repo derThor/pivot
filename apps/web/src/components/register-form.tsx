@@ -39,7 +39,7 @@ export function RegisterForm({
     () =>
       z
         .object({
-          firstName: z.string().optional(),
+          firstName: z.string().min(1, "Vorname ist erforderlich."),
           lastName: z.string().min(1, "Nachname ist erforderlich."),
           email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben."),
           password: z
@@ -80,7 +80,7 @@ export function RegisterForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName: values.firstName || undefined,
+          firstName: values.firstName,
           lastName: values.lastName,
           email: values.email,
           password: values.password,

@@ -6,14 +6,14 @@
 ## Was wurde gebaut
 
 - `apps/api/.env.test`: eigene Konfiguration mit `DATABASE_URL` auf eine
-  separate Datenbank `strasev_test` (gleicher lokaler Postgres-Container,
-  anderer DB-Name) statt der Dev-Datenbank `strasev`.
+  separate Datenbank `pivot_test` (gleicher lokaler Postgres-Container,
+  anderer DB-Name) statt der Dev-Datenbank `pivot`.
 - `AppModule` lädt `.env.test` statt `.env`, wenn `NODE_ENV=test` gesetzt
   ist (Jest setzt das automatisch selbst, sofern nicht bereits vorhanden).
 - `test/prepare-test-db.js`: als `pretest:e2e`-npm-Skript registriert
   (läuft automatisch vor `test:e2e`, pnpm/npm-Konvention). Führt
   `prisma db push --accept-data-loss` mit überschriebener `DATABASE_URL`
-  gegen `strasev_test` aus – erstellt die Datenbank bei Bedarf automatisch
+  gegen `pivot_test` aus – erstellt die Datenbank bei Bedarf automatisch
   (Prisma legt eine fehlende Postgres-Datenbank selbst an) und synchronisiert
   das Schema, ganz ohne Migrations-Historie (für eine Wegwerf-Testdatenbank
   nicht nötig).

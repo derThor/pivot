@@ -7,7 +7,7 @@ describe('Auth-Flow (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
 
-  const email = 'e2e-auth-test@strasev.dev';
+  const email = 'e2e-auth-test@pivot.dev';
   const password = 'ChangeMe123!';
 
   beforeAll(async () => {
@@ -25,7 +25,7 @@ describe('Auth-Flow (e2e)', () => {
   it('POST /v1/auth/register legt einen neuen Benutzer an', async () => {
     const res = await request(app.getHttpServer())
       .post('/v1/auth/register')
-      .send({ email, password, lastName: 'E2E Auth Test' })
+      .send({ email, password, firstName: 'E2E', lastName: 'E2E Auth Test' })
       .expect(201);
 
     expect(res.body).toHaveProperty('accessToken');
@@ -35,7 +35,7 @@ describe('Auth-Flow (e2e)', () => {
   it('POST /v1/auth/register lehnt doppelte E-Mail ab', async () => {
     await request(app.getHttpServer())
       .post('/v1/auth/register')
-      .send({ email, password, lastName: 'E2E Auth Test' })
+      .send({ email, password, firstName: 'E2E', lastName: 'E2E Auth Test' })
       .expect(409);
   });
 

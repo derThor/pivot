@@ -1,4 +1,4 @@
-# Projektplan – strasev CMS
+# Projektplan – pivot CMS
 
 ## 1. Ziel
 
@@ -28,7 +28,7 @@ Antworten in der Konversation vom 2026-08-02).
 ## 3. Projektstruktur (Monorepo)
 
 ```
-strasev/
+pivot/
 ├── apps/
 │   ├── api/     # NestJS Backend
 │   └── web/     # Next.js Frontend (Admin-Dashboard)

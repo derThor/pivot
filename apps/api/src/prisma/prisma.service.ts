@@ -4,7 +4,7 @@ import {
   OnModuleDestroy,
   Logger,
 } from '@nestjs/common';
-import { PrismaClient } from '@strasev/database';
+import { PrismaClient } from '@pivot/database';
 
 @Injectable()
 export class PrismaService

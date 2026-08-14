@@ -1,5 +1,5 @@
 {
-  "name": "@strasev/database",
+  "name": "@pivot/database",
   "version": "0.1.0",
   "private": true,
   "main": "generated/client/index.js",

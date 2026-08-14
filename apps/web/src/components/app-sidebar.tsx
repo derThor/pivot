@@ -42,7 +42,6 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import type { CurrentUser } from "@/lib/api-server";
-import { mediaUrl } from "@/lib/media";
 
 // Referenzbild: aktiver Eintrag ist ein moderat gerundetes Rechteck (kein
 // volles Pillen-Oval wie bei Buttons), Text/Icon fett und dunkel auf Lime.
@@ -167,11 +166,6 @@ export const ROUTE_ALIASES: Record<string, string> = {
   "/dashboard/account": "/dashboard/users",
 };
 
-function fallbackInitials(companyName?: string | null) {
-  const trimmed = companyName?.trim();
-  return trimmed ? trimmed.slice(0, 2).toUpperCase() : "TW";
-}
-
 /**
  * Wählt die am genauesten passende Item-URL (längste übereinstimmende
  * URL, nicht nur die erste gefundene) – sonst würde z.B. "/dashboard"
@@ -210,14 +204,8 @@ function itemMatchesActive(
 
 export function AppSidebar({
   user,
-  logoExpandedUrl,
-  logoCollapsedUrl,
-  companyName,
 }: {
   user: CurrentUser;
-  logoExpandedUrl?: string | null;
-  logoCollapsedUrl?: string | null;
-  companyName?: string | null;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -309,30 +297,20 @@ export function AppSidebar({
       <SidebarHeader className="border-b px-[25px] transition-[padding] duration-200 ease-linear group-data-[collapsible=icon]:px-[10px]">
         <div className="flex items-center gap-2 py-2 transition-[gap] duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
           <div className="flex h-8 w-0 shrink-0 items-center justify-center overflow-hidden rounded-lg opacity-0 shadow-sm transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:opacity-100">
-            {logoCollapsedUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={mediaUrl({ url: logoCollapsedUrl })}
-                alt="Logo"
-                className="size-full object-contain"
-              />
-            ) : (
-              <div className="flex size-full items-center justify-center bg-primary text-sm font-semibold text-primary-foreground">
-                {fallbackInitials(companyName)}
-              </div>
-            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/logo-collapsed.png"
+              alt="pivot CMS"
+              className="size-full object-contain"
+            />
           </div>
           <span className="overflow-hidden whitespace-nowrap transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
-            {logoExpandedUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={mediaUrl({ url: logoExpandedUrl })}
-                alt="strasev CMS"
-                className="h-11 w-auto max-w-full object-contain"
-              />
-            ) : (
-              <span className="text-lg font-semibold">strasev CMS</span>
-            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/logo-expanded.png"
+              alt="pivot CMS"
+              className="h-11 w-auto max-w-full object-contain"
+            />
           </span>
         </div>
       </SidebarHeader>
@@ -349,7 +327,7 @@ export function AppSidebar({
             return null;
           }
           // Maglo-Referenz zeigt eine flache Liste ohne Auf-/Zuklapp-
-          // Menü – bei ~13 Menüpunkten braucht strasev weiterhin eine
+          // Menü – bei ~13 Menüpunkten braucht pivot weiterhin eine
           // Gruppierung fürs Auffinden, aber nicht mehr als interaktives
           // Akkordeon: Gruppen sind immer aufgeklappt, die Beschriftung
           // ist nur noch ein schlichtes, nicht klickbares Abschnitts-Label

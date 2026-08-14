@@ -69,17 +69,7 @@ export class UpdateSettingsDto {
   @ApiPropertyOptional({ nullable: true })
   @IsOptional()
   @IsString()
-  logoExpandedUrl?: string | null;
-
-  @ApiPropertyOptional({ nullable: true })
-  @IsOptional()
-  @IsString()
-  logoCollapsedUrl?: string | null;
-
-  @ApiPropertyOptional({ nullable: true })
-  @IsOptional()
-  @IsString()
-  authImageUrl?: string | null;
+  companyLogoUrl?: string | null;
 
   @ApiPropertyOptional()
   @IsOptional()

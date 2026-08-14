@@ -8,9 +8,6 @@ export default async function RegisterPage() {
 
   return (
     <AuthShell
-      logoUrl={settings?.logoExpandedUrl}
-      companyName={settings?.companyName}
-      imageUrl={settings?.authImageUrl}
       title="Konto erstellen"
       description="Bitte gib deine Daten ein."
     >

@@ -76,7 +76,7 @@
 
 ## Bewusst nicht Teil dieses Batches
 
-- **XML-Sitemap / `robots.txt` (site-weit)**: strasev ist ein headless
+- **XML-Sitemap / `robots.txt` (site-weit)**: pivot ist ein headless
   CMS – `apps/web` ist ausschließlich das Admin-Dashboard, es gibt in
   diesem Repo keine öffentliche Seite, die eine Sitemap tatsächlich
   bräuchte. Eine sinnvolle Umsetzung bräuchte zusätzlich eine
