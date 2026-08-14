@@ -6,7 +6,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
-import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";
 import {
   Card,
@@ -28,12 +27,16 @@ import { isPasswordValid, type PasswordPolicy } from "@/lib/password-policy";
 
 export function ChangePasswordForm({
   passwordPolicy,
+  formId,
+  onSubmittingChange,
 }: {
   passwordPolicy: PasswordPolicy;
+  // Für den Button außerhalb der weißen Fläche (siehe account-tabs.tsx).
+  formId: string;
+  onSubmittingChange?: (submitting: boolean) => void;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const schema = useMemo(
     () =>
@@ -58,14 +61,18 @@ export function ChangePasswordForm({
 
   const form = useForm<ChangePasswordValues>({
     resolver: zodResolver(schema),
-    defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
   });
 
   const newPassword = form.watch("newPassword");
 
   async function onSubmit(values: ChangePasswordValues) {
     setError(null);
-    setIsSubmitting(true);
+    onSubmittingChange?.(true);
     try {
       const res = await fetch("/api/auth/password", {
         method: "PATCH",
@@ -90,7 +97,7 @@ export function ChangePasswordForm({
     } catch {
       setError("Server nicht erreichbar. Bitte später erneut versuchen.");
     } finally {
-      setIsSubmitting(false);
+      onSubmittingChange?.(false);
     }
   }
 
@@ -106,6 +113,7 @@ export function ChangePasswordForm({
       <CardContent>
         <Form {...form}>
           <form
+            id={formId}
             onSubmit={form.handleSubmit(onSubmit)}
             className="flex flex-col gap-10"
           >
@@ -153,11 +161,6 @@ export function ChangePasswordForm({
               )}
             />
             {error && <p className="text-sm text-destructive">{error}</p>}
-            <div>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Ändert…" : "Passwort ändern"}
-              </Button>
-            </div>
           </form>
         </Form>
       </CardContent>

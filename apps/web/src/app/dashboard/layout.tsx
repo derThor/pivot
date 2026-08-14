@@ -45,7 +45,7 @@ export default async function DashboardLayout({
           user={user}
           defaultPageSize={settings?.defaultPageSize ?? 10}
         />
-        <div className="flex min-w-0 flex-1 flex-col gap-6 bg-background px-6 pt-[40px] pb-[40px] sm:px-16">
+        <div className="flex min-w-0 flex-1 flex-col gap-6 bg-background px-5 pt-4 pb-5 sm:px-10 sm:pt-6 sm:pb-10">
           {children}
         </div>
       </SidebarInset>

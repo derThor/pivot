@@ -21,29 +21,38 @@ export default async function EditContentPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [content, contentTypes, moduleTypes, globalModules, categories, settings, user] =
-    await Promise.all([
-      getContent(id),
-      getContentTypes(),
-      getModuleTypes(),
-      getGlobalModules(),
-      getCategories({ pageSize: 100 }),
-      getPublicSettings(),
-      getCurrentUser(),
-    ]);
+  const [
+    content,
+    contentTypes,
+    moduleTypes,
+    globalModules,
+    categories,
+    settings,
+    user,
+  ] = await Promise.all([
+    getContent(id),
+    getContentTypes(),
+    getModuleTypes(),
+    getGlobalModules(),
+    getCategories({ pageSize: 100 }),
+    getPublicSettings(),
+    getCurrentUser(),
+  ]);
 
   if (!content) {
     notFound();
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight break-words">
             Inhalt bearbeiten
           </h1>
-          <p className="text-sm text-muted-foreground break-words">{content.title}</p>
+          <p className="text-sm text-muted-foreground break-words">
+            {content.title}
+          </p>
           <DashboardBreadcrumbs />
         </div>
         <div className="flex flex-wrap gap-2">

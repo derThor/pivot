@@ -7,6 +7,7 @@ import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
 import { NavigationDialog } from "@/components/navigation-dialog";
 import { NavigationItemDialog } from "@/components/navigation-item-dialog";
 import { NavigationItemsEditor } from "@/components/navigation-items-editor";
+import { PageContent } from "@/components/page-content";
 import { getContentList, getNavigation } from "@/lib/api-server";
 
 export default async function NavigationDetailPage({
@@ -25,9 +26,13 @@ export default async function NavigationDetailPage({
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-10">
       <div>
-        <Button variant="outline" size="sm" render={<Link href="/dashboard/navigation" />}>
+        <Button
+          variant="outline"
+          size="sm"
+          render={<Link href="/dashboard/navigation" />}
+        >
           <ArrowLeft />
           Zurück zur Übersicht
         </Button>
@@ -37,7 +42,9 @@ export default async function NavigationDetailPage({
           <h1 className="text-2xl font-semibold tracking-tight break-words">
             {navigation.name}
           </h1>
-          <p className="text-sm text-muted-foreground break-words">/{navigation.slug}</p>
+          <p className="text-sm text-muted-foreground break-words">
+            /{navigation.slug}
+          </p>
           <DashboardBreadcrumbs />
         </div>
         <div className="flex flex-wrap gap-2">
@@ -54,13 +61,13 @@ export default async function NavigationDetailPage({
           />
         </div>
       </div>
-      <div className="w-full max-w-[1000px] rounded-[10px] p-6">
+      <PageContent>
         <NavigationItemsEditor
           navigationId={navigation.id}
           items={navigation.items}
           contentItems={content?.items ?? []}
         />
-      </div>
+      </PageContent>
     </div>
   );
 }

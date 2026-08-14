@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ContentVersionsList } from "@/components/content-versions-list";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
+import { PageContent } from "@/components/page-content";
 import { PaginationControls } from "@/components/pagination-controls";
 import {
   getContent,
@@ -31,12 +32,14 @@ export default async function ContentVersionsPage({
     notFound();
   }
 
-  const [contentType, settings, moduleTypes, globalModules] = await Promise.all([
-    getContentType(content.contentType.id),
-    getPublicSettings(),
-    getModuleTypes(),
-    getGlobalModules(),
-  ]);
+  const [contentType, settings, moduleTypes, globalModules] = await Promise.all(
+    [
+      getContentType(content.contentType.id),
+      getPublicSettings(),
+      getModuleTypes(),
+      getGlobalModules(),
+    ],
+  );
   const versions = await getContentVersions(id, {
     page,
     pageSize: settings?.defaultPageSize ?? 10,
@@ -51,7 +54,7 @@ export default async function ContentVersionsPage({
       .map((field) => field.name) ?? [];
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-10">
       <div>
         <Button
           variant="ghost"
@@ -68,23 +71,25 @@ export default async function ContentVersionsPage({
         <p className="text-sm text-muted-foreground">{content.title}</p>
         <DashboardBreadcrumbs />
       </div>
-      <ContentVersionsList
-        contentId={id}
-        currentData={content.data}
-        versions={versions?.items ?? []}
-        richtextFields={richtextFields}
-        moduleFields={moduleFields}
-        moduleTypes={moduleTypes ?? []}
-        globalModules={globalModules ?? []}
-      />
-
-      {versions && (
-        <PaginationControls
-          page={versions.meta.page}
-          pageCount={versions.meta.pageCount}
-          buildHref={(p) => `?page=${p}`}
+      <PageContent>
+        <ContentVersionsList
+          contentId={id}
+          currentData={content.data}
+          versions={versions?.items ?? []}
+          richtextFields={richtextFields}
+          moduleFields={moduleFields}
+          moduleTypes={moduleTypes ?? []}
+          globalModules={globalModules ?? []}
         />
-      )}
+
+        {versions && (
+          <PaginationControls
+            page={versions.meta.page}
+            pageCount={versions.meta.pageCount}
+            buildHref={(p) => `?page=${p}`}
+          />
+        )}
+      </PageContent>
     </div>
   );
 }

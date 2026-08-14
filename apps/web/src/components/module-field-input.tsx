@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Image as ImageIcon, Plus, Trash2, Video as VideoIcon } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Image as ImageIcon,
+  Plus,
+  Trash2,
+  Video as VideoIcon,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +40,7 @@ export function ModuleFieldInput({
   // Siehe RichTextEditor: begrenzt Rich-Text-Unterfelder auf eine feste,
   // scrollbare Höhe statt frei zu wachsen. Wird bei Repeater-Feldern an
   // die Unterfelder weitergereicht, damit z.B. eine lange FAQ-Antwort
-  // nicht die Kachel-Höhe im Grid sprengt (siehe global-module-page-form.tsx).
+  // nicht die Kachel-Höhe im Grid sprengt (siehe global-module-form-dialog.tsx).
   richTextMaxHeight?: string;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -116,7 +123,12 @@ export function ModuleFieldInput({
                 className="max-h-40 w-full rounded-md bg-black"
               />
             )}
-            <Button type="button" variant="outline" size="sm" onClick={() => setPickerOpen(true)}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPickerOpen(true)}
+            >
               Ersetzen
             </Button>
           </div>
@@ -191,7 +203,8 @@ export function ModuleFieldInput({
             `sm`/`xl`): dieselbe Komponente läuft sowohl im schmalen
             Schnell-anlegen-Popup im Designer (siehe
             insert-shared-block-dialog.tsx, max. ~512px) als auch auf den
-            breiten FAQ-/Galerie-Detailseiten (global-module-page-form.tsx)
+            breiten FAQ-/Galerie-Anlegen/Bearbeiten-Popups
+            (global-module-form-dialog.tsx)
             – die Spaltenzahl muss sich nach der tatsächlich verfügbaren
             Breite richten, nicht nach der Bildschirmgröße, sonst würde das
             Popup bei breiten Bildschirmen trotzdem mehrspaltig und zu eng. */}

@@ -1,7 +1,6 @@
-import Link from "next/link";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { GlobalModuleFormDialog } from "@/components/global-module-form-dialog";
 import { GlobalModulesManager } from "@/components/global-modules-manager";
+import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 import { isFaqModuleType } from "@/components/block-field-output";
@@ -35,36 +34,33 @@ export default async function FaqsPage({
     : null;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader title="FAQs" />
-        {faqType && (
-          <Button render={<Link href="/dashboard/content/faqs/new" />}>
-            <Plus />
-            Neu anlegen
-          </Button>
-        )}
+        {faqType && <GlobalModuleFormDialog moduleType={faqType} />}
       </div>
-      {faqType ? (
-        <>
-          <GlobalModulesManager
-            items={globalModules?.items ?? []}
-            editHrefBase="/dashboard/content/faqs"
-            entityLabelPlural="FAQ-Einträge"
-          />
-          {globalModules && (
-            <PaginationControls
-              page={globalModules.meta.page}
-              pageCount={globalModules.meta.pageCount}
-              buildHref={(p) => `?page=${p}`}
+      <PageContent>
+        {faqType ? (
+          <>
+            <GlobalModulesManager
+              items={globalModules?.items ?? []}
+              moduleType={faqType}
+              entityLabelPlural="FAQ-Einträge"
             />
-          )}
-        </>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          Kein Akkordeon/FAQ-Modul-Typ vorhanden.
-        </p>
-      )}
+            {globalModules && (
+              <PaginationControls
+                page={globalModules.meta.page}
+                pageCount={globalModules.meta.pageCount}
+                buildHref={(p) => `?page=${p}`}
+              />
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Kein Akkordeon/FAQ-Modul-Typ vorhanden.
+          </p>
+        )}
+      </PageContent>
     </div>
   );
 }

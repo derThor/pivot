@@ -14,11 +14,7 @@ import {
 
 const MIN_QUERY_LENGTH = 3;
 
-export function GlobalSearch({
-  defaultPageSize,
-}: {
-  defaultPageSize: number;
-}) {
+export function GlobalSearch({ defaultPageSize }: { defaultPageSize: number }) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -91,14 +87,16 @@ export function GlobalSearch({
       <div
         className={cn(
           "absolute top-0 right-0 flex h-12 items-center transition-[width] duration-200 ease-out",
-          expanded ? "w-72" : "w-12",
+          expanded ? "w-96" : "w-12",
         )}
       >
         <button
           type="button"
           aria-label={query.length > 0 ? "Suche zurücksetzen" : "Suchen"}
           tabIndex={-1}
-          onClick={() => (query.length > 0 ? clear() : inputRef.current?.focus())}
+          onClick={() =>
+            query.length > 0 ? clear() : inputRef.current?.focus()
+          }
           className="absolute top-0 right-0 z-10 flex size-12 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
         >
           {query.length > 0 ? (
@@ -111,7 +109,7 @@ export function GlobalSearch({
           ref={inputRef}
           placeholder="Suchen…"
           className={cn(
-            "h-12 w-full rounded-full border-none bg-muted/60 pr-12 transition-[padding-left,opacity] duration-200 ease-out",
+            "h-12 w-full rounded-full border-none bg-card pr-12 shadow-sm transition-[padding-left,opacity] duration-200 ease-out",
             expanded ? "pl-4 opacity-100" : "pl-0 opacity-0",
           )}
           value={query}
@@ -136,7 +134,7 @@ export function GlobalSearch({
         />
       </div>
       {open && (
-        <div className="absolute top-full right-0 z-50 mt-2 w-72 min-w-80 overflow-hidden rounded-2xl border bg-popover py-2 text-popover-foreground shadow-lg">
+        <div className="absolute top-full right-0 z-50 mt-2 w-96 overflow-hidden rounded-2xl border bg-popover py-2 text-popover-foreground shadow-lg">
           {isLoading ? (
             <div className="px-4 py-3 text-sm text-muted-foreground">
               Suche…

@@ -46,8 +46,12 @@ import { mediaUrl } from "@/lib/media";
 
 // Referenzbild: aktiver Eintrag ist ein moderat gerundetes Rechteck (kein
 // volles Pillen-Oval wie bei Buttons), Text/Icon fett und dunkel auf Lime.
+// Eingeklappt: das aktive Hintergrund-Rechteck soll quadratisch um das
+// Icon sitzen statt über die volle Spaltenbreite zu laufen (`size-11` +
+// `mx-auto` + `p-0` überschreiben `w-full`/Padding gezielt nur im
+// `collapsible=icon`-Zustand).
 const navActiveClass =
-  "h-auto w-full gap-3 overflow-hidden rounded-xl pl-3 pr-4 py-2.5 transition-[gap,padding] duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:pl-3 data-active:bg-primary data-active:font-semibold data-active:text-primary-foreground data-active:hover:text-primary-foreground";
+  "h-auto w-full gap-3 overflow-hidden rounded-xl pl-3 pr-4 py-2.5 transition-[gap,padding] duration-200 ease-linear group-data-[collapsible=icon]:size-11 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:p-0 data-active:bg-primary data-active:font-semibold data-active:text-primary-foreground data-active:hover:text-primary-foreground";
 
 // Footer-Einträge (Einstellungen/Abmelden) liegen direkt im gepolsterten
 // SidebarFooter (hat bereits eigenes `p-2`, siehe ui/sidebar.tsx) –
@@ -55,7 +59,7 @@ const navActiveClass =
 // mehr nötig, da das Rechteck ohnehin innerhalb des Footer-Innenabstands
 // sitzt.
 const navFooterActiveClass =
-  "h-auto w-full gap-3 overflow-hidden rounded-xl px-3 py-2.5 transition-[gap,padding] duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 data-active:bg-primary data-active:font-semibold data-active:text-primary-foreground data-active:hover:text-primary-foreground";
+  "h-auto w-full gap-3 overflow-hidden rounded-xl px-3 py-2.5 transition-[gap,padding] duration-200 ease-linear group-data-[collapsible=icon]:size-11 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:p-0 data-active:bg-primary data-active:font-semibold data-active:text-primary-foreground data-active:hover:text-primary-foreground";
 
 const navLabelClass =
   "overflow-hidden whitespace-nowrap transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0";
@@ -304,7 +308,7 @@ export function AppSidebar({
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b px-[25px] transition-[padding] duration-200 ease-linear group-data-[collapsible=icon]:px-[10px]">
         <div className="flex items-center gap-2 py-2 transition-[gap] duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
-          <div className="flex h-12 w-0 shrink-0 items-center justify-center overflow-hidden rounded-xl opacity-0 shadow-sm transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:opacity-100">
+          <div className="flex h-8 w-0 shrink-0 items-center justify-center overflow-hidden rounded-lg opacity-0 shadow-sm transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:opacity-100">
             {logoCollapsedUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -434,8 +438,12 @@ export function AppSidebar({
                           // – unabhängig vom manuellen Auf-/Zuklapp-Status.
                           // Der Toggle-Button wird in diesem Fall ausgeblendet,
                           // da er ohnehin wirkungslos wäre.
-                          const isForcedOpen = itemMatchesActive(item, activeItemUrl);
-                          const isSubOpen = isForcedOpen || openSubItems.has(item.url);
+                          const isForcedOpen = itemMatchesActive(
+                            item,
+                            activeItemUrl,
+                          );
+                          const isSubOpen =
+                            isForcedOpen || openSubItems.has(item.url);
                           return (
                             <SidebarMenuItem key={item.url}>
                               <div className="relative">
@@ -443,7 +451,10 @@ export function AppSidebar({
                                   render={<Link href={item.url} />}
                                   isActive={item.url === activeItemUrl}
                                   tooltip={item.title}
-                                  className={cn(navActiveClass, hasChildren && "pr-9")}
+                                  className={cn(
+                                    navActiveClass,
+                                    hasChildren && "pr-9",
+                                  )}
                                 >
                                   <span className={navIconChipClass}>
                                     <item.icon />
@@ -499,7 +510,9 @@ export function AppSidebar({
                                 <div
                                   className={cn(
                                     "grid transition-[grid-template-rows] duration-200 ease-linear",
-                                    isSubOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                                    isSubOpen
+                                      ? "grid-rows-[1fr]"
+                                      : "grid-rows-[0fr]",
                                   )}
                                 >
                                   <div className="overflow-hidden">
@@ -509,7 +522,9 @@ export function AppSidebar({
                                           <SidebarMenuSubItem key={child.url}>
                                             <SidebarMenuSubButton
                                               render={<Link href={child.url} />}
-                                              isActive={child.url === activeItemUrl}
+                                              isActive={
+                                                child.url === activeItemUrl
+                                              }
                                               className={navSubActiveClass}
                                             >
                                               <child.icon />

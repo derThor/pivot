@@ -97,7 +97,7 @@ export function MediaUploadDialog({
         <Upload />
         Datei hochladen
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Medium hochladen</DialogTitle>
         </DialogHeader>

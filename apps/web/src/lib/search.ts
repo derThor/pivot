@@ -142,19 +142,14 @@ export async function searchResultHref(
   searchTerm: string,
   defaultPageSize: number,
 ) {
-  // Inhalte sowie FAQ/Galerie haben eine eigene Detailseite (Editor) –
-  // dahin springt man direkt, ohne Markierung. Alle anderen Bereiche
-  // werden nur per Dialog auf ihrer Listen-Seite bearbeitet, dort wird
-  // stattdessen der gesuchte Begriff im Treffer-Text markiert (siehe
+  // Inhalte ("Seiten") haben eine eigene Detailseite (Editor) – dahin
+  // springt man direkt, ohne Markierung. Alle anderen Bereiche (inkl.
+  // FAQ/Galerie, seit dem Umbau auf Anlegen/Bearbeiten-Popups) werden nur
+  // per Dialog auf ihrer Listen-Seite bearbeitet, dort wird stattdessen
+  // der gesuchte Begriff im Treffer-Text markiert (siehe
   // useHighlightParam) und – bei Bedarf – zur richtigen Seite navigiert.
   if (result.type === "content") {
     return `/dashboard/content/${result.id}/edit`;
-  }
-  if (result.type === "faq") {
-    return `/dashboard/content/faqs/${result.id}`;
-  }
-  if (result.type === "gallery") {
-    return `/dashboard/content/galleries/${result.id}`;
   }
 
   const location = await locateResult(result, defaultPageSize);

@@ -1,4 +1,5 @@
 import { PreviewLinksTable } from "@/components/preview-links-table";
+import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 import { getAllPreviewLinks, getPublicSettings } from "@/lib/api-server";
@@ -17,17 +18,19 @@ export default async function PreviewLinksPage({
   });
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-10">
       <PageHeader title="Vorschau-Links" />
-      <PreviewLinksTable items={previewLinks?.items ?? []} />
+      <PageContent>
+        <PreviewLinksTable items={previewLinks?.items ?? []} />
 
-      {previewLinks && (
-        <PaginationControls
-          page={previewLinks.meta.page}
-          pageCount={previewLinks.meta.pageCount}
-          buildHref={(p) => `?page=${p}`}
-        />
-      )}
+        {previewLinks && (
+          <PaginationControls
+            page={previewLinks.meta.page}
+            pageCount={previewLinks.meta.pageCount}
+            buildHref={(p) => `?page=${p}`}
+          />
+        )}
+      </PageContent>
     </div>
   );
 }

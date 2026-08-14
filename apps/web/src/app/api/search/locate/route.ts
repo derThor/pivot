@@ -13,6 +13,8 @@ const backendPath: Record<string, (id: string) => string> = {
   user: (id) => `/users/${id}/page`,
   role: (id) => `/roles/${id}/page`,
   previewLink: (id) => `/content/preview-links/${id}/page`,
+  faq: (id) => `/global-modules/${id}/page`,
+  gallery: (id) => `/global-modules/${id}/page`,
 };
 
 export async function GET(request: Request) {
@@ -28,7 +30,10 @@ export async function GET(request: Request) {
 
   const buildPath = backendPath[type];
   if (!buildPath || !id) {
-    return NextResponse.json({ message: "Ungültige Anfrage." }, { status: 400 });
+    return NextResponse.json(
+      { message: "Ungültige Anfrage." },
+      { status: 400 },
+    );
   }
 
   const backendRes = await fetch(

@@ -174,7 +174,7 @@ export function RoleFormDialog({
           )}
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Rolle bearbeiten" : "Neue Rolle"}
@@ -220,8 +220,8 @@ export function RoleFormDialog({
                     <div className="flex flex-col gap-0.5">
                       <Label>Zugriff auf das Backend-Dashboard</Label>
                       <p className="text-sm text-muted-foreground">
-                        Ohne dieses Recht kann sich der Benutzer zwar
-                        anmelden, aber `/dashboard` nicht öffnen.
+                        Ohne dieses Recht kann sich der Benutzer zwar anmelden,
+                        aber `/dashboard` nicht öffnen.
                       </p>
                     </div>
                     <Switch

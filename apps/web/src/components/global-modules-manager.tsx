@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 
@@ -22,29 +21,38 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
+import { GlobalModuleFormDialog } from "@/components/global-module-form-dialog";
+import { HighlightText } from "@/components/highlight-text";
 import { SelectionToolbar } from "@/components/selection-toolbar";
 import { useSelection } from "@/hooks/use-selection";
-import type { GlobalModule } from "@/lib/api-server";
+import { useHighlightParam } from "@/hooks/use-highlight-param";
+import type { GlobalModule, ModuleType } from "@/lib/api-server";
 
 export function GlobalModulesManager({
   items,
-  editHrefBase,
+  moduleType,
   entityLabelPlural = "Einträge",
 }: {
   items: GlobalModule[];
-  // Bearbeiten öffnet `${editHrefBase}/${item.id}` als eigene Seite (mehr
-  // Platz, siehe global-module-page-form.tsx). Bewusst ein String statt
-  // einer Callback-Funktion: diese Komponente wird von einer Server
-  // Component aus verwendet, Funktionen lassen sich über die RSC-Grenze
-  // nicht übergeben ("Functions cannot be passed directly to Client
-  // Components").
-  editHrefBase: string;
+  // Bearbeiten öffnet ein Popup (siehe global-module-form-dialog.tsx)
+  // statt einer eigenen Seite.
+  moduleType: ModuleType;
   entityLabelPlural?: string;
 }) {
   const router = useRouter();
+  const { activeId, query: highlightQuery } =
+    useHighlightParam("global-module-row");
+  const [editTarget, setEditTarget] = useState<GlobalModule | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<GlobalModule | null>(null);
-  const { selected, toggle, toggleAll, clear, allSelected, someSelected, count } =
-    useSelection(items.map((item) => item.id));
+  const {
+    selected,
+    toggle,
+    toggleAll,
+    clear,
+    allSelected,
+    someSelected,
+    count,
+  } = useSelection(items.map((item) => item.id));
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -99,7 +107,7 @@ export function GlobalModulesManager({
               </TableRow>
             ) : (
               items.map((item) => (
-                <TableRow key={item.id}>
+                <TableRow key={item.id} id={`global-module-row-${item.id}`}>
                   <TableCell>
                     <Checkbox
                       checked={selected.has(item.id)}
@@ -107,7 +115,13 @@ export function GlobalModulesManager({
                       aria-label={`${item.name} auswählen`}
                     />
                   </TableCell>
-                  <TableCell className="font-medium">{item.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <HighlightText
+                      text={item.name}
+                      query={highlightQuery}
+                      active={activeId === item.id}
+                    />
+                  </TableCell>
                   <TableCell>
                     {new Date(item.updatedAt).toLocaleString("de-DE")}
                   </TableCell>
@@ -128,9 +142,7 @@ export function GlobalModulesManager({
                           <MoreVertical />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            render={<Link href={`${editHrefBase}/${item.id}`} />}
-                          >
+                          <DropdownMenuItem onClick={() => setEditTarget(item)}>
                             <Pencil />
                             Bearbeiten
                           </DropdownMenuItem>
@@ -151,6 +163,16 @@ export function GlobalModulesManager({
           </TableBody>
         </Table>
       </div>
+
+      {editTarget && (
+        <GlobalModuleFormDialog
+          moduleType={moduleType}
+          globalModule={editTarget}
+          hideTrigger
+          open={editTarget !== null}
+          onOpenChange={(open) => !open && setEditTarget(null)}
+        />
+      )}
 
       <ConfirmDeleteDialog
         open={deleteTarget !== null}

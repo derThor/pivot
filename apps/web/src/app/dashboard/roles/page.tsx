@@ -1,8 +1,13 @@
 import { RoleFormDialog } from "@/components/role-form-dialog";
 import { RolesTable } from "@/components/roles-table";
+import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
-import { getPermissionsCatalog, getPublicSettings, getRoles } from "@/lib/api-server";
+import {
+  getPermissionsCatalog,
+  getPublicSettings,
+  getRoles,
+} from "@/lib/api-server";
 
 export default async function RolesPage({
   searchParams,
@@ -22,7 +27,7 @@ export default async function RolesPage({
   });
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader title="Rollen & Rechte" />
         {permissionsCatalog && (
@@ -30,20 +35,25 @@ export default async function RolesPage({
         )}
       </div>
 
-      {roles === null || permissionsCatalog === null ? (
-        <div className="flex h-24 items-center justify-center rounded-lg border text-sm text-muted-foreground">
-          Keine Berechtigung, Rollen zu verwalten.
-        </div>
-      ) : (
-        <>
-          <RolesTable roles={roles.items} permissionsCatalog={permissionsCatalog} />
-          <PaginationControls
-            page={roles.meta.page}
-            pageCount={roles.meta.pageCount}
-            buildHref={(p) => `?page=${p}`}
-          />
-        </>
-      )}
+      <PageContent>
+        {roles === null || permissionsCatalog === null ? (
+          <div className="flex h-24 items-center justify-center rounded-lg border text-sm text-muted-foreground">
+            Keine Berechtigung, Rollen zu verwalten.
+          </div>
+        ) : (
+          <>
+            <RolesTable
+              roles={roles.items}
+              permissionsCatalog={permissionsCatalog}
+            />
+            <PaginationControls
+              page={roles.meta.page}
+              pageCount={roles.meta.pageCount}
+              buildHref={(p) => `?page=${p}`}
+            />
+          </>
+        )}
+      </PageContent>
     </div>
   );
 }

@@ -119,7 +119,7 @@ export function VideoPickerDialog({
         else resetUploadForm();
       }}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Video einfügen</DialogTitle>
         </DialogHeader>

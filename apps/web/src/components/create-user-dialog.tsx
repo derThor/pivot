@@ -49,7 +49,8 @@ export function CreateUserDialog({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const defaultRoleId = roles.find((r) => r.isDefault)?.id ?? roles[0]?.id ?? "";
+  const defaultRoleId =
+    roles.find((r) => r.isDefault)?.id ?? roles[0]?.id ?? "";
 
   const createUserSchema = useMemo(
     () =>
@@ -57,7 +58,9 @@ export function CreateUserDialog({
         .object({
           firstName: z.string().optional(),
           lastName: z.string().min(1, "Nachname ist erforderlich."),
-          email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben."),
+          email: z
+            .string()
+            .email("Bitte eine gültige E-Mail-Adresse eingeben."),
           password: z
             .string()
             .refine((value) => isPasswordValid(value, passwordPolicy), {
@@ -136,7 +139,7 @@ export function CreateUserDialog({
         <Plus />
         Neuer Benutzer
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Neuer Benutzer</DialogTitle>
         </DialogHeader>

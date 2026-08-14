@@ -1,8 +1,6 @@
 import { redirect } from "next/navigation";
-import { AccountForm } from "@/components/account-form";
-import { ChangePasswordForm } from "@/components/change-password-form";
+import { AccountTabs } from "@/components/account-tabs";
 import { PageHeader } from "@/components/page-header";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getCurrentUser, getPublicSettings } from "@/lib/api-server";
 
 export default async function AccountPage() {
@@ -24,27 +22,14 @@ export default async function AccountPage() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-10">
       <PageHeader title="Konto" />
 
-      <Tabs
-        defaultValue="profile"
-        className="w-full max-w-[1000px] rounded-[10px] p-6"
-      >
-        <TabsList>
-          <TabsTrigger value="profile">Profil</TabsTrigger>
-          <TabsTrigger value="security">Sicherheit</TabsTrigger>
-        </TabsList>
-        <TabsContent value="profile">
-          <AccountForm
-            user={user}
-            allowEmailChange={publicSettings?.allowEmailChange ?? true}
-          />
-        </TabsContent>
-        <TabsContent value="security">
-          <ChangePasswordForm passwordPolicy={passwordPolicy} />
-        </TabsContent>
-      </Tabs>
+      <AccountTabs
+        user={user}
+        allowEmailChange={publicSettings?.allowEmailChange ?? true}
+        passwordPolicy={passwordPolicy}
+      />
     </div>
   );
 }

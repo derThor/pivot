@@ -91,7 +91,10 @@ export function PreviewLinksDialog({ contentId }: { contentId: string }) {
   async function handleCopy(linkId: string, token: string) {
     await navigator.clipboard.writeText(previewUrl(token));
     setCopiedId(linkId);
-    setTimeout(() => setCopiedId((current) => (current === linkId ? null : current)), 2000);
+    setTimeout(
+      () => setCopiedId((current) => (current === linkId ? null : current)),
+      2000,
+    );
   }
 
   function startEdit(link: PreviewLink) {
@@ -104,11 +107,14 @@ export function PreviewLinksDialog({ contentId }: { contentId: string }) {
     setIsSavingEdit(true);
     setError(null);
     try {
-      const res = await fetch(`/api/content/${contentId}/preview-links/${linkId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ expiresInHours: Number(editingExpiry) }),
-      });
+      const res = await fetch(
+        `/api/content/${contentId}/preview-links/${linkId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ expiresInHours: Number(editingExpiry) }),
+        },
+      );
       const body = await res.json().catch(() => null);
       if (!res.ok) {
         setError(body?.message ?? "Link konnte nicht aktualisiert werden.");
@@ -129,7 +135,7 @@ export function PreviewLinksDialog({ contentId }: { contentId: string }) {
         <Link2 />
         Vorschau-Link
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Vorschau-Links</DialogTitle>
         </DialogHeader>
@@ -206,7 +212,9 @@ export function PreviewLinksDialog({ contentId }: { contentId: string }) {
                           size="icon-sm"
                           aria-label="Gültigkeitsdauer bearbeiten"
                           onClick={() =>
-                            editingId === link.id ? setEditingId(null) : startEdit(link)
+                            editingId === link.id
+                              ? setEditingId(null)
+                              : startEdit(link)
                           }
                         >
                           <Pencil />
@@ -234,18 +242,25 @@ export function PreviewLinksDialog({ contentId }: { contentId: string }) {
                           </Label>
                           <Select
                             value={editingExpiry}
-                            onValueChange={(value) => setEditingExpiry(value ?? "168")}
+                            onValueChange={(value) =>
+                              setEditingExpiry(value ?? "168")
+                            }
                             items={expiryOptions}
                           >
-                            <SelectTrigger id={`edit-expiry-${link.id}`} className="w-full">
+                            <SelectTrigger
+                              id={`edit-expiry-${link.id}`}
+                              className="w-full"
+                            >
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {Object.entries(expiryOptions).map(([value, label]) => (
-                                <SelectItem key={value} value={value}>
-                                  {label}
-                                </SelectItem>
-                              ))}
+                              {Object.entries(expiryOptions).map(
+                                ([value, label]) => (
+                                  <SelectItem key={value} value={value}>
+                                    {label}
+                                  </SelectItem>
+                                ),
+                              )}
                             </SelectContent>
                           </Select>
                         </div>

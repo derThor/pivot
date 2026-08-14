@@ -1,5 +1,6 @@
 import { WebhooksManager } from "@/components/webhooks-manager";
 import { WebhookDialog } from "@/components/webhook-dialog";
+import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 import { getPublicSettings, getWebhooks } from "@/lib/api-server";
@@ -18,20 +19,22 @@ export default async function WebhooksPage({
   });
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader title="Webhooks" />
         <WebhookDialog />
       </div>
-      <WebhooksManager items={webhooks?.items ?? []} />
+      <PageContent>
+        <WebhooksManager items={webhooks?.items ?? []} />
 
-      {webhooks && (
-        <PaginationControls
-          page={webhooks.meta.page}
-          pageCount={webhooks.meta.pageCount}
-          buildHref={(p) => `?page=${p}`}
-        />
-      )}
+        {webhooks && (
+          <PaginationControls
+            page={webhooks.meta.page}
+            pageCount={webhooks.meta.pageCount}
+            buildHref={(p) => `?page=${p}`}
+          />
+        )}
+      </PageContent>
     </div>
   );
 }

@@ -7,7 +7,6 @@ import { Bell, ChevronDown, LogOut, UserCog } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { CommandPalette } from "@/components/command-palette";
 import { GlobalSearch } from "@/components/global-search";
@@ -52,9 +51,8 @@ export function DashboardHeader({
   }
 
   return (
-    <header className="flex min-h-16 min-w-0 shrink-0 items-center gap-3 bg-background px-4 pt-[30px]">
-      <SidebarTrigger className="shrink-0" />
-      <Separator orientation="vertical" className="hidden h-6 sm:block" />
+    <header className="sticky top-0 z-40 flex h-20 min-w-0 shrink-0 items-center gap-3 border-b bg-background/70 px-4 py-4 backdrop-blur-md">
+      <SidebarTrigger />
       <div className="ml-auto flex min-w-0 items-center gap-1">
         <CommandPalette user={user} defaultPageSize={defaultPageSize} />
         <Button

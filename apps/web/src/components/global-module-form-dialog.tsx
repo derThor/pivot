@@ -1,14 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -17,7 +24,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ModuleFieldInput } from "@/components/module-field-input";
-import { GallerySwiper, type GallerySwiperImage } from "@/components/gallery-swiper";
+import {
+  GallerySwiper,
+  type GallerySwiperImage,
+} from "@/components/gallery-swiper";
 import {
   isGalleryModuleType,
   toImageValue,
@@ -30,7 +40,11 @@ import {
   toGallerySettings,
   type GallerySettings,
 } from "@/lib/gallery-settings";
-import type { ContentTypeField, GlobalModule, ModuleType } from "@/lib/api-server";
+import type {
+  ContentTypeField,
+  GlobalModule,
+  ModuleType,
+} from "@/lib/api-server";
 
 function buildPreviewImages(
   repeaterField: ContentTypeField | undefined,
@@ -44,7 +58,9 @@ function buildPreviewImages(
   return items.flatMap((item) => {
     const img = imageField ? toImageValue(item.values[imageField.name]) : null;
     if (!img?.url) return [];
-    const caption = captionField ? String(item.values[captionField.name] ?? "") : "";
+    const caption = captionField
+      ? String(item.values[captionField.name] ?? "")
+      : "";
     return [{ url: img.url, focalX: img.focalX, focalY: img.focalY, caption }];
   });
 }
@@ -64,24 +80,32 @@ function GallerySettingsEditor({
 }) {
   const isSingleSlideEffect = SINGLE_SLIDE_EFFECTS.includes(settings.effect);
 
-  function set<K extends keyof GallerySettings>(key: K, value: GallerySettings[K]) {
+  function set<K extends keyof GallerySettings>(
+    key: K,
+    value: GallerySettings[K],
+  ) {
     onChange({ ...settings, [key]: value });
   }
 
   return (
     <Card className="border-none bg-transparent shadow-none">
-      <CardHeader>
+      <CardHeader className="px-0">
         <CardTitle>Anzeige-Einstellungen</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-10">
-        <div className="grid grid-cols-1 gap-x-10 gap-y-10 sm:grid-cols-2">
+      <CardContent className="flex flex-col gap-6 px-0">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <Label>Effekt</Label>
             <Select
               value={settings.effect}
-              onValueChange={(value) => set("effect", value as GallerySettings["effect"])}
+              onValueChange={(value) =>
+                set("effect", value as GallerySettings["effect"])
+              }
               items={Object.fromEntries(
-                GALLERY_EFFECTS.map((effect) => [effect, GALLERY_EFFECT_LABELS[effect]]),
+                GALLERY_EFFECTS.map((effect) => [
+                  effect,
+                  GALLERY_EFFECT_LABELS[effect],
+                ]),
               )}
             >
               <SelectTrigger className="w-full">
@@ -107,17 +131,21 @@ function GallerySettingsEditor({
               max={6}
               disabled={isSingleSlideEffect}
               value={settings.slidesPerView}
-              onChange={(e) => set("slidesPerView", Number(e.target.value) || 1)}
+              onChange={(e) =>
+                set("slidesPerView", Number(e.target.value) || 1)
+              }
             />
             {isSingleSlideEffect && (
               <p className="text-xs text-muted-foreground">
-                Bei „{GALLERY_EFFECT_LABELS[settings.effect]}“ ist immer nur ein Bild
-                gleichzeitig sichtbar.
+                Bei „{GALLERY_EFFECT_LABELS[settings.effect]}“ ist immer nur ein
+                Bild gleichzeitig sichtbar.
               </p>
             )}
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="gallery-space-between">Abstand zwischen Bildern (px)</Label>
+            <Label htmlFor="gallery-space-between">
+              Abstand zwischen Bildern (px)
+            </Label>
             <Input
               id="gallery-space-between"
               type="number"
@@ -139,7 +167,9 @@ function GallerySettingsEditor({
               step={500}
               disabled={!settings.autoplay}
               value={settings.autoplayDelay}
-              onChange={(e) => set("autoplayDelay", Number(e.target.value) || 500)}
+              onChange={(e) =>
+                set("autoplayDelay", Number(e.target.value) || 500)
+              }
             />
           </div>
         </div>
@@ -194,25 +224,31 @@ function GallerySettingsEditor({
   );
 }
 
-/** Eigenständige Anlegen-/Bearbeiten-Seite statt Popup – mehr Platz für
- * Repeater-Felder (Galerie-Bilder, FAQ-Einträge), siehe
- * dashboard/content/galleries/ bzw. .../faqs/, jeweils new/ und
- * /[id]/page.tsx. `globalModule` gesetzt -> Bearbeiten-Modus (PATCH),
- * sonst Anlegen (POST). Im Designer bleibt das schnelle Einfügen/Anlegen
- * weiterhin ein Popup (siehe insert-shared-block-dialog.tsx) – eigener,
- * unabhängiger Ablauf für den Blockeinfüge-Moment, nicht für die
- * zentrale Verwaltung. */
-export function GlobalModulePageForm({
+/** Anlegen/Bearbeiten als Popup statt eigener Seite (Nutzervorgabe,
+ * 2026-08-14) – anders als der Content-Editor ("Seiten", davon explizit
+ * ausgenommen) sind FAQ-/Galerie-Einträge kompakt genug für einen breiten,
+ * innen scrollbaren Dialog. `globalModule` gesetzt -> Bearbeiten-Modus
+ * (PATCH), sonst Anlegen (POST). `hideTrigger` + kontrolliertes
+ * `open`/`onOpenChange` fürs Öffnen aus einer Tabellenzeile heraus (siehe
+ * global-modules-manager.tsx), analog zu role-form-dialog.tsx. */
+export function GlobalModuleFormDialog({
   moduleType,
   globalModule,
-  redirectTo,
+  hideTrigger,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: {
   moduleType: ModuleType;
   globalModule?: GlobalModule;
-  redirectTo: string;
+  hideTrigger?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const router = useRouter();
   const isEditing = Boolean(globalModule);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = controlledOnOpenChange ?? setInternalOpen;
   const [name, setName] = useState(globalModule?.name ?? "");
   const [values, setValues] = useState<Record<string, unknown>>(
     globalModule?.values ?? {},
@@ -226,6 +262,13 @@ export function GlobalModulePageForm({
   const fields = moduleType.schema.fields.filter((f) => !f.option);
   const isGallery = isGalleryModuleType(moduleType.schema.fields);
   const repeaterField = fields.find((f) => f.type === "repeater");
+
+  function reset() {
+    setName(globalModule?.name ?? "");
+    setValues(globalModule?.values ?? {});
+    setSettings(toGallerySettings(globalModule?.settings));
+    setError(null);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -242,7 +285,12 @@ export function GlobalModulePageForm({
       const method = isEditing ? "PATCH" : "POST";
       const body = isEditing
         ? { name, values, ...(isGallery && { settings }) }
-        : { name, moduleTypeId: moduleType.id, values, ...(isGallery && { settings }) };
+        : {
+            name,
+            moduleTypeId: moduleType.id,
+            values,
+            ...(isGallery && { settings }),
+          };
 
       const res = await fetch(url, {
         method,
@@ -254,7 +302,8 @@ export function GlobalModulePageForm({
         setError(errBody?.message ?? "Konnte nicht gespeichert werden.");
         return;
       }
-      router.push(redirectTo);
+      setOpen(false);
+      if (!isEditing) reset();
       router.refresh();
     } catch {
       setError("Server nicht erreichbar. Bitte später erneut versuchen.");
@@ -264,23 +313,43 @@ export function GlobalModulePageForm({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="flex w-full max-w-[1000px] flex-col gap-10 rounded-[10px] p-6"
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) reset();
+      }}
     >
-      <Card className="border-none bg-transparent shadow-none">
-        <CardContent className="flex flex-col gap-10">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="global-module-page-name">Name</Label>
-            <Input
-              id="global-module-page-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Interner Name zur Wiedererkennung"
-            />
-          </div>
-          {(isGallery ? fields.filter((f) => f.type !== "repeater") : fields).map(
-            (field) => (
+      {!hideTrigger && (
+        <DialogTrigger render={<Button />}>
+          <Plus />
+          {`Neu${isGallery ? "e" : "er"} ${moduleType.name}`}
+        </DialogTrigger>
+      )}
+      <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>
+            {moduleType.name} {isEditing ? "bearbeiten" : "anlegen"}
+          </DialogTitle>
+        </DialogHeader>
+        <form
+          onSubmit={handleSubmit}
+          className="flex min-h-0 flex-1 flex-col gap-4"
+        >
+          <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto py-1">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="global-module-dialog-name">Name</Label>
+              <Input
+                id="global-module-dialog-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Interner Name zur Wiedererkennung"
+              />
+            </div>
+            {(isGallery
+              ? fields.filter((f) => f.type !== "repeater")
+              : fields
+            ).map((field) => (
               <ModuleFieldInput
                 key={field.name}
                 field={field}
@@ -288,50 +357,37 @@ export function GlobalModulePageForm({
                 onChange={(v) =>
                   setValues((prev) => ({ ...prev, [field.name]: v }))
                 }
-                // Nur hier (FAQ-/Galerie-Detailseiten): Rich-Text-Unterfelder
-                // in den Kacheln bekommen eine feste, scrollbare Höhe, damit
-                // ein langer Text nicht die Kachel-Höhe sprengt und das Grid
-                // uneinheitlich macht (siehe module-field-input.tsx).
-                richTextMaxHeight="16rem"
+                richTextMaxHeight="12rem"
               />
-            ),
-          )}
-        </CardContent>
-      </Card>
-      {isGallery && (
-        <GallerySettingsEditor
-          settings={settings}
-          onChange={setSettings}
-          previewImages={buildPreviewImages(repeaterField, values)}
-        />
-      )}
-      {isGallery && repeaterField && (
-        <Card className="border-none bg-transparent shadow-none">
-          <CardContent className="flex flex-col gap-10">
-            <ModuleFieldInput
-              field={repeaterField}
-              value={values[repeaterField.name]}
-              onChange={(v) =>
-                setValues((prev) => ({ ...prev, [repeaterField.name]: v }))
-              }
-              richTextMaxHeight="16rem"
-            />
-          </CardContent>
-        </Card>
-      )}
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      <div className="flex gap-2">
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting
-            ? "Speichert…"
-            : isEditing
-              ? "Änderungen speichern"
-              : "Anlegen"}
-        </Button>
-        <Button type="button" variant="outline" render={<Link href={redirectTo} />}>
-          Abbrechen
-        </Button>
-      </div>
-    </form>
+            ))}
+            {isGallery && (
+              <GallerySettingsEditor
+                settings={settings}
+                onChange={setSettings}
+                previewImages={buildPreviewImages(repeaterField, values)}
+              />
+            )}
+            {isGallery && repeaterField && (
+              <ModuleFieldInput
+                field={repeaterField}
+                value={values[repeaterField.name]}
+                onChange={(v) =>
+                  setValues((prev) => ({ ...prev, [repeaterField.name]: v }))
+                }
+                richTextMaxHeight="12rem"
+              />
+            )}
+            {error && <p className="text-sm text-destructive">{error}</p>}
+          </div>
+          <Button type="submit" disabled={isSubmitting} className="shrink-0">
+            {isSubmitting
+              ? "Speichert…"
+              : isEditing
+                ? "Änderungen speichern"
+                : "Anlegen"}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

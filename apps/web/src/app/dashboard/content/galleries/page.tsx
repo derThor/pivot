@@ -1,7 +1,6 @@
-import Link from "next/link";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { GlobalModuleFormDialog } from "@/components/global-module-form-dialog";
 import { GlobalModulesManager } from "@/components/global-modules-manager";
+import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 import { isGalleryModuleType } from "@/components/block-field-output";
@@ -35,36 +34,33 @@ export default async function GalleriesPage({
     : null;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader title="Galerien" />
-        {galleryType && (
-          <Button render={<Link href="/dashboard/content/galleries/new" />}>
-            <Plus />
-            Neu anlegen
-          </Button>
-        )}
+        {galleryType && <GlobalModuleFormDialog moduleType={galleryType} />}
       </div>
-      {galleryType ? (
-        <>
-          <GlobalModulesManager
-            items={globalModules?.items ?? []}
-            editHrefBase="/dashboard/content/galleries"
-            entityLabelPlural="Galerien"
-          />
-          {globalModules && (
-            <PaginationControls
-              page={globalModules.meta.page}
-              pageCount={globalModules.meta.pageCount}
-              buildHref={(p) => `?page=${p}`}
+      <PageContent>
+        {galleryType ? (
+          <>
+            <GlobalModulesManager
+              items={globalModules?.items ?? []}
+              moduleType={galleryType}
+              entityLabelPlural="Galerien"
             />
-          )}
-        </>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          Kein Galerie-Modul-Typ vorhanden.
-        </p>
-      )}
+            {globalModules && (
+              <PaginationControls
+                page={globalModules.meta.page}
+                pageCount={globalModules.meta.pageCount}
+                buildHref={(p) => `?page=${p}`}
+              />
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Kein Galerie-Modul-Typ vorhanden.
+          </p>
+        )}
+      </PageContent>
     </div>
   );
 }

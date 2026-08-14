@@ -98,7 +98,7 @@ export function NavigationItemDialog({
       }}
     >
       <DialogTrigger render={trigger} />
-      <DialogContent>
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Menüpunkt hinzufügen</DialogTitle>
         </DialogHeader>

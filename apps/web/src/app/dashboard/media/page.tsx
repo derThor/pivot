@@ -3,6 +3,7 @@ import { MediaFilters } from "@/components/media-filters";
 import { MediaFolderBrowser } from "@/components/media-folder-browser";
 import { MediaGrid } from "@/components/media-grid";
 import { MediaUploadDialog } from "@/components/media-upload-dialog";
+import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 import {
@@ -26,8 +27,15 @@ export default async function MediaPage({
     unused?: string;
   }>;
 }) {
-  const { folder, page: pageParam, type, minSize, maxSize, tags, unused } =
-    await searchParams;
+  const {
+    folder,
+    page: pageParam,
+    type,
+    minSize,
+    maxSize,
+    tags,
+    unused,
+  } = await searchParams;
   const currentFolderId = folder ?? null;
   const page = Number(pageParam) || 1;
   const tagIds = tags ? tags.split(",").filter(Boolean) : undefined;
@@ -60,7 +68,7 @@ export default async function MediaPage({
   const extraQuery = extraParams.toString() ? `&${extraParams.toString()}` : "";
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader title="Medien" />
         <div className="flex flex-wrap gap-2">
@@ -72,38 +80,44 @@ export default async function MediaPage({
         </div>
       </div>
 
-      <MediaFilters tags={tagList?.items ?? []} />
+      <PageContent plain>
+        <MediaFilters tags={tagList?.items ?? []} />
 
-      {showUnusedOnly ? (
-        <>
-          <p className="text-sm text-muted-foreground">
-            {unusedMedia?.items.length ?? 0} Medien, die in keinem aktiven
-            Inhalt, SEO-Bild oder Logo referenziert werden – ordnerübergreifend.
-          </p>
-          <MediaGrid items={unusedMedia?.items ?? []} folders={folders ?? []} />
-        </>
-      ) : (
-        <>
-          <MediaFolderBrowser
-            folders={folders ?? []}
-            currentFolderId={currentFolderId}
-            items={media?.items ?? []}
-            availableTags={tagList?.items ?? []}
-          />
-
-          {media && (
-            <PaginationControls
-              page={media.meta.page}
-              pageCount={media.meta.pageCount}
-              buildHref={(p) =>
-                currentFolderId
-                  ? `?folder=${currentFolderId}&page=${p}${extraQuery}`
-                  : `?page=${p}${extraQuery}`
-              }
+        {showUnusedOnly ? (
+          <>
+            <p className="text-sm text-muted-foreground">
+              {unusedMedia?.items.length ?? 0} Medien, die in keinem aktiven
+              Inhalt, SEO-Bild oder Logo referenziert werden –
+              ordnerübergreifend.
+            </p>
+            <MediaGrid
+              items={unusedMedia?.items ?? []}
+              folders={folders ?? []}
             />
-          )}
-        </>
-      )}
+          </>
+        ) : (
+          <>
+            <MediaFolderBrowser
+              folders={folders ?? []}
+              currentFolderId={currentFolderId}
+              items={media?.items ?? []}
+              availableTags={tagList?.items ?? []}
+            />
+
+            {media && (
+              <PaginationControls
+                page={media.meta.page}
+                pageCount={media.meta.pageCount}
+                buildHref={(p) =>
+                  currentFolderId
+                    ? `?folder=${currentFolderId}&page=${p}${extraQuery}`
+                    : `?page=${p}${extraQuery}`
+                }
+              />
+            )}
+          </>
+        )}
+      </PageContent>
     </div>
   );
 }

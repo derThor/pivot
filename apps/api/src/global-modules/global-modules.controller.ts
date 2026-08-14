@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { GlobalModulesService } from './global-modules.service';
 import { CreateGlobalModuleDto } from './dto/create-global-module.dto';
@@ -6,6 +15,7 @@ import { UpdateGlobalModuleDto } from './dto/update-global-module.dto';
 import { QueryGlobalModuleDto } from './dto/query-global-module.dto';
 import { Public } from '../auth/decorators/public.decorator';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
+import { FindPageDto } from '../common/dto/find-page.dto';
 
 // Globale Module sind site-weite Struktur-Konfiguration (analog zu
 // Navigationen/Webhooks), keine editorielle Content-Ressource – deshalb
@@ -29,6 +39,12 @@ export class GlobalModulesController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.globalModulesService.findOne(id);
+  }
+
+  @RequirePermission('settings:manage')
+  @Get(':id/page')
+  findPage(@Param('id') id: string, @Query() query: FindPageDto) {
+    return this.globalModulesService.findPage(id, query.pageSize);
   }
 
   @RequirePermission('settings:manage')

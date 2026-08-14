@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@strasev/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateGlobalModuleDto } from './dto/create-global-module.dto';
@@ -14,8 +18,12 @@ export class GlobalModulesService {
   // (Galerien-/FAQ-Übersicht): paginiertes `{items, meta}`, siehe
   // QueryGlobalModuleDto.
   findAll(query: QueryGlobalModuleDto = new QueryGlobalModuleDto()) {
-    const where = query.moduleTypeId ? { moduleTypeId: query.moduleTypeId } : undefined;
-    const include = { moduleType: { select: { id: true, name: true, icon: true } } } as const;
+    const where = query.moduleTypeId
+      ? { moduleTypeId: query.moduleTypeId }
+      : undefined;
+    const include = {
+      moduleType: { select: { id: true, name: true, icon: true } },
+    } as const;
 
     if (query.page == null) {
       return this.prisma.globalModule.findMany({
@@ -39,6 +47,23 @@ export class GlobalModulesService {
       items,
       meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
     }));
+  }
+
+  /** Ermittelt, auf welcher Seite (bei gegebener pageSize) ein Eintrag
+   * innerhalb seines eigenen Modul-Typs (FAQ/Galerie getrennt) liegt –
+   * von der globalen Suche genutzt, siehe CategoriesService.findPage für
+   * dasselbe Muster. */
+  async findPage(id: string, pageSize: number) {
+    const target = await this.prisma.globalModule.findUniqueOrThrow({
+      where: { id },
+    });
+    const rank = await this.prisma.globalModule.count({
+      where: {
+        moduleTypeId: target.moduleTypeId,
+        name: { lt: target.name },
+      },
+    });
+    return { page: Math.floor(rank / pageSize) + 1 };
   }
 
   async findOne(id: string) {

@@ -94,7 +94,7 @@ export function FilePickerDialog({
         else resetUploadForm();
       }}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Datei einfügen</DialogTitle>
         </DialogHeader>

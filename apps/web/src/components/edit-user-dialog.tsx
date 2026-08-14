@@ -128,7 +128,7 @@ export function EditUserDialog({
           <Pencil />
         </DialogTrigger>
       )}
-      <DialogContent>
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Benutzer bearbeiten</DialogTitle>
         </DialogHeader>
@@ -172,7 +172,11 @@ export function EditUserDialog({
                 <FormItem>
                   <FormLabel>E-Mail</FormLabel>
                   <FormControl>
-                    <Input type="email" disabled={!allowEmailChange} {...field} />
+                    <Input
+                      type="email"
+                      disabled={!allowEmailChange}
+                      {...field}
+                    />
                   </FormControl>
                   {!allowEmailChange && (
                     <p className="text-xs text-muted-foreground">

@@ -1,8 +1,14 @@
 import { CreateUserDialog } from "@/components/create-user-dialog";
 import { UsersTable } from "@/components/users-table";
+import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
-import { getCurrentUser, getRoles, getSettings, getUsers } from "@/lib/api-server";
+import {
+  getCurrentUser,
+  getRoles,
+  getSettings,
+  getUsers,
+} from "@/lib/api-server";
 
 export default async function UsersPage({
   searchParams,
@@ -24,7 +30,7 @@ export default async function UsersPage({
   const allowEmailChange = settings?.allowEmailChange ?? true;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader title="Benutzer" />
         {roles && settings && (
@@ -32,25 +38,27 @@ export default async function UsersPage({
         )}
       </div>
 
-      {users === null || roles === null ? (
-        <div className="flex h-24 items-center justify-center rounded-lg border text-sm text-muted-foreground">
-          Keine Berechtigung, Benutzer zu verwalten.
-        </div>
-      ) : (
-        <>
-          <UsersTable
-            users={users.items}
-            currentUserId={currentUser?.id}
-            roles={roles.items}
-            allowEmailChange={allowEmailChange}
-          />
-          <PaginationControls
-            page={users.meta.page}
-            pageCount={users.meta.pageCount}
-            buildHref={(p) => `?page=${p}`}
-          />
-        </>
-      )}
+      <PageContent>
+        {users === null || roles === null ? (
+          <div className="flex h-24 items-center justify-center rounded-lg border text-sm text-muted-foreground">
+            Keine Berechtigung, Benutzer zu verwalten.
+          </div>
+        ) : (
+          <>
+            <UsersTable
+              users={users.items}
+              currentUserId={currentUser?.id}
+              roles={roles.items}
+              allowEmailChange={allowEmailChange}
+            />
+            <PaginationControls
+              page={users.meta.page}
+              pageCount={users.meta.pageCount}
+              buildHref={(p) => `?page=${p}`}
+            />
+          </>
+        )}
+      </PageContent>
     </div>
   );
 }

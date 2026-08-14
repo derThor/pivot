@@ -6,7 +6,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Card,
@@ -36,14 +35,21 @@ type ProfileValues = z.infer<typeof profileSchema>;
 export function AccountForm({
   user,
   allowEmailChange,
+  formId,
+  onSubmittingChange,
 }: {
   user: CurrentUser;
   allowEmailChange: boolean;
+  // Für den Speichern-Button außerhalb der weißen Fläche (siehe
+  // account-tabs.tsx): das `<form>` bekommt diese `id`, der externe
+  // Button referenziert sie über `form={formId}` (natives HTML,
+  // funktioniert unabhängig von der DOM-Verschachtelung).
+  formId: string;
+  onSubmittingChange?: (submitting: boolean) => void;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
@@ -57,7 +63,7 @@ export function AccountForm({
   async function onSubmit(values: ProfileValues) {
     setError(null);
     setSuccess(false);
-    setIsSubmitting(true);
+    onSubmittingChange?.(true);
     try {
       const res = await fetch("/api/auth/me", {
         method: "PATCH",
@@ -80,7 +86,7 @@ export function AccountForm({
     } catch {
       setError("Server nicht erreichbar. Bitte später erneut versuchen.");
     } finally {
-      setIsSubmitting(false);
+      onSubmittingChange?.(false);
     }
   }
 
@@ -93,6 +99,7 @@ export function AccountForm({
       <CardContent>
         <Form {...form}>
           <form
+            id={formId}
             onSubmit={form.handleSubmit(onSubmit)}
             className="flex flex-col gap-10"
           >
@@ -131,7 +138,11 @@ export function AccountForm({
                 <FormItem>
                   <FormLabel>E-Mail</FormLabel>
                   <FormControl>
-                    <Input type="email" disabled={!allowEmailChange} {...field} />
+                    <Input
+                      type="email"
+                      disabled={!allowEmailChange}
+                      {...field}
+                    />
                   </FormControl>
                   {!allowEmailChange && (
                     <p className="text-xs text-muted-foreground">
@@ -146,11 +157,6 @@ export function AccountForm({
             {success && (
               <p className="text-sm text-muted-foreground">Gespeichert.</p>
             )}
-            <div>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Speichert…" : "Profil speichern"}
-              </Button>
-            </div>
           </form>
         </Form>
       </CardContent>

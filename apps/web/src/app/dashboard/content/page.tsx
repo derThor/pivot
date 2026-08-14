@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { getContentList, getPublicSettings } from "@/lib/api-server";
 import { ContentTable } from "@/components/content-table";
+import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 
@@ -22,7 +23,7 @@ export default async function ContentPage({
   const entries = content?.items ?? [];
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader title="Seiten" />
         <Button render={<Link href="/dashboard/content/new" />}>
@@ -31,15 +32,17 @@ export default async function ContentPage({
         </Button>
       </div>
 
-      <ContentTable entries={entries} />
+      <PageContent>
+        <ContentTable entries={entries} />
 
-      {content && (
-        <PaginationControls
-          page={content.meta.page}
-          pageCount={content.meta.pageCount}
-          buildHref={(p) => `?page=${p}`}
-        />
-      )}
+        {content && (
+          <PaginationControls
+            page={content.meta.page}
+            pageCount={content.meta.pageCount}
+            buildHref={(p) => `?page=${p}`}
+          />
+        )}
+      </PageContent>
     </div>
   );
 }
