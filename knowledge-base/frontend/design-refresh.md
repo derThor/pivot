@@ -5,6 +5,20 @@
 `src/components/{app-sidebar,dashboard-header,ui/card,ui/checkbox}.tsx`,
 alle Row-Action-Komponenten der Listen-Ansichten)
 
+> **Update 2026-08-15 (Sidebar-Unterpunkte: Abstand zum aktiven
+> Eltern-Hintergrund):** "die ersten punkte unter seiten und medien ...
+> müssen etwas mehr abstand zum aktive bg haben, so dass beim hovern
+> nicht beide bgs zusammenkleben" – `SidebarMenuSub` in
+> `app-sidebar.tsx` überschrieb die Basis-Klasse (`ui/sidebar.tsx`,
+> die dort standardmäßig `py-0.5` mitbringt) explizit mit `py-0`, wodurch
+> das erste Unterpunkt-Element direkt am aktiven/gehoverten Eltern-
+> Hintergrund klebte (kein sichtbarer Zwischenraum). Fix: `py-0` → `py-1`
+> in der `SidebarMenuSub`-Instanz (Zeile mit `mx-0 border-l-0 px-0
+> py-1`) – per CDP-Screenshot mit simuliertem Hover auf den ersten
+> Unterpunkt verifiziert (z.B. "Medien" aktiv + Hover auf "Tags"
+> darunter zeigt jetzt einen klaren Zwischenraum zwischen beiden
+> Hintergründen).
+
 > **Update 2026-08-15 (Feste Logos statt konfigurierbar, Auth-Shell
 > responsive + Marketing-Overlay, globaler `destructive`-Button-Stil,
 > Breadcrumb-Farben):**

@@ -60,7 +60,14 @@ export class MediaService {
     const where: Prisma.MediaWhereInput = {
       ...(folderId === 'root' && { folderId: null }),
       ...(folderId && folderId !== 'root' && { folderId }),
-      ...(type && { mimeType: { in: mimeTypesForCategory(type) } }),
+      ...(type && {
+        mimeType: {
+          in:
+            type === 'document'
+              ? [...mimeTypesForCategory('pdf'), ...mimeTypesForCategory('office')]
+              : mimeTypesForCategory(type),
+        },
+      }),
       ...((minSize !== undefined || maxSize !== undefined) && {
         size: { ...(minSize !== undefined && { gte: minSize }), ...(maxSize !== undefined && { lte: maxSize }) },
       }),
@@ -89,6 +96,38 @@ export class MediaService {
       items: items.map(mapMediaTags),
       meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
     };
+  }
+
+  /**
+   * Zähler für die Dateityp-Pillen im Medien-Filter (Nutzervorgabe,
+   * 2026-08-15, 1:1 nach Bildvorlage) – bewusst nur nach `folderId`
+   * gescoped, nicht zusätzlich nach Tag/Größe gefiltert: die Pillen
+   * sollen zeigen, was im aktuellen Ordner insgesamt an Dateitypen
+   * vorhanden ist, unabhängig von den übrigen, gerade aktiven Filtern.
+   * "pdf" und "office" werden zu einer gemeinsamen "document"-Zahl
+   * zusammengefasst (Nutzerentscheidung: nur echte, hochladbare
+   * Kategorien zeigen – kein separates "Audio"/"Archive" ohne
+   * Upload-Unterstützung).
+   */
+  async getCounts(folderId?: string) {
+    const scope: Prisma.MediaWhereInput = {
+      ...(folderId === 'root' && { folderId: null }),
+      ...(folderId && folderId !== 'root' && { folderId }),
+    };
+    const countByCategory = (category: 'image' | 'video' | 'pdf' | 'office') =>
+      this.prisma.media.count({
+        where: { ...scope, mimeType: { in: mimeTypesForCategory(category) } },
+      });
+
+    const [total, image, video, pdf, office] = await Promise.all([
+      this.prisma.media.count({ where: scope }),
+      countByCategory('image'),
+      countByCategory('video'),
+      countByCategory('pdf'),
+      countByCategory('office'),
+    ]);
+
+    return { total, image, video, document: pdf + office };
   }
 
   /**

@@ -581,3 +581,15 @@ export interface MediaStorageUsage {
 export function getMediaStorageUsage() {
   return apiFetch<MediaStorageUsage>("/media/storage-usage");
 }
+
+export interface MediaCounts {
+  total: number;
+  image: number;
+  video: number;
+  document: number;
+}
+
+export function getMediaCounts(folderId?: string | null) {
+  const query = folderId ? `?folderId=${encodeURIComponent(folderId)}` : "";
+  return apiFetch<MediaCounts>(`/media/counts${query}`);
+}

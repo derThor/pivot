@@ -2,27 +2,31 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { tagDotColor } from "@/lib/tag-colors";
-import { MEDIA_CATEGORY_LABELS, type MediaCategory } from "@/lib/media-type";
 import { cn } from "@/lib/utils";
-import type { TaxonomyItem } from "@/lib/api-server";
+import type { MediaCounts, TaxonomyItem } from "@/lib/api-server";
 
-const CATEGORY_OPTIONS = Object.entries(MEDIA_CATEGORY_LABELS) as [
-  MediaCategory,
-  string,
-][];
+// "document" ist ein reines Filter-Pseudo-Typ (fasst PDF + Office
+// zusammen, siehe apps/api/src/media/dto/query-media.dto.ts) – nur echte,
+// hochladbare Kategorien als Pillen (Nutzerentscheidung, 2026-08-15):
+// kein separates "Audio"/"Archive" ohne Upload-Unterstützung, auch wenn
+// die Bildvorlage die zeigt.
+const TYPE_OPTIONS: { value: string; label: string; countKey: keyof MediaCounts }[] = [
+  { value: "image", label: "Bilder", countKey: "image" },
+  { value: "video", label: "Video", countKey: "video" },
+  { value: "document", label: "Dokumente", countKey: "document" },
+];
 
 // Filter (Dateityp/Tags/ungenutzt) sind vollständig URL-getrieben – analog
 // zum bestehenden `?folder=`. So bleiben sie teilbar/verlinkbar und
 // funktionieren mit Server-seitigem Pagination-Rendering zusammen.
-export function MediaFilters({ tags }: { tags: TaxonomyItem[] }) {
+export function MediaFilters({
+  tags,
+  counts,
+}: {
+  tags: TaxonomyItem[];
+  counts: MediaCounts | null;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -48,36 +52,48 @@ export function MediaFilters({ tags }: { tags: TaxonomyItem[] }) {
     updateParams({ tags: next.length ? next.join(",") : null });
   }
 
+  function typePill(value: string | null, label: string, count: number) {
+    const active = value === null ? type === "" : type === value;
+    return (
+      <button
+        key={value ?? "all"}
+        type="button"
+        onClick={() => updateParams({ type: value })}
+        className={cn(
+          "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+          active
+            ? "border-transparent bg-[#132033] text-white"
+            : "border-[#D4D4D4] bg-transparent hover:bg-muted/40",
+        )}
+      >
+        {label}
+        <span
+          className={cn(
+            "flex min-w-5 items-center justify-center rounded-full px-1.5 text-xs",
+            active ? "bg-white/20 text-white" : "bg-muted text-muted-foreground",
+          )}
+        >
+          {count}
+        </span>
+      </button>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Select
-          value={type || "all"}
-          onValueChange={(value) =>
-            updateParams({ type: value === "all" ? null : value })
-          }
-          items={{
-            all: "Alle Dateitypen",
-            ...Object.fromEntries(CATEGORY_OPTIONS),
-          }}
-        >
-          <SelectTrigger className="h-11 rounded-lg border-[#D4D4D4] px-4">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alle Dateitypen</SelectItem>
-            {CATEGORY_OPTIONS.map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <span className="mr-1 shrink-0 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+          Dateityp
+        </span>
+        {typePill(null, "Alle", counts?.total ?? 0)}
+        {TYPE_OPTIONS.map((option) =>
+          typePill(option.value, option.label, counts?.[option.countKey] ?? 0),
+        )}
         <button
           type="button"
           onClick={() => updateParams({ unused: unused ? null : "true" })}
           className={cn(
-            "h-11 shrink-0 rounded-lg border px-4 text-sm font-medium transition-colors",
+            "shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
             unused
               ? "border-transparent bg-primary text-primary-foreground"
               : "border-[#D4D4D4] bg-transparent hover:bg-muted/40",

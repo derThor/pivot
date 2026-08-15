@@ -514,7 +514,7 @@ export function AppSidebar({
                                   )}
                                 >
                                   <div className="overflow-hidden">
-                                    <SidebarMenuSub className="mx-0 border-l-0 px-0 py-0">
+                                    <SidebarMenuSub className="mx-0 border-l-0 px-0 py-1">
                                       {"children" in item &&
                                         item.children.map((child) => (
                                           <SidebarMenuSubItem key={child.url}>

@@ -62,7 +62,7 @@ export function TagsManager({
             {allTags.map((tag) => (
               <span
                 key={tag.id}
-                className="flex items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-sm"
+                className="flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-sm"
               >
                 <span className={cn("size-2 shrink-0 rounded-full", tagDotColor(tag.id))} />
                 <span className="font-medium">{tag.name}</span>
@@ -77,7 +77,7 @@ export function TagsManager({
 
       <div className="overflow-hidden rounded-[10px] bg-card shadow-sm">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-background">
             <TableRow>
               <TableHead>Tag</TableHead>
               <TableHead>Verwendet in</TableHead>

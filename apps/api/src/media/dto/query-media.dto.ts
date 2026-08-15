@@ -4,6 +4,13 @@ import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import type { MediaCategory } from '../media.config';
 
 const MEDIA_CATEGORIES: MediaCategory[] = ['image', 'pdf', 'video', 'office', 'other'];
+// "document" ist keine echte `MediaCategory` (siehe media.config.ts),
+// sondern ein reines Filter-Pseudo-Typ fürs Frontend: fasst PDF + Office
+// zu einer gemeinsamen "Dokumente"-Pille zusammen (Nutzervorgabe,
+// 2026-08-15, 1:1 nach Bildvorlage) – MediaService#findAll löst ihn in
+// beide echten Kategorien auf.
+const QUERY_TYPES = [...MEDIA_CATEGORIES, 'document'] as const;
+type QueryMediaType = (typeof QUERY_TYPES)[number];
 
 export class QueryMediaDto {
   @ApiPropertyOptional({
@@ -14,10 +21,10 @@ export class QueryMediaDto {
   @IsString()
   folderId?: string;
 
-  @ApiPropertyOptional({ enum: MEDIA_CATEGORIES, description: 'Dateityp-Kategorie' })
+  @ApiPropertyOptional({ enum: QUERY_TYPES, description: 'Dateityp-Kategorie' })
   @IsOptional()
-  @IsIn(MEDIA_CATEGORIES)
-  type?: MediaCategory;
+  @IsIn(QUERY_TYPES)
+  type?: QueryMediaType;
 
   @ApiPropertyOptional({ description: 'Mindestgröße in Bytes' })
   @IsOptional()

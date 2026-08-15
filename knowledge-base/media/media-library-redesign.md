@@ -163,6 +163,71 @@
 > Komponente erst mit einem Platzhalter-/Default-Wert sichtbar, bevor
 > der Wert im nächsten Frame korrigiert wird.
 
+> **Update 2026-08-15 (Grüner Fokus-Ring beim Öffnen des Upload-Popups):**
+> "datei auswählen passt nicht mehr" – der grüne Fokus-Ring lag sofort
+> beim Öffnen um "Datei auswählen", ohne dass der Nutzer interagiert
+> hatte. Ursache: das Datei-Feld ist das erste fokussierbare Element im
+> Formular, Base UI fokussiert es beim Öffnen automatisch (Standard-
+> verhalten von `DialogPrimitive.Popup`) – bei einem normalen Textfeld
+> unauffällig, bei einem nativen Datei-Input-Button aber wie ein
+> UI-Bug wirkend. Fix: `initialFocus={false}` auf `DialogContent` in
+> `media-upload-dialog.tsx` (Prop wird via `DialogPrimitive.Popup.Props`
+> durchgereicht, siehe `ui/dialog.tsx`) – nur für diesen einen Dialog,
+> nicht global, da Auto-Fokus auf ein erstes Textfeld in anderen
+> Formularen weiterhin erwünscht/üblich ist.
+
+> **Update 2026-08-15 (Datei-Input-Zentrierung, endgültig):** "datei
+> auswählen ist nicht mittig" – der vorherige `flex items-center`-Fix
+> (siehe oben) reichte nicht: `<input type="file">` rendert Button +
+> Label als internen UA-Shadow-Content, dessen vertikale Position vom
+> Browser nicht wirklich über `align-items` auf dem Input-Element
+> gesteuert wird (`display:flex`/`align-items:center` wurde zwar korrekt
+> berechnet, wirkte sich aber nicht auf die Shadow-Content-Position aus).
+> Zuverlässiger, altbekannter Trick: `line-height` explizit auf die
+> Content-Box-Höhe setzen (`leading-[2.5rem]`, entspricht `h-12` minus
+> `py-1`-Padding) statt sich auf Flex-Zentrierung zu verlassen – der
+> Browser positioniert den Datei-Button/das Label anhand der Zeilenhöhe,
+> nicht anhand von Flex-Alignment. Zusätzlich `file:align-middle` ergänzt.
+> Gilt global in `ui/input.tsx`, wirkt sich auf normale Text-Inputs nicht
+> sichtbar aus (per Screenshot verifiziert) – bei einzeiligen Feldern mit
+> fester Höhe ändert eine größere Zeilenhöhe nichts an der Textposition.
+> **Lehre**: `<input type="file">` lässt sich NICHT zuverlässig per
+> Flexbox auf dem Input-Element selbst zentrieren (Shadow-Content-
+> Layout folgt nicht immer `align-items`) – `line-height` = Content-
+> Box-Höhe ist der robustere Weg.
+>
+> **Zusätzlich (gleicher Anlass)**: Grüner Fokus-Ring erschien beim
+> Öffnen des Upload-Popups sofort um "Datei auswählen", ohne Nutzer-
+> Interaktion – Base UI fokussiert automatisch das erste fokussierbare
+> Element im Dialog, bei einem Datei-Input wirkt das wie ein UI-Bug statt
+> wie normales Auto-Fokus-Verhalten. Fix: `initialFocus={false}` auf
+> `DialogContent` in `media-upload-dialog.tsx` (nur dort, nicht global).
+
+> **Update 2026-08-15 (Dateityp-Filter als Pillen statt Dropdown):**
+> "stelle dateitypen nicht als dropdown, sondern so dar wie auf dem
+> bild" – `MediaFilters` zeigte den Dateityp-Filter bisher als
+> `<Select>`-Dropdown ("Alle Dateitypen"/"Bild"/"PDF"/... einzeln). Jetzt
+> als Pillen-Reihe mit Zähler (1:1 nach Bildvorlage, gleiches visuelles
+> Muster wie die bereits bestehenden Tag-Filter-Pillen: aktiv =
+> `bg-[#132033]`-gefüllt mit hellem Zähler-Badge, inaktiv = Rahmen mit
+> grauem Zähler-Badge). Nutzerentscheidung zum Kategorien-Umfang: nur
+> **echte, hochladbare** Kategorien (Alle/Bilder/Video/Dokumente) statt
+> der Bildvorlage 1:1 zu übernehmen, die zusätzlich "Audio"/"Archive"
+> zeigt – für beide gibt es keinen Upload-Support (`ALLOWED_MIME_TYPES`
+> in `media.config.ts`), sie würden also immer "0" anzeigen.
+> - **Neuer Zähler-Endpoint** `GET /media/counts?folderId=` (`MediaService#getCounts`,
+>   `apps/web/lib/api-server.ts#getMediaCounts`) – bewusst nur nach
+>   `folderId` gescoped, nicht zusätzlich nach den übrigen aktiven
+>   Filtern (Tag/Größe): die Pillen sollen die Gesamtverteilung im
+>   aktuellen Ordner zeigen, nicht "wie viele bleiben nach Filter X übrig".
+> - **"Dokumente"-Pille fasst PDF + Office zusammen**: kein neuer echter
+>   `MediaCategory`-Wert (der bleibt `image`/`pdf`/`video`/`office`/`other`,
+>   u.a. für die Datei-Typ-Icons weiterhin einzeln gebraucht, siehe oben),
+>   sondern ein reines Filter-Pseudo-Typ `"document"` nur in
+>   `QueryMediaDto`/`MediaService#findAll`, das serverseitig zu
+>   `mimeTypesForCategory('pdf') + mimeTypesForCategory('office')`
+>   aufgelöst wird.
+
 ## Was wurde gebaut
 
 Die Medien-Übersicht (`/dashboard/media`) wurde komplett neu gebaut, 1:1

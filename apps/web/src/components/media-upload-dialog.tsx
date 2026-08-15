@@ -99,7 +99,11 @@ export function MediaUploadDialog({
         <Upload />
         Datei hochladen
       </DialogTrigger>
-      <DialogContent className="sm:max-w-xl">
+      {/* `initialFocus={false}`: das erste Feld ist ein Datei-Input – Base
+          UI fokussiert es sonst automatisch beim Öffnen, was den grünen
+          Fokus-Ring sofort (ungewollt) um "Datei auswählen" zeigt, bevor der
+          Nutzer überhaupt interagiert hat. */}
+      <DialogContent className="sm:max-w-xl" initialFocus={false}>
         <DialogHeader>
           <DialogTitle>Medium hochladen</DialogTitle>
         </DialogHeader>

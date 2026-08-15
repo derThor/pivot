@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 import { StorageQuotaBanner } from "@/components/storage-quota-banner";
 import {
+  getMediaCounts,
   getMediaFolders,
   getMediaList,
   getMediaStorageUsage,
@@ -42,11 +43,12 @@ export default async function MediaPage({
   const tagIds = tags ? tags.split(",").filter(Boolean) : undefined;
   const showUnusedOnly = unused === "true";
 
-  const [folders, settings, tagList, storageUsage] = await Promise.all([
+  const [folders, settings, tagList, storageUsage, mediaCounts] = await Promise.all([
     getMediaFolders(),
     getPublicSettings(),
     getTags({ pageSize: 100 }),
     getMediaStorageUsage(),
+    getMediaCounts(currentFolderId),
   ]);
 
   const unusedMedia = showUnusedOnly ? await getUnusedMedia() : null;
@@ -85,7 +87,7 @@ export default async function MediaPage({
       <PageContent plain>
         <StorageQuotaBanner usage={storageUsage} />
 
-        <MediaFilters tags={tagList?.items ?? []} />
+        <MediaFilters tags={tagList?.items ?? []} counts={mediaCounts ?? null} />
 
         {showUnusedOnly ? (
           <>

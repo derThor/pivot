@@ -4,6 +4,20 @@
 **Betroffene Bereiche:** apps/api (`src/tags`), apps/web (fast alle
 Listen-Ansichten), packages/database (`Tag.createdAt`)
 
+> **Update 2026-08-15 (Feinschliff "Alle Tags"-Pillen):** "einmal kein
+> bg, hier weiss. bg nur bei counter anzahl" – die Pillen in der "Alle
+> Tags"-Übersicht nutzten `bg-background` (fast, aber nicht ganz weiß –
+> `--background` ist in Light-Mode minimal grauer als `--card`), dadurch
+> minimal sichtbarer Farbunterschied zur weißen Karte dahinter. Fix:
+> `bg-background` → `bg-card` (theme-fähiges "echtes Weiß" statt
+> hartkodiertem `bg-white`, bleibt auch im Dark-Mode korrekt) – nur die
+> kleine Zähler-Badge (`{tag.mediaCount}`) behält weiterhin `bg-muted`.
+> Zusätzlich: Tabellenkopf (`TableHeader`) auf der Tags-Seite bekam
+> `className="bg-background"` (Nutzervorgabe "unter tags den header mit
+> hintergrundfarbe wie main") – bewusst nur lokal auf dieser Seite
+> gesetzt, nicht in der geteilten `ui/table.tsx`, da das alle anderen
+> Listen-Seiten mitverändert hätte.
+
 ## Was wurde gebaut
 
 1. **Tags-Seite komplett neu** (`tags-manager.tsx`, ersetzt die generische

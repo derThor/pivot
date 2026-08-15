@@ -64,6 +64,12 @@ export class MediaController {
     return this.mediaService.getStorageUsage();
   }
 
+  @RequirePermission('media:read')
+  @Get('counts')
+  getCounts(@Query('folderId') folderId?: string) {
+    return this.mediaService.getCounts(folderId);
+  }
+
   @RequirePermission('media:create')
   @Post()
   @ApiConsumes('multipart/form-data')
