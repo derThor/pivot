@@ -47,6 +47,12 @@ export class MediaController {
   }
 
   @RequirePermission('media:read')
+  @Get(':id/usage')
+  getUsage(@Param('id') id: string) {
+    return this.mediaService.getUsage(id);
+  }
+
+  @RequirePermission('media:read')
   @Get('unused')
   findUnused() {
     return this.mediaService.findUnused();

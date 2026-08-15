@@ -1,7 +1,6 @@
 import { FolderDialog } from "@/components/folder-dialog";
+import { MediaExplorer } from "@/components/media-explorer";
 import { MediaFilters } from "@/components/media-filters";
-import { MediaFolderBrowser } from "@/components/media-folder-browser";
-import { MediaGrid } from "@/components/media-grid";
 import { MediaUploadDialog } from "@/components/media-upload-dialog";
 import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
@@ -95,14 +94,17 @@ export default async function MediaPage({
               Inhalt, SEO-Bild oder Logo referenziert werden –
               ordnerübergreifend.
             </p>
-            <MediaGrid
+            <MediaExplorer
               items={unusedMedia?.items ?? []}
               folders={folders ?? []}
+              availableTags={tagList?.items ?? []}
+              currentFolderId={null}
+              hideFolders
             />
           </>
         ) : (
           <>
-            <MediaFolderBrowser
+            <MediaExplorer
               folders={folders ?? []}
               currentFolderId={currentFolderId}
               items={media?.items ?? []}

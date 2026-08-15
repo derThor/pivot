@@ -53,6 +53,7 @@ Themenbereiche/Umgruppierungen: siehe [PROCESS.md](./PROCESS.md)).
 | [media-folders.md](./media/media-folders.md) | Verschachtelte Ordner in der Medienbibliothek, Verschieben, Ordner-Navigation im Bild-Picker | 2026-08-04 |
 | [media-processing-and-management.md](./media/media-processing-and-management.md) | Bildverarbeitung (Zuschneiden, Responsive-Varianten, WebP/AVIF, Kompression, EXIF-Entfernung, Fokuspunkt), PDF/Video/Office-Support inkl. leichtgewichtiger Vorschau, Medien-Tags (gemeinsamer Pool), Suche/Filter, Duplizieren, Erkennung ungenutzter Medien | 2026-08-08 |
 | [media-square-thumbnails-and-tiles-block.md](./media/media-square-thumbnails-and-tiles-block.md) | Quadratisches, fokuspunkt-verankertes 400px-Thumbnail (`Media.thumbnailUrl`) + neuer Seiten-Designer-Baustein „Kacheln" (4 feste Bild-Slots) als erste Verbraucher des Fokuspunkts | 2026-08-09 |
+| [media-library-redesign.md](./media/media-library-redesign.md) | Medien-Übersicht neu: echtes JS-Masonry-Grid, Detail-Seitenleiste statt Popup, gebündeltes Bearbeiten-Popup, neuer "Verwendet"-Endpoint, Datei-Typ-Icons, Dialog-Überlauf-Fix, Spaltenzahl-Flip-Fix | 2026-08-17 |
 
 ## Frontend – allgemein (`frontend/`)
 
@@ -66,6 +67,7 @@ Themenbereiche/Umgruppierungen: siehe [PROCESS.md](./PROCESS.md)).
 | [toast-and-system-messages.md](./frontend/toast-and-system-messages.md) | Toast-Benachrichtigungen (`app-toast.tsx`) + Inline-Systemmeldungen (`SystemMessage`), verdrahtet für Wartungsmodus, Medien-Speicherkontingent, Webhook-Fehlschläge | 2026-08-15 |
 | [header-admin-menu-and-search.md](./frontend/header-admin-menu-and-search.md) | Header-Umbau: "Verwaltung" von Sidebar in Header-Dropdown, echtes Suchfeld + separater Strg-K-Befehlspalette-Trigger, Glocke verlinkt `/dashboard/system-messages` mit rotem Zähler-Badge | 2026-08-16 |
 | [row-action-icon-buttons.md](./frontend/row-action-icon-buttons.md) | Tags-Seite neu (Übersichtsleiste + Tabelle, `Tag.createdAt`/`mediaCount`), globale Umstellung Kebab-Menü → immer sichtbare Bearbeiten-/Löschen-Icon-Buttons (`RowActionButtons`) | 2026-08-16 |
+| [nextjs-loading-tsx-always-shows.md](./frontend/nextjs-loading-tsx-always-shows.md) | `loading.tsx` (App Router) zeigt bei jeder Navigation sofort, nicht nur bei echter Verzögerung – Skeleton-Experiment bei FAQs/Galerien/Medien/Tags deshalb wieder verworfen | 2026-08-15 |
 | [user-management-ui.md](./frontend/user-management-ui.md) | Benutzerverwaltung-UI (Liste, Anlegen, Rollen ändern) | 2026-08-02 |
 | [taxonomy-management.md](./frontend/taxonomy-management.md) | Kategorien-Verwaltung (CRUD inkl. Bearbeiten, Beschreibung, eigener Menüpunkt); Tags haben seit 2026-08-16 eine eigene Ansicht, siehe [row-action-icon-buttons.md](./frontend/row-action-icon-buttons.md) | 2026-08-16 |
 | [user-edit-delete.md](./frontend/user-edit-delete.md) | Benutzer vollständig bearbeiten (Name/E-Mail/Status) und löschen (mit Selbstlöschschutz) | 2026-08-02 |

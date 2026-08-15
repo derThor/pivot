@@ -145,6 +145,29 @@ export class MediaService {
   }
 
   /**
+   * Zählt, in wie vielen Inhalten dieses Medium referenziert wird – für
+   * das "Verwendet"-Feld in der Medien-Detailansicht (Nutzervorgabe,
+   * 2026-08-17). Derselbe On-Demand-Scan wie `findUnused` (kein
+   * dauerhaft gepflegter Index, siehe dortiger Kommentar), hier nur auf
+   * ein einzelnes Medium statt die ganze Bibliothek angewendet.
+   */
+  async getUsage(id: string) {
+    const media = await this.prisma.media.findUniqueOrThrow({ where: { id } });
+    const targetUrl = normalizeUrl(media.url);
+    const contents = await this.prisma.content.findMany({
+      select: { data: true, ogImageUrl: true },
+    });
+    let count = 0;
+    for (const content of contents) {
+      const urls = new Set<string>();
+      collectReferencedUrls(content.data, urls);
+      if (content.ogImageUrl) urls.add(normalizeUrl(content.ogImageUrl));
+      if (urls.has(targetUrl)) count++;
+    }
+    return { count };
+  }
+
+  /**
    * Ermittelt, auf welcher Seite (bei gegebener pageSize) ein Eintrag
    * liegt – innerhalb des Ordners, in dem er tatsächlich liegt (die
    * Medien-Übersicht ist ordnerbezogen gefiltert, ein Eintrag aus einem

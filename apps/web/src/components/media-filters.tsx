@@ -2,9 +2,6 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -12,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { tagDotColor } from "@/lib/tag-colors";
 import { MEDIA_CATEGORY_LABELS, type MediaCategory } from "@/lib/media-type";
 import { cn } from "@/lib/utils";
 import type { TaxonomyItem } from "@/lib/api-server";
@@ -21,7 +19,7 @@ const CATEGORY_OPTIONS = Object.entries(MEDIA_CATEGORY_LABELS) as [
   string,
 ][];
 
-// Filter (Dateityp/Größe/Tags) sind vollständig URL-getrieben – analog
+// Filter (Dateityp/Tags/ungenutzt) sind vollständig URL-getrieben – analog
 // zum bestehenden `?folder=`. So bleiben sie teilbar/verlinkbar und
 // funktionieren mit Server-seitigem Pagination-Rendering zusammen.
 export function MediaFilters({ tags }: { tags: TaxonomyItem[] }) {
@@ -30,11 +28,8 @@ export function MediaFilters({ tags }: { tags: TaxonomyItem[] }) {
   const searchParams = useSearchParams();
 
   const type = searchParams.get("type") ?? "";
-  const minSize = searchParams.get("minSize") ?? "";
-  const maxSize = searchParams.get("maxSize") ?? "";
   const selectedTagIds = (searchParams.get("tags") ?? "").split(",").filter(Boolean);
   const unused = searchParams.get("unused") === "true";
-  const hasActiveFilters = Boolean(type || minSize || maxSize || selectedTagIds.length);
 
   function updateParams(updates: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -54,97 +49,81 @@ export function MediaFilters({ tags }: { tags: TaxonomyItem[] }) {
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border p-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="flex items-center gap-2 text-sm">
-          <Checkbox
-            checked={unused}
-            onCheckedChange={(checked) =>
-              updateParams({ unused: checked ? "true" : null })
-            }
-          />
-          Nur ungenutzte Medien anzeigen
-        </label>
-      </div>
-      {!unused && (
-        <>
-          <div className="flex flex-wrap items-center gap-3">
-            <Select
-              value={type || "all"}
-              onValueChange={(value) =>
-                updateParams({ type: value === "all" ? null : value })
-              }
-              items={{
-                all: "Alle Dateitypen",
-                ...Object.fromEntries(CATEGORY_OPTIONS),
-              }}
-            >
-              <SelectTrigger size="sm" className="w-44">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alle Dateitypen</SelectItem>
-                {CATEGORY_OPTIONS.map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="flex items-center gap-1.5">
-              <Input
-                type="number"
-                min={0}
-                placeholder="Min. KB"
-                className="h-8 w-24"
-                defaultValue={minSize ? String(Math.round(Number(minSize) / 1024)) : ""}
-                onBlur={(e) =>
-                  updateParams({
-                    minSize: e.target.value ? String(Number(e.target.value) * 1024) : null,
-                  })
-                }
-              />
-              <span className="text-sm text-muted-foreground">–</span>
-              <Input
-                type="number"
-                min={0}
-                placeholder="Max. KB"
-                className="h-8 w-24"
-                defaultValue={maxSize ? String(Math.round(Number(maxSize) / 1024)) : ""}
-                onBlur={(e) =>
-                  updateParams({
-                    maxSize: e.target.value ? String(Number(e.target.value) * 1024) : null,
-                  })
-                }
-              />
-            </div>
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={() =>
-                  updateParams({ type: null, minSize: null, maxSize: null, tags: null })
-                }
-                className="text-sm text-muted-foreground hover:text-foreground"
-              >
-                Filter zurücksetzen
-              </button>
-            )}
-          </div>
-          {tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {tags.map((tag) => (
-                <Badge
-                  key={tag.id}
-                  variant={selectedTagIds.includes(tag.id) ? "default" : "outline"}
-                  className={cn("cursor-pointer select-none")}
-                  onClick={() => toggleTag(tag.id)}
-                >
-                  {tag.name}
-                </Badge>
-              ))}
-            </div>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Select
+          value={type || "all"}
+          onValueChange={(value) =>
+            updateParams({ type: value === "all" ? null : value })
+          }
+          items={{
+            all: "Alle Dateitypen",
+            ...Object.fromEntries(CATEGORY_OPTIONS),
+          }}
+        >
+          <SelectTrigger className="h-11 rounded-lg border-[#D4D4D4] px-4">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle Dateitypen</SelectItem>
+            {CATEGORY_OPTIONS.map(([value, label]) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <button
+          type="button"
+          onClick={() => updateParams({ unused: unused ? null : "true" })}
+          className={cn(
+            "h-11 shrink-0 rounded-lg border px-4 text-sm font-medium transition-colors",
+            unused
+              ? "border-transparent bg-primary text-primary-foreground"
+              : "border-[#D4D4D4] bg-transparent hover:bg-muted/40",
           )}
-        </>
+        >
+          Nur ungenutzte
+        </button>
+      </div>
+
+      {!unused && tags.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="mr-1 shrink-0 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            Nach Tag filtern
+          </span>
+          <button
+            type="button"
+            onClick={() => updateParams({ tags: null })}
+            className={cn(
+              "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+              selectedTagIds.length === 0
+                ? "border-transparent bg-[#132033] text-white"
+                : "border-[#D4D4D4] bg-transparent hover:bg-muted/40",
+            )}
+          >
+            Alle
+          </button>
+          {tags.map((tag) => {
+            const active = selectedTagIds.includes(tag.id);
+            return (
+              <button
+                key={tag.id}
+                type="button"
+                onClick={() => toggleTag(tag.id)}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+                  active
+                    ? "border-transparent bg-[#132033] text-white"
+                    : "border-[#D4D4D4] bg-transparent hover:bg-muted/40",
+                )}
+              >
+                <span className={cn("size-2 shrink-0 rounded-full", tagDotColor(tag.id))} />
+                {tag.name}
+              </button>
+            );
+          })}
+        </div>
       )}
     </div>
   );
