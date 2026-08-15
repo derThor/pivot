@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Copy, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 
 import { toastDeleted } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
@@ -16,15 +16,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { EditPreviewLinkDialog } from "@/components/edit-preview-link-dialog";
 import { HighlightText } from "@/components/highlight-text";
+import { RowActionButtons } from "@/components/row-action-buttons";
 import { SelectionToolbar } from "@/components/selection-toolbar";
 import { useHighlightParam } from "@/hooks/use-highlight-param";
 import { useSelection } from "@/hooks/use-selection";
@@ -150,38 +145,24 @@ export function PreviewLinksTable({
                   <TableCell>{formatName(link.createdBy)}</TableCell>
                   <TableCell>
                     <div className="flex justify-center">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          render={
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              className="rounded-full"
-                              aria-label={`Aktionen für Vorschau-Link „${link.content.title}“`}
-                            />
-                          }
-                        >
-                          <MoreVertical />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleCopy(link)}>
-                            {copiedId === link.id ? <Check /> : <Copy />}
-                            Link kopieren
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setEditOpenId(link.id)}>
-                            <Pencil />
-                            Bearbeiten
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onClick={() => setDeleteTarget(link)}
+                      <RowActionButtons
+                        onEdit={() => setEditOpenId(link.id)}
+                        onDelete={() => setDeleteTarget(link)}
+                        editLabel={`Vorschau-Link für „${link.content.title}“ bearbeiten`}
+                        deleteLabel={`Vorschau-Link für „${link.content.title}“ widerrufen`}
+                        extra={
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="rounded-lg border-[#D4D4D4]"
+                            onClick={() => handleCopy(link)}
+                            aria-label={`Link für „${link.content.title}“ kopieren`}
                           >
-                            <Trash2 />
-                            Widerrufen
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            {copiedId === link.id ? <Check /> : <Copy />}
+                          </Button>
+                        }
+                      />
                       <EditPreviewLinkDialog
                         link={link}
                         hideTrigger

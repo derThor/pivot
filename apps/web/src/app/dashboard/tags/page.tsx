@@ -1,9 +1,9 @@
-import { TaxonomyManager } from "@/components/taxonomy-manager";
+import { TagsManager } from "@/components/tags-manager";
 import { TaxonomyItemDialog } from "@/components/taxonomy-item-dialog";
 import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
-import { getPublicSettings, getTags } from "@/lib/api-server";
+import { getAllTags, getPublicSettings, getTags } from "@/lib/api-server";
 
 export default async function TagsPage({
   searchParams,
@@ -12,8 +12,11 @@ export default async function TagsPage({
 }) {
   const { page: pageParam } = await searchParams;
   const page = Number(pageParam) || 1;
-  const settings = await getPublicSettings();
-  const tags = await getTags({
+  const [settings, allTags] = await Promise.all([
+    getPublicSettings(),
+    getAllTags(),
+  ]);
+  const pagedTags = await getTags({
     page,
     pageSize: settings?.defaultPageSize ?? 10,
   });
@@ -28,19 +31,13 @@ export default async function TagsPage({
           entitySingular="Tag"
         />
       </div>
-      <PageContent>
-        <TaxonomyManager
-          apiPath="tags"
-          items={tags?.items ?? []}
-          newLabel="Neuer Tag"
-          entitySingular="Tag"
-          entityLabelPlural="Tags"
-        />
+      <PageContent plain>
+        <TagsManager allTags={allTags ?? []} items={pagedTags?.items ?? []} />
 
-        {tags && (
+        {pagedTags && (
           <PaginationControls
-            page={tags.meta.page}
-            pageCount={tags.meta.pageCount}
+            page={pagedTags.meta.page}
+            pageCount={pagedTags.meta.pageCount}
             buildHref={(p) => `?page=${p}`}
           />
         )}

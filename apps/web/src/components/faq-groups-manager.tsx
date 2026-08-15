@@ -2,28 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ChevronDown,
-  ChevronUp,
-  HelpCircle,
-  MoreVertical,
-  Pencil,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, HelpCircle, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { toastDeleted } from "@/components/app-toast";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { FaqGroupDialog } from "@/components/faq-group-dialog";
 import { FaqQuestionDialog } from "@/components/faq-question-dialog";
 import { RichTextDisplay } from "@/components/rich-text-display";
+import { RowActionButtons } from "@/components/row-action-buttons";
 import { toRepeaterItems, type RepeaterItem } from "@/components/block-field-output";
 import { cn } from "@/lib/utils";
 import type { GlobalModule, ModuleType } from "@/lib/api-server";
@@ -222,34 +209,14 @@ export function FaqGroupsManager({
                   >
                     {questions.length} {questions.length === 1 ? "Frage" : "Fragen"}
                   </span>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          className="shrink-0 rounded-full"
-                          aria-label={`Aktionen für ${group.name}`}
-                        />
-                      }
-                    >
-                      <MoreVertical />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setEditGroup(group)}>
-                        <Pencil />
-                        Bearbeiten
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={() => setDeleteGroup(group)}
-                      >
-                        <Trash2 />
-                        Löschen
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <RowActionButtons
+                    size="icon-sm"
+                    className="shrink-0"
+                    onEdit={() => setEditGroup(group)}
+                    onDelete={() => setDeleteGroup(group)}
+                    editLabel={`„${group.name}“ bearbeiten`}
+                    deleteLabel={`„${group.name}“ löschen`}
+                  />
                   <button
                     type="button"
                     onClick={() => toggleGroup(group.id)}

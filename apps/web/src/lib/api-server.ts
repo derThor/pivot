@@ -449,8 +449,25 @@ export function getCategories(params?: { page?: number; pageSize?: number }) {
   return apiFetch<TaxonomyListResponse>(`/categories${taxonomyQuery(params)}`);
 }
 
+export interface Tag extends TaxonomyItem {
+  mediaCount: number;
+  createdAt: string;
+}
+
+export interface TagListResponse {
+  items: Tag[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
 export function getTags(params?: { page?: number; pageSize?: number }) {
-  return apiFetch<TaxonomyListResponse>(`/tags${taxonomyQuery(params)}`);
+  return apiFetch<TagListResponse>(`/tags${taxonomyQuery(params)}`);
+}
+
+/** Ungefiltert/unpaginiert, für die "Alle Tags"-Übersichtsleiste
+ * (Nutzervorgabe, 2026-08-16) – zeigt jeden existierenden Tag, nicht nur
+ * die aktuelle Tabellenseite. */
+export function getAllTags() {
+  return apiFetch<Tag[]>("/tags/all");
 }
 
 export interface Webhook {

@@ -3,17 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Eye } from "lucide-react";
 
 import { toastDeleted } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
+import { RowActionButtons } from "@/components/row-action-buttons";
 
 export function ContentRowActions({
   id,
@@ -33,40 +28,24 @@ export function ContentRowActions({
 
   return (
     <div className="flex justify-center">
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="rounded-full"
-              aria-label={`Aktionen für ${title}`}
-            />
-          }
-        >
-          <MoreVertical />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem
+      <RowActionButtons
+        onEdit={() => router.push(`/dashboard/content/${id}/edit`)}
+        onDelete={() => setDeleteOpen(true)}
+        editLabel={`„${title}“ bearbeiten`}
+        deleteLabel={`„${title}“ löschen`}
+        extra={
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="rounded-lg border-[#D4D4D4]"
             render={<Link href={`/dashboard/content/${id}/preview`} target="_blank" />}
+            aria-label={`Vorschau von „${title}“ öffnen`}
           >
             <Eye />
-            Vorschau
-          </DropdownMenuItem>
-          <DropdownMenuItem render={<Link href={`/dashboard/content/${id}/edit`} />}>
-            <Pencil />
-            Bearbeiten
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={() => setDeleteOpen(true)}
-          >
-            <Trash2 />
-            Löschen
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </Button>
+        }
+      />
 
       <ConfirmDeleteDialog
         open={deleteOpen}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 import { toastDeleted } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
@@ -15,14 +15,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { NavigationDialog } from "@/components/navigation-dialog";
+import { RowActionButtons } from "@/components/row-action-buttons";
 import type { NavigationSummary } from "@/lib/api-server";
 
 export function NavigationsManager({ items }: { items: NavigationSummary[] }) {
@@ -77,42 +72,24 @@ export function NavigationsManager({ items }: { items: NavigationSummary[] }) {
                 <TableCell>{navigation._count.items}</TableCell>
                 <TableCell>
                   <div className="flex justify-center">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            className="rounded-full"
-                            aria-label={`Aktionen für ${navigation.name}`}
-                          />
-                        }
-                      >
-                        <MoreVertical />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          render={
-                            <Link href={`/dashboard/navigation/${navigation.id}`} />
-                          }
+                    <RowActionButtons
+                      onEdit={() => setEditOpenId(navigation.id)}
+                      onDelete={() => setDeleteTarget(navigation)}
+                      editLabel={`„${navigation.name}“ bearbeiten`}
+                      deleteLabel={`„${navigation.name}“ löschen`}
+                      extra={
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="rounded-lg border-[#D4D4D4]"
+                          render={<Link href={`/dashboard/navigation/${navigation.id}`} />}
+                          aria-label={`„${navigation.name}“ öffnen`}
                         >
                           <ArrowRight />
-                          Öffnen
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setEditOpenId(navigation.id)}>
-                          <Pencil />
-                          Bearbeiten
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onClick={() => setDeleteTarget(navigation)}
-                        >
-                          <Trash2 />
-                          Löschen
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                        </Button>
+                      }
+                    />
                     <NavigationDialog
                       navigation={navigation}
                       hideTrigger

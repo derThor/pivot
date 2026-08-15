@@ -2,11 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MoreVertical, Trash2 } from "lucide-react";
 
 import { toastDeleted } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
   Table,
@@ -16,13 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
+import { RowActionButtons } from "@/components/row-action-buttons";
 import type { Webhook } from "@/lib/api-server";
 
 const eventLabel: Record<string, string> = {
@@ -118,32 +111,10 @@ export function WebhooksManager({ items }: { items: Webhook[] }) {
                   />
                 </TableCell>
                 <TableCell>
-                  <div className="flex justify-center">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            className="rounded-full"
-                            aria-label={`Aktionen für Webhook ${webhook.url}`}
-                          />
-                        }
-                      >
-                        <MoreVertical />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onClick={() => setDeleteTarget(webhook)}
-                        >
-                          <Trash2 />
-                          Löschen
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                  <RowActionButtons
+                    onDelete={() => setDeleteTarget(webhook)}
+                    deleteLabel={`Webhook „${webhook.url}“ löschen`}
+                  />
                 </TableCell>
               </TableRow>
             ))

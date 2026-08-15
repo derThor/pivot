@@ -2,17 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 
 import { toastDeleted } from "@/components/app-toast";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
+import { RowActionButtons } from "@/components/row-action-buttons";
 import { RoleFormDialog } from "@/components/role-form-dialog";
 import type { Role } from "@/lib/api-server";
 
@@ -36,36 +29,12 @@ export function RoleRowActions({
 
   return (
     <div className="flex justify-center">
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="rounded-full"
-              aria-label={`Aktionen für ${role.name}`}
-            />
-          }
-        >
-          <MoreVertical />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setEditOpen(true)}>
-            <Pencil />
-            Bearbeiten
-          </DropdownMenuItem>
-          {canDelete && (
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={() => setDeleteOpen(true)}
-            >
-              <Trash2 />
-              Löschen
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <RowActionButtons
+        onEdit={() => setEditOpen(true)}
+        onDelete={canDelete ? () => setDeleteOpen(true) : undefined}
+        editLabel={`„${role.name}“ bearbeiten`}
+        deleteLabel={`„${role.name}“ löschen`}
+      />
 
       <RoleFormDialog
         role={role}

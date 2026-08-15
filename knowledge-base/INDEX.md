@@ -65,8 +65,9 @@ Themenbereiche/Umgruppierungen: siehe [PROCESS.md](./PROCESS.md)).
 | [design-refresh.md](./frontend/design-refresh.md) | Koralle/Orange-Theme, Sidebar/Header-Neugestaltung, Kebab-Menüs in allen Listen, feste Logos, responsive Auth-Shell, globaler `destructive`-Button-Stil, Breadcrumb-Farben | 2026-08-15 |
 | [toast-and-system-messages.md](./frontend/toast-and-system-messages.md) | Toast-Benachrichtigungen (`app-toast.tsx`) + Inline-Systemmeldungen (`SystemMessage`), verdrahtet für Wartungsmodus, Medien-Speicherkontingent, Webhook-Fehlschläge | 2026-08-15 |
 | [header-admin-menu-and-search.md](./frontend/header-admin-menu-and-search.md) | Header-Umbau: "Verwaltung" von Sidebar in Header-Dropdown, echtes Suchfeld + separater Strg-K-Befehlspalette-Trigger, Glocke verlinkt `/dashboard/system-messages` mit rotem Zähler-Badge | 2026-08-16 |
+| [row-action-icon-buttons.md](./frontend/row-action-icon-buttons.md) | Tags-Seite neu (Übersichtsleiste + Tabelle, `Tag.createdAt`/`mediaCount`), globale Umstellung Kebab-Menü → immer sichtbare Bearbeiten-/Löschen-Icon-Buttons (`RowActionButtons`) | 2026-08-16 |
 | [user-management-ui.md](./frontend/user-management-ui.md) | Benutzerverwaltung-UI (Liste, Anlegen, Rollen ändern) | 2026-08-02 |
-| [taxonomy-management.md](./frontend/taxonomy-management.md) | Kategorien/Tags-Verwaltung (CRUD inkl. Bearbeiten, Kategorie-Beschreibung, eigene Menüpunkte) | 2026-08-05 |
+| [taxonomy-management.md](./frontend/taxonomy-management.md) | Kategorien-Verwaltung (CRUD inkl. Bearbeiten, Beschreibung, eigener Menüpunkt); Tags haben seit 2026-08-16 eine eigene Ansicht, siehe [row-action-icon-buttons.md](./frontend/row-action-icon-buttons.md) | 2026-08-16 |
 | [user-edit-delete.md](./frontend/user-edit-delete.md) | Benutzer vollständig bearbeiten (Name/E-Mail/Status) und löschen (mit Selbstlöschschutz) | 2026-08-02 |
 
 ## Tooling & Infrastruktur (`tooling/`)

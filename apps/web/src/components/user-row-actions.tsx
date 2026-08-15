@@ -2,17 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 
 import { toastDeleted } from "@/components/app-toast";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
+import { RowActionButtons } from "@/components/row-action-buttons";
 import { EditUserDialog } from "@/components/edit-user-dialog";
 import type { CurrentUser } from "@/lib/api-server";
 import { formatName } from "@/lib/utils";
@@ -39,36 +32,12 @@ export function UserRowActions({
 
   return (
     <div className="flex justify-center">
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="rounded-full"
-              aria-label={`Aktionen für ${name}`}
-            />
-          }
-        >
-          <MoreVertical />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setEditOpen(true)}>
-            <Pencil />
-            Bearbeiten
-          </DropdownMenuItem>
-          {!isSelf && (
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={() => setDeleteOpen(true)}
-            >
-              <Trash2 />
-              Löschen
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <RowActionButtons
+        onEdit={() => setEditOpen(true)}
+        onDelete={!isSelf ? () => setDeleteOpen(true) : undefined}
+        editLabel={`„${name}“ bearbeiten`}
+        deleteLabel={`„${name}“ löschen`}
+      />
 
       <EditUserDialog
         user={user}

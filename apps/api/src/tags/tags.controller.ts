@@ -29,6 +29,12 @@ export class TagsController {
   }
 
   @RequirePermission('tags:read')
+  @Get('all')
+  findAllUnpaginated() {
+    return this.tagsService.findAllUnpaginated();
+  }
+
+  @RequirePermission('tags:read')
   @Get(':id/page')
   findPage(@Param('id') id: string, @Query() query: FindPageDto) {
     return this.tagsService.findPage(id, query.pageSize);

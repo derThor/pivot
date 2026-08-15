@@ -15,13 +15,31 @@ export class TagsService {
         orderBy: { name: 'asc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
+        include: { _count: { select: { media: true } } },
       }),
       this.prisma.tag.count(),
     ]);
     return {
-      items,
+      items: items.map(({ _count, ...tag }) => ({
+        ...tag,
+        mediaCount: _count.media,
+      })),
       meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
     };
+  }
+
+  /** Alle Tags ohne Pagination, für die "Alle Tags"-Übersichtsleiste
+   * (Nutzervorgabe, 2026-08-16, 1:1 nach Bildvorlage) – die zeigt jeden
+   * existierenden Tag als Pill, nicht nur die aktuelle Tabellenseite. */
+  async findAllUnpaginated() {
+    const items = await this.prisma.tag.findMany({
+      orderBy: { name: 'asc' },
+      include: { _count: { select: { media: true } } },
+    });
+    return items.map(({ _count, ...tag }) => ({
+      ...tag,
+      mediaCount: _count.media,
+    }));
   }
 
   /** Ermittelt, auf welcher Seite (bei gegebener pageSize) ein Eintrag liegt. */
