@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toastDeleted } from "@/components/app-toast";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { FaqGroupDialog } from "@/components/faq-group-dialog";
 import { FaqQuestionDialog } from "@/components/faq-question-dialog";
@@ -70,13 +71,10 @@ export function FaqGroupsManager({
   }
 
   const [expandedGroups, setExpandedGroups] = useState<ReadonlySet<string>>(
-    () => new Set(items[0] ? [items[0].id] : []),
+    () => new Set(),
   );
   const [expandedQuestions, setExpandedQuestions] = useState<ReadonlySet<string>>(
-    () => {
-      const firstQuestion = items[0] ? questionsOf(items[0])[0] : undefined;
-      return new Set(firstQuestion ? [firstQuestion.id] : []);
-    },
+    () => new Set(),
   );
   const [editGroup, setEditGroup] = useState<GlobalModule | null>(null);
   const [questionDialogTarget, setQuestionDialogTarget] = useState<{
@@ -110,6 +108,7 @@ export function FaqGroupsManager({
   async function handleDeleteGroup() {
     if (!deleteGroup) return;
     await fetch(`/api/global-modules/${deleteGroup.id}`, { method: "DELETE" });
+    toastDeleted(`„${deleteGroup.name}“ wurde gelöscht.`);
     router.refresh();
   }
 
@@ -124,6 +123,7 @@ export function FaqGroupsManager({
         values: { ...group.values, [repeaterField.name]: nextItems },
       }),
     });
+    toastDeleted("Die Frage wurde entfernt.");
     router.refresh();
   }
 
@@ -361,9 +361,9 @@ export function FaqGroupsManager({
                                     </Button>
                                     <Button
                                       type="button"
-                                      variant="outline"
+                                      variant="destructive"
                                       size="sm"
-                                      className="font-normal text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                      className="font-normal"
                                       onClick={() =>
                                         setDeleteQuestion({ group, questionId: question.id })
                                       }

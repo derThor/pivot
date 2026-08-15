@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 
+import { toastCreated } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,6 +73,7 @@ export function InsertSharedBlockDialog({
         setError(body?.message ?? "Konnte nicht angelegt werden.");
         return;
       }
+      toastCreated(`„${name}“ wurde angelegt.`);
       router.refresh();
       onSelect(body as GlobalModule);
       reset();

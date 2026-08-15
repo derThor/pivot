@@ -52,6 +52,12 @@ export class MediaController {
     return this.mediaService.findUnused();
   }
 
+  @RequirePermission('media:read')
+  @Get('storage-usage')
+  getStorageUsage() {
+    return this.mediaService.getStorageUsage();
+  }
+
   @RequirePermission('media:create')
   @Post()
   @ApiConsumes('multipart/form-data')

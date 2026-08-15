@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Pencil, Plus } from "lucide-react";
 
+import { toastCreated, toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -121,6 +122,8 @@ export function RoleFormDialog({
 
       setOpen(false);
       if (!isEditing) form.reset();
+      if (isEditing) toastEdited(`„${values.name}“ wurde gespeichert.`);
+      else toastCreated(`„${values.name}“ wurde angelegt.`);
       router.refresh();
     } catch {
       setError("Server nicht erreichbar. Bitte später erneut versuchen.");

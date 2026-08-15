@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FolderInput } from "lucide-react";
 
+import { toastDeleted } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -31,10 +32,16 @@ export function MediaGrid({
     useSelection(items.map((item) => item.id));
 
   async function handleBulkDelete() {
+    const deletedCount = selected.size;
     await Promise.all(
       [...selected].map((id) => fetch(`/api/media/${id}`, { method: "DELETE" })),
     );
     clear();
+    toastDeleted(
+      deletedCount === 1
+        ? "1 Medium wurde gelöscht."
+        : `${deletedCount} Medien wurden gelöscht.`,
+    );
     router.refresh();
   }
 

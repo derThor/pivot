@@ -55,6 +55,8 @@ model AppSettings {
   requireAdminActivation     Boolean  @default(false)
   autosaveEnabled            Boolean  @default(true)
   mediaResponsiveVariantsEnabled Boolean @default(true)
+  maintenanceModeEnabled     Boolean  @default(false)
+  mediaStorageQuotaMb        Int?
   passwordMinLength          Int      @default(8)
   passwordRequireUppercase   Boolean  @default(true)
   passwordRequireLowercase   Boolean  @default(true)
@@ -447,12 +449,16 @@ model AuditLog {
 // ---------- Webhooks ----------
 
 model Webhook {
-  id        String   @id @default(cuid())
-  url       String
-  events    String[]
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String    @id @default(cuid())
+  url                  String
+  events               String[]
+  isActive             Boolean   @default(true)
+  lastDeliveryStatus   String?
+  lastDeliveryAt       DateTime?
+  lastDeliveryError    String?
+  consecutiveFailures  Int       @default(0)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   @@map("webhooks")
 }

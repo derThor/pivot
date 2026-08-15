@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil } from "lucide-react";
 
+import { toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -59,6 +60,7 @@ export function EditPreviewLinkDialog({
         },
       );
       setOpen(false);
+      toastEdited("Die Gültigkeitsdauer wurde aktualisiert.");
       router.refresh();
     } finally {
       setIsSaving(false);

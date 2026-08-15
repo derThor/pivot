@@ -5,6 +5,45 @@
 `src/components/{app-sidebar,dashboard-header,ui/card,ui/checkbox}.tsx`,
 alle Row-Action-Komponenten der Listen-Ansichten)
 
+> **Update 2026-08-15 (Feste Logos statt konfigurierbar, Auth-Shell
+> responsive + Marketing-Overlay, globaler `destructive`-Button-Stil,
+> Breadcrumb-Farben):**
+> - **Logos wieder fest hinterlegt**: Sidebar-Logo (aus-/eingeklappt) und
+>   das Bild rechts auf Anmelden/Registrieren sind auf Nutzerwunsch nicht
+>   mehr über die Einstellungen änderbar (Rückbau des in diesem Dokument
+>   weiter unten beschriebenen "Logo & Firmenangaben"-Features für diese
+>   zwei konkreten Slots). `companyLogoUrl` bleibt als einzelnes, aktuell
+>   an keiner Stelle im Dashboard verwendetes "Firmenlogo"-Upload-Feld in
+>   den Einstellungen bestehen (Details siehe
+>   [settings-and-password-policy.md](../auth/settings-and-password-policy.md)).
+> - **`auth-shell.tsx` (Login/Register/Passwort-vergessen)**: füllt jetzt
+>   die Viewport-Höhe (außer der Inhalt braucht mehr Platz), ist mobil
+>   responsiv, und das Bild rechts hat ein Marketing-Overlay (Headline,
+>   Tagline, vier Badge-Tags). "Passwort vergessen" nutzt denselben
+>   Shell-Screen wie Login. **Stolperstein**: Das `<img>` als normales
+>   Flex-Kind mit `size-full` ließ seine eigene Seitenverhältnis-
+>   Berechnung (hypothetical size aspect-ratio fallback) die Höhe der
+>   Flex-Zeile mit unbestimmter Höhe aufblähen und erzeugte ungewollten
+>   Seiten-Scroll auf kurzen Viewports – Fix: `<img>` auf `absolute
+>   inset-0 size-full object-cover` umgestellt statt normaler
+>   Flow-Kind-Positionierung.
+> - **`ui/button.tsx`s `variant="destructive"` global umgestellt**: von
+>   gefüllter Fläche (`bg-destructive/10`) auf Outline-Stil (`bg-
+>   transparent`, `border-destructive/30`, `text-destructive`,
+>   `hover:bg-destructive/10`) – 1:1 nach Referenzbild (weißer
+>   "Löschen"-Button mit hellrotem Rahmen neben grünem "Erstellen" und
+>   weißem "Bearbeiten"). Wirkt automatisch auf **jede**
+>   `variant="destructive"`-Verwendung, inklusive `AlertDialogAction` in
+>   `ConfirmDeleteDialog` (wrapped `Button` direkt) – bewusst keine
+>   zweite Variante eingeführt, sondern der bereits mehrfach ad-hoc
+>   nachgebaute Stil (z.B. in `faq-groups-manager.tsx`, dort jetzt
+>   entfernt zugunsten der echten Variante) als Standard übernommen.
+> - **`ui/breadcrumb.tsx`**: `BreadcrumbLink` (klickbar) in dunklerem
+>   Grün (`text-lime-700`/`hover:text-lime-800`, dark: `lime-500`/
+>   `lime-400`), `BreadcrumbPage` (aktuelle, nicht-klickbare Seite) in
+>   hellerem Grün (`text-lime-400`, dark: `lime-600`) statt der
+>   bisherigen neutralen `text-foreground`-Farbe.
+>
 > **Update 2026-08-06 (Globaler Standard-Button-Stil: Verlauf statt
 > Flächenfarbe; Outline-Buttons ohne Hintergrund):** Zwei Änderungen an
 > `ui/button.tsx` (`buttonVariants`), wirken dadurch **automatisch auf

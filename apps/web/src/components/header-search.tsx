@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import {
   searchResultHref,
   searchTypeMeta,
@@ -14,7 +13,21 @@ import {
 
 const MIN_QUERY_LENGTH = 3;
 
-export function GlobalSearch({ defaultPageSize }: { defaultPageSize: number }) {
+/** Echtes, direkt eintippbares Suchfeld im Header (Nutzervorgabe,
+ * 2026-08-16: "ich kann die suche nicht mehr anklicken" – ersetzt den
+ * vorherigen reinen Button, der komplett die Befehlspalette öffnete). Der
+ * "Strg K"-Badge rechts im Feld ist ein eigener Klick-Ziel-Bereich, der
+ * über `onOpenPalette` ausschließlich die Befehlspalette öffnet – der Rest
+ * des Feldes ist normale Live-Suche mit Dropdown-Vorschau, wie vorher in
+ * der jetzt entfernten `global-search.tsx`, nur ohne deren Hover-Ausfahr-
+ * Animation (im neuen Header-Design immer voll sichtbar). */
+export function HeaderSearch({
+  defaultPageSize,
+  onOpenPalette,
+}: {
+  defaultPageSize: number;
+  onOpenPalette: () => void;
+}) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -22,19 +35,11 @@ export function GlobalSearch({ defaultPageSize }: { defaultPageSize: number }) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<SearchResult[] | null>(null);
-  const [isHovered, setIsHovered] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
-
-  // Ausgefahren bei Hover/Fokus/Eingabe – kollabiert sonst wieder zum
-  // reinen Icon (siehe Referenz-Screenshot: Icon wie die Glocke, kein
-  // dauerhaft sichtbares Eingabefeld).
-  const expanded = isHovered || isFocused || query.length > 0 || open;
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (!containerRef.current?.contains(event.target as Node)) {
         setOpen(false);
-        setIsHovered(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -46,14 +51,11 @@ export function GlobalSearch({ defaultPageSize }: { defaultPageSize: number }) {
     setResults(null);
     setOpen(false);
     inputRef.current?.blur();
-    setIsHovered(false);
   }
 
   useEffect(() => {
     const trimmed = query.trim();
     if (trimmed.length < MIN_QUERY_LENGTH) {
-      // Kein Reset von `results` nötig: das Dropdown ist über `open`
-      // ausgeblendet, ein veralteter Wert bleibt also unsichtbar.
       setOpen(false);
       return;
     }
@@ -78,51 +80,20 @@ export function GlobalSearch({ defaultPageSize }: { defaultPageSize: number }) {
   }
 
   return (
-    <div
-      ref={containerRef}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className="relative h-12 w-12 shrink-0"
-    >
-      <div
-        className={cn(
-          "absolute top-0 right-0 flex h-12 items-center transition-[width] duration-200 ease-out",
-          expanded ? "w-96" : "w-12",
-        )}
-      >
-        <button
-          type="button"
-          aria-label={query.length > 0 ? "Suche zurücksetzen" : "Suchen"}
-          tabIndex={-1}
-          onClick={() =>
-            query.length > 0 ? clear() : inputRef.current?.focus()
-          }
-          className="absolute top-0 right-0 z-10 flex size-12 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
-        >
-          {query.length > 0 ? (
-            <X className="size-4" />
-          ) : (
-            <Search className="pointer-events-none size-4" />
-          )}
-        </button>
+    <div ref={containerRef} className="relative h-11 w-full min-w-0 shrink sm:w-72">
+      <div className="flex h-11 w-full items-center gap-2 rounded-full border bg-card px-4">
+        <Search className="size-4 shrink-0 text-muted-foreground" />
         <Input
           ref={inputRef}
-          placeholder="Suchen…"
-          className={cn(
-            "h-12 w-full rounded-full border-none bg-card pr-12 shadow-sm transition-[padding-left,opacity] duration-200 ease-out",
-            expanded ? "pl-4 opacity-100" : "pl-0 opacity-0",
-          )}
+          placeholder="Suchen ..."
+          className="h-auto flex-1 border-none bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
           value={query}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Escape") {
               clear();
               return;
             }
-            // Enter -> vollständige Detailsuche-Seite statt der nur auf
-            // wenige Treffer je Bereich begrenzten Dropdown-Vorschau.
             if (e.key === "Enter") {
               const trimmed = query.trim();
               if (trimmed.length < MIN_QUERY_LENGTH) return;
@@ -132,9 +103,27 @@ export function GlobalSearch({ defaultPageSize }: { defaultPageSize: number }) {
             }
           }}
         />
+        {query.length > 0 ? (
+          <button
+            type="button"
+            aria-label="Suche zurücksetzen"
+            onClick={clear}
+            className="shrink-0 text-muted-foreground hover:text-foreground"
+          >
+            <X className="size-4" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onOpenPalette}
+            className="hidden shrink-0 rounded-md bg-muted px-2 py-1 font-sans text-xs text-muted-foreground hover:text-foreground sm:inline-block"
+          >
+            Strg K
+          </button>
+        )}
       </div>
       {open && (
-        <div className="absolute top-full right-0 z-50 mt-2 w-96 overflow-hidden rounded-2xl border bg-popover py-2 text-popover-foreground shadow-lg">
+        <div className="absolute top-full left-0 z-50 mt-2 w-full min-w-80 overflow-hidden rounded-2xl border bg-popover py-2 text-popover-foreground shadow-lg">
           {isLoading ? (
             <div className="px-4 py-3 text-sm text-muted-foreground">
               Suche…

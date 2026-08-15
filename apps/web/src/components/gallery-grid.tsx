@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight, Image as ImageIcon, MoreVertical, Plus, Trash2 } from "lucide-react";
 
+import { toastDeleted } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
-import { GlobalModuleFormDialog } from "@/components/global-module-form-dialog";
 import { toRepeaterItems, toImageValue } from "@/components/block-field-output";
 import { toGallerySettings, GALLERY_EFFECT_LABELS } from "@/lib/gallery-settings";
 import { resolveImageSrc } from "@/lib/media";
@@ -45,12 +45,16 @@ export function GalleryGrid({
   const imageFieldName =
     repeaterField?.fields?.find((f) => f.type === "image")?.name ?? "image";
 
-  const [editGallery, setEditGallery] = useState<GlobalModule | null>(null);
   const [deleteGallery, setDeleteGallery] = useState<GlobalModule | null>(null);
+
+  function openEditor(gallery: GlobalModule) {
+    router.push(`/dashboard/content/galleries/${gallery.id}`);
+  }
 
   async function handleDelete() {
     if (!deleteGallery) return;
     await fetch(`/api/global-modules/${deleteGallery.id}`, { method: "DELETE" });
+    toastDeleted(`„${deleteGallery.name}“ wurde gelöscht.`);
     router.refresh();
   }
 
@@ -84,8 +88,8 @@ export function GalleryGrid({
                   {visibleImages.length === 0 ? (
                     <button
                       type="button"
-                      onClick={() => setEditGallery(gallery)}
-                      className="flex size-full flex-col items-center justify-center gap-1 border border-dashed border-[#D5D5D5] text-[12.5px] font-medium text-[#6E6E6E] transition hover:border-[#BCE64D] hover:text-[#132033]"
+                      onClick={() => openEditor(gallery)}
+                      className="flex size-full flex-col items-center justify-center gap-1 text-[12.5px] font-medium text-[#6E6E6E] transition hover:text-[#132033]"
                     >
                       <Plus className="size-5" />
                       Bilder hinzufügen
@@ -147,7 +151,7 @@ export function GalleryGrid({
                 </div>
                 <button
                   type="button"
-                  onClick={() => setEditGallery(gallery)}
+                  onClick={() => openEditor(gallery)}
                   className="flex w-full items-center gap-2 px-4 py-3 text-left"
                 >
                   <span className="min-w-0 flex-1">
@@ -166,16 +170,6 @@ export function GalleryGrid({
             );
           })}
         </div>
-      )}
-
-      {editGallery && (
-        <GlobalModuleFormDialog
-          moduleType={moduleType}
-          globalModule={editGallery}
-          hideTrigger
-          open={editGallery !== null}
-          onOpenChange={(open) => !open && setEditGallery(null)}
-        />
       )}
 
       <ConfirmDeleteDialog

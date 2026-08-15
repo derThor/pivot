@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
+import { toastDeleted } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -35,10 +36,12 @@ export function RolesTable({
     useSelection(deletableIds);
 
   async function handleBulkDelete() {
+    const count = selected.size;
     await Promise.all(
       [...selected].map((id) => fetch(`/api/roles/${id}`, { method: "DELETE" })),
     );
     clear();
+    toastDeleted(count === 1 ? "1 Rolle wurde gelöscht." : `${count} Rollen wurden gelöscht.`);
     router.refresh();
   }
 

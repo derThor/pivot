@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { diffWords } from "diff";
 import { History, Trash2 } from "lucide-react";
 
+import { toastDeleted, toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -187,6 +188,7 @@ export function ContentVersionsList({
     await fetch(`/api/content/${contentId}/versions/${versionId}/rollback`, {
       method: "POST",
     });
+    toastEdited("Die Version wurde wiederhergestellt.");
     router.refresh();
   }
 
@@ -194,10 +196,12 @@ export function ContentVersionsList({
     await fetch(`/api/content/${contentId}/versions/${versionId}`, {
       method: "DELETE",
     });
+    toastDeleted("Die Version wurde gelöscht.");
     router.refresh();
   }
 
   async function handleBulkDelete() {
+    const deletedCount = selected.size;
     await Promise.all(
       [...selected].map((versionId) =>
         fetch(`/api/content/${contentId}/versions/${versionId}`, {
@@ -206,6 +210,11 @@ export function ContentVersionsList({
       ),
     );
     clear();
+    toastDeleted(
+      deletedCount === 1
+        ? "1 Version wurde gelöscht."
+        : `${deletedCount} Versionen wurden gelöscht.`,
+    );
     router.refresh();
   }
 

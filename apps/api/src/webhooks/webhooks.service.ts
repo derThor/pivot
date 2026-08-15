@@ -14,17 +14,24 @@ export class WebhooksService {
 
   async findAll(query: QueryWebhookDto) {
     const { page, pageSize } = query;
-    const [items, total] = await Promise.all([
+    const [items, total, failingCount] = await Promise.all([
       this.prisma.webhook.findMany({
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
       this.prisma.webhook.count(),
+      this.prisma.webhook.count({ where: { consecutiveFailures: { gt: 0 } } }),
     ]);
     return {
       items,
-      meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
+      meta: {
+        page,
+        pageSize,
+        total,
+        pageCount: Math.ceil(total / pageSize),
+        failingCount,
+      },
     };
   }
 
@@ -54,11 +61,14 @@ export class WebhooksService {
     if (webhooks.length === 0) return;
 
     await Promise.all(
-      webhooks.map((webhook) => this.deliver(webhook.url, event, payload)),
+      webhooks.map((webhook) =>
+        this.deliver(webhook.id, webhook.url, event, payload),
+      ),
     );
   }
 
   private async deliver(
+    webhookId: string,
     url: string,
     event: string,
     payload: Record<string, unknown>,
@@ -76,13 +86,54 @@ export class WebhooksService {
         this.logger.warn(
           `Webhook ${url} antwortete mit Status ${res.status} auf Event "${event}".`,
         );
+        await this.recordDeliveryResult(
+          webhookId,
+          false,
+          `HTTP ${res.status}`,
+        );
+        return;
       }
+      await this.recordDeliveryResult(webhookId, true, null);
     } catch (error) {
       this.logger.warn(
         `Webhook ${url} für Event "${event}" fehlgeschlagen: ${(error as Error).message}`,
       );
+      await this.recordDeliveryResult(
+        webhookId,
+        false,
+        (error as Error).message,
+      );
     } finally {
       clearTimeout(timeout);
+    }
+  }
+
+  /**
+   * Persistiert das Ergebnis einer Zustellung, damit die Verwaltungs-UI
+   * dauerhaft fehlschlagende Webhooks anzeigen kann (Nutzervorgabe,
+   * 2026-08-15, Inline-Systemmeldung "N Webhooks schlagen fehl"). Best-
+   * effort wie `deliver` selbst: ein Fehler beim Schreiben darf den
+   * eigentlichen Dispatch-Vorgang nicht stören.
+   */
+  private async recordDeliveryResult(
+    webhookId: string,
+    success: boolean,
+    error: string | null,
+  ) {
+    try {
+      await this.prisma.webhook.update({
+        where: { id: webhookId },
+        data: {
+          lastDeliveryStatus: success ? 'success' : 'failure',
+          lastDeliveryAt: new Date(),
+          lastDeliveryError: error,
+          consecutiveFailures: success ? 0 : { increment: 1 },
+        },
+      });
+    } catch (updateError) {
+      this.logger.warn(
+        `Zustellstatus für Webhook ${webhookId} konnte nicht gespeichert werden: ${(updateError as Error).message}`,
+      );
     }
   }
 }

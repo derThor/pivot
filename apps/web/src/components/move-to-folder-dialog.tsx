@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -64,6 +65,11 @@ export function MoveToFolderDialog({
       );
       setOpen(false);
       onSuccess?.();
+      toastEdited(
+        mediaIds.length > 1
+          ? `${mediaIds.length} Medien wurden verschoben.`
+          : "Das Medium wurde verschoben.",
+      );
       router.refresh();
     } catch {
       setError("Server nicht erreichbar. Bitte später erneut versuchen.");

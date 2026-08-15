@@ -30,6 +30,18 @@ export const SINGLE_SLIDE_EFFECTS: readonly GalleryEffect[] = [
   "cards",
 ];
 
+// Effekte, bei denen Swipers `loop`-Option nachweislich kaputte
+// Vor-/Zurück-Navigation verursacht (Pfeile/Punkte reagieren nur
+// unzuverlässig oder gar nicht) – Nutzerbestätigung 2026-08-15 für
+// "cards" und "cube". `loop` wird für diese Effekte in der Ausgabe immer
+// erzwungen aus (siehe gallery-swiper.tsx) und der Umschalter in den
+// Einstellungen deaktiviert (siehe gallery-editor.tsx/
+// global-module-form-dialog.tsx).
+export const LOOP_INCOMPATIBLE_EFFECTS: readonly GalleryEffect[] = [
+  "cube",
+  "cards",
+];
+
 export interface GallerySettings {
   effect: GalleryEffect;
   slidesPerView: number;
@@ -39,6 +51,10 @@ export interface GallerySettings {
   autoplayDelay: number;
   navigation: boolean;
   pagination: boolean;
+  // Blendet die Bildunterschrift (siehe caption-Unterfeld, z.B. bei der
+  // Bildergalerie) in der Ausgabe ein/aus – unabhängig davon, ob pro Bild
+  // eine Beschreibung hinterlegt ist (siehe gallery-editor.tsx).
+  showCaptions: boolean;
 }
 
 export const DEFAULT_GALLERY_SETTINGS: GallerySettings = {
@@ -50,6 +66,7 @@ export const DEFAULT_GALLERY_SETTINGS: GallerySettings = {
   autoplayDelay: 4000,
   navigation: true,
   pagination: true,
+  showCaptions: true,
 };
 
 function isGalleryEffect(value: unknown): value is GalleryEffect {
@@ -83,5 +100,9 @@ export function toGallerySettings(raw: unknown): GallerySettings {
       typeof obj.navigation === "boolean" ? obj.navigation : DEFAULT_GALLERY_SETTINGS.navigation,
     pagination:
       typeof obj.pagination === "boolean" ? obj.pagination : DEFAULT_GALLERY_SETTINGS.pagination,
+    showCaptions:
+      typeof obj.showCaptions === "boolean"
+        ? obj.showCaptions
+        : DEFAULT_GALLERY_SETTINGS.showCaptions,
   };
 }

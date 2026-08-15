@@ -6,6 +6,16 @@ apps/web (`src/components/content-editor-form.tsx`,
 `src/components/webhook{s-manager,-dialog}.tsx`,
 `src/app/dashboard/webhooks`)
 
+> **Update 2026-08-15 (Zustellstatus-Tracking):** `Webhook` hat jetzt
+> `lastDeliveryStatus`/`lastDeliveryAt`/`lastDeliveryError`/
+> `consecutiveFailures`, von `WebhooksService#deliver` nach jedem
+> Zustellversuch geschrieben (best-effort, wie der Dispatch selbst –
+> siehe unten "fire-and-forget"). `webhooks-manager.tsx` zeigt pro Zeile
+> den Status, die Webhooks-Seite ein `SystemMessage`-Banner "N Webhooks
+> schlagen fehl" (`meta.failingCount`, über alle Webhooks gezählt, nicht
+> nur die aktuelle Seite). Details in
+> [toast-and-system-messages.md](../frontend/toast-and-system-messages.md).
+
 ## Was wurde gebaut
 
 - **Neuer echter Zielzeitpunkt**: `Content.scheduledFor DateTime?`.

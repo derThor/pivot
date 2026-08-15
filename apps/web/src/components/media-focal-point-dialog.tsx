@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -57,6 +58,7 @@ export function MediaFocalPointDialog({
       }
 
       onOpenChange(false);
+      toastEdited("Der Fokuspunkt wurde gespeichert.");
       router.refresh();
     } catch {
       setError("Server nicht erreichbar. Bitte später erneut versuchen.");

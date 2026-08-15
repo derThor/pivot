@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Bell, ChevronDown, LogOut, UserCog } from "lucide-react";
@@ -8,8 +8,9 @@ import { Bell, ChevronDown, LogOut, UserCog } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { AdminMenu } from "@/components/admin-menu";
 import { CommandPalette } from "@/components/command-palette";
-import { GlobalSearch } from "@/components/global-search";
+import { HeaderSearch } from "@/components/header-search";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { CurrentUser } from "@/lib/api-server";
 import { formatName } from "@/lib/utils";
+import { listLocalDrafts, onLocalDraftsChanged } from "@/lib/local-drafts";
 
 function initials(user: CurrentUser) {
   const name = formatName(user);
@@ -33,12 +35,31 @@ function initials(user: CurrentUser) {
 export function DashboardHeader({
   user,
   defaultPageSize,
+  systemMessageCount = 0,
 }: {
   user: CurrentUser;
   defaultPageSize: number;
+  systemMessageCount?: number;
 }) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // Lokale (nur in diesem Browser gespeicherte) Entwürfe fließen zusätzlich
+  // zu den echten Server-weiten Systemmeldungen in den Glocken-Badge ein
+  // (Nutzervorgabe, 2026-08-16: "es gibt nicht gespeicherte Entwürfe, wird
+  // aber nicht bei der Glocke angezeigt") – lässt sich nicht serverseitig
+  // in `dashboard/layout.tsx` berechnen, da `localStorage` nie den Browser
+  // verlässt. `onLocalDraftsChanged` hält den Zähler live synchron mit dem
+  // Content-Editor im selben Tab (siehe lib/local-drafts.ts).
+  const [localDraftCount, setLocalDraftCount] = useState(0);
+  useEffect(() => {
+    function sync() {
+      setLocalDraftCount(listLocalDrafts().length);
+    }
+    sync();
+    return onLocalDraftsChanged(sync);
+  }, []);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -50,25 +71,55 @@ export function DashboardHeader({
     }
   }
 
+  const permissions = user.permissions ?? [];
+  // Anders als die restlichen Verwaltung-Einträge ist die Glocke nicht
+  // hinter `settings:manage` versteckt: der lokale Entwurfs-Hinweis
+  // betrifft jeden Nutzer, der Inhalte bearbeitet, nicht nur Admins.
+  //
+  // Zählt 1:1 dieselben Karten, die auch auf /dashboard/system-messages
+  // sichtbar sind (jeder lokale Entwurf einzeln) – nicht nur "Kategorien"
+  // (Nutzer-Feedback: "ich habe 3 Nachrichten, Badge zeigt nur 1").
+  const totalMessageCount = systemMessageCount + localDraftCount;
+
   return (
     <header className="sticky top-0 z-40 flex h-20 min-w-0 shrink-0 items-center gap-3 border-b bg-background/70 px-4 py-4 backdrop-blur-md">
       <SidebarTrigger />
-      <div className="ml-auto flex min-w-0 items-center gap-1">
-        <CommandPalette user={user} defaultPageSize={defaultPageSize} />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-12 shrink-0 rounded-full"
-          disabled
-        >
-          <Bell />
-        </Button>
+      <div className="ml-2">
+        <AdminMenu permissions={permissions} />
+      </div>
+      <div className="ml-auto flex min-w-0 items-center gap-2">
+        <HeaderSearch
+          defaultPageSize={defaultPageSize}
+          onOpenPalette={() => setPaletteOpen(true)}
+        />
+        <CommandPalette
+          user={user}
+          defaultPageSize={defaultPageSize}
+          open={paletteOpen}
+          onOpenChange={setPaletteOpen}
+        />
+        <div className="relative shrink-0">
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-11 rounded-full bg-card"
+            render={<Link href="/dashboard/system-messages" />}
+            aria-label="Systemnachrichten"
+          >
+            <Bell />
+          </Button>
+          {totalMessageCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-destructive text-[11px] font-semibold text-white">
+              {totalMessageCount}
+            </span>
+          )}
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
               <Button
                 variant="ghost"
-                className="h-12 shrink-0 gap-2 rounded-full bg-muted/60 pl-1.5 pr-3 hover:bg-muted"
+                className="h-11 shrink-0 gap-2 rounded-full border bg-card pl-1.5 pr-3 hover:bg-muted/40"
               />
             }
           >
@@ -92,18 +143,6 @@ export function DashboardHeader({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        {/* Zuletzt im DOM: die einzige Komponente, die sich per Hover/
-            Fokus nach LINKS ausfährt (siehe global-search.tsx) – ihr
-            fixer 48px-Anker muss die tatsächliche rechte Kante der
-            Kopfzeile sein, sonst würde die ausgefahrene Box auf schmalen
-            Bildschirmen über den linken Rand hinaus (negative x-Position)
-            gerendert und die Seite horizontal aufreißen. Ab `sm` bleibt
-            der Anker zwar rechts (fürs Ausfahren), visuell wandert die
-            Lupe per `order` aber wieder an den Anfang, wie auf Desktop
-            gewünscht (nur mobil soll sie ganz rechts stehen). */}
-        <div className="sm:order-first">
-          <GlobalSearch defaultPageSize={defaultPageSize} />
-        </div>
       </div>
     </header>
   );

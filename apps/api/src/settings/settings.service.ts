@@ -23,6 +23,8 @@ export class SettingsService {
       requireAdminActivation: settings.requireAdminActivation,
       autosaveEnabled: settings.autosaveEnabled,
       mediaResponsiveVariantsEnabled: settings.mediaResponsiveVariantsEnabled,
+      maintenanceModeEnabled: settings.maintenanceModeEnabled,
+      mediaStorageQuotaMb: settings.mediaStorageQuotaMb,
       passwordMinLength: settings.passwordMinLength,
       passwordRequireUppercase: settings.passwordRequireUppercase,
       passwordRequireLowercase: settings.passwordRequireLowercase,

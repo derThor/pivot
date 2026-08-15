@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Upload } from "lucide-react";
 
+import { toastCreated } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,6 +78,7 @@ export function MediaUploadDialog({
 
       setOpen(false);
       reset();
+      toastCreated("Die Datei wurde hochgeladen.");
       router.refresh();
     } catch {
       setError("Server nicht erreichbar. Bitte später erneut versuchen.");

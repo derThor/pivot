@@ -345,7 +345,12 @@ tatsächlich). Details siehe
 - [ ] Feature-Flags
 - [ ] Systeminformationen
 - [ ] Datenbank-Migrationsübersicht
-- [ ] Wartungsmodus
+- [x] Wartungsmodus – `AppSettings.maintenanceModeEnabled` + Dashboard-
+      Hinweis; da `apps/web` reines Headless-CMS-Dashboard ohne
+      öffentliche Website-Auslieferung ist, nur ein Admin-Hinweis, keine
+      echte Besuchersperre (siehe
+      [toast-and-system-messages.md](../knowledge-base/frontend/toast-and-system-messages.md))
+      (2026-08-15)
 - [ ] IP-Allowlist für das Backend
 - [ ] Login-Verlauf
 - [ ] Geräteverwaltung

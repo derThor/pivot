@@ -79,6 +79,10 @@
 - `apps/web/src/components/settings-form.tsx` (neuer Switch)
 - `apps/web/src/components/content-editor-form.tsx` (Autosave-Logik,
   Wiederherstellungs-Banner)
+- `apps/web/src/lib/local-drafts.ts` (`DRAFT_STORAGE_PREFIX` + Scan-/
+  Event-Helfer, seit 2026-08-16 hier statt in `content-editor-form.tsx` –
+  Glocke/`/dashboard/system-messages` zeigen lokale Entwürfe jetzt mit an,
+  siehe [header-admin-menu-and-search.md](../frontend/header-admin-menu-and-search.md))
 - `apps/web/src/app/dashboard/content/new/page.tsx`,
   `content/[id]/edit/page.tsx` (reichen `autosaveEnabled` durch)
 - `apps/api/test/auth-security.e2e-spec.ts` (Default `true`, Umschalten

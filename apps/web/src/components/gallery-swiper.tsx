@@ -21,6 +21,7 @@ import "swiper/css/effect-cards";
 
 import { resolveImageSrc } from "@/lib/media";
 import {
+  LOOP_INCOMPATIBLE_EFFECTS,
   SINGLE_SLIDE_EFFECTS,
   type GallerySettings,
 } from "@/lib/gallery-settings";
@@ -48,11 +49,18 @@ export function GallerySwiper({
   // (Pfeile/Punkte/Autoplay/Effekt bleiben trotzdem sichtbar) – in der
   // echten Ausgabe (Vorschau/Live-Seite) bleibt es an.
   allowTouchMove = true,
+  // Nur für die Live-Vorschau im Galerie-Editor gedacht (Nutzervorgabe,
+  // 2026-08-15): begrenzt die Slide-Höhe fest statt über `aspect-video` zu
+  // gehen, damit hochformatige Bilder dort nicht die ganze Karte sprengen.
+  // Ohne Angabe unverändertes Verhalten (16:9), betrifft also nicht die
+  // öffentliche Ausgabe/den Seiten-Designer.
+  maxHeight,
 }: {
   images: GallerySwiperImage[];
   settings: GallerySettings;
   className?: string;
   allowTouchMove?: boolean;
+  maxHeight?: number;
 }) {
   if (images.length === 0) return null;
 
@@ -61,11 +69,24 @@ export function GallerySwiper({
   return (
     <div className={cn("gallery-swiper-wrapper w-full", className)}>
       <Swiper
+        // Swiper initialisiert sein Effekt-Modul (Fade/Cube/Coverflow/
+        // Cards) nur beim ersten Mount – ein späteres Ändern der `effect`-
+        // Prop allein aktualisiert die zugehörigen Transform-/Perspektive-
+        // Styles nicht sauber (kaputtes Layout bis Neuladen). `key` erzwingt
+        // bei jedem Effekt-Wechsel einen echten Remount der Swiper-Instanz.
+        key={settings.effect}
         modules={[Navigation, Pagination, Autoplay, EffectFade, EffectCube, EffectCoverflow, EffectCards]}
         effect={settings.effect}
         slidesPerView={isSingleSlideEffect ? 1 : settings.slidesPerView}
         spaceBetween={isSingleSlideEffect ? 0 : settings.spaceBetween}
-        loop={settings.loop && images.length > 1}
+        // Für manche Effekte bricht `loop` die Pfeil-/Punkt-Navigation
+        // (siehe LOOP_INCOMPATIBLE_EFFECTS) – unabhängig von der
+        // Endlosschleife-Einstellung immer aus.
+        loop={
+          settings.loop &&
+          images.length > 1 &&
+          !LOOP_INCOMPATIBLE_EFFECTS.includes(settings.effect)
+        }
         navigation={settings.navigation}
         pagination={settings.pagination ? { clickable: true } : false}
         autoplay={
@@ -79,7 +100,13 @@ export function GallerySwiper({
       >
         {images.map((img, index) => (
           <SwiperSlide key={`${img.url}-${index}`}>
-            <figure className="relative aspect-video w-full overflow-hidden rounded-md bg-muted">
+            <figure
+              className={cn(
+                "relative w-full overflow-hidden rounded-md bg-muted",
+                maxHeight == null && "aspect-video",
+              )}
+              style={maxHeight != null ? { height: maxHeight } : undefined}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={resolveImageSrc(img.url)}
@@ -92,7 +119,7 @@ export function GallerySwiper({
                 }}
                 className="size-full object-cover"
               />
-              {img.caption && (
+              {settings.showCaptions && img.caption && (
                 <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 py-3 text-sm text-white">
                   {img.caption}
                 </figcaption>

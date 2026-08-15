@@ -34,13 +34,22 @@ function matches(label: string, query: string) {
 export function CommandPalette({
   user,
   defaultPageSize,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: {
   user: CurrentUser;
   defaultPageSize: number;
+  /** Weggelassen = eigener interner Zustand (nur per Strg/Cmd+K
+   * erreichbar). `header-search.tsx` steuert die Palette dagegen von
+   * außen, damit der "Strg K"-Badge im Suchfeld sie öffnen kann. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = controlledOnOpenChange ?? setInternalOpen;
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
@@ -55,12 +64,12 @@ export function CommandPalette({
     function handleKeyDown(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
-        setOpen((prev) => !prev);
+        setOpen(!open);
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [open, setOpen]);
 
   // Eingabe/Auswahl beim Öffnen zurücksetzen – als Render-Zeit-Anpassung
   // statt setState im Effekt (gleiches Muster wie `syncedPathname` in
@@ -231,16 +240,7 @@ export function CommandPalette({
     (trimmedQuery.length < MIN_QUERY_LENGTH || !isSearching);
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="hidden shrink-0 items-center gap-1.5 rounded-full border bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted sm:flex"
-      >
-        <Search className="size-3.5" />
-        <kbd className="font-sans">Strg K</kbd>
-      </button>
-      <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
         showCloseButton={false}
         className="top-24 flex max-h-[70vh] max-w-lg -translate-y-0 flex-col overflow-hidden p-0 sm:max-w-lg"
@@ -311,7 +311,6 @@ export function CommandPalette({
           ))}
         </div>
         </DialogContent>
-      </Dialog>
-    </>
+    </Dialog>
   );
 }

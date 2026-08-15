@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, MoreVertical, Pencil, Trash2 } from "lucide-react";
 
+import { toastDeleted } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -34,6 +35,7 @@ export function NavigationsManager({ items }: { items: NavigationSummary[] }) {
   async function handleDelete() {
     if (!deleteTarget) return;
     await fetch(`/api/navigations/${deleteTarget.id}`, { method: "DELETE" });
+    toastDeleted(`Menü „${deleteTarget.name}“ wurde gelöscht.`);
     router.refresh();
   }
 

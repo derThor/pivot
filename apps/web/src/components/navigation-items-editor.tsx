@@ -12,6 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { toastDeleted } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { NavigationItemDialog } from "@/components/navigation-item-dialog";
@@ -90,6 +91,7 @@ export function NavigationItemsEditor({
     await fetch(`/api/navigations/${navigationId}/items/${deleteTarget.id}`, {
       method: "DELETE",
     });
+    toastDeleted(`Menüpunkt „${deleteTarget.label}“ wurde gelöscht.`);
     router.refresh();
   }
 

@@ -170,6 +170,21 @@
 > Rolle mit Dashboard-Zugriff muss den Wert lesen können, nicht nur
 > Admins mit `settings:manage`.
 
+> **Update 2026-08-15 (Logo-Felder zurückgebaut, Wartungsmodus +
+> Medien-Speicherkontingent):**
+> - **`logoExpandedUrl`/`logoCollapsedUrl` entfernt** – Sidebar-Logo und
+>   das Bild auf Anmelden/Registrieren sind auf Nutzerwunsch wieder fest
+>   hinterlegt, nicht mehr admin-konfigurierbar (Details siehe
+>   [design-refresh.md](../frontend/design-refresh.md)). `companyLogoUrl`
+>   (neues, einzelnes "Firmenlogo"-Feld) bleibt bestehen, wird aktuell
+>   aber an keiner Stelle im Dashboard angezeigt.
+> - **`maintenanceModeEnabled`** (Boolean) und **`mediaStorageQuotaMb`**
+>   (`Int?`, `null` = unbegrenzt) neu im "Zugriff & Funktionen"-Tab.
+>   Beide Teil von `GET /settings/public`. Volle Details (inkl. warum MB
+>   statt Bytes/`BigInt`, und wo die daraus gespeisten
+>   `SystemMessage`-Banner erscheinen) in
+>   [toast-and-system-messages.md](../frontend/toast-and-system-messages.md).
+
 ## Was wurde gebaut
 
 - `AppSettings`: ein Singleton-Datensatz (feste `id=1`) statt einer

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Plus } from "lucide-react";
 
+import { toastCreated, toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -94,6 +95,8 @@ export function TaxonomyItemDialog({
         setDescription("");
         setSlugTouched(false);
       }
+      if (isEditing) toastEdited();
+      else toastCreated(`„${name}“ wurde angelegt.`);
       router.refresh();
     } catch {
       setError("Server nicht erreichbar. Bitte später erneut versuchen.");

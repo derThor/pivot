@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
+import { toastCreated } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -103,6 +104,7 @@ export function RegisterForm({
         return;
       }
 
+      toastCreated("Dein Konto wurde angelegt.");
       router.push("/dashboard");
       router.refresh();
     } catch {

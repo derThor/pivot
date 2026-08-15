@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 
+import { toastDeleted } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -117,17 +118,21 @@ export function TaxonomyManager({
     useSelection(items.map((item) => item.id));
 
   async function handleDelete(id: string) {
+    const item = items.find((i) => i.id === id);
     await fetch(`/api/${apiPath}/${id}`, { method: "DELETE" });
+    toastDeleted(item ? `„${item.name}“ wurde gelöscht.` : undefined);
     router.refresh();
   }
 
   async function handleBulkDelete() {
+    const deletedCount = selected.size;
     await Promise.all(
       [...selected].map((id) =>
         fetch(`/api/${apiPath}/${id}`, { method: "DELETE" }),
       ),
     );
     clear();
+    toastDeleted(`${deletedCount} ${entityLabelPlural} wurden gelöscht.`);
     router.refresh();
   }
 

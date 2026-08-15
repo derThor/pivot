@@ -1,5 +1,6 @@
 import { WebhooksManager } from "@/components/webhooks-manager";
 import { WebhookDialog } from "@/components/webhook-dialog";
+import { WebhookFailureBanner } from "@/components/webhook-failure-banner";
 import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
@@ -25,6 +26,7 @@ export default async function WebhooksPage({
         <WebhookDialog />
       </div>
       <PageContent>
+        {webhooks && <WebhookFailureBanner failingCount={webhooks.meta.failingCount} />}
         <WebhooksManager items={webhooks?.items ?? []} />
 
         {webhooks && (

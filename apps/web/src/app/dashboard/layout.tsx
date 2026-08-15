@@ -5,7 +5,13 @@ import { DashboardHeader } from "@/components/dashboard-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
 import { NoDashboardAccess } from "@/components/no-dashboard-access";
-import { getCurrentUser, getPublicSettings } from "@/lib/api-server";
+import { STORAGE_WARNING_THRESHOLD_PERCENT } from "@/components/storage-quota-banner";
+import {
+  getCurrentUser,
+  getMediaStorageUsage,
+  getPublicSettings,
+  getWebhooks,
+} from "@/lib/api-server";
 
 export default async function DashboardLayout({
   children,
@@ -24,6 +30,23 @@ export default async function DashboardLayout({
     return <NoDashboardAccess user={user} />;
   }
 
+  // Glocken-Badge im Header zeigt die Anzahl aktiver Systemmeldungen
+  // (siehe /dashboard/system-messages) – nur für Nutzer mit Zugriff auf
+  // diese Seite abgefragt, um unnötige Requests für alle anderen Rollen zu
+  // vermeiden.
+  const canViewSystemMessages =
+    (user.permissions ?? []).includes("settings:manage");
+  const [storageUsage, webhooks] = canViewSystemMessages
+    ? await Promise.all([getMediaStorageUsage(), getWebhooks({ pageSize: 1 })])
+    : [null, null];
+  const systemMessageCount = canViewSystemMessages
+    ? Number(Boolean(settings?.maintenanceModeEnabled)) +
+      Number(
+        (storageUsage?.percentUsed ?? 0) >= STORAGE_WARNING_THRESHOLD_PERCENT,
+      ) +
+      Number((webhooks?.meta.failingCount ?? 0) > 0)
+    : 0;
+
   // Cookie-Name muss mit SIDEBAR_COOKIE_NAME in ui/sidebar.tsx übereinstimmen.
   // Kann nicht importiert werden: sidebar.tsx ist "use client", einfache
   // Konstanten-Exports daraus werden beim Import in eine Server Component
@@ -39,6 +62,7 @@ export default async function DashboardLayout({
         <DashboardHeader
           user={user}
           defaultPageSize={settings?.defaultPageSize ?? 10}
+          systemMessageCount={systemMessageCount}
         />
         <div className="flex min-w-0 flex-1 flex-col gap-6 bg-background px-5 pt-4 pb-5 sm:px-10 sm:pt-6 sm:pb-10">
           {children}

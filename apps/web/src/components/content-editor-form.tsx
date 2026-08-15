@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Trash2, Upload, X } from "lucide-react";
 
+import { toastCreated, toastEdited } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,11 @@ import {
   type ModuleInstance,
 } from "@/components/block-editor-field";
 import { PageContent } from "@/components/page-content";
+import { SystemMessage } from "@/components/ui/system-message";
+import {
+  DRAFT_STORAGE_PREFIX,
+  notifyLocalDraftsChanged,
+} from "@/lib/local-drafts";
 import { mediaUrl } from "@/lib/media";
 import {
   Form,
@@ -150,8 +156,6 @@ function toModuleValues(
   }
   return result;
 }
-
-const DRAFT_STORAGE_PREFIX = "pivot:content-draft:";
 
 interface DraftSnapshot {
   savedAt: string;
@@ -342,6 +346,7 @@ export function ContentEditorForm({
           JSON.stringify(snapshot),
         );
         setLastAutosavedAt(new Date());
+        notifyLocalDraftsChanged();
       } catch {
         // localStorage kann in seltenen Fällen (Privatmodus, Kontingent
         // voll) fehlschlagen – Autosave ist best-effort, kein kritischer
@@ -467,10 +472,27 @@ export function ContentEditorForm({
       localStorage.removeItem(
         draftStorageKey(content, watchedValues.contentTypeId),
       );
+      notifyLocalDraftsChanged();
     } catch {
       // ignore
     }
     setDraftBanner(null);
+  }
+
+  // Verwirft alle aktuellen Änderungen (nicht nur den Entwurf) und lädt neu
+  // vom Server – ein manueller partieller Reset über alle beteiligten
+  // Felder (RHF + separate useState für Kategorien/Module/SEO/Zeitplan)
+  // wäre fehleranfällig, ein Reload ist hier der robustere Weg.
+  function handleDiscardChanges() {
+    try {
+      localStorage.removeItem(
+        draftStorageKey(content, watchedValues.contentTypeId),
+      );
+      notifyLocalDraftsChanged();
+    } catch {
+      // ignore
+    }
+    window.location.reload();
   }
 
   function handleTypeChange(id: string | null) {
@@ -679,9 +701,11 @@ export function ContentEditorForm({
 
       try {
         localStorage.removeItem(draftStorageKey(content, values.contentTypeId));
+        notifyLocalDraftsChanged();
       } catch {
         // ignore
       }
+      setLastAutosavedAt(null);
 
       return isEditing ? content!.id : (resBody?.id ?? null);
     } catch {
@@ -695,6 +719,8 @@ export function ContentEditorForm({
   async function onSubmit(values: MetaValues) {
     const id = await saveContent(values);
     if (!id) return;
+    if (isEditing) toastEdited(`„${values.title}“ wurde gespeichert.`);
+    else toastCreated(`„${values.title}“ wurde angelegt.`);
     router.push("/dashboard/content");
     router.refresh();
   }
@@ -727,51 +753,84 @@ export function ContentEditorForm({
       >
         <div className="flex flex-col gap-6">
           {isLockedByOther && (
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm">
-              <p>
-                {lockInfo?.lockedBy
+            <SystemMessage
+              variant="error"
+              title="Wird gerade bearbeitet"
+              description={`${
+                lockInfo?.lockedBy
                   ? `Wird gerade bearbeitet von ${formatName(lockInfo.lockedBy)}`
-                  : "Wird gerade von einer anderen Person bearbeitet"}
-                {lockInfo?.lockedAt &&
-                  ` seit ${new Date(lockInfo.lockedAt).toLocaleTimeString("de-DE")}`}
-                . Änderungen sind gesperrt, bis die Bearbeitung dort beendet
-                wird.
-              </p>
-              {canForceUnlock && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={isUnlocking}
-                  onClick={handleForceUnlock}
-                  className="shrink-0"
-                >
-                  {isUnlocking ? "Hebt auf…" : "Sperre aufheben"}
-                </Button>
-              )}
-            </div>
+                  : "Wird gerade von einer anderen Person bearbeitet"
+              }${
+                lockInfo?.lockedAt
+                  ? ` seit ${new Date(lockInfo.lockedAt).toLocaleTimeString("de-DE")}`
+                  : ""
+              }. Änderungen sind gesperrt, bis die Bearbeitung dort beendet wird.`}
+              actions={
+                canForceUnlock && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={isUnlocking}
+                    onClick={handleForceUnlock}
+                  >
+                    {isUnlocking ? "Hebt auf…" : "Sperre aufheben"}
+                  </Button>
+                )
+              }
+            />
           )}
 
           {draftBanner && (
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm dark:border-amber-500/30 dark:bg-amber-500/10">
-              <p>
-                Es gibt einen nicht gespeicherten Entwurf vom{" "}
-                {new Date(draftBanner.savedAt).toLocaleString("de-DE")}.
-              </p>
-              <div className="flex shrink-0 gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={handleDiscardDraft}
-                >
-                  Verwerfen
-                </Button>
-                <Button type="button" size="sm" onClick={handleRestoreDraft}>
-                  Wiederherstellen
-                </Button>
-              </div>
-            </div>
+            <SystemMessage
+              variant="warning"
+              title="Nicht gespeicherter Entwurf gefunden"
+              description={`Es gibt einen nicht gespeicherten Entwurf vom ${new Date(draftBanner.savedAt).toLocaleString("de-DE")}. Nur in diesem Browser gespeichert, nicht bei anderen Nutzern sichtbar.`}
+              actions={
+                <>
+                  <Button type="button" size="sm" onClick={handleRestoreDraft}>
+                    Wiederherstellen
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleDiscardDraft}
+                  >
+                    Verwerfen
+                  </Button>
+                </>
+              }
+            />
+          )}
+
+          {!draftBanner && !isLockedByOther && lastAutosavedAt && (
+            <SystemMessage
+              variant="warning"
+              title="Ungespeicherte Änderungen"
+              description="Du hast Änderungen an diesem Inhalt, die noch nicht gespeichert wurden."
+              actions={
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="bg-amber-600 text-white hover:bg-amber-700"
+                    disabled={isSubmitting}
+                    onClick={() => form.handleSubmit(onSubmit)()}
+                  >
+                    {isSubmitting ? "Speichert…" : "Jetzt speichern"}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleDiscardChanges}
+                  >
+                    Verwerfen
+                  </Button>
+                </>
+              }
+            />
           )}
 
           <PageContent>
@@ -1439,7 +1498,11 @@ export function ContentEditorForm({
             </fieldset>
 
             {formError && (
-              <p className="text-sm text-destructive">{formError}</p>
+              <SystemMessage
+                variant="error"
+                title="Speichern fehlgeschlagen"
+                description={formError}
+              />
             )}
           </PageContent>
         </div>

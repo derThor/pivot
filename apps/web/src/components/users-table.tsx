@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
+import { toastDeleted } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -41,10 +42,12 @@ export function UsersTable({
     useSelection(deletableIds);
 
   async function handleBulkDelete() {
+    const count = selected.size;
     await Promise.all(
       [...selected].map((id) => fetch(`/api/users/${id}`, { method: "DELETE" })),
     );
     clear();
+    toastDeleted(count === 1 ? "1 Benutzer wurde gelöscht." : `${count} Benutzer wurden gelöscht.`);
     router.refresh();
   }
 

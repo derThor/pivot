@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 
+import { toastDeleted } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -32,6 +33,7 @@ export function UserRowActions({
 
   async function handleDelete() {
     await fetch(`/api/users/${user.id}`, { method: "DELETE" });
+    toastDeleted(`„${name}“ wurde gelöscht.`);
     router.refresh();
   }
 

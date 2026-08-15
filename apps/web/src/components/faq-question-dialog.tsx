@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { toastCreated, toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -123,6 +124,8 @@ export function FaqQuestionDialog({
       }
       onOpenChange(false);
       if (!isEditing) reset();
+      if (isEditing) toastEdited();
+      else toastCreated("Die Frage wurde angelegt.");
       router.refresh();
     } catch {
       setSubmitError("Server nicht erreichbar. Bitte später erneut versuchen.");

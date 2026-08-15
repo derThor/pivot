@@ -21,10 +21,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
+import { StorageQuotaBanner } from "@/components/storage-quota-banner";
+import { SystemMessage } from "@/components/ui/system-message";
 import {
   getContentList,
   getCurrentUser,
   getMediaList,
+  getMediaStorageUsage,
+  getPublicSettings,
   getUsers,
   type ContentStatus,
 } from "@/lib/api-server";
@@ -216,20 +220,32 @@ function StatusDonut({
 }
 
 export default async function DashboardPage() {
-  const [user, published, drafts, scheduled, archived, media, users, recent] =
-    await Promise.all([
-      getCurrentUser(),
-      getContentList({ status: "PUBLISHED", pageSize: 1 }),
-      getContentList({ status: "DRAFT", pageSize: 1 }),
-      getContentList({ status: "SCHEDULED", pageSize: 1 }),
-      getContentList({ status: "ARCHIVED", pageSize: 1 }),
-      getMediaList({ pageSize: 1 }),
-      getUsers({ pageSize: 1 }),
-      // `/content` ist bereits standardmäßig nach `updatedAt desc` sortiert
-      // (siehe content.service.ts) – für "Zuletzt bearbeitet" reicht ein
-      // simpler pageSize-Cutoff, kein eigener Sortier-Parameter nötig.
-      getContentList({ pageSize: 5 }),
-    ]);
+  const [
+    user,
+    published,
+    drafts,
+    scheduled,
+    archived,
+    media,
+    users,
+    recent,
+    settings,
+    storageUsage,
+  ] = await Promise.all([
+    getCurrentUser(),
+    getContentList({ status: "PUBLISHED", pageSize: 1 }),
+    getContentList({ status: "DRAFT", pageSize: 1 }),
+    getContentList({ status: "SCHEDULED", pageSize: 1 }),
+    getContentList({ status: "ARCHIVED", pageSize: 1 }),
+    getMediaList({ pageSize: 1 }),
+    getUsers({ pageSize: 1 }),
+    // `/content` ist bereits standardmäßig nach `updatedAt desc` sortiert
+    // (siehe content.service.ts) – für "Zuletzt bearbeitet" reicht ein
+    // simpler pageSize-Cutoff, kein eigener Sortier-Parameter nötig.
+    getContentList({ pageSize: 5 }),
+    getPublicSettings(),
+    getMediaStorageUsage(),
+  ]);
 
   const statusSegments: { status: ContentStatus; count: number }[] = [
     { status: "PUBLISHED", count: published?.meta.total ?? 0 },
@@ -271,6 +287,16 @@ export default async function DashboardPage() {
   return (
     <div className="flex w-full flex-col gap-6">
       <PageHeader title="Dashboard" />
+
+      {settings?.maintenanceModeEnabled && (
+        <SystemMessage
+          variant="neutral"
+          title="Wartungsmodus aktiv"
+          description="Die Website ist aktuell im Wartungsmodus und für Besucher nicht erreichbar."
+        />
+      )}
+
+      <StorageQuotaBanner usage={storageUsage} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
         <Card className="border-none bg-dark-surface text-dark-surface-foreground">

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -56,6 +57,7 @@ export function MediaTagsDialog({
         return;
       }
       onOpenChange(false);
+      toastEdited("Die Tags wurden gespeichert.");
       router.refresh();
     } catch {
       setError("Server nicht erreichbar. Bitte später erneut versuchen.");

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MoreVertical, Trash2 } from "lucide-react";
 
+import { toastDeleted } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -45,6 +46,7 @@ export function WebhooksManager({ items }: { items: Webhook[] }) {
   async function handleDelete() {
     if (!deleteTarget) return;
     await fetch(`/api/webhooks/${deleteTarget.id}`, { method: "DELETE" });
+    toastDeleted(`Webhook „${deleteTarget.url}“ wurde gelöscht.`);
     router.refresh();
   }
 
@@ -55,6 +57,7 @@ export function WebhooksManager({ items }: { items: Webhook[] }) {
           <TableRow>
             <TableHead>URL</TableHead>
             <TableHead>Events</TableHead>
+            <TableHead>Status</TableHead>
             <TableHead>Aktiv</TableHead>
             <TableHead className="text-center">Aktionen</TableHead>
           </TableRow>
@@ -63,7 +66,7 @@ export function WebhooksManager({ items }: { items: Webhook[] }) {
           {items.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={4}
+                colSpan={5}
                 className="h-24 text-center text-muted-foreground"
               >
                 Noch keine Webhooks registriert.
@@ -83,6 +86,28 @@ export function WebhooksManager({ items }: { items: Webhook[] }) {
                       </Badge>
                     ))}
                   </div>
+                </TableCell>
+                <TableCell>
+                  {webhook.lastDeliveryStatus === "failure" ? (
+                    <Badge
+                      variant="secondary"
+                      className="bg-destructive/10 text-destructive"
+                      title={webhook.lastDeliveryError ?? undefined}
+                    >
+                      {webhook.consecutiveFailures}×{" "}
+                      {webhook.consecutiveFailures === 1
+                        ? "fehlgeschlagen"
+                        : "fehlgeschlagen in Folge"}
+                    </Badge>
+                  ) : webhook.lastDeliveryStatus === "success" ? (
+                    <Badge variant="secondary" className="bg-green-100 text-green-700">
+                      Erfolgreich
+                    </Badge>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">
+                      Noch keine Zustellung
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Switch

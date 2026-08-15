@@ -35,7 +35,7 @@ Legende: ✅ umgesetzt (Grundgerüst) · 🚧 vorbereitet, aber unvollständig �
 | Medienverwaltung (Upload, Alt-Text) | ✅ | `POST /media`, lokale Speicherung, Bild/PDF/Video/Office-Whitelist (10/25/200 MB je Kategorie) |
 | Content-Vorschau (Preview-Links) | ✅ | Zeitlich begrenzte Links (`/preview/[token]`) für unveröffentlichte/geplante Inhalte, ohne Login abrufbar; erstellen/kopieren/verlängern/widerrufen über Dialog im Content-Editor oder inhaltsübergreifend über `/dashboard/content/preview-links` |
 | Automatische Veröffentlichung geplanter Inhalte | ✅ | `Content.scheduledFor` + `@nestjs/schedule`-Cron (jede Minute), schaltet fällige `SCHEDULED`-Inhalte automatisch auf `PUBLISHED` |
-| Webhooks bei Publish/Update | ✅ | `/dashboard/webhooks`, Events `content.published`/`content.updated`, fire-and-forget-Zustellung (5s Timeout, kein Retry) |
+| Webhooks bei Publish/Update | ✅ | `/dashboard/webhooks`, Events `content.published`/`content.updated`, fire-and-forget-Zustellung (5s Timeout, kein Retry); Zustellstatus pro Webhook (Erfolg/Fehlschlag-Zähler) + Warnbanner bei fehlschlagenden Webhooks |
 | Volltextsuche | ✅ | Bereichsübergreifend über `GET /v1/search`: Inhalte (Postgres `tsvector`, Präfix-Suche, Titel/SEO/gesamter dynamischer Body), Vorschau-Links (über den Titel des verknüpften Inhalts), Kategorien, Tags, Medien, Benutzer, Rollen – globale Such-Dropdown im Dashboard-Header, Treffer mit farbiger Bereichs-Badge, permission-gefiltert pro Bereich; Klick springt bei Inhalten direkt zum Editor, bei allen anderen Bereichen zur richtigen Seite der Listen-Ansicht mit markiertem Suchbegriff |
 | Navigationsverwaltung | ✅ | Mehrere benannte Menüs (`/dashboard/navigation`), Einträge zeigen auf Inhalte oder externe URLs, beliebig tief verschachtelbar, Reihenfolge per Drag & Drop – deckt auch die frühere Seitenbaum-Idee ab (siehe `knowledge-base/content/navigation-management.md`) |
 
@@ -60,7 +60,8 @@ Legende: ✅ umgesetzt (Grundgerüst) · 🚧 vorbereitet, aber unvollständig �
 
 | Feature | Status | Hinweis |
 |---|---|---|
-| Sidebar-Navigation (shadcn `Sidebar`) | ✅ | Angelehnt an gängige Dashboard-Layouts; Verwaltungs-Bereiche ohne Berechtigung werden ausgeblendet |
+| Sidebar-Navigation (shadcn `Sidebar`) | ✅ | Angelehnt an gängige Dashboard-Layouts; Verwaltungs-Bereiche ohne Berechtigung werden ausgeblendet; "Verwaltung" selbst liegt im Header-Dropdown, nicht mehr in der Sidebar |
+| Header: Verwaltung-Dropdown, Suchfeld, Benachrichtigungs-Glocke | ✅ | "Verwaltung"-Pille öffnet ein Dropdown mit Benutzer/Rollen & Rechte/Websites/Webhooks/Systemnachrichten; direkt eintippbares Suchfeld mit Live-Ergebnissen (Strg K öffnet separat die Befehlspalette); Glocke verlinkt `/dashboard/system-messages`, roter Badge zeigt Anzahl aktiver Systemmeldungen |
 | Login-Formular mit Validierung | ✅ | react-hook-form + zod, echte Anbindung an `POST /auth/login` inkl. httpOnly-Session-Cookies |
 | Content-Übersicht (Tabelle) | ✅ | Live-Daten über `GET /content` |
 | Dashboard-Statistiken | ✅ | Live-Zahlen (Content-Status-Counts, Nutzerzahl) |
@@ -71,8 +72,8 @@ Legende: ✅ umgesetzt (Grundgerüst) · 🚧 vorbereitet, aber unvollständig �
 | Medien-Bibliothek (Grid, Upload) | ✅ | Alt-Text bearbeiten, Löschen mit Bestätigung (inkl. Datei), Vorschau-Popup (Bild/PDF/Video/Office); verschachtelte Ordner (anlegen/umbenennen/verschieben/löschen); Bild-Dimensionen, Zuschneiden (neues Medium), Fokuspunkt (steuert das quadratische Thumbnail), Duplizieren, Tags (gemeinsamer Pool mit Content), Filter nach Dateityp/Größe/Tags, Erkennung ungenutzter Medien; automatische EXIF-Entfernung/Kompression/WebP-AVIF-Varianten + quadratisches 400px-Thumbnail beim Upload; Seiten-Designer-Baustein „Kacheln" (4 feste Bild-Slots im 2×2-Raster) |
 | Benutzerverwaltung-UI | ✅ | Liste, Anlegen, vollständig bearbeiten (Name/E-Mail/Status/Rolle), Löschen mit Bestätigung + Selbstlöschschutz |
 | Rollen-/Rechteverwaltung-UI | ✅ | `/dashboard/roles`, Checkbox-Matrix für Rechte pro Rolle |
-| Einstellungen-UI | ✅ | Passwort-Policy, Feature-Schalter, Darstellung, Firma (Logo-Upload aus-/eingeklappt + Impressum-/Datenschutz-Angaben) |
-| Toaster/Benachrichtigungen | ✅ | `sonner` eingebunden |
+| Einstellungen-UI | ✅ | Passwort-Policy, Feature-Schalter (inkl. Wartungsmodus, Medien-Speicherkontingent), Darstellung, Firma (Impressum-/Datenschutz-Angaben + einzelnes Firmenlogo-Upload-Feld; Sidebar-Logo und Auth-Bild sind fest hinterlegt, nicht mehr konfigurierbar) |
+| Toaster/Benachrichtigungen | ✅ | `sonner`, drei Varianten (Erstellt/Bearbeitet/Gelöscht) global bei allen CRUD-Aktionen; zusätzlich `SystemMessage`-Komponente für dauerhafte Inline-Hinweise (Wartungsmodus, Speicher fast voll, Webhook-Fehlschläge, Sperren, ungespeicherte Änderungen) |
 | Massenauswahl + Sammel-Löschen | ✅ | Checkbox pro Zeile/Karte + "Alle auswählen", Aktionsleiste mit Bestätigung – Konvention für alle Listen-Ansichten (Inhalte, Medien, Kategorien, Tags, Benutzer, Rollen, Versionshistorie) |
 | Pagination | ✅ | URL-getriebene `?page=`-Navigation (Zurück/Weiter) auf allen Listen-Ansichten (Inhalte, Medien, Kategorien, Tags, Benutzer, Rollen, Versionshistorie); Seitengröße einstellbar unter Einstellungen → Darstellung |
 

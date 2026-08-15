@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, Copy, MoreVertical, Pencil, Trash2 } from "lucide-react";
 
+import { toastDeleted } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -68,10 +69,12 @@ export function PreviewLinksTable({
   async function handleRevoke() {
     if (!deleteTarget) return;
     await revokeLink(deleteTarget);
+    toastDeleted(`Vorschau-Link für „${deleteTarget.content.title}“ wurde widerrufen.`);
     router.refresh();
   }
 
   async function handleBulkDelete() {
+    const revokedCount = selected.size;
     await Promise.all(
       [...selected]
         .map((id) => byId.get(id))
@@ -79,6 +82,7 @@ export function PreviewLinksTable({
         .map((link) => revokeLink(link)),
     );
     clear();
+    toastDeleted(`${revokedCount} Vorschau-Links wurden widerrufen.`);
     router.refresh();
   }
 

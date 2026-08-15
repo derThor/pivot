@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 
+import { toastDeleted } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -23,6 +24,7 @@ export function FolderTileMenu({ folder }: { folder: MediaFolder }) {
 
   async function handleDelete() {
     await fetch(`/api/media-folders/${folder.id}`, { method: "DELETE" });
+    toastDeleted(`„${folder.name}“ wurde gelöscht.`);
     router.refresh();
   }
 

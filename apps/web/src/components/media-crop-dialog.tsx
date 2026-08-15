@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import ReactCrop, { type PixelCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 
+import { toastCreated } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -66,6 +67,7 @@ export function MediaCropDialog({
 
       onOpenChange(false);
       setCrop(undefined);
+      toastCreated("Der Zuschnitt wurde als neues Medium gespeichert.");
       router.refresh();
     } catch {
       setError("Server nicht erreichbar. Bitte später erneut versuchen.");

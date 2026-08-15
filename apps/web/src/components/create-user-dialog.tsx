@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Plus } from "lucide-react";
 
+import { toastCreated } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -115,6 +116,7 @@ export function CreateUserDialog({
       }
 
       setOpen(false);
+      toastCreated(`„${values.firstName ? `${values.firstName} ` : ""}${values.lastName}“ wurde angelegt.`);
       form.reset();
       router.refresh();
     } catch {

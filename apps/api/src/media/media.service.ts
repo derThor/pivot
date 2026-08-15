@@ -126,6 +126,25 @@ export class MediaService {
   }
 
   /**
+   * Belegter Speicher = Summe der Originaldateien + aller generierten
+   * Varianten (Thumbnails/responsive Formate), da diese ebenfalls
+   * physisch auf der Platte liegen. Kontingent kommt aus den
+   * AppSettings (MB, `null` = unbegrenzt).
+   */
+  async getStorageUsage() {
+    const [mediaSize, variantSize, settings] = await Promise.all([
+      this.prisma.media.aggregate({ _sum: { size: true } }),
+      this.prisma.mediaVariant.aggregate({ _sum: { size: true } }),
+      this.prisma.appSettings.findUnique({ where: { id: 1 } }),
+    ]);
+    const usedBytes = (mediaSize._sum.size ?? 0) + (variantSize._sum.size ?? 0);
+    const quotaMb = settings?.mediaStorageQuotaMb ?? null;
+    const quotaBytes = quotaMb != null ? quotaMb * 1024 * 1024 : null;
+    const percentUsed = quotaBytes ? Math.min(100, (usedBytes / quotaBytes) * 100) : null;
+    return { usedBytes, quotaMb, percentUsed };
+  }
+
+  /**
    * Ermittelt, auf welcher Seite (bei gegebener pageSize) ein Eintrag
    * liegt – innerhalb des Ordners, in dem er tatsächlich liegt (die
    * Medien-Übersicht ist ordnerbezogen gefiltert, ein Eintrag aus einem

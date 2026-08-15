@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
+import { toastEdited } from "@/components/app-toast";
 import { Input } from "@/components/ui/input";
 import {
   Card,
@@ -82,6 +83,7 @@ export function AccountForm({
       }
 
       setSuccess(true);
+      toastEdited("Dein Profil wurde gespeichert.");
       router.refresh();
     } catch {
       setError("Server nicht erreichbar. Bitte später erneut versuchen.");

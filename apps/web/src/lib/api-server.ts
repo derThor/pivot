@@ -458,13 +458,23 @@ export interface Webhook {
   url: string;
   events: string[];
   isActive: boolean;
+  lastDeliveryStatus: "success" | "failure" | null;
+  lastDeliveryAt: string | null;
+  lastDeliveryError: string | null;
+  consecutiveFailures: number;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface WebhookListResponse {
   items: Webhook[];
-  meta: { page: number; pageSize: number; total: number; pageCount: number };
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+    pageCount: number;
+    failingCount: number;
+  };
 }
 
 export function getWebhooks(params?: { page?: number; pageSize?: number }) {
@@ -508,6 +518,8 @@ export interface AppSettings {
   requireAdminActivation: boolean;
   autosaveEnabled: boolean;
   mediaResponsiveVariantsEnabled: boolean;
+  maintenanceModeEnabled: boolean;
+  mediaStorageQuotaMb: number | null;
   passwordMinLength: number;
   passwordRequireUppercase: boolean;
   passwordRequireLowercase: boolean;
@@ -541,4 +553,14 @@ export function getPublicSettings() {
 
 export interface MessageResponse {
   message: string;
+}
+
+export interface MediaStorageUsage {
+  usedBytes: number;
+  quotaMb: number | null;
+  percentUsed: number | null;
+}
+
+export function getMediaStorageUsage() {
+  return apiFetch<MediaStorageUsage>("/media/storage-usage");
 }

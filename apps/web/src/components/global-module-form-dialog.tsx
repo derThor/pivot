@@ -36,6 +36,7 @@ import {
 import {
   GALLERY_EFFECTS,
   GALLERY_EFFECT_LABELS,
+  LOOP_INCOMPATIBLE_EFFECTS,
   SINGLE_SLIDE_EFFECTS,
   toGallerySettings,
   type GallerySettings,
@@ -86,12 +87,23 @@ export function GallerySettingsEditor({
   showPreview?: boolean;
 }) {
   const isSingleSlideEffect = SINGLE_SLIDE_EFFECTS.includes(settings.effect);
+  const isLoopIncompatible = LOOP_INCOMPATIBLE_EFFECTS.includes(settings.effect);
 
   function set<K extends keyof GallerySettings>(
     key: K,
     value: GallerySettings[K],
   ) {
     onChange({ ...settings, [key]: value });
+  }
+
+  // Siehe gallery-editor.tsx: bei Effekten ohne `loop`-Unterstützung die
+  // Endlosschleife automatisch ausschalten statt nur unwirksam anzuzeigen.
+  function handleEffectChange(effect: GallerySettings["effect"]) {
+    onChange({
+      ...settings,
+      effect,
+      loop: LOOP_INCOMPATIBLE_EFFECTS.includes(effect) ? false : settings.loop,
+    });
   }
 
   return (
@@ -106,7 +118,7 @@ export function GallerySettingsEditor({
             <Select
               value={settings.effect}
               onValueChange={(value) =>
-                set("effect", value as GallerySettings["effect"])
+                handleEffectChange(value as GallerySettings["effect"])
               }
               items={Object.fromEntries(
                 GALLERY_EFFECTS.map((effect) => [
@@ -182,13 +194,22 @@ export function GallerySettingsEditor({
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-6">
-          <div className="flex items-center gap-2">
-            <Switch
-              id="gallery-loop"
-              checked={settings.loop}
-              onCheckedChange={(checked) => set("loop", checked)}
-            />
-            <Label htmlFor="gallery-loop">Endlosschleife</Label>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="gallery-loop"
+                checked={settings.loop}
+                disabled={isLoopIncompatible}
+                onCheckedChange={(checked) => set("loop", checked)}
+              />
+              <Label htmlFor="gallery-loop">Endlosschleife</Label>
+            </div>
+            {isLoopIncompatible && (
+              <p className="text-xs text-muted-foreground">
+                Bei „{GALLERY_EFFECT_LABELS[settings.effect]}“ nicht möglich
+                (Navigation würde brechen).
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Switch
@@ -213,6 +234,14 @@ export function GallerySettingsEditor({
               onCheckedChange={(checked) => set("pagination", checked)}
             />
             <Label htmlFor="gallery-pagination">Punkte anzeigen</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="gallery-show-captions"
+              checked={settings.showCaptions}
+              onCheckedChange={(checked) => set("showCaptions", checked)}
+            />
+            <Label htmlFor="gallery-show-captions">Beschreibung anzeigen</Label>
           </div>
         </div>
 

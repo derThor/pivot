@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
+import { toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -46,6 +47,7 @@ const settingsSchema = z.object({
   requireAdminActivation: z.boolean(),
   autosaveEnabled: z.boolean(),
   mediaResponsiveVariantsEnabled: z.boolean(),
+  maintenanceModeEnabled: z.boolean(),
   passwordMinLength: z.number().int().min(4).max(128),
   passwordRequireUppercase: z.boolean(),
   passwordRequireLowercase: z.boolean(),
@@ -96,6 +98,9 @@ export function SettingsForm({
       companyFields.map(({ key }) => [key, settings[key] ?? ""]),
     ) as Record<CompanyFieldKey, string>,
   );
+  const [mediaStorageQuotaMb, setMediaStorageQuotaMb] = useState(
+    settings.mediaStorageQuotaMb != null ? String(settings.mediaStorageQuotaMb) : "",
+  );
 
   const form = useForm<SettingsValues>({
     resolver: zodResolver(settingsSchema),
@@ -106,6 +111,7 @@ export function SettingsForm({
       requireAdminActivation: settings.requireAdminActivation,
       autosaveEnabled: settings.autosaveEnabled,
       mediaResponsiveVariantsEnabled: settings.mediaResponsiveVariantsEnabled,
+      maintenanceModeEnabled: settings.maintenanceModeEnabled,
       passwordMinLength: settings.passwordMinLength,
       passwordRequireUppercase: settings.passwordRequireUppercase,
       passwordRequireLowercase: settings.passwordRequireLowercase,
@@ -123,7 +129,13 @@ export function SettingsForm({
       const res = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...values, ...companyValues }),
+        body: JSON.stringify({
+          ...values,
+          ...companyValues,
+          mediaStorageQuotaMb: mediaStorageQuotaMb.trim()
+            ? Number(mediaStorageQuotaMb)
+            : null,
+        }),
       });
 
       if (!res.ok) {
@@ -135,6 +147,7 @@ export function SettingsForm({
       }
 
       setSuccess(true);
+      toastEdited("Die Einstellungen wurden gespeichert.");
       router.refresh();
     } catch {
       setError("Server nicht erreichbar. Bitte später erneut versuchen.");
@@ -300,6 +313,40 @@ export function SettingsForm({
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="maintenanceModeEnabled"
+                    render={({ field }) => (
+                      <FormItem>
+                        <SwitchRow
+                          label="Wartungsmodus"
+                          description="Zeigt einen Hinweis im Dashboard, dass die Website aktuell im Wartungsmodus ist."
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex items-center justify-between gap-4 py-2">
+                    <div className="flex flex-col gap-0.5">
+                      <Label htmlFor="mediaStorageQuotaMb">
+                        Medien-Speicherkontingent (MB)
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Ab 90 % Auslastung erscheint ein Hinweis im
+                        Dashboard. Leer lassen für unbegrenzt.
+                      </p>
+                    </div>
+                    <Input
+                      id="mediaStorageQuotaMb"
+                      type="number"
+                      min={1}
+                      className="w-32"
+                      value={mediaStorageQuotaMb}
+                      onChange={(e) => setMediaStorageQuotaMb(e.target.value)}
+                      placeholder="Unbegrenzt"
+                    />
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

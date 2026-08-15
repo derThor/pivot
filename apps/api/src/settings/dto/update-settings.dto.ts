@@ -34,6 +34,20 @@ export class UpdateSettingsDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsBoolean()
+  maintenanceModeEnabled?: boolean;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Speicher-Kontingent für Medien in MB, leer = unbegrenzt.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  mediaStorageQuotaMb?: number | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsInt()
   @Min(4)
   @Max(128)

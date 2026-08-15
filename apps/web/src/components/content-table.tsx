@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
+import { toastDeleted } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -45,12 +46,18 @@ export function ContentTable({ entries }: { entries: ContentListItem[] }) {
     useSelection(entries.map((entry) => entry.id));
 
   async function handleBulkDelete() {
+    const deletedCount = selected.size;
     await Promise.all(
       [...selected].map((id) =>
         fetch(`/api/content/${id}`, { method: "DELETE" }),
       ),
     );
     clear();
+    toastDeleted(
+      deletedCount === 1
+        ? "1 Inhalt wurde gelöscht."
+        : `${deletedCount} Inhalte wurden gelöscht.`,
+    );
     router.refresh();
   }
 

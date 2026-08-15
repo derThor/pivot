@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 
+import { toastDeleted } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -29,6 +30,7 @@ export function RoleRowActions({
 
   async function handleDelete() {
     await fetch(`/api/roles/${role.id}`, { method: "DELETE" });
+    toastDeleted(`„${role.name}“ wurde gelöscht.`);
     router.refresh();
   }
 

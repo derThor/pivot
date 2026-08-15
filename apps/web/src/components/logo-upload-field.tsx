@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImageIcon, Trash2 } from "lucide-react";
 
+import { toastDeleted, toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { mediaUrl } from "@/lib/media";
@@ -81,6 +82,7 @@ export function LogoUploadField({
         await deleteMediaByUrl(currentUrl);
       }
 
+      toastEdited(`${label} wurde aktualisiert.`);
       router.refresh();
     } catch (err) {
       setError(
@@ -100,6 +102,7 @@ export function LogoUploadField({
     try {
       await patchSettings(null);
       await deleteMediaByUrl(currentUrl);
+      toastDeleted(`${label} wurde entfernt.`);
       router.refresh();
     } catch (err) {
       setError(

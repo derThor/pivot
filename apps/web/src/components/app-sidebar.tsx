@@ -18,10 +18,10 @@ import {
   Compass,
   Layers,
   ChevronRight,
-  Wrench,
   LogOut,
   HelpCircle,
   Images,
+  MessageSquare,
 } from "lucide-react";
 
 import {
@@ -125,25 +125,40 @@ export const navGroups = [
   },
   {
     label: "Verwaltung",
-    icon: Wrench,
+    icon: ShieldCheck,
     items: [
       {
         title: "Benutzer",
+        subtitle: "Konten & Zugänge",
         url: "/dashboard/users",
         icon: Users,
         permission: "users:manage",
       },
       {
         title: "Rollen & Rechte",
+        subtitle: "Berechtigungen",
         url: "/dashboard/roles",
         icon: ShieldCheck,
         permission: "roles:manage",
       },
-      { title: "Websites", url: "/dashboard/sites", icon: Globe },
+      {
+        title: "Websites",
+        subtitle: "Verbundene Seiten",
+        url: "/dashboard/sites",
+        icon: Globe,
+      },
       {
         title: "Webhooks",
+        subtitle: "Automatisierte Events",
         url: "/dashboard/webhooks",
         icon: Webhook,
+        permission: "settings:manage",
+      },
+      {
+        title: "Systemnachrichten",
+        subtitle: "Meldungen & Toasts",
+        url: "/dashboard/system-messages",
+        icon: MessageSquare,
         permission: "settings:manage",
       },
     ],
@@ -212,7 +227,12 @@ export function AppSidebar({
   const { state: sidebarState } = useSidebar();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
   const permissions = user.permissions ?? [];
+  // "Verwaltung" wird nicht mehr in der Sidebar gerendert, sondern über das
+  // neue Header-Dropdown erreicht (siehe admin-menu.tsx) – bleibt trotzdem
+  // Teil von `navGroups` (Datenquelle für Breadcrumbs/Befehlspalette/
+  // Header-Menü), wird hier nur aus der sichtbaren Sidebar-Liste gefiltert.
   const visibleNavGroups = navGroups
+    .filter((group) => group.label !== "Verwaltung")
     .map((group) => ({
       ...group,
       originalItemCount: group.items.length as number,

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toastEdited } from "@/components/app-toast";
 import {
   Select,
   SelectContent,
@@ -32,6 +33,8 @@ export function UserRoleSelect({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ roleId: nextRoleId }),
       });
+      const roleName = roles.find((role) => role.id === nextRoleId)?.name;
+      toastEdited(roleName ? `Rolle „${roleName}“ zugewiesen.` : "Die Rolle wurde geändert.");
       router.refresh();
     } finally {
       setIsSaving(false);

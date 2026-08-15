@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Crop, FolderInput, MoreVertical, Pencil, Tag, Target, Trash2 } from "lucide-react";
 
+import { toastCreated, toastDeleted, toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,6 +67,7 @@ export function MediaCardActions({
         return;
       }
       setAltOpen(false);
+      toastEdited("Der Alt-Text wurde gespeichert.");
       router.refresh();
     } catch {
       setError("Server nicht erreichbar. Bitte später erneut versuchen.");
@@ -76,6 +78,7 @@ export function MediaCardActions({
 
   async function handleDelete() {
     await fetch(`/api/media/${item.id}`, { method: "DELETE" });
+    toastDeleted(`„${item.filename}“ wurde gelöscht.`);
     router.refresh();
   }
 
@@ -83,6 +86,7 @@ export function MediaCardActions({
     setIsDuplicating(true);
     try {
       await fetch(`/api/media/${item.id}/duplicate`, { method: "POST" });
+      toastCreated(`„${item.filename}“ wurde dupliziert.`);
       router.refresh();
     } finally {
       setIsDuplicating(false);

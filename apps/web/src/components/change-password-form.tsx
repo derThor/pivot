@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
+import { toastEdited } from "@/components/app-toast";
 import { PasswordInput } from "@/components/ui/password-input";
 import {
   Card,
@@ -92,6 +93,7 @@ export function ChangePasswordForm({
       // Passwort-Änderung widerruft alle Sessions (auch die aktuelle) –
       // Nutzer muss sich neu anmelden.
       await fetch("/api/auth/logout", { method: "POST" });
+      toastEdited("Dein Passwort wurde geändert.");
       router.push("/login?passwordChanged=1");
       router.refresh();
     } catch {
