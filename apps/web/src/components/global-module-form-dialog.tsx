@@ -69,14 +69,21 @@ function buildPreviewImages(
  * Pagination) – direkt in der jeweiligen Galerie gesetzt statt zentral im
  * Modul-Typ-Schema, da sich verschiedene Galerien unterschiedlich
  * verhalten sollen. Inklusive Live-Vorschau mit den echten Bildern. */
-function GallerySettingsEditor({
+export function GallerySettingsEditor({
   settings,
   onChange,
   previewImages,
+  // Nur relevant, wenn `showPreview` true ist (Standard): steuert dort, ob
+  // Live-Vorschau oder Platzhaltertext gezeigt wird.
+  showPreview = true,
 }: {
   settings: GallerySettings;
   onChange: (next: GallerySettings) => void;
   previewImages: GallerySwiperImage[];
+  // false: gesamter Vorschau-Bereich (inkl. Platzhaltertext) entfällt –
+  // z.B. im schlanken Anlegen-Dialog (gallery-dialog.tsx), der noch gar
+  // keine Bilder verwaltet, wäre der Platzhaltertext dort irreführend.
+  showPreview?: boolean;
 }) {
   const isSingleSlideEffect = SINGLE_SLIDE_EFFECTS.includes(settings.effect);
 
@@ -88,7 +95,7 @@ function GallerySettingsEditor({
   }
 
   return (
-    <Card className="border-none bg-transparent shadow-none">
+    <Card className="border-none bg-transparent py-0 shadow-none">
       <CardHeader className="px-0">
         <CardTitle>Anzeige-Einstellungen</CardTitle>
       </CardHeader>
@@ -209,16 +216,17 @@ function GallerySettingsEditor({
           </div>
         </div>
 
-        {previewImages.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            <Label>Vorschau</Label>
-            <GallerySwiper images={previewImages} settings={settings} />
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            Vorschau erscheint, sobald mindestens ein Bild hinzugefügt wurde.
-          </p>
-        )}
+        {showPreview &&
+          (previewImages.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              <Label>Vorschau</Label>
+              <GallerySwiper images={previewImages} settings={settings} />
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Vorschau erscheint, sobald mindestens ein Bild hinzugefügt wurde.
+            </p>
+          ))}
       </CardContent>
     </Card>
   );
@@ -235,12 +243,16 @@ export function GlobalModuleFormDialog({
   moduleType,
   globalModule,
   hideTrigger,
+  triggerLabel,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
 }: {
   moduleType: ModuleType;
   globalModule?: GlobalModule;
   hideTrigger?: boolean;
+  // Überschreibt den generischen Standard-Trigger-Text (z.B. "+ Neue
+  // FAQ-Gruppe" auf der FAQ-Übersicht statt "Neuer Akkordeon/FAQ").
+  triggerLabel?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
@@ -323,10 +335,10 @@ export function GlobalModuleFormDialog({
       {!hideTrigger && (
         <DialogTrigger render={<Button />}>
           <Plus />
-          {`Neu${isGallery ? "e" : "er"} ${moduleType.name}`}
+          {triggerLabel ?? `Neu${isGallery ? "e" : "er"} ${moduleType.name}`}
         </DialogTrigger>
       )}
-      <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-2xl">
+      <DialogContent className="flex max-h-[85dvh] flex-col sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>
             {moduleType.name} {isEditing ? "bearbeiten" : "anlegen"}
@@ -336,7 +348,11 @@ export function GlobalModuleFormDialog({
           onSubmit={handleSubmit}
           className="flex min-h-0 flex-1 flex-col gap-4"
         >
-          <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto py-1">
+          {/* `space-y-6` statt `flex flex-col gap-6`: siehe Kommentar in
+              gallery-dialog.tsx – verschachtelte Flex-Spalten innerhalb
+              dieses höhenbegrenzten `overflow-y-auto`-Bereichs quetschten
+              sich sonst gegenseitig zusammen statt zu scrollen. */}
+          <div className="min-h-0 flex-1 space-y-6 overflow-y-auto py-1">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="global-module-dialog-name">Name</Label>
               <Input

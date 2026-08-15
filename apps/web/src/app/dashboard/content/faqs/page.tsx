@@ -1,5 +1,5 @@
-import { GlobalModuleFormDialog } from "@/components/global-module-form-dialog";
-import { GlobalModulesManager } from "@/components/global-modules-manager";
+import { FaqGroupDialog } from "@/components/faq-group-dialog";
+import { FaqGroupsManager } from "@/components/faq-groups-manager";
 import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
@@ -37,15 +37,14 @@ export default async function FaqsPage({
     <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader title="FAQs" />
-        {faqType && <GlobalModuleFormDialog moduleType={faqType} />}
+        {faqType && <FaqGroupDialog moduleType={faqType} />}
       </div>
-      <PageContent>
+      <PageContent plain>
         {faqType ? (
           <>
-            <GlobalModulesManager
+            <FaqGroupsManager
               items={globalModules?.items ?? []}
               moduleType={faqType}
-              entityLabelPlural="FAQ-Einträge"
             />
             {globalModules && (
               <PaginationControls

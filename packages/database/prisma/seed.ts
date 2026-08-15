@@ -354,12 +354,22 @@ async function main() {
       schema: {
         fields: [
           {
+            name: "description",
+            type: "string",
+            example: "Kurze Beschreibung dieser FAQ-Gruppe.",
+          },
+          {
             name: "items",
             type: "repeater",
             required: true,
             fields: [
               { name: "question", type: "string", required: true },
               { name: "answer", type: "richtext", required: true },
+              // Steuert Sichtbarkeit auf der öffentlichen Ausgabe (siehe
+              // `BlockFieldOutput` Akkordeon-Zweig) – fehlt der Wert (ältere
+              // Einträge vor Einführung dieses Felds), gilt eine Frage als
+              // veröffentlicht (`!== false`-Prüfung statt striktem `=== true`).
+              { name: "published", type: "boolean" },
             ],
             example: [
               {
@@ -367,6 +377,7 @@ async function main() {
                 values: {
                   question: "Wie lange dauert der Versand?",
                   answer: `<p>${loremIpsumShort}</p>`,
+                  published: true,
                 },
               },
               {
@@ -374,6 +385,7 @@ async function main() {
                 values: {
                   question: "Kann ich meine Bestellung stornieren?",
                   answer: `<p>${loremIpsumShort}</p>`,
+                  published: true,
                 },
               },
             ],
@@ -409,9 +421,14 @@ async function main() {
     },
   ];
   for (const moduleType of moduleTypes) {
+    // `update: moduleType` (statt No-Op) – Modul-Typen sind laut
+    // ModuleTypesController bewusst nur per Seed gepflegt ("keine eigene
+    // Verwaltungs-UI"), der Seed ist also die Quelle der Wahrheit und muss
+    // bestehende Zeilen bei Schema-Änderungen (z.B. neue Felder) auch bei
+    // erneutem Lauf aktualisieren können.
     await prisma.moduleType.upsert({
       where: { slug: moduleType.slug },
-      update: {},
+      update: moduleType,
       create: moduleType,
     });
   }

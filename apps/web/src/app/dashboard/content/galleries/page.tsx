@@ -1,5 +1,5 @@
-import { GlobalModuleFormDialog } from "@/components/global-module-form-dialog";
-import { GlobalModulesManager } from "@/components/global-modules-manager";
+import { GalleryDialog } from "@/components/gallery-dialog";
+import { GalleryGrid } from "@/components/gallery-grid";
 import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
@@ -37,15 +37,14 @@ export default async function GalleriesPage({
     <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader title="Galerien" />
-        {galleryType && <GlobalModuleFormDialog moduleType={galleryType} />}
+        {galleryType && <GalleryDialog moduleType={galleryType} />}
       </div>
-      <PageContent>
+      <PageContent plain>
         {galleryType ? (
           <>
-            <GlobalModulesManager
+            <GalleryGrid
               items={globalModules?.items ?? []}
               moduleType={galleryType}
-              entityLabelPlural="Galerien"
             />
             {globalModules && (
               <PaginationControls

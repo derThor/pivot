@@ -652,10 +652,21 @@ export function BlockFieldOutput({
     const summaryField = subFields.find(
       (f) => f.type === "string" || f.type === "text",
     );
-    const bodyFields = subFields.filter((f) => f.name !== summaryField?.name);
+    // Boolean-Unterfelder (z.B. "published") steuern nur Sichtbarkeit,
+    // sind kein darstellbarer Inhalt – sonst würde hier "true"/"false"
+    // als Fließtext ausgegeben.
+    const bodyFields = subFields.filter(
+      (f) => f.name !== summaryField?.name && f.type !== "boolean",
+    );
+    // Fehlender Wert (Einträge von vor Einführung des Felds) gilt als
+    // veröffentlicht – siehe gleiche Konvention in module-field-input.tsx.
+    const publishField = subFields.find((f) => f.type === "boolean");
+    const visibleItems = publishField
+      ? items.filter((item) => item.values[publishField.name] !== false)
+      : items;
     return (
       <div className="divide-y divide-border rounded-md border">
-        {items.map((item) => (
+        {visibleItems.map((item) => (
           <details key={item.id} className="p-4">
             <summary className="cursor-pointer list-none font-medium marker:content-none">
               {summaryField

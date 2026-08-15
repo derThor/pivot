@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { ImagePickerDialog } from "@/components/image-picker-dialog";
 import { VideoPickerDialog } from "@/components/video-picker-dialog";
@@ -90,6 +91,24 @@ export function ModuleFieldInput({
             setPickerOpen(false);
           }}
         />
+      </div>
+    );
+  }
+
+  if (field.type === "boolean") {
+    // Fehlender Wert (z.B. Einträge von vor Einführung dieses Felds) gilt
+    // als "an" – konsistent mit der Lese-Seite (siehe isPublished-Prüfung
+    // `!== false` in block-field-output.tsx), sonst würde ein frisch
+    // hinzugefügtes Boolean-Feld bestehende Daten rückwirkend "ausschalten".
+    const checked = value !== false;
+    return (
+      <div className="flex items-center gap-2">
+        <Switch
+          id={`module-field-${field.name}`}
+          checked={checked}
+          onCheckedChange={onChange}
+        />
+        <Label htmlFor={`module-field-${field.name}`}>{field.name}</Label>
       </div>
     );
   }
