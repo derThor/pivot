@@ -136,8 +136,8 @@ function buildCrumbs(pathname: string): Crumb[] {
 
   if (segments.length === 0 && rawSegments.length > 0) {
     // Detailseite direkt unter einer ID, ohne eigenes Namens-Segment (z.B.
-    // "/dashboard/navigation/[id]" oder "/dashboard/content/galleries/[id]",
-    // anders als z.B. "/dashboard/content/[id]/edit"). Ohne diesen Fall
+    // "/dashboard/content/galleries/[id]", anders als z.B.
+    // "/dashboard/content/[id]/edit"). Ohne diesen Fall
     // würden alle Segmente herausgefiltert, der Eltern-Crumb (z.B.
     // "Menüs"/"Galerien") würde dadurch fälschlich als letztes/aktuelles
     // Element gelten und wäre nicht mehr anklickbar.

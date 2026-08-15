@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { toastCreated } from "@/components/app-toast";
+import { toastCreated, toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { ContentListItem } from "@/lib/api-server";
+import type { ContentListItem, NavigationItemNode } from "@/lib/api-server";
 
 const targetTypeOptions: Record<string, string> = {
   content: "Inhalt",
@@ -33,19 +33,33 @@ export function NavigationItemDialog({
   navigationId,
   contentItems,
   parentId = null,
+  item,
   trigger,
+  hideTrigger,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: {
   navigationId: string;
   contentItems: ContentListItem[];
   parentId?: string | null;
-  trigger: React.ReactElement;
+  /** Vorhandener Eintrag zum Bearbeiten (PATCH) statt Anlegen (POST). */
+  item?: NavigationItemNode;
+  trigger?: React.ReactElement;
+  hideTrigger?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [label, setLabel] = useState("");
-  const [targetType, setTargetType] = useState("content");
-  const [contentId, setContentId] = useState("");
-  const [externalUrl, setExternalUrl] = useState("");
+  const isEditing = Boolean(item);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = controlledOnOpenChange ?? setInternalOpen;
+  const [label, setLabel] = useState(item?.label ?? "");
+  const [targetType, setTargetType] = useState(
+    item?.externalUrl ? "external" : "content",
+  );
+  const [contentId, setContentId] = useState(item?.contentId ?? "");
+  const [externalUrl, setExternalUrl] = useState(item?.externalUrl ?? "");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,10 +68,10 @@ export function NavigationItemDialog({
   );
 
   function resetForm() {
-    setLabel("");
-    setTargetType("content");
-    setContentId("");
-    setExternalUrl("");
+    setLabel(item?.label ?? "");
+    setTargetType(item?.externalUrl ? "external" : "content");
+    setContentId(item?.contentId ?? "");
+    setExternalUrl(item?.externalUrl ?? "");
     setError(null);
   }
 
@@ -66,23 +80,31 @@ export function NavigationItemDialog({
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/navigations/${navigationId}/items`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          label,
-          parentId,
-          ...(targetType === "content" ? { contentId } : { externalUrl }),
-        }),
-      });
+      const res = await fetch(
+        isEditing
+          ? `/api/navigations/${navigationId}/items/${item!.id}`
+          : `/api/navigations/${navigationId}/items`,
+        {
+          method: isEditing ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            label,
+            ...(!isEditing && { parentId }),
+            ...(targetType === "content"
+              ? { contentId, externalUrl: null }
+              : { externalUrl, contentId: null }),
+          }),
+        },
+      );
       if (!res.ok) {
         const body = await res.json().catch(() => null);
         setError(body?.message ?? "Konnte nicht gespeichert werden.");
         return;
       }
       setOpen(false);
-      resetForm();
-      toastCreated(`„${label}“ wurde hinzugefügt.`);
+      if (!isEditing) resetForm();
+      if (isEditing) toastEdited();
+      else toastCreated(`„${label}“ wurde hinzugefügt.`);
       router.refresh();
     } catch {
       setError("Server nicht erreichbar. Bitte später erneut versuchen.");
@@ -99,10 +121,12 @@ export function NavigationItemDialog({
         if (!next) resetForm();
       }}
     >
-      <DialogTrigger render={trigger} />
+      {!hideTrigger && trigger && <DialogTrigger render={trigger} />}
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Menüpunkt hinzufügen</DialogTitle>
+          <DialogTitle>
+            {isEditing ? "Menüpunkt bearbeiten" : "Menüpunkt hinzufügen"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
@@ -169,7 +193,11 @@ export function NavigationItemDialog({
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Speichert…" : "Hinzufügen"}
+              {isSubmitting
+                ? "Speichert…"
+                : isEditing
+                  ? "Speichern"
+                  : "Hinzufügen"}
             </Button>
           </DialogFooter>
         </form>

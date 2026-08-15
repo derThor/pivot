@@ -76,7 +76,7 @@ function SettingsSwitchRow({
 /** Vollständige Bearbeiten-Seite für eine Bildergalerie statt Popup
  * (Nutzervorgabe, 2026-08-15, 1:1 nach Bildvorlage): Live-Vorschau,
  * Bilder-Grid mit Drag&Drop-Sortierung (natives HTML5-DnD, gleiches
- * Muster wie navigation-items-editor.tsx) und Anzeige-Einstellungen.
+ * Muster wie navigation-explorer.tsx) und Anzeige-Einstellungen.
  * Alle Änderungen (Bilder hinzufügen/entfernen/sortieren, Einstellungen)
  * bleiben lokal, bis "Speichern" geklickt wird – ein PATCH für alles. */
 export function GalleryEditor({

@@ -75,7 +75,7 @@ export function TagsManager({
         )}
       </div>
 
-      <div className="overflow-hidden rounded-[10px] bg-card shadow-sm">
+      <div className="overflow-hidden rounded-[10px] bg-card shadow-[0_1px_3px_0_rgba(0,0,0,0.1),0_1px_2px_-1px_rgba(0,0,0,0.1),0_-1px_2px_0_rgba(0,0,0,0.05)]">
         <Table>
           <TableHeader className="bg-background">
             <TableRow>
