@@ -988,7 +988,7 @@ export function BlockEditorField({
                                   />
                                 </div>
                               ) : (
-                                // eslint-disable-next-line jsx-a11y/media-has-caption
+                                 
                                 <video
                                   src={resolveImageSrc(video.url)}
                                   muted

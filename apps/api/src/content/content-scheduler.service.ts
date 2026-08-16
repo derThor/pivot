@@ -21,7 +21,9 @@ export class ContentSchedulerService {
   async publishDueScheduled() {
     const count = await this.contentService.publishDueScheduled();
     if (count > 0) {
-      this.logger.log(`${count} geplante Inhalt(e) automatisch veröffentlicht.`);
+      this.logger.log(
+        `${count} geplante Inhalt(e) automatisch veröffentlicht.`,
+      );
     }
   }
 }

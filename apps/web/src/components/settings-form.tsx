@@ -101,6 +101,17 @@ export function SettingsForm({
   const [mediaStorageQuotaMb, setMediaStorageQuotaMb] = useState(
     settings.mediaStorageQuotaMb != null ? String(settings.mediaStorageQuotaMb) : "",
   );
+  const [isClearingCache, setIsClearingCache] = useState(false);
+
+  async function handleClearCache() {
+    setIsClearingCache(true);
+    try {
+      await fetch("/api/settings/clear-cache", { method: "POST" });
+      toastEdited("Cache wurde geleert.");
+    } finally {
+      setIsClearingCache(false);
+    }
+  }
 
   const form = useForm<SettingsValues>({
     resolver: zodResolver(settingsSchema),
@@ -346,6 +357,26 @@ export function SettingsForm({
                       onChange={(e) => setMediaStorageQuotaMb(e.target.value)}
                       placeholder="Unbegrenzt"
                     />
+                  </div>
+                  <div className="flex items-center justify-between gap-4 py-2">
+                    <div className="flex flex-col gap-0.5">
+                      <Label>Cache</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Leert den serverseitigen Cache (z.B. Zähler für
+                        Systembenachrichtigungen). Wirkt sich nicht auf
+                        gespeicherte Daten aus, nur auf zwischengespeicherte
+                        Werte.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-[#D4D4D4]"
+                      disabled={isClearingCache}
+                      onClick={handleClearCache}
+                    >
+                      {isClearingCache ? "Leert…" : "Cache leeren"}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

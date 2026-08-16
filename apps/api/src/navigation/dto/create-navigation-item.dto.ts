@@ -23,7 +23,10 @@ export class CreateNavigationItemDto {
   @IsUrl({ require_tld: false })
   externalUrl?: string;
 
-  @ApiPropertyOptional({ nullable: true, description: 'Für verschachtelte Menüs.' })
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Für verschachtelte Menüs.',
+  })
   @IsOptional()
   @IsString()
   parentId?: string | null;

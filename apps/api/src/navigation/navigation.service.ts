@@ -199,7 +199,9 @@ export class NavigationService {
 
   async reorderItems(navigationId: string, dto: ReorderNavigationItemsDto) {
     await this.assertNavigationExists(navigationId);
-    const overrides = new Map(dto.items.map((item) => [item.id, item.parentId ?? null]));
+    const overrides = new Map(
+      dto.items.map((item) => [item.id, item.parentId ?? null]),
+    );
     for (const item of dto.items) {
       if (!item.parentId) continue;
       let current: string | null = item.parentId;

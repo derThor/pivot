@@ -42,7 +42,7 @@ describe('Modul-Typen / Seiten-Designer (e2e)', () => {
       data: {
         email: adminEmail,
         lastName: 'E2E Modul-Typen Admin',
-        roleId: adminRole.id,
+        userRoles: { create: { roleId: adminRole.id } },
         passwordHash: await argon2.hash(password),
       },
     });

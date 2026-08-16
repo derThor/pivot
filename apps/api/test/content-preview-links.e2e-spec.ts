@@ -45,7 +45,7 @@ describe('Content-Vorschau-Links (e2e)', () => {
       data: {
         email: adminEmail,
         lastName: 'E2E Preview-Links Admin',
-        roleId: adminRole.id,
+        userRoles: { create: { roleId: adminRole.id } },
         passwordHash: await argon2.hash(password),
       },
     });
@@ -57,7 +57,7 @@ describe('Content-Vorschau-Links (e2e)', () => {
       data: {
         email: scopedEmail,
         lastName: 'E2E Preview-Links Scoped',
-        roleId: scopedRole.id,
+        userRoles: { create: { roleId: scopedRole.id } },
         passwordHash: await argon2.hash(password),
       },
     });

@@ -414,13 +414,13 @@ export class SearchService {
       take,
       skip,
       orderBy: { lastName: 'asc' },
-      include: { role: { select: { name: true } } },
+      include: { userRoles: { include: { role: { select: { name: true } } } } },
     });
     return rows.map((row) => ({
       type: 'user' as const,
       id: row.id,
       title: [row.firstName, row.lastName].filter(Boolean).join(' '),
-      subtitle: row.role.name,
+      subtitle: row.userRoles.map((ur) => ur.role.name).join(', '),
     }));
   }
 

@@ -24,7 +24,7 @@ model Role {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  users       User[]
+  userRoles   UserRole[]
   permissions RolePermission[]
 
   @@map("roles")
@@ -51,6 +51,24 @@ model RolePermission {
   @@map("role_permissions")
 }
 
+model UserRole {
+  userId String
+  roleId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  // `@@id([userId, roleId])` deckt Lookups "Rollen eines Nutzers" ab
+  // (userId führend), aber nicht "Nutzer einer Rolle" (roles-explorer.tsx
+  // "Nutzer"-Popup, `UsersService.findAll({ roleId })`) – bei vielen
+  // Nutzern pro Rolle (z.B. alle Fitnessstudio-Mitglieder in einer Rolle)
+  // sonst ein voller Scan der Zwischentabelle.
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
 model AppSettings {
   id                         Int      @id @default(1)
   allowRegistration          Boolean  @default(true)
@@ -67,6 +85,18 @@ model AppSettings {
   passwordRequireNumber      Boolean  @default(true)
   passwordRequireSpecialChar Boolean  @default(true)
   defaultPageSize            Int      @default(10)
+  // Ein/Aus je Systembenachrichtigung-Kategorie (Nutzervorgabe, 2026-08-16:
+  // Karte auf /dashboard/system-messages) – bestimmt, ob die jeweilige
+  // Kategorie überhaupt als Banner/Glocken-Zähler auftaucht, unabhängig
+  // vom zugrunde liegenden Zustand (z.B. Wartungsmodus kann aktiv sein,
+  // aber die Benachrichtigung dazu ausgeblendet).
+  notifyMaintenanceMode        Boolean @default(true)
+  notifyStorageQuota           Boolean @default(true)
+  notifyWebhookFailures        Boolean @default(true)
+  notifyLocalDrafts            Boolean @default(true)
+  notifyPendingActivations     Boolean @default(true)
+  notifyFailedLogins           Boolean @default(true)
+  notifyPendingPasswordChanges Boolean @default(true)
   companyLogoUrl             String?
   companyName                String?
   companyStreet              String?
@@ -85,19 +115,39 @@ model AppSettings {
 }
 
 model User {
-  id              String    @id @default(cuid())
-  email           String    @unique
-  passwordHash    String
-  firstName       String?
-  lastName        String
-  avatarUrl       String?
-  isActive        Boolean   @default(true)
-  emailVerifiedAt DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  passwordHash        String
+  firstName           String?
+  lastName            String
+  avatarUrl           String?
+  department          String?
+  phone               String?
+  isActive            Boolean   @default(true)
+  // Selbstregistrierung bei aktivierter `AppSettings.requireAdminActivation`
+  // (siehe AuthService.register()) – unterscheidet "wartet auf
+  // Freischaltung" von einer normalen, von einem Admin deaktivierten
+  // Zeile (beide haben `isActive: false`, aber nur diese hier braucht eine
+  // Systembenachrichtigung). Wird gelöscht, sobald `isActive` auf `true`
+  // gesetzt wird (siehe UsersService.update()).
+  pendingActivation   Boolean   @default(false)
+  emailVerifiedAt     DateTime?
+  lastLoginAt         DateTime?
+  // Erzwingt beim nächsten Login einen Passwortwechsel, bevor der Rest des
+  // Dashboards nutzbar ist (siehe `RequirePasswordChangeGuard`).
+  mustChangePassword  Boolean   @default(false)
+  // Zählt fehlgeschlagene Login-Versuche in Folge, wird bei erfolgreichem
+  // Login zurückgesetzt (siehe `AuthService.login()`). Aktuell nur
+  // Anzeige im "Konto"-Kasten, keine automatische Sperre nach X Versuchen.
+  failedLoginAttempts Int       @default(0)
+  // Zeitpunkt der Anonymisierung ("Benutzer löschen", nicht reversibel) –
+  // unterscheidet den Zustand von einer normalen Deaktivierung
+  // (`isActive: false`, reversibel). Siehe UsersService.anonymize().
+  anonymizedAt        DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  roleId String
-  role   Role   @relation(fields: [roleId], references: [id])
+  userRoles UserRole[]
 
   contents                Content[]                @relation("ContentAuthor")
   lockedContents          Content[]                @relation("ContentLockedBy")
@@ -109,17 +159,31 @@ model User {
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens     PasswordResetToken[]
 
+  // Für UsersService.getNotificationCounts() (2b.14): die App ist nicht
+  // auf eine kleine, feste Admin-Zahl beschränkt – Kundenkonten (z.B.
+  // Fitnessstudio-Mitglieder) laufen über dasselbe `User`-Modell und
+  // können in die Zehntausende gehen. Ohne diese Indizes würde jede der
+  // drei COUNT-Abfragen (läuft bei jeder Dashboard-Navigation für Nutzer
+  // mit `users:read`) einen vollen Tabellen-Scan brauchen.
+  @@index([pendingActivation, anonymizedAt])
+  @@index([isActive, anonymizedAt, failedLoginAttempts])
+  @@index([mustChangePassword, isActive, anonymizedAt])
   @@map("users")
 }
 
 model RefreshToken {
-  id        String   @id @default(cuid())
-  tokenHash String   @unique
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   revokedAt DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  // Für "Aktive Sitzungen" (2b.14): Roh-User-Agent + IP der Anfrage bei
+  // Ausstellung. Kein Geolocation-Dienst angebunden – Anzeige nutzt die
+  // IP-Adresse direkt statt einer (sonst erfundenen) Stadt.
+  userAgent String?
+  ipAddress String?
 
   @@map("refresh_tokens")
 }

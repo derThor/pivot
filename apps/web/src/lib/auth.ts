@@ -7,6 +7,13 @@ export const AUTH_COOKIE_NAMES = [
   REFRESH_TOKEN_COOKIE,
 ] as const;
 
+// "Als Nutzer ansehen" (2b.14): während der Impersonation liegt hier eine
+// Sicherung der eigenen Zugangsdaten, damit "Zurück zu deinem Konto" sie
+// wiederherstellen kann, statt den Admin komplett auszuloggen. Siehe
+// /api/users/[id]/impersonate und /api/auth/stop-impersonation.
+export const ADMIN_ACCESS_TOKEN_COOKIE = "admin_access_token";
+export const ADMIN_REFRESH_TOKEN_COOKIE = "admin_refresh_token";
+
 const baseCookieOptions = {
   httpOnly: true,
   secure: isProd,

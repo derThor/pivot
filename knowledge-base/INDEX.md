@@ -23,6 +23,7 @@ Themenbereiche/Umgruppierungen: siehe [PROCESS.md](./PROCESS.md)).
 | [self-service-auth-flows.md](./auth/self-service-auth-flows.md) | Registrierung, E-Mail-Verifikation (Dev-Stub), Passwort ändern/vergessen, Self-Service-Profil | 2026-08-03 |
 | [admin-activation-and-permission-nav.md](./auth/admin-activation-and-permission-nav.md) | Admin-Freischaltung für Registrierungen (Einstellung), rollenabhängige Navigation | 2026-08-03 |
 | [read-permissions-and-dashboard-access.md](./auth/read-permissions-and-dashboard-access.md) | Lese-Rechte pro Ressource (`content:read` etc.) + `Role.canAccessDashboard`, neue Default-Rolle "Nutzer" | 2026-08-03 |
+| [user-profile-page-plan.md](./auth/user-profile-page-plan.md) | Volle Benutzer-Bearbeiten-Seite (Profil/Zugang & Sicherheit/Aktivität), Anonymisierung, Admin-Impersonation, erzwungener Passwortwechsel, aktive Sitzungen (siehe ROADMAP 2b.14) | 2026-08-16 |
 
 ## Content (`content/`)
 
@@ -64,7 +65,7 @@ Themenbereiche/Umgruppierungen: siehe [PROCESS.md](./PROCESS.md)).
 | [bulk-selection-and-delete.md](./frontend/bulk-selection-and-delete.md) | Massenauswahl + Sammel-Löschen für alle Listen-Ansichten (`useSelection`, `SelectionToolbar`) | 2026-08-04 |
 | [pagination.md](./frontend/pagination.md) | URL-getriebene Pagination (`?page=`) für alle Listen-Seiten (`PaginationControls`) | 2026-08-05 |
 | [design-refresh.md](./frontend/design-refresh.md) | Koralle/Orange-Theme, Sidebar/Header-Neugestaltung, Kebab-Menüs in allen Listen, feste Logos, responsive Auth-Shell, globaler `destructive`-Button-Stil, Breadcrumb-Farben | 2026-08-15 |
-| [toast-and-system-messages.md](./frontend/toast-and-system-messages.md) | Toast-Benachrichtigungen (`app-toast.tsx`) + Inline-Systemmeldungen (`SystemMessage`), verdrahtet für Wartungsmodus, Medien-Speicherkontingent, Webhook-Fehlschläge | 2026-08-15 |
+| [toast-and-system-messages.md](./frontend/toast-and-system-messages.md) | Toast-Benachrichtigungen (`app-toast.tsx`) + Inline-Systemmeldungen (`SystemMessage`): Wartungsmodus, Speicherkontingent, Webhook-Fehlschläge, lokale Entwürfe, wartende Freischaltungen, auffällige Fehlversuche, anstehende Passwortwechsel – jede Kategorie einzeln ab-/anschaltbar | 2026-08-16 |
 | [header-admin-menu-and-search.md](./frontend/header-admin-menu-and-search.md) | Header-Umbau: "Verwaltung" von Sidebar in Header-Dropdown, echtes Suchfeld + separater Strg-K-Befehlspalette-Trigger, Glocke verlinkt `/dashboard/system-messages` mit rotem Zähler-Badge | 2026-08-16 |
 | [row-action-icon-buttons.md](./frontend/row-action-icon-buttons.md) | Tags-Seite neu (Übersichtsleiste + Tabelle, `Tag.createdAt`/`mediaCount`), globale Umstellung Kebab-Menü → immer sichtbare Bearbeiten-/Löschen-Icon-Buttons (`RowActionButtons`) | 2026-08-16 |
 | [nextjs-loading-tsx-always-shows.md](./frontend/nextjs-loading-tsx-always-shows.md) | `loading.tsx` (App Router) zeigt bei jeder Navigation sofort, nicht nur bei echter Verzögerung – Skeleton-Experiment bei FAQs/Galerien/Medien/Tags deshalb wieder verworfen | 2026-08-15 |
@@ -79,10 +80,13 @@ Themenbereiche/Umgruppierungen: siehe [PROCESS.md](./PROCESS.md)).
 | [monorepo-setup.md](./tooling/monorepo-setup.md) | Turborepo/pnpm-Grundgerüst, Workspace-Struktur | 2026-08-02 |
 | [tooling-pnpm-build-approvals.md](./tooling/tooling-pnpm-build-approvals.md) | pnpm-Build-Skript-Freigaben (`allowBuilds`) | 2026-08-02 |
 | [e2e-testing-setup.md](./tooling/e2e-testing-setup.md) | Erste E2E-Tests (Auth-/Content-Flow), eigene Testdatenbank | 2026-08-02 |
+| [backend-caching.md](./tooling/backend-caching.md) | App-weiter, wiederverwendbarer In-Memory-`CacheService` (`getOrSet`/`clear`), "Cache leeren" unter Einstellungen | 2026-08-16 |
 
 ## Offene Wissenslücken (bewusst vermerkt)
 
 - Kein Eintrag zu Deployment/CI, da noch nicht umgesetzt (siehe
   [ROADMAP.md](../docs/ROADMAP.md) Phase 3)
 - Kein Eintrag zu Redis-Nutzung, da Container nur vorbereitet, aber nicht
-  angebunden ist
+  angebunden ist – als Zwischenschritt gibt es seit 2026-08-16 einen
+  einfachen In-Memory-`CacheService` mit derselben Schnittstelle, siehe
+  [backend-caching.md](./tooling/backend-caching.md)

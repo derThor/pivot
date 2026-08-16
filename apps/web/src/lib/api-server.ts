@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { ACCESS_TOKEN_COOKIE } from "./auth";
+import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "./auth";
 import type { SearchResult } from "./search";
 
 const API_URL = process.env.API_URL ?? "http://localhost:3001/v1";
@@ -15,13 +15,70 @@ export interface CurrentUser {
   firstName: string | null;
   lastName: string;
   avatarUrl: string | null;
+  department: string | null;
+  phone: string | null;
   isActive: boolean;
   emailVerifiedAt: string | null;
-  role: UserRoleRef;
+  lastLoginAt: string | null;
+  mustChangePassword: boolean;
+  failedLoginAttempts: number;
+  anonymizedAt: string | null;
+  createdAt: string;
+  roles: UserRoleRef[];
   /** Nur bei getCurrentUser() (GET /auth/me) vorhanden, nicht bei getUsers(). */
   permissions?: string[];
   /** Nur bei getCurrentUser() (GET /auth/me) vorhanden, nicht bei getUsers(). */
   canAccessDashboard?: boolean;
+  /** Nur bei getCurrentUser() während einer Impersonation gesetzt (Admin-ID). */
+  impersonatedBy?: string;
+}
+
+export interface UserSession {
+  id: string;
+  device: string;
+  ipAddress: string | null;
+  createdAt: string;
+  isCurrent: boolean;
+}
+
+export function getUser(id: string) {
+  return apiFetch<CurrentUser>(`/users/${id}`);
+}
+
+export interface UserNotificationCounts {
+  pendingActivation: number;
+  failedLogins: number;
+  pendingPasswordChange: number;
+}
+
+export function getUserNotificationCounts() {
+  return apiFetch<UserNotificationCounts>("/users/notification-counts");
+}
+
+export function getUserStats(id: string) {
+  return apiFetch<{ contentCount: number; mediaCount: number }>(
+    `/users/${id}/stats`,
+  );
+}
+
+// Eigener Fetch statt `apiFetch()`: braucht zusätzlich den Refresh-Token-
+// Cookie-Wert als Header, damit das Backend die eigene Sitzung als
+// "aktuelle Sitzung" markieren kann (siehe UsersController.listSessions).
+export async function getUserSessions(id: string) {
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
+  if (!accessToken) return null;
+  const refreshToken = cookieStore.get(REFRESH_TOKEN_COOKIE)?.value;
+
+  const res = await fetch(`${API_URL}/users/${id}/sessions`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      ...(refreshToken && { "x-current-refresh-token": refreshToken }),
+    },
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  return res.json() as Promise<UserSession[]>;
 }
 
 export type ContentStatus = "DRAFT" | "SCHEDULED" | "PUBLISHED" | "ARCHIVED";
@@ -142,10 +199,19 @@ export interface UserListResponse {
   meta: { page: number; pageSize: number; total: number; pageCount: number };
 }
 
-export function getUsers(params?: { page?: number; pageSize?: number }) {
+export function getUsers(params?: {
+  page?: number;
+  pageSize?: number;
+  roleId?: string;
+  isActive?: boolean;
+  q?: string;
+}) {
   const search = new URLSearchParams();
   if (params?.page) search.set("page", String(params.page));
   if (params?.pageSize) search.set("pageSize", String(params.pageSize));
+  if (params?.roleId) search.set("roleId", params.roleId);
+  if (params?.isActive !== undefined) search.set("isActive", String(params.isActive));
+  if (params?.q) search.set("q", params.q);
   const query = search.toString();
 
   return apiFetch<UserListResponse>(`/users${query ? `?${query}` : ""}`);
@@ -551,6 +617,13 @@ export interface AppSettings {
   passwordRequireNumber: boolean;
   passwordRequireSpecialChar: boolean;
   defaultPageSize: number;
+  notifyMaintenanceMode: boolean;
+  notifyStorageQuota: boolean;
+  notifyWebhookFailures: boolean;
+  notifyLocalDrafts: boolean;
+  notifyPendingActivations: boolean;
+  notifyFailedLogins: boolean;
+  notifyPendingPasswordChanges: boolean;
   companyLogoUrl: string | null;
   companyName: string | null;
   companyStreet: string | null;

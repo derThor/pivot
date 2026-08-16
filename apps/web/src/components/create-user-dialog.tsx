@@ -41,9 +41,11 @@ import type { Role } from "@/lib/api-server";
 export function CreateUserDialog({
   roles,
   passwordPolicy,
+  triggerLabel = "Neuer Benutzer",
 }: {
   roles: Role[];
   passwordPolicy: PasswordPolicy;
+  triggerLabel?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -105,7 +107,7 @@ export function CreateUserDialog({
           lastName: values.lastName,
           email: values.email,
           password: values.password,
-          roleId: values.roleId,
+          roleIds: [values.roleId],
         }),
       });
 
@@ -139,7 +141,7 @@ export function CreateUserDialog({
     >
       <DialogTrigger render={<Button />}>
         <Plus />
-        Neuer Benutzer
+        {triggerLabel}
       </DialogTrigger>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>

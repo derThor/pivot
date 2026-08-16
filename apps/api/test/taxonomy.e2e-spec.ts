@@ -35,7 +35,7 @@ describe('Kategorien/Tags-Flow (e2e)', () => {
       data: {
         email: userEmail,
         lastName: 'E2E Taxonomy Test',
-        roleId: editorRole.id,
+        userRoles: { create: { roleId: editorRole.id } },
         passwordHash: await argon2.hash(password),
       },
     });
@@ -180,7 +180,7 @@ describe('Kategorien/Tags-Flow (e2e)', () => {
       data: {
         email: autorEmail,
         lastName: 'E2E Taxonomy Autor',
-        roleId: autorRole.id,
+        userRoles: { create: { roleId: autorRole.id } },
         passwordHash: await argon2.hash(password),
       },
     });

@@ -76,7 +76,10 @@ export class CreateContentDto {
   @IsString()
   ogImageUrl?: string;
 
-  @ApiPropertyOptional({ enum: ['summary', 'summary_large_image'], nullable: true })
+  @ApiPropertyOptional({
+    enum: ['summary', 'summary_large_image'],
+    nullable: true,
+  })
   @IsOptional()
   @IsIn(['summary', 'summary_large_image'])
   twitterCard?: string | null;

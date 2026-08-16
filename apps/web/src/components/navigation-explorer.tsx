@@ -3,11 +3,17 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { GripVertical, Plus } from "lucide-react";
+import { GripVertical, MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { toastDeleted } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { NavigationDialog } from "@/components/navigation-dialog";
 import { NavigationItemDialog } from "@/components/navigation-item-dialog";
 import { RowActionButtons } from "@/components/row-action-buttons";
@@ -55,6 +61,15 @@ export function NavigationExplorer({
   >(null);
   const [editItem, setEditItem] = useState<NavigationItemNode | null>(null);
   const [deleteItem, setDeleteItem] = useState<NavigationItemNode | null>(null);
+  // Mobil (Nutzervorgabe): die drei Zeilen-Aktionen (Untereintrag
+  // hinzufügen/Bearbeiten/Löschen) sprengten bei schmalen Viewports die
+  // Karte – dort ein einzelnes "..."-Menü statt der einzeln sichtbaren
+  // Icon-Buttons. Braucht eine eigene kontrollierte Dialog-Instanz für
+  // "Untereintrag hinzufügen", da der Button dafür sonst seinen eigenen,
+  // unkontrollierten Trigger mitbringt (siehe `NavigationItemDialog`
+  // unten in `renderNode`).
+  const [addChildTarget, setAddChildTarget] =
+    useState<NavigationItemNode | null>(null);
   const [editMenuOpen, setEditMenuOpen] = useState(false);
   const [deleteMenuOpen, setDeleteMenuOpen] = useState(false);
 
@@ -204,11 +219,16 @@ export function NavigationExplorer({
           <p className="min-w-0 flex-1 truncate text-sm font-semibold">
             {node.label}
           </p>
-          <span className="shrink-0 truncate text-xs text-muted-foreground">
+          <span className="hidden min-w-0 shrink truncate text-xs text-muted-foreground sm:inline">
             {entryPath(node)}
           </span>
+          {/* Ab `sm` die drei Icon-Buttons wie gehabt, darunter (Nutzervorgabe)
+              ein einzelnes "..."-Menü statt der einzeln sichtbaren Buttons –
+              die sprengten bei schmalen Viewports zusammen mit Label/Pfad
+              die Karte nach rechts hinaus. */}
           <RowActionButtons
             size="icon-sm"
+            className="hidden sm:flex"
             onEdit={() => setEditItem(node)}
             onDelete={() => setDeleteItem(node)}
             editLabel={`„${node.label}“ bearbeiten`}
@@ -232,6 +252,38 @@ export function NavigationExplorer({
               />
             }
           />
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-sm"
+                  className="rounded-lg border-[#D4D4D4] sm:hidden"
+                  aria-label={`Aktionen für „${node.label}“`}
+                />
+              }
+            >
+              <MoreVertical />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setAddChildTarget(node)}>
+                <Plus />
+                Untereintrag hinzufügen
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setEditItem(node)}>
+                <Pencil />
+                Bearbeiten
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => setDeleteItem(node)}
+              >
+                <Trash2 />
+                Löschen
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         {node.children.length > 0 && (
           // Verschachtelte Einträge visuell als eigene Gruppe erkennbar
@@ -400,6 +452,17 @@ export function NavigationExplorer({
           hideTrigger
           open={editItem !== null}
           onOpenChange={(next) => !next && setEditItem(null)}
+        />
+      )}
+
+      {navigation && addChildTarget && (
+        <NavigationItemDialog
+          navigationId={navigation.id}
+          contentItems={contentItems}
+          parentId={addChildTarget.id}
+          hideTrigger
+          open={addChildTarget !== null}
+          onOpenChange={(next) => !next && setAddChildTarget(null)}
         />
       )}
 

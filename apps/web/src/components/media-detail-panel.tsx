@@ -44,9 +44,11 @@ const dateFormatter = new Intl.DateTimeFormat("de-DE", {
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-2 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
+    <div className="flex items-start justify-between gap-2 border-b border-[#F0F0F0] pb-2 text-sm">
+      <span className="shrink-0 whitespace-nowrap text-muted-foreground">
+        {label}
+      </span>
+      <span className="line-clamp-2 text-right font-medium">{value}</span>
     </div>
   );
 }
@@ -177,6 +179,7 @@ export function MediaDetailPanel({
         )}
         <InfoRow label="Größe" value={formatBytes(item.size)} />
         <InfoRow label="Hochgeladen" value={dateFormatter.format(new Date(item.createdAt))} />
+        <InfoRow label="Alt-Text" value={item.alt || "—"} />
         <InfoRow
           label="Verwendet"
           value={

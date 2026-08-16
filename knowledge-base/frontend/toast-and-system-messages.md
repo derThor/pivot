@@ -161,3 +161,56 @@ gewesen):
 - Kein automatisiertes Zurücksetzen von `consecutiveFailures` außer durch
   eine erneute erfolgreiche Zustellung – kein manueller "Reset"-Button in
   der UI.
+
+## Update 2026-08-16: Nutzerbezogene Kategorien + Ab-/anschaltbarkeit + Cache
+
+Drei neue Kategorien ergänzt, dieselbe Herkunft wie die 2b.14-Profilseite
+(Mehrfach-Rollen, Anonymisierung, Impersonation, `mustChangePassword`,
+`failedLoginAttempts`, `User.pendingActivation`) – siehe
+[user-profile-page-plan.md](../auth/user-profile-page-plan.md):
+
+- **Wartende Freischaltungen** – `User.pendingActivation` (neu, siehe
+  Schema-Kommentar): unterscheidet "wartet auf Admin-Freischaltung" von
+  einer normalen, manuell deaktivierten Zeile (beide `isActive: false`).
+  Wird bei Registrierung gesetzt (`requireAdminActivation` aktiv), beim
+  Aktivieren durch einen Admin automatisch gelöscht.
+- **Auffällige Fehlversuche** – Nutzer mit ≥5 fehlgeschlagenen Logins in
+  Folge (`User.failedLoginAttempts`, Schwelle als privates Konstante in
+  `UsersService`).
+- **Anstehende Passwortwechsel** – Nutzer mit `mustChangePassword: true`.
+
+Neuer Endpunkt `GET /users/notification-counts` (`UsersService.
+getNotificationCounts()`) liefert die drei rohen Zahlen, `UserNotification
+Banners` (`apps/web/src/components/user-notification-banners.tsx`) rendert
+die Banner nach demselben `SystemMessage`-Muster wie Storage/Webhooks.
+
+**Jede der jetzt 7 Kategorien** (die 4 bisherigen + die 3 neuen) ist über
+`AppSettings.notify*` (7 neue Boolean-Felder) einzeln ab-/anschaltbar –
+Nutzervorgabe: "das soll nicht nur das Visuelle steuern, sondern auch das
+Erfassen dieser Nachrichten beenden, wenn nicht aktiv". Umgesetzt als:
+deaktivierte Kategorie wird nicht nur ausgeblendet, sondern die
+zugehörige Abfrage/der Request entfällt komplett (`dashboard/layout.tsx`
+und `system-messages/page.tsx` überspringen `getMediaStorageUsage()`/
+`getWebhooks()`/`getUserNotificationCounts()` ganz, `UsersService.
+getNotificationCounts()` überspringt einzelne COUNT-Queries pro
+Kategorie). Ausnahme bewusst: `notifyLocalDrafts` steuert nur die
+Anzeige (`LocalDraftsSection`s `enabled`-Prop) – das zugrunde liegende
+Autosave selbst hängt an der separaten `autosaveEnabled`-Einstellung und
+läuft unabhängig weiter (sonst bräche die "Entwurf wiederherstellen"-
+Funktion).
+
+Neue Karte **"Benachrichtigungen"** auf `/dashboard/system-messages`
+(`NotificationSettingsCard`, rechte Spalte, nur sichtbar mit
+`settings:update`) – ein Switch pro Kategorie, PATCHt `/api/settings`.
+
+**Performance-Hintergrund** (Nutzervorgabe: "die App ist nicht auf eine
+kleine, feste Admin-Zahl beschränkt" – auch Kundenkonten mit vielen
+Nutzern, z.B. Fitnessstudio-Mitglieder, laufen über dasselbe `User`-
+Modell): `getNotificationCounts()` läuft bei jeder Dashboard-Navigation
+für jeden Nutzer mit `users:read` und ist deshalb zusätzlich für 30s über
+den neuen, app-weiten `CacheService` gecacht (siehe
+[backend-caching.md](../tooling/backend-caching.md)) sowie durch
+zusammengesetzte DB-Indizes auf `User` (`pendingActivation`+
+`anonymizedAt`, `isActive`+`anonymizedAt`+`failedLoginAttempts`,
+`mustChangePassword`+`isActive`+`anonymizedAt`) und `UserRole.roleId`
+abgesichert.

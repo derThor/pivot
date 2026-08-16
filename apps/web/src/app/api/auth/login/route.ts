@@ -11,9 +11,22 @@ export async function POST(request: Request) {
   // im Body würde den Login mit 400 ablehnen.
   const { remember, ...credentials } = await request.json();
 
+  // `fetch()` hier läuft server-seitig und schickt sonst Nodes eigenen
+  // User-Agent statt dem des echten Browsers – ohne explizite
+  // Weiterreichung zeigt "Aktive Sitzungen" (2b.14) sonst nur "Unbekanntes
+  // Gerät" statt z.B. "Windows · Chrome".
+  const userAgent = request.headers.get("user-agent");
+  const forwardedFor =
+    request.headers.get("x-forwarded-for") ??
+    request.headers.get("x-real-ip");
+
   const backendRes = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(userAgent && { "user-agent": userAgent }),
+      ...(forwardedFor && { "x-forwarded-for": forwardedFor }),
+    },
     body: JSON.stringify(credentials),
   });
 

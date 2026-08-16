@@ -5,6 +5,23 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function formatRelativeTime(iso: string) {
+  const diffMs = Date.now() - new Date(iso).getTime()
+  const minutes = Math.floor(diffMs / 60_000)
+  if (minutes < 1) return "gerade eben"
+  if (minutes < 60) return `vor ${minutes} Min.`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `vor ${hours} Std.`
+  const days = Math.floor(hours / 24)
+  if (days === 1) return "gestern"
+  if (days < 7) return `vor ${days} Tagen`
+  return new Date(iso).toLocaleDateString("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
+}
+
 export function slugify(value: string) {
   return value
     .toLowerCase()
@@ -24,4 +41,13 @@ export function formatName(user: {
   lastName: string
 }) {
   return [user.firstName, user.lastName].filter(Boolean).join(" ")
+}
+
+export function initials(user: { firstName?: string | null; lastName: string }) {
+  return formatName(user)
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]!.toUpperCase())
+    .join("")
 }

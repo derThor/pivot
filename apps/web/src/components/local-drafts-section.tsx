@@ -17,7 +17,13 @@ import {
  * Webhooks, alle Server-weit) betreffen lokale Entwürfe nur diesen einen
  * Browser. Deshalb der explizite Hinweistext an jedem Eintrag statt einer
  * einzigen Sammel-Meldung. */
-export function LocalDraftsSection() {
+export function LocalDraftsSection({
+  enabled = true,
+}: {
+  /** `AppSettings.notifyLocalDrafts` – Kategorie clientseitig ausgeblendet,
+   * wenn ein Admin sie über die Benachrichtigungen-Karte deaktiviert hat. */
+  enabled?: boolean;
+}) {
   const router = useRouter();
   const [drafts, setDrafts] = useState<LocalDraftEntry[] | null>(null);
 
@@ -35,7 +41,7 @@ export function LocalDraftsSection() {
     setDrafts(listLocalDrafts());
   }
 
-  if (drafts === null || drafts.length === 0) return null;
+  if (!enabled || drafts === null || drafts.length === 0) return null;
 
   return (
     <>

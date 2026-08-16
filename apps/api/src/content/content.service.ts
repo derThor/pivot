@@ -27,9 +27,9 @@ export interface CategoryRef {
 const CONTENT_LOCK_TTL_MS = 2 * 60 * 1000;
 
 /** Flacht die Join-Tabellen-Form (`ContentCategory[]` mit verschachteltem `category`) zu einem einfachen `CategoryRef[]` ab. */
-function mapContentCategories<T extends { categories: { category: CategoryRef }[] }>(
-  content: T,
-): Omit<T, 'categories'> & { categories: CategoryRef[] } {
+function mapContentCategories<
+  T extends { categories: { category: CategoryRef }[] },
+>(content: T): Omit<T, 'categories'> & { categories: CategoryRef[] } {
   return {
     ...content,
     categories: content.categories.map((c) => c.category),
@@ -60,7 +60,9 @@ export class ContentService {
           author: { select: { id: true, firstName: true, lastName: true } },
           contentType: { select: { id: true, name: true, slug: true } },
           categories: {
-            include: { category: { select: { id: true, name: true, slug: true } } },
+            include: {
+              category: { select: { id: true, name: true, slug: true } },
+            },
           },
         },
       }),
@@ -134,7 +136,9 @@ export class ContentService {
     const tsQuery = this.toTsQuery(q);
     if (!tsQuery) return 0;
 
-    const rows = await this.prisma.$queryRaw<Array<{ count: bigint }>>(Prisma.sql`
+    const rows = await this.prisma.$queryRaw<
+      Array<{ count: bigint }>
+    >(Prisma.sql`
       SELECT COUNT(*)::bigint AS count
       FROM contents c
       JOIN content_types ct ON ct.id = c."contentTypeId"
@@ -164,13 +168,17 @@ export class ContentService {
         author: { select: { id: true, firstName: true, lastName: true } },
         contentType: { select: { id: true, name: true, slug: true } },
         categories: {
-          include: { category: { select: { id: true, name: true, slug: true } } },
+          include: {
+            category: { select: { id: true, name: true, slug: true } },
+          },
         },
         versions: {
           orderBy: { createdAt: 'desc' },
           take: 10,
           include: {
-            createdBy: { select: { id: true, firstName: true, lastName: true } },
+            createdBy: {
+              select: { id: true, firstName: true, lastName: true },
+            },
           },
         },
         lockedBy: { select: { id: true, firstName: true, lastName: true } },
@@ -220,7 +228,9 @@ export class ContentService {
       },
       include: {
         categories: {
-          include: { category: { select: { id: true, name: true, slug: true } } },
+          include: {
+            category: { select: { id: true, name: true, slug: true } },
+          },
         },
       },
     });
@@ -284,7 +294,9 @@ export class ContentService {
       },
       include: {
         categories: {
-          include: { category: { select: { id: true, name: true, slug: true } } },
+          include: {
+            category: { select: { id: true, name: true, slug: true } },
+          },
         },
       },
     });
@@ -378,7 +390,8 @@ export class ContentService {
         select: { id: true, firstName: true, lastName: true },
       });
       throw new ConflictException({
-        message: 'Dieser Inhalt wird gerade von einer anderen Person bearbeitet.',
+        message:
+          'Dieser Inhalt wird gerade von einer anderen Person bearbeitet.',
         lockedBy: holder,
         lockedAt: content.lockedAt,
       });

@@ -356,3 +356,49 @@ aktuelle Stand ("noch offen"), hier nur die Design-Entscheidungen.
   über die Package-Grenze geteilt – bewusste Entscheidung gegen zusätzliche
   Export-Konfiguration für 13 feste Einträge, siehe Kommentare in beiden
   Dateien.
+
+## Update 2026-08-16: Mehrfach-Rollen (`User` n:m `Role`)
+
+Voraussetzung für [user-profile-page-plan.md](./user-profile-page-plan.md)
+(2b.14), Nutzervorgabe "Benutzer dürfen mehrere Rollen haben". `User.roleId`
+(einzelne Pflicht-FK) wurde durch eine `UserRole`-Zwischentabelle ersetzt
+(analog zu `RolePermission`).
+
+**Migration (ohne Datenverlust, Windows/`prisma db push`-Workflow):**
+1. `UserRole`-Modell additiv hinzugefügt, `User.roleId` vorübergehend
+   parallel behalten (temporäre zweite Relation `"LegacyUserRole"`, da
+   Prisma bei zwei Beziehungen zwischen denselben Modellen benannte
+   Relationen braucht) → `db push` (rein additiv, kein Datenverlust)
+2. SQL-Backfill: `INSERT INTO user_roles ("userId","roleId","createdAt")
+   SELECT id,"roleId",now() FROM users` – jede bestehende `roleId` wird zur
+   ersten `UserRole`-Zeile
+3. `User.roleId`/`role` und die temporäre Relation aus dem Schema entfernt
+   → `db push --accept-data-loss` (Warnung war erwartet, Daten bereits in
+   `user_roles` gesichert)
+
+**Rechte-Vereinigung:** `AuthService.issueTokens()` lädt jetzt
+`userRoles.role.permissions` für alle zugewiesenen Rollen und bildet die
+Vereinigung (`new Set(...)`) statt eines einzelnen Rollen-Rechte-Sets.
+`canAccessDashboard` ist `true`, sobald mindestens eine zugewiesene Rolle es
+erlaubt. JWT-Payload trägt entsprechend `roleIds`/`roleNames` als Arrays
+(vorher `roleId`/`roleName` als Singular).
+
+**API-Form:** `UsersService` flacht die interne `userRoles`-Join-Tabelle in
+der Response zu `roles: {id,name}[]` ab (`toPublicUser()`-Helper), damit das
+Frontend nicht die Zwischentabellen-Struktur sehen muss.
+`CreateUserDto`/`UpdateUserDto` nehmen `roleIds: string[]` entgegen (ersetzt
+`roleId: string`); `UpdateUserDto` ersetzt bei Angabe die komplette
+Rollen-Zuordnung (`deleteMany` + `createMany` in einer Transaktion), leeres
+Array ist ein Validierungsfehler ("mindestens eine Rolle").
+
+**Sicherheits-Check unverändert relevant:** `assertMayAssignRole()` (siehe
+oben, "Nur Administratoren dürfen die Administrator-Rolle vergeben") prüft
+jetzt `actingUser.roleNames.includes('Administrator')` und ob
+`Administrator` in den neuen `roleIds` enthalten ist – funktioniert mit
+Arrays unverändert.
+
+**Frontend, bewusst nur teilweise angepasst:** `CreateUserDialog`/
+`EditUserDialog` bieten weiterhin nur eine Einzelauswahl (senden
+`roleIds: [gewählteRolle]`) – ein echter Mehrfach-Rollen-Picker ist Teil der
+neuen Profilseite (2b.14), noch nicht gebaut. `users-table.tsx` rendert
+bereits mehrere Rollen-Badges nebeneinander (`user.roles.map(...)`).

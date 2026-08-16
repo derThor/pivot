@@ -20,13 +20,27 @@ const MIN_QUERY_LENGTH = 3;
  * über `onOpenPalette` ausschließlich die Befehlspalette öffnet – der Rest
  * des Feldes ist normale Live-Suche mit Dropdown-Vorschau, wie vorher in
  * der jetzt entfernten `global-search.tsx`, nur ohne deren Hover-Ausfahr-
- * Animation (im neuen Header-Design immer voll sichtbar). */
+ * Animation (im neuen Header-Design immer voll sichtbar).
+ *
+ * Mobil (Nutzervorgabe): das volle Suchfeld nimmt auf schmalen Viewports
+ * zu viel Platz im Header weg – dort nur eine Lupe als Icon-Button. Klick
+ * ersetzt den kompletten Header-Inhalt (nicht nur diese Komponente) durch
+ * das volle Suchfeld ("oben im Header, nicht darunter") – deshalb ist der
+ * Auf-/Zu-Klapp-Zustand hier kontrolliert von `dashboard-header.tsx`
+ * hochgehoben statt lokaler State, dieselbe Komponente muss auf
+ * Header-Ebene wissen, ob sie die restlichen Header-Elemente verdrängt.
+ * Schwelle ist der eigene `compact`-Breakpoint (992px, siehe
+ * globals.css), nicht Tailwinds `sm` (640px) – Nutzervorgabe. */
 export function HeaderSearch({
   defaultPageSize,
   onOpenPalette,
+  mobileOpen,
+  onMobileOpenChange,
 }: {
   defaultPageSize: number;
   onOpenPalette: () => void;
+  mobileOpen: boolean;
+  onMobileOpenChange: (open: boolean) => void;
 }) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,11 +60,20 @@ export function HeaderSearch({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (mobileOpen) inputRef.current?.focus();
+  }, [mobileOpen]);
+
   function clear() {
     setQuery("");
     setResults(null);
     setOpen(false);
     inputRef.current?.blur();
+  }
+
+  function closeMobile() {
+    clear();
+    onMobileOpenChange(false);
   }
 
   useEffect(() => {
@@ -76,93 +99,138 @@ export function HeaderSearch({
     const searchTerm = query.trim();
     setOpen(false);
     setQuery("");
+    onMobileOpenChange(false);
     router.push(await searchResultHref(result, searchTerm, defaultPageSize));
   }
 
-  return (
-    <div ref={containerRef} className="relative h-11 w-full min-w-0 shrink sm:w-96">
-      <div className="flex h-11 w-full items-center gap-2 rounded-full border bg-card px-4 transition-colors hover:bg-sidebar-accent focus-within:bg-sidebar-accent">
-        <Search className="size-4 shrink-0 text-muted-foreground" />
-        <Input
-          ref={inputRef}
-          placeholder="Suchen ..."
-          className="h-auto flex-1 border-none bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") {
-              clear();
-              return;
-            }
-            if (e.key === "Enter") {
-              const trimmed = query.trim();
-              if (trimmed.length < MIN_QUERY_LENGTH) return;
-              e.preventDefault();
-              setOpen(false);
-              router.push(`/dashboard/search?q=${encodeURIComponent(trimmed)}`);
-            }
-          }}
-        />
-        {query.length > 0 ? (
+  function handleInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Escape") {
+      if (mobileOpen) closeMobile();
+      else clear();
+      return;
+    }
+    if (e.key === "Enter") {
+      const trimmed = query.trim();
+      if (trimmed.length < MIN_QUERY_LENGTH) return;
+      e.preventDefault();
+      setOpen(false);
+      onMobileOpenChange(false);
+      router.push(`/dashboard/search?q=${encodeURIComponent(trimmed)}`);
+    }
+  }
+
+  const resultsDropdown = open && (
+    <div className="absolute top-full left-0 z-50 mt-2 w-full max-w-full overflow-hidden rounded-2xl border bg-popover py-2 text-popover-foreground shadow-lg">
+      {isLoading ? (
+        <div className="px-4 py-3 text-sm text-muted-foreground">Suche…</div>
+      ) : results && results.length > 0 ? (
+        <ul className="max-h-[60vh] divide-y overflow-y-auto">
+          {results.map((result) => {
+            const meta = searchTypeMeta[result.type];
+            const Icon = meta.icon;
+            return (
+              <li key={`${result.type}-${result.id}`}>
+                <button
+                  type="button"
+                  onClick={() => goTo(result)}
+                  className="flex w-full min-w-0 items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-muted/60"
+                >
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                    <Icon className="size-3.5" />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate font-medium">
+                    {result.title}
+                  </span>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${meta.badgeClassName}`}
+                  >
+                    {meta.label}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <div className="px-4 py-3 text-sm text-muted-foreground">
+          Keine Treffer.
+        </div>
+      )}
+    </div>
+  );
+
+  if (mobileOpen) {
+    return (
+      <div ref={containerRef} className="relative w-full compact:hidden">
+        <div className="flex h-11 w-full items-center gap-2 rounded-full border bg-card px-4 transition-colors focus-within:border-primary">
+          <Search className="size-4 shrink-0 text-muted-foreground" />
+          <Input
+            ref={inputRef}
+            placeholder="Suchen ..."
+            className="h-auto min-w-0 flex-1 border-none bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleInputKeyDown}
+          />
           <button
             type="button"
-            aria-label="Suche zurücksetzen"
-            onClick={clear}
+            aria-label="Suche schließen"
+            onClick={closeMobile}
             className="shrink-0 text-muted-foreground hover:text-foreground"
           >
             <X className="size-4" />
           </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onOpenPalette}
-            className="hidden shrink-0 rounded-md bg-muted px-2 py-1 font-sans text-xs text-muted-foreground hover:text-foreground sm:inline-block"
-          >
-            Strg K
-          </button>
-        )}
+        </div>
+        {resultsDropdown}
       </div>
-      {open && (
-        <div className="absolute top-full left-0 z-50 mt-2 w-full min-w-80 overflow-hidden rounded-2xl border bg-popover py-2 text-popover-foreground shadow-lg">
-          {isLoading ? (
-            <div className="px-4 py-3 text-sm text-muted-foreground">
-              Suche…
-            </div>
-          ) : results && results.length > 0 ? (
-            <ul className="divide-y">
-              {results.map((result) => {
-                const meta = searchTypeMeta[result.type];
-                const Icon = meta.icon;
-                return (
-                  <li key={`${result.type}-${result.id}`}>
-                    <button
-                      type="button"
-                      onClick={() => goTo(result)}
-                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-muted/60"
-                    >
-                      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                        <Icon className="size-3.5" />
-                      </span>
-                      <span className="min-w-0 flex-1 truncate font-medium">
-                        {result.title}
-                      </span>
-                      <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${meta.badgeClassName}`}
-                      >
-                        {meta.label}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+    );
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => onMobileOpenChange(true)}
+        aria-label="Suche öffnen"
+        className="flex size-11 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground transition-colors hover:bg-sidebar-accent compact:hidden"
+      >
+        <Search className="size-4" />
+      </button>
+
+      <div
+        ref={containerRef}
+        className="relative hidden h-11 w-full min-w-0 shrink compact:block compact:w-96"
+      >
+        <div className="flex h-11 w-full items-center gap-2 rounded-full border bg-card px-4 transition-colors hover:bg-sidebar-accent focus-within:border-primary focus-within:bg-card focus-within:hover:bg-card">
+          <Search className="size-4 shrink-0 text-muted-foreground" />
+          <Input
+            placeholder="Suchen ..."
+            className="h-auto flex-1 border-none bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleInputKeyDown}
+          />
+          {query.length > 0 ? (
+            <button
+              type="button"
+              aria-label="Suche zurücksetzen"
+              onClick={clear}
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-4" />
+            </button>
           ) : (
-            <div className="px-4 py-3 text-sm text-muted-foreground">
-              Keine Treffer.
-            </div>
+            <button
+              type="button"
+              onClick={onOpenPalette}
+              className="hidden shrink-0 rounded-md bg-muted px-2 py-1 font-sans text-xs text-muted-foreground hover:text-foreground sm:inline-block"
+            >
+              Strg K
+            </button>
           )}
         </div>
-      )}
-    </div>
+        {resultsDropdown}
+      </div>
+    </>
   );
 }

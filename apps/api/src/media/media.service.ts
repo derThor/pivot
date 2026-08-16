@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { copyFile, readFile, unlink, writeFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
@@ -6,17 +10,31 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CropMediaDto } from './dto/crop-media.dto';
 import { QueryMediaDto } from './dto/query-media.dto';
 import { UpdateMediaDto } from './dto/update-media.dto';
-import { UPLOAD_DIR, maxSizeForMimeType, mimeTypesForCategory } from './media.config';
+import {
+  UPLOAD_DIR,
+  maxSizeForMimeType,
+  mimeTypesForCategory,
+} from './media.config';
 import { Prisma } from '@pivot/database';
-import { MediaImageProcessingService, type FocalPoint } from './media-image-processing.service';
+import {
+  MediaImageProcessingService,
+  type FocalPoint,
+} from './media-image-processing.service';
 
-type VariantInput = { width: number; format: string; url: string; size: number };
+type VariantInput = {
+  width: number;
+  format: string;
+  url: string;
+  size: number;
+};
 
 const TAGS_INCLUDE = {
   tags: { include: { tag: { select: { id: true, name: true, slug: true } } } },
 } satisfies Prisma.MediaInclude;
 
-function mapMediaTags<T extends { tags: { tag: { id: string; name: string; slug: string } }[] }>(
+function mapMediaTags<
+  T extends { tags: { tag: { id: string; name: string; slug: string } }[] },
+>(
   media: T,
 ): Omit<T, 'tags'> & { tags: { id: string; name: string; slug: string }[] } {
   return { ...media, tags: media.tags.map((t) => t.tag) };
@@ -31,7 +49,10 @@ function normalizeUrl(url: string): string {
   return url.replace(/^https?:\/\/[^/]+/, '');
 }
 
-function collectReferencedUrls(value: Prisma.JsonValue | undefined, urls: Set<string>): void {
+function collectReferencedUrls(
+  value: Prisma.JsonValue | undefined,
+  urls: Set<string>,
+): void {
   if (typeof value === 'string') {
     urls.add(normalizeUrl(value));
     for (const match of value.matchAll(/(?:src|href)=["']([^"']+)["']/g)) {
@@ -64,12 +85,18 @@ export class MediaService {
         mimeType: {
           in:
             type === 'document'
-              ? [...mimeTypesForCategory('pdf'), ...mimeTypesForCategory('office')]
+              ? [
+                  ...mimeTypesForCategory('pdf'),
+                  ...mimeTypesForCategory('office'),
+                ]
               : mimeTypesForCategory(type),
         },
       }),
       ...((minSize !== undefined || maxSize !== undefined) && {
-        size: { ...(minSize !== undefined && { gte: minSize }), ...(maxSize !== undefined && { lte: maxSize }) },
+        size: {
+          ...(minSize !== undefined && { gte: minSize }),
+          ...(maxSize !== undefined && { lte: maxSize }),
+        },
       }),
       ...(tagIds &&
         tagIds.length > 0 && {
@@ -149,7 +176,9 @@ export class MediaService {
           ...TAGS_INCLUDE,
         },
       }),
-      this.prisma.content.findMany({ select: { data: true, ogImageUrl: true } }),
+      this.prisma.content.findMany({
+        select: { data: true, ogImageUrl: true },
+      }),
       this.prisma.appSettings.findUnique({ where: { id: 1 } }),
     ]);
 
@@ -158,9 +187,12 @@ export class MediaService {
       collectReferencedUrls(content.data, referenced);
       if (content.ogImageUrl) referenced.add(normalizeUrl(content.ogImageUrl));
     }
-    if (settings?.companyLogoUrl) referenced.add(normalizeUrl(settings.companyLogoUrl));
+    if (settings?.companyLogoUrl)
+      referenced.add(normalizeUrl(settings.companyLogoUrl));
 
-    const unused = allMedia.filter((media) => !referenced.has(normalizeUrl(media.url)));
+    const unused = allMedia.filter(
+      (media) => !referenced.has(normalizeUrl(media.url)),
+    );
     return { items: unused.map(mapMediaTags) };
   }
 
@@ -179,7 +211,9 @@ export class MediaService {
     const usedBytes = (mediaSize._sum.size ?? 0) + (variantSize._sum.size ?? 0);
     const quotaMb = settings?.mediaStorageQuotaMb ?? null;
     const quotaBytes = quotaMb != null ? quotaMb * 1024 * 1024 : null;
-    const percentUsed = quotaBytes ? Math.min(100, (usedBytes / quotaBytes) * 100) : null;
+    const percentUsed = quotaBytes
+      ? Math.min(100, (usedBytes / quotaBytes) * 100)
+      : null;
     return { usedBytes, quotaMb, percentUsed };
   }
 
@@ -244,7 +278,8 @@ export class MediaService {
       );
     }
 
-    const { width, height, variants, thumbnailUrl } = await this.processUpload(file);
+    const { width, height, variants, thumbnailUrl } =
+      await this.processUpload(file);
 
     const media = await this.prisma.media.create({
       data: {
@@ -299,7 +334,11 @@ export class MediaService {
 
       if (width && height) {
         variants = await this.generateVariantsIfEnabled(normalized, width);
-        thumbnailUrl = await this.generateThumbnailIfEnabled(normalized, width, height);
+        thumbnailUrl = await this.generateThumbnailIfEnabled(
+          normalized,
+          width,
+          height,
+        );
       }
     } else if (file.mimetype === 'image/gif') {
       const buffer = await readFile(file.path);
@@ -308,7 +347,11 @@ export class MediaService {
       height = dimensions.height;
 
       if (width && height) {
-        thumbnailUrl = await this.generateThumbnailIfEnabled(buffer, width, height);
+        thumbnailUrl = await this.generateThumbnailIfEnabled(
+          buffer,
+          width,
+          height,
+        );
       }
     }
 
@@ -324,12 +367,17 @@ export class MediaService {
     buffer: Buffer,
     sourceWidth: number,
   ): Promise<VariantInput[]> {
-    const settings = await this.prisma.appSettings.findUnique({ where: { id: 1 } });
+    const settings = await this.prisma.appSettings.findUnique({
+      where: { id: 1 },
+    });
     if (!(settings?.mediaResponsiveVariantsEnabled ?? true)) {
       return [];
     }
 
-    const generated = await this.imageProcessing.generateVariants(buffer, sourceWidth);
+    const generated = await this.imageProcessing.generateVariants(
+      buffer,
+      sourceWidth,
+    );
     const variants: VariantInput[] = [];
     for (const variant of generated) {
       const variantFilename = `${randomUUID()}.${variant.format}`;
@@ -356,7 +404,9 @@ export class MediaService {
     height: number,
     focal?: FocalPoint,
   ): Promise<string | null> {
-    const settings = await this.prisma.appSettings.findUnique({ where: { id: 1 } });
+    const settings = await this.prisma.appSettings.findUnique({
+      where: { id: 1 },
+    });
     if (!(settings?.mediaResponsiveVariantsEnabled ?? true)) {
       return null;
     }
@@ -383,13 +433,22 @@ export class MediaService {
     const source = await this.findOneOrThrow(id);
 
     if (!this.imageProcessing.isProcessable(source.mimeType)) {
-      throw new BadRequestException('Dieser Dateityp kann nicht zugeschnitten werden.');
+      throw new BadRequestException(
+        'Dieser Dateityp kann nicht zugeschnitten werden.',
+      );
     }
     if (!source.width || !source.height) {
-      throw new BadRequestException('Für dieses Medium sind keine Bilddimensionen bekannt.');
+      throw new BadRequestException(
+        'Für dieses Medium sind keine Bilddimensionen bekannt.',
+      );
     }
-    if (rect.x + rect.width > source.width || rect.y + rect.height > source.height) {
-      throw new BadRequestException('Der Zuschnitt liegt außerhalb der Bildgrenzen.');
+    if (
+      rect.x + rect.width > source.width ||
+      rect.y + rect.height > source.height
+    ) {
+      throw new BadRequestException(
+        'Der Zuschnitt liegt außerhalb der Bildgrenzen.',
+      );
     }
 
     const sourceBuffer = await readFile(
@@ -398,7 +457,10 @@ export class MediaService {
     const cropped = await this.imageProcessing.crop(sourceBuffer, rect);
 
     const ext = extname(source.filename) || '.jpg';
-    const baseName = source.filename.slice(0, source.filename.length - ext.length);
+    const baseName = source.filename.slice(
+      0,
+      source.filename.length - ext.length,
+    );
     const croppedFilename = `${randomUUID()}${ext}`;
     await writeFile(join(UPLOAD_DIR, croppedFilename), cropped);
 
@@ -448,11 +510,18 @@ export class MediaService {
     const sourceFilename = source.url.replace(/^\/uploads\//, '');
     const ext = extname(sourceFilename);
     const newFilename = `${randomUUID()}${ext}`;
-    await copyFile(join(UPLOAD_DIR, sourceFilename), join(UPLOAD_DIR, newFilename));
+    await copyFile(
+      join(UPLOAD_DIR, sourceFilename),
+      join(UPLOAD_DIR, newFilename),
+    );
 
     let variants: VariantInput[] = [];
     let thumbnailUrl: string | null = null;
-    if (this.imageProcessing.isThumbnailable(source.mimeType) && source.width && source.height) {
+    if (
+      this.imageProcessing.isThumbnailable(source.mimeType) &&
+      source.width &&
+      source.height
+    ) {
       const buffer = await readFile(join(UPLOAD_DIR, newFilename));
       if (this.imageProcessing.isProcessable(source.mimeType)) {
         variants = await this.generateVariantsIfEnabled(buffer, source.width);

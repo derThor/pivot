@@ -89,13 +89,21 @@ export class MediaImageProcessingService {
 
     for (const width of breakpoints) {
       for (const format of VARIANT_FORMATS) {
-        const pipeline = sharp(buffer).resize({ width, withoutEnlargement: true });
+        const pipeline = sharp(buffer).resize({
+          width,
+          withoutEnlargement: true,
+        });
         const output =
           format === 'webp'
             ? pipeline.webp({ quality: 80 })
             : pipeline.avif({ quality: 60 });
         const outBuffer = await output.toBuffer();
-        variants.push({ width, format, buffer: outBuffer, size: outBuffer.length });
+        variants.push({
+          width,
+          format,
+          buffer: outBuffer,
+          size: outBuffer.length,
+        });
       }
     }
 

@@ -53,7 +53,11 @@ export class MediaFoldersService {
     }
 
     if (dto.name || isMoving) {
-      await this.assertNameAvailable(dto.name ?? current.name, nextParentId, id);
+      await this.assertNameAvailable(
+        dto.name ?? current.name,
+        nextParentId,
+        id,
+      );
     }
 
     return this.prisma.mediaFolder.update({

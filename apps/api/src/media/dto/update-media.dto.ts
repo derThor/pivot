@@ -1,5 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsArray,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class UpdateMediaDto {
   @ApiPropertyOptional()
@@ -26,7 +33,8 @@ export class UpdateMediaDto {
   focalX?: number;
 
   @ApiPropertyOptional({
-    description: 'Fokuspunkt Y, normiert 0–1 (0 = oberer Rand, 1 = unterer Rand).',
+    description:
+      'Fokuspunkt Y, normiert 0–1 (0 = oberer Rand, 1 = unterer Rand).',
   })
   @IsOptional()
   @IsNumber()

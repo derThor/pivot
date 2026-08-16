@@ -24,8 +24,9 @@ export function NoDashboardAccess({ user }: { user: CurrentUser }) {
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-4 text-center">
       <h1 className="text-xl font-semibold">Kein Zugriff auf das Backend</h1>
       <p className="max-w-md text-sm text-muted-foreground">
-        {formatName(user)} (Rolle „{user.role.name}“) hat keinen Zugriff auf
-        das Verwaltungs-Dashboard.
+        {formatName(user)} (Rolle{user.roles.length > 1 ? "n" : ""} „
+        {user.roles.map((role) => role.name).join(", ")}“) hat keinen Zugriff
+        auf das Verwaltungs-Dashboard.
       </p>
       <Button variant="outline" onClick={handleLogout} disabled={isLoggingOut}>
         {isLoggingOut ? "Wird abgemeldet…" : "Abmelden"}

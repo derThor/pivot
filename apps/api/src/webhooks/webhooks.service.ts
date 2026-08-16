@@ -86,11 +86,7 @@ export class WebhooksService {
         this.logger.warn(
           `Webhook ${url} antwortete mit Status ${res.status} auf Event "${event}".`,
         );
-        await this.recordDeliveryResult(
-          webhookId,
-          false,
-          `HTTP ${res.status}`,
-        );
+        await this.recordDeliveryResult(webhookId, false, `HTTP ${res.status}`);
         return;
       }
       await this.recordDeliveryResult(webhookId, true, null);

@@ -187,7 +187,7 @@ export function DateTimePicker({
       window.removeEventListener("resize", handleReflow);
       window.removeEventListener("scroll", handleScroll, true);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [open]);
 
   function openPicker() {

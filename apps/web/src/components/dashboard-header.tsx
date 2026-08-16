@@ -19,31 +19,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { CurrentUser } from "@/lib/api-server";
-import { formatName } from "@/lib/utils";
+import { cn, formatName, initials } from "@/lib/utils";
 import { listLocalDrafts, onLocalDraftsChanged } from "@/lib/local-drafts";
-
-function initials(user: CurrentUser) {
-  const name = formatName(user);
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]!.toUpperCase())
-    .join("");
-}
 
 export function DashboardHeader({
   user,
   defaultPageSize,
   systemMessageCount = 0,
+  notifyLocalDrafts = true,
 }: {
   user: CurrentUser;
   defaultPageSize: number;
   systemMessageCount?: number;
+  notifyLocalDrafts?: boolean;
 }) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // Mobil ersetzt die aufgeklappte Suche den kompletten übrigen
+  // Header-Inhalt (Nutzervorgabe: "oben im Header, nicht darunter") –
+  // deshalb hier gehalten statt in `HeaderSearch` selbst, das kennt seine
+  // Geschwister-Elemente im Header nicht.
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   // Lokale (nur in diesem Browser gespeicherte) Entwürfe fließen zusätzlich
   // zu den echten Server-weiten Systemmeldungen in den Glocken-Badge ein
@@ -79,18 +76,30 @@ export function DashboardHeader({
   // Zählt 1:1 dieselben Karten, die auch auf /dashboard/system-messages
   // sichtbar sind (jeder lokale Entwurf einzeln) – nicht nur "Kategorien"
   // (Nutzer-Feedback: "ich habe 3 Nachrichten, Badge zeigt nur 1").
-  const totalMessageCount = systemMessageCount + localDraftCount;
+  const totalMessageCount =
+    systemMessageCount + (notifyLocalDrafts ? localDraftCount : 0);
 
   return (
     <header className="sticky top-0 z-40 flex h-20 min-w-0 shrink-0 items-center gap-3 border-b bg-background/70 px-4 py-4 backdrop-blur-md">
-      <SidebarTrigger />
-      <div className="ml-6">
-        <AdminMenu permissions={permissions} />
-      </div>
-      <div className="ml-auto flex min-w-0 items-center gap-2">
+      {!mobileSearchOpen && (
+        <>
+          <SidebarTrigger />
+          <div className="ml-6">
+            <AdminMenu permissions={permissions} />
+          </div>
+        </>
+      )}
+      <div
+        className={cn(
+          "flex min-w-0 items-center gap-2",
+          mobileSearchOpen ? "w-full" : "ml-auto",
+        )}
+      >
         <HeaderSearch
           defaultPageSize={defaultPageSize}
           onOpenPalette={() => setPaletteOpen(true)}
+          mobileOpen={mobileSearchOpen}
+          onMobileOpenChange={setMobileSearchOpen}
         />
         <CommandPalette
           user={user}
@@ -98,51 +107,55 @@ export function DashboardHeader({
           open={paletteOpen}
           onOpenChange={setPaletteOpen}
         />
-        <div className="relative shrink-0">
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-11 rounded-full bg-card"
-            render={<Link href="/dashboard/system-messages" />}
-            aria-label="Systemnachrichten"
-          >
-            <Bell />
-          </Button>
-          {totalMessageCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-destructive text-[11px] font-semibold text-white">
-              {totalMessageCount}
-            </span>
-          )}
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
+        {!mobileSearchOpen && (
+          <>
+            <div className="relative shrink-0">
               <Button
-                variant="ghost"
-                className="h-11 shrink-0 gap-2 rounded-full border bg-card pl-1.5 pr-3 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-popup-open:border-transparent data-popup-open:bg-primary data-popup-open:text-primary-foreground"
-              />
-            }
-          >
-            <Avatar>
-              <AvatarFallback>{initials(user)}</AvatarFallback>
-            </Avatar>
-            <span className="hidden text-sm font-medium sm:inline">
-              {formatName(user)}
-            </span>
-            <ChevronDown className="size-4 text-muted-foreground" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="bottom" align="end">
-            <DropdownMenuItem render={<Link href="/dashboard/account" />}>
-              <UserCog />
-              Konto
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut}>
-              <LogOut />
-              {isLoggingOut ? "Wird abgemeldet…" : "Abmelden"}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+                variant="outline"
+                size="icon"
+                className="size-11 rounded-full bg-card"
+                render={<Link href="/dashboard/system-messages" />}
+                aria-label="Systemnachrichten"
+              >
+                <Bell />
+              </Button>
+              {totalMessageCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-destructive text-[11px] font-semibold text-white">
+                  {totalMessageCount}
+                </span>
+              )}
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    className="h-11 shrink-0 gap-2 rounded-full border bg-card pl-1.5 pr-3 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-popup-open:border-transparent data-popup-open:bg-primary data-popup-open:text-primary-foreground"
+                  />
+                }
+              >
+                <Avatar>
+                  <AvatarFallback>{initials(user)}</AvatarFallback>
+                </Avatar>
+                <span className="hidden text-sm font-medium sm:inline">
+                  {formatName(user)}
+                </span>
+                <ChevronDown className="size-4 text-muted-foreground" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="bottom" align="end">
+                <DropdownMenuItem render={<Link href="/dashboard/account" />}>
+                  <UserCog />
+                  Konto
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut}>
+                  <LogOut />
+                  {isLoggingOut ? "Wird abgemeldet…" : "Abmelden"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        )}
       </div>
     </header>
   );

@@ -6,7 +6,9 @@ export class RegisterDto {
   @IsEmail()
   email!: string;
 
-  @ApiProperty({ description: 'Wird gegen die aktuelle Passwort-Policy geprüft.' })
+  @ApiProperty({
+    description: 'Wird gegen die aktuelle Passwort-Policy geprüft.',
+  })
   @IsString()
   @MinLength(1)
   password!: string;

@@ -48,6 +48,8 @@ const PERMISSIONS: { resource: string; action: string }[] = [
   { resource: "users", action: "invite" },
   { resource: "users", action: "update" },
   { resource: "users", action: "deactivate" },
+  { resource: "users", action: "delete" },
+  { resource: "users", action: "impersonate" },
   { resource: "roles", action: "read" },
   { resource: "roles", action: "create" },
   { resource: "roles", action: "update" },
@@ -100,6 +102,9 @@ const ROLES: {
   // (globale System-Konfiguration) – das bleibt Administrator vorbehalten.
   // Lesend darf Manager beides trotzdem einsehen (`roles:read`,
   // `settings:read` sind Teil von `PERMISSIONS` und damit inbegriffen).
+  // Ebenfalls ausgenommen (2026-08-16): `users:delete` (Anonymisierung,
+  // nicht reversibel) und `users:impersonate` (Admin-Impersonation) –
+  // beide bleiben Administrator vorbehalten.
   {
     name: "Manager",
     description:
@@ -110,6 +115,7 @@ const ROLES: {
       (p) =>
         !(p.resource === "roles" && p.action !== "read") &&
         !(p.resource === "settings" && p.action !== "read") &&
+        !(p.resource === "users" && ["delete", "impersonate"].includes(p.action)) &&
         p.resource !== "webhooks",
     ),
   },
@@ -244,7 +250,7 @@ async function main() {
       email: "admin@pivot.dev",
       firstName: null,
       lastName: "Admin",
-      roleId: adminRole.id,
+      userRoles: { create: { roleId: adminRole.id } },
       emailVerifiedAt: new Date(),
       passwordHash: await argon2.hash("ChangeMe123!"),
     },

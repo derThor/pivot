@@ -1,0 +1,711 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Monitor, ShieldOff } from "lucide-react";
+
+import { toastEdited, toastDeleted } from "@/components/app-toast";
+import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
+import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
+import { PaginationControls } from "@/components/pagination-controls";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import type { CurrentUser, Role, UserSession } from "@/lib/api-server";
+import { cn, formatName, formatRelativeTime, initials } from "@/lib/utils";
+
+const profileSchema = z.object({
+  firstName: z.string().optional(),
+  lastName: z.string().min(1, "Nachname ist erforderlich."),
+  email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben."),
+  department: z.string().optional(),
+  phone: z.string().optional(),
+  roleIds: z.array(z.string()).min(1, "Mindestens eine Rolle wählen."),
+  mustChangePassword: z.boolean(),
+});
+type ProfileValues = z.infer<typeof profileSchema>;
+
+const SESSIONS_PAGE_SIZE = 5;
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("de-DE");
+}
+
+export function UserEditView({
+  user,
+  roles,
+  allowEmailChange,
+  viewerId,
+  viewerPermissions,
+  viewerIsAdministrator,
+  sessions,
+  stats,
+}: {
+  user: CurrentUser;
+  roles: Role[];
+  allowEmailChange: boolean;
+  viewerId: string;
+  viewerPermissions: string[];
+  viewerIsAdministrator: boolean;
+  sessions: UserSession[];
+  stats: { contentCount: number; mediaCount: number };
+}) {
+  const router = useRouter();
+  const name = formatName(user);
+  const isSelf = user.id === viewerId;
+  const targetIsAdministrator = user.roles.some(
+    (role) => role.name === "Administrator",
+  );
+
+  const canDeactivate = viewerPermissions.includes("users:deactivate");
+  const canDelete = viewerPermissions.includes("users:delete");
+  const canImpersonate = viewerPermissions.includes("users:impersonate");
+
+  const [isActive, setIsActive] = useState(user.isActive);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [isImpersonating, setIsImpersonating] = useState(false);
+  const [isTogglingActive, setIsTogglingActive] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sessionsState, setSessionsState] = useState(sessions);
+  const [sessionsPage, setSessionsPage] = useState(1);
+  const sessionsPageCount = Math.max(
+    1,
+    Math.ceil(sessionsState.length / SESSIONS_PAGE_SIZE),
+  );
+  const visibleSessions = sessionsState.slice(
+    (sessionsPage - 1) * SESSIONS_PAGE_SIZE,
+    sessionsPage * SESSIONS_PAGE_SIZE,
+  );
+
+  const form = useForm<ProfileValues>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      firstName: user.firstName ?? "",
+      lastName: user.lastName,
+      email: user.email,
+      department: user.department ?? "",
+      phone: user.phone ?? "",
+      roleIds: user.roles.map((role) => role.id),
+      mustChangePassword: user.mustChangePassword,
+    },
+  });
+
+  async function onSubmit(values: ProfileValues) {
+    setError(null);
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/users/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: values.firstName || undefined,
+          lastName: values.lastName,
+          email: values.email,
+          department: values.department || undefined,
+          phone: values.phone || undefined,
+          roleIds: values.roleIds,
+          mustChangePassword: values.mustChangePassword,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setError(body?.message ?? "Änderungen konnten nicht gespeichert werden.");
+        return;
+      }
+      toastEdited(`„${name}“ wurde gespeichert.`);
+      router.refresh();
+    } catch {
+      setError("Server nicht erreichbar. Bitte später erneut versuchen.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleLock() {
+    setIsTogglingActive(true);
+    try {
+      await fetch(`/api/users/${user.id}`, { method: "DELETE" });
+      setIsActive(false);
+      toastEdited(`„${name}“ wurde gesperrt.`);
+      router.refresh();
+    } finally {
+      setIsTogglingActive(false);
+    }
+  }
+
+  async function handleUnlock() {
+    setIsTogglingActive(true);
+    try {
+      const res = await fetch(`/api/users/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: true }),
+      });
+      if (res.ok) {
+        setIsActive(true);
+        toastEdited(`„${name}“ wurde entsperrt.`);
+        router.refresh();
+      }
+    } finally {
+      setIsTogglingActive(false);
+    }
+  }
+
+  async function handleResetPassword() {
+    setIsResetting(true);
+    try {
+      const res = await fetch(`/api/users/${user.id}/reset-password`, {
+        method: "POST",
+      });
+      const body = await res.json().catch(() => null);
+      if (res.ok) {
+        toastEdited(body?.message ?? "Link zum Zurücksetzen wurde gesendet.");
+      }
+    } finally {
+      setIsResetting(false);
+    }
+  }
+
+  async function handleImpersonate() {
+    setIsImpersonating(true);
+    try {
+      const res = await fetch(`/api/users/${user.id}/impersonate`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        window.location.assign("/dashboard");
+        return;
+      }
+    } finally {
+      setIsImpersonating(false);
+    }
+  }
+
+  async function handleAnonymize() {
+    await fetch(`/api/users/${user.id}/anonymize`, { method: "POST" });
+    toastDeleted(`„${name}“ wurde gelöscht.`);
+    router.push("/dashboard/users");
+  }
+
+  async function handleRevokeSession(sessionId: string) {
+    await fetch(`/api/users/${user.id}/sessions/${sessionId}`, {
+      method: "DELETE",
+    });
+    setSessionsState((prev) => {
+      const next = prev.filter((s) => s.id !== sessionId);
+      const maxPage = Math.max(1, Math.ceil(next.length / SESSIONS_PAGE_SIZE));
+      setSessionsPage((page) => Math.min(page, maxPage));
+      return next;
+    });
+  }
+
+  async function handleRevokeOthers() {
+    await fetch(`/api/users/${user.id}/sessions/revoke-others`, {
+      method: "POST",
+    });
+    setSessionsState((prev) => prev.filter((s) => s.isCurrent));
+    setSessionsPage(1);
+    toastEdited("Alle anderen Sitzungen wurden beendet.");
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">{name}</h1>
+          <DashboardBreadcrumbs />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="border-[#D4D4D4]"
+            onClick={() => router.push("/dashboard/users")}
+          >
+            ‹ Zurück
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="border-[#D4D4D4]"
+            disabled={isResetting}
+            onClick={handleResetPassword}
+          >
+            {isResetting ? "Sendet…" : "Passwort zurücksetzen"}
+          </Button>
+          <Button type="submit" form="user-edit-form" disabled={isSaving}>
+            {isSaving ? "Speichert…" : "Änderungen speichern"}
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-4 rounded-xl border border-[#E5E5E5] bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <Avatar size="lg" className="size-14">
+            <AvatarFallback className="bg-neutral-900 text-lg font-medium text-white">
+              {initials(user)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold">{name}</span>
+              <Badge
+                variant="secondary"
+                className={
+                  isActive
+                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
+                    : "bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300"
+                }
+              >
+                {isActive ? "Aktiv" : "Gesperrt"}
+              </Badge>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <span className="inline-flex text-muted-foreground/60" />
+                  }
+                >
+                  <ShieldOff className="size-4" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  Zwei-Faktor-Authentifizierung noch nicht verfügbar
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+              <span>{user.email}</span>
+              <span>Rolle: {user.roles.map((role) => role.name).join(", ")}</span>
+              <span>Dabei seit {formatDate(user.createdAt)}</span>
+              <span>
+                {user.lastLoginAt
+                  ? `Zuletzt aktiv ${formatRelativeTime(user.lastLoginAt)}`
+                  : "Noch nie angemeldet"}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {canImpersonate && !isSelf && !targetIsAdministrator && isActive && (
+            <Button
+              type="button"
+              variant="outline"
+              className="border-[#D4D4D4]"
+              disabled={isImpersonating}
+              onClick={handleImpersonate}
+            >
+              Als Nutzer ansehen
+            </Button>
+          )}
+          {canDeactivate &&
+            !isSelf &&
+            (isActive ? (
+              <ConfirmDeleteDialog
+                trigger={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-[#D4D4D4] text-destructive"
+                  >
+                    Sperren
+                  </Button>
+                }
+                title={`„${name}“ sperren?`}
+                description="Der Zugriff wird sofort entzogen. Über „Entsperren“ lässt sich das Konto jederzeit wieder aktivieren."
+                confirmLabel="Sperren"
+                confirmingLabel="Sperrt…"
+                onConfirm={handleLock}
+              />
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                className="border-[#D4D4D4]"
+                disabled={isTogglingActive}
+                onClick={handleUnlock}
+              >
+                Entsperren
+              </Button>
+            ))}
+        </div>
+      </div>
+
+      <form id="user-edit-form" onSubmit={form.handleSubmit(onSubmit)}>
+        <Tabs defaultValue="profil" className="gap-4">
+          <TabsList>
+            <TabsTrigger value="profil">Profil</TabsTrigger>
+            <TabsTrigger value="zugang">Zugang & Sicherheit</TabsTrigger>
+            <TabsTrigger value="aktivitaet">Aktivität</TabsTrigger>
+          </TabsList>
+
+          {error && <p className="mb-2 text-sm text-destructive">{error}</p>}
+
+          <TabsContent value="profil">
+            <Form {...form}>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                <div className="flex flex-col gap-6 rounded-xl border border-[#E5E5E5] bg-card p-6 lg:col-span-2">
+                  <h2 className="font-semibold">Stammdaten</h2>
+                  <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs text-muted-foreground uppercase">
+                            Vorname
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs text-muted-foreground uppercase">
+                            Name
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs text-muted-foreground uppercase">
+                            E-Mail
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="email"
+                              disabled={!allowEmailChange}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs text-muted-foreground uppercase">
+                            Telefon
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="department"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs text-muted-foreground uppercase">
+                            Abteilung
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div />
+                  </div>
+
+                  <Separator />
+
+                  <FormField
+                    control={form.control}
+                    name="roleIds"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-semibold text-foreground">
+                          Rolle
+                        </FormLabel>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          {roles.map((role) => {
+                            const checked = field.value.includes(role.id);
+                            const isAdminRole = role.name === "Administrator";
+                            const disabled =
+                              isAdminRole && !viewerIsAdministrator;
+                            return (
+                              <label
+                                key={role.id}
+                                className={cn(
+                                  "flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm",
+                                  checked
+                                    ? "border-primary bg-primary/10"
+                                    : "border-[#E5E5E5]",
+                                  disabled && "cursor-not-allowed opacity-50",
+                                )}
+                              >
+                                <Checkbox
+                                  checked={checked}
+                                  disabled={disabled}
+                                  onCheckedChange={(next) => {
+                                    field.onChange(
+                                      next
+                                        ? [...field.value, role.id]
+                                        : field.value.filter(
+                                            (id) => id !== role.id,
+                                          ),
+                                    );
+                                  }}
+                                />
+                                {role.name}
+                              </label>
+                            );
+                          })}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-4">
+                  <div className="rounded-xl border border-[#E5E5E5] bg-card p-6">
+                    <h3 className="text-xs font-medium text-muted-foreground uppercase">
+                      Aktivität
+                    </h3>
+                    <div className="mt-3 grid grid-cols-2 gap-4 text-center">
+                      <div>
+                        <div className="text-2xl font-semibold">
+                          {stats.contentCount}
+                        </div>
+                        <div className="text-xs text-muted-foreground uppercase">
+                          Seiten
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-semibold">
+                          {stats.mediaCount}
+                        </div>
+                        <div className="text-xs text-muted-foreground uppercase">
+                          Medien
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {canDelete && !isSelf && (
+                    <div className="flex flex-col gap-3 rounded-xl border border-[#E5E5E5] bg-card p-6">
+                      <h3 className="font-semibold text-destructive">
+                        Konto entfernen
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Der Nutzer wird anonymisiert: alle personenbezogenen
+                        Daten werden entfernt. Inhalte bleiben erhalten und
+                        werden „Gelöschter Nutzer“ zugeordnet.
+                      </p>
+                      <ConfirmDeleteDialog
+                        trigger={
+                          <Button
+                            variant="outline"
+                            className="w-full border-[#D4D4D4] text-destructive"
+                          >
+                            Benutzer löschen
+                          </Button>
+                        }
+                        title={`„${name}“ endgültig löschen?`}
+                        description="Alle personenbezogenen Daten werden entfernt. Diese Aktion kann nicht rückgängig gemacht werden."
+                        onConfirm={handleAnonymize}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Form>
+          </TabsContent>
+
+          <TabsContent value="zugang">
+            <Form {...form}>
+              <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+                <div className="flex flex-col gap-4 lg:col-span-2">
+                  <div className="flex flex-col gap-4 rounded-xl border border-[#E5E5E5] bg-card p-6">
+                    <h2 className="font-semibold">Anmeldung</h2>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center justify-between rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+                        <div>
+                          <p className="text-sm font-medium">
+                            Zwei-Faktor-Authentifizierung
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Noch nicht verfügbar
+                          </p>
+                        </div>
+                        <Switch checked={false} disabled />
+                      </div>
+                      <FormField
+                        control={form.control}
+                        name="mustChangePassword"
+                        render={({ field }) => (
+                          <div className="flex items-center justify-between rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+                            <p className="text-sm font-medium">
+                              Passwortwechsel bei nächster Anmeldung erzwingen
+                            </p>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </div>
+                        )}
+                      />
+                    </div>
+
+                    <Separator />
+
+                    <h2 className="font-semibold">Aktive Sitzungen</h2>
+                    {sessionsState.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Keine aktiven Sitzungen.
+                      </p>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {visibleSessions.map((session) => (
+                          <div
+                            key={session.id}
+                            className="flex items-center justify-between rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Monitor className="size-4 shrink-0 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm font-medium">
+                                  {session.device}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {session.ipAddress ?? "Unbekannte IP"} ·{" "}
+                                  {formatRelativeTime(session.createdAt)}
+                                </p>
+                              </div>
+                            </div>
+                            {session.isCurrent ? (
+                              <Badge
+                                variant="secondary"
+                                className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
+                              >
+                                aktiv
+                              </Badge>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="border-[#D4D4D4] bg-card"
+                                onClick={() =>
+                                  handleRevokeSession(session.id)
+                                }
+                              >
+                                Abmelden
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <PaginationControls
+                      page={sessionsPage}
+                      pageCount={sessionsPageCount}
+                      onPageChange={setSessionsPage}
+                    />
+                    {sessionsState.some((s) => !s.isCurrent) && (
+                      <Button
+                        type="button"
+                        variant="link"
+                        className="self-start px-0 text-destructive"
+                        onClick={handleRevokeOthers}
+                      >
+                        Alle anderen Sitzungen beenden
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="h-fit rounded-xl border border-[#E5E5E5] bg-card p-6">
+                  <h3 className="text-xs font-medium text-muted-foreground uppercase">
+                    Konto
+                  </h3>
+                  <div className="mt-3 flex flex-col divide-y divide-[#F0F0F0] text-sm">
+                    <div className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
+                      <span className="text-muted-foreground">
+                        Benutzer-ID
+                      </span>
+                      <span className="font-mono text-xs">{user.id}</span>
+                    </div>
+                    <div className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
+                      <span className="text-muted-foreground">Erstellt</span>
+                      <span>{formatDate(user.createdAt)}</span>
+                    </div>
+                    <div className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
+                      <span className="text-muted-foreground">
+                        Letzter Login
+                      </span>
+                      <span>
+                        {user.lastLoginAt
+                          ? formatRelativeTime(user.lastLoginAt)
+                          : "–"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
+                      <span className="text-muted-foreground">
+                        Fehlversuche
+                      </span>
+                      <span>{user.failedLoginAttempts}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Form>
+          </TabsContent>
+
+          <TabsContent value="aktivitaet">
+            <div className="rounded-xl border border-[#E5E5E5] bg-card p-6">
+              <h2 className="font-semibold">Verlauf</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Der Aktivitätsverlauf ist in Vorbereitung und folgt in einem
+                späteren Ausbauschritt.
+              </p>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </form>
+    </div>
+  );
+}

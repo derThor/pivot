@@ -5,6 +5,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Eigener Breakpoint (Nutzervorgabe): 992px statt des nächstliegenden
+     Tailwind-Defaults `lg` (1024px) – z.B. Header-Suche klappt darunter
+     auf ein reines Lupen-Icon zusammen (`compact:`-Variante). */
+  --breakpoint-compact: 992px;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-kumbh-sans);

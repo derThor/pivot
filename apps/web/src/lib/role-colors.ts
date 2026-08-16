@@ -14,7 +14,14 @@ const ROLE_BADGE_COLORS = [
   "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400",
 ] as const;
 
-export function roleBadgeColor(id: string): string {
+// Administrator sticht bewusst hervor (dunkle Badge statt Palettenfarbe,
+// 1:1 nach Bildvorlage) – einzige Rolle mit dieser Sonderbehandlung, analog
+// zu den anderen `role.name === "Administrator"`-Checks im Rollen-Bereich.
+const ADMIN_BADGE_COLOR =
+  "bg-foreground text-background dark:bg-white dark:text-black";
+
+export function roleBadgeColor(id: string, name?: string): string {
+  if (name === "Administrator") return ADMIN_BADGE_COLOR;
   let hash = 0;
   for (let i = 0; i < id.length; i++) {
     hash = (hash * 31 + id.charCodeAt(i)) >>> 0;

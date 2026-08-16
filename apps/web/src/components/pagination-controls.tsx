@@ -23,15 +23,24 @@ function getPageItems(page: number, pageCount: number): PageItem[] {
   return items;
 }
 
+// Zwei Modi: `buildHref` für echte, URL-getriebene Seiten (Standardfall,
+// server-gerenderte Listen) oder `onPageChange` für lokal (clientseitig)
+// paginierte Listen innerhalb einer Seite (z.B. "Aktive Sitzungen" im
+// Benutzer-Bearbeiten-Tab, wo eine eigene URL-Seite nicht passt).
+type PaginationControlsProps = {
+  page: number;
+  pageCount: number;
+} & (
+  | { buildHref: (page: number) => string; onPageChange?: never }
+  | { onPageChange: (page: number) => void; buildHref?: never }
+);
+
 export function PaginationControls({
   page,
   pageCount,
   buildHref,
-}: {
-  page: number;
-  pageCount: number;
-  buildHref: (page: number) => string;
-}) {
+  onPageChange,
+}: PaginationControlsProps) {
   if (pageCount <= 1) return null;
 
   const items = getPageItems(page, pageCount);
@@ -50,6 +59,7 @@ export function PaginationControls({
           ) : (
             <Button
               key={item}
+              type="button"
               variant={item === page ? "default" : "ghost"}
               size="icon-sm"
               className={cn(
@@ -58,8 +68,22 @@ export function PaginationControls({
               )}
               disabled={item === page}
               aria-current={item === page ? "page" : undefined}
+              // `onClick` nur bauen, wenn `onPageChange` (Client-Modus)
+              // wirklich übergeben wurde: eine Closure hier unbedingt zu
+              // erzeugen, auch wenn sie im `buildHref`-Modus nie feuert,
+              // reicht schon aus, damit Next.js beim serverseitigen Rendern
+              // ("Event handlers cannot be passed to Client Component
+              // props") abbricht, sobald diese Seite (server-gerendert)
+              // aufgerufen wird.
+              onClick={
+                onPageChange && item !== page ?
+                  () => onPageChange(item)
+                : undefined
+              }
               render={
-                item === page ? undefined : <Link href={buildHref(item)} />
+                item === page ? undefined
+                : buildHref ? <Link href={buildHref(item)} />
+                : undefined
               }
             >
               {item}
@@ -70,24 +94,41 @@ export function PaginationControls({
 
       <div className="absolute right-0 flex items-center overflow-hidden rounded-full border border-input bg-card shadow-card">
         <Button
+          type="button"
           variant="ghost"
           size="icon-sm"
           className="rounded-none bg-card"
           aria-label="Vorherige Seite"
           disabled={page <= 1}
-          render={page > 1 ? <Link href={buildHref(page - 1)} /> : undefined}
+          onClick={
+            onPageChange && page > 1 ? () => onPageChange(page - 1) : (
+              undefined
+            )
+          }
+          render={
+            page > 1 && buildHref ? <Link href={buildHref(page - 1)} />
+            : undefined
+          }
         >
           <ChevronLeft />
         </Button>
         <div className="h-4 w-px bg-border" />
         <Button
+          type="button"
           variant="ghost"
           size="icon-sm"
           className="rounded-none bg-card"
           aria-label="Nächste Seite"
           disabled={page >= pageCount}
+          onClick={
+            onPageChange && page < pageCount ?
+              () => onPageChange(page + 1)
+            : undefined
+          }
           render={
-            page < pageCount ? <Link href={buildHref(page + 1)} /> : undefined
+            page < pageCount && buildHref ?
+              <Link href={buildHref(page + 1)} />
+            : undefined
           }
         >
           <ChevronRight />

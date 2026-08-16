@@ -9,10 +9,7 @@ import {
   IsUrl,
 } from 'class-validator';
 
-export const WEBHOOK_EVENTS = [
-  'content.published',
-  'content.updated',
-] as const;
+export const WEBHOOK_EVENTS = ['content.published', 'content.updated'] as const;
 
 export class CreateWebhookDto {
   @ApiProperty()

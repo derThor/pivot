@@ -202,7 +202,7 @@ describe('Auth-Härtung (e2e)', () => {
         data: {
           email,
           lastName: 'Permission Test',
-          roleId,
+          userRoles: { create: { roleId } },
           passwordHash: await argon2.hash(password),
           emailVerifiedAt: new Date(),
         },
@@ -391,7 +391,7 @@ describe('Auth-Härtung (e2e)', () => {
           data: {
             email,
             lastName: 'Pagination Test',
-            roleId: editorRole.id,
+            userRoles: { create: { roleId: editorRole.id } },
             passwordHash: await argon2.hash(password),
           },
         });

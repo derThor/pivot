@@ -59,7 +59,7 @@ describe('Globale Suche (e2e)', () => {
       data: {
         email: adminEmail,
         lastName: 'E2E Global Search Admin',
-        roleId: adminRole.id,
+        userRoles: { create: { roleId: adminRole.id } },
         passwordHash: await argon2.hash(password),
       },
     });
@@ -75,7 +75,7 @@ describe('Globale Suche (e2e)', () => {
       data: {
         email: scopedEmail,
         lastName: 'E2E Global Search Scoped',
-        roleId: scopedRole.id,
+        userRoles: { create: { roleId: scopedRole.id } },
         passwordHash: await argon2.hash(password),
       },
     });
@@ -142,7 +142,7 @@ describe('Globale Suche (e2e)', () => {
         email: targetUserEmail,
         firstName: token,
         lastName: 'Zielbenutzer',
-        roleId: adminRole.id,
+        userRoles: { create: { roleId: adminRole.id } },
         passwordHash: await argon2.hash(password),
       },
     });

@@ -37,7 +37,7 @@ describe('Webhooks (e2e)', () => {
       data: {
         email: adminEmail,
         lastName: 'E2E Webhooks Admin',
-        roleId: adminRole.id,
+        userRoles: { create: { roleId: adminRole.id } },
         passwordHash: await argon2.hash(password),
       },
     });
@@ -50,7 +50,7 @@ describe('Webhooks (e2e)', () => {
       data: {
         email: scopedEmail,
         lastName: 'E2E Webhooks Scoped',
-        roleId: scopedRole.id,
+        userRoles: { create: { roleId: scopedRole.id } },
         passwordHash: await argon2.hash(password),
       },
     });

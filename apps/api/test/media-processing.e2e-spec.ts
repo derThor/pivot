@@ -39,7 +39,7 @@ describe('Medienverarbeitung & -verwaltung (e2e)', () => {
       data: {
         email: userEmail,
         lastName: 'E2E Media Processing Test',
-        roleId: editorRole.id,
+        userRoles: { create: { roleId: editorRole.id } },
         passwordHash: await argon2.hash(password),
       },
     });

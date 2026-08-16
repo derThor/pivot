@@ -6,6 +6,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
+import { CacheModule } from './cache/cache.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ContentModule } from './content/content.module';
@@ -36,6 +37,7 @@ import { validateEnv } from './common/config/env.validation';
     }),
     ScheduleModule.forRoot(),
     PrismaModule,
+    CacheModule,
     AuthModule,
     UsersModule,
     ContentModule,

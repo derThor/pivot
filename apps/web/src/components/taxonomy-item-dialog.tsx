@@ -51,6 +51,22 @@ export function TaxonomyItemDialog({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Render-Zeit-Sync statt Effekt (gleiches Muster wie `syncedRoleId` in
+  // roles-explorer.tsx): der Dialog ist EINE einzige, wiederverwendete
+  // Instanz für alle Zeilen (siehe tags-manager.tsx/taxonomy-manager.tsx),
+  // `useState(item?.name ?? "")` initialisiert deshalb nur beim allerersten
+  // Mount – ohne diesen Sync blieben beim Wechsel auf ein anderes Element
+  // die Formularwerte des zuvor bearbeiteten Elements stehen.
+  const [syncedItemId, setSyncedItemId] = useState(item?.id);
+  if (item?.id !== syncedItemId) {
+    setSyncedItemId(item?.id);
+    setName(item?.name ?? "");
+    setSlug(item?.slug ?? "");
+    setDescription(item?.description ?? "");
+    setSlugTouched(Boolean(item));
+    setError(null);
+  }
+
   function handleNameChange(value: string) {
     setName(value);
     if (!slugTouched) setSlug(slugify(value));

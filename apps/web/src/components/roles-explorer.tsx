@@ -3,7 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Copy, Download, Key, Lock, Trash2, Users } from "lucide-react";
+import {
+  ChevronRight,
+  Copy,
+  Download,
+  Key,
+  Lock,
+  Trash2,
+  Users,
+} from "lucide-react";
 
 import { toastDeleted, toastEdited } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
@@ -406,15 +414,22 @@ export function RolesExplorer({
 
             <div className="flex flex-wrap items-center justify-between gap-3">
               <Tabs
+                className="min-w-0"
                 value={activeCategory}
                 onValueChange={(v) =>
                   setActiveCategory(v as typeof activeCategory)
                 }
               >
                 <TabsList>
-                  <TabsTrigger value="all">Alle {categoryCounts.all}</TabsTrigger>
+                  <TabsTrigger className="px-2 sm:px-4" value="all">
+                    Alle {categoryCounts.all}
+                  </TabsTrigger>
                   {categoryOrder.map((cat) => (
-                    <TabsTrigger key={cat} value={cat}>
+                    <TabsTrigger
+                      key={cat}
+                      className="px-2 sm:px-4"
+                      value={cat}
+                    >
                       {categoryLabels[cat]} {categoryCounts[cat]}
                     </TabsTrigger>
                   ))}
@@ -553,12 +568,19 @@ export function RolesExplorer({
             ) : (
               <div className="flex flex-col divide-y divide-[#F0F0F0]">
                 {roleUsers.map((u) => (
-                  <div key={u.id} className="flex flex-col gap-0.5 py-2.5">
-                    <span className="text-sm font-medium">{u.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {u.email}
-                    </span>
-                  </div>
+                  <Link
+                    key={u.id}
+                    href={`/dashboard/users/${u.id}/edit`}
+                    className="flex items-center justify-between gap-2 rounded-md px-3 py-2.5 hover:bg-muted"
+                  >
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-medium">{u.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {u.email}
+                      </span>
+                    </div>
+                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                  </Link>
                 ))}
               </div>
             )}

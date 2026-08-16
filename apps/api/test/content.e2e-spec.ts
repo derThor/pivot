@@ -43,7 +43,7 @@ describe('Content-Flow (e2e)', () => {
       data: {
         email: userEmail,
         lastName: 'E2E Content Test',
-        roleId: adminRole.id,
+        userRoles: { create: { roleId: adminRole.id } },
         passwordHash: await argon2.hash(password),
       },
     });

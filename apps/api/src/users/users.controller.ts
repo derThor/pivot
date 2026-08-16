@@ -2,7 +2,12 @@ import {
   Body,
   Controller,
   Delete,
+  forwardRef,
   Get,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  Inject,
   Param,
   Patch,
   Post,
@@ -17,17 +22,30 @@ import { RequirePermission } from '../auth/decorators/permissions.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { FindPageDto } from '../common/dto/find-page.dto';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
+import { AuthService } from '../auth/auth.service';
 
 @ApiTags('users')
 @ApiBearerAuth()
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    @Inject(forwardRef(() => AuthService))
+    private readonly authService: AuthService,
+  ) {}
 
   @RequirePermission('users:read')
   @Get()
   findAll(@Query() query: QueryUserDto) {
     return this.usersService.findAll(query);
+  }
+
+  // Vor `:id` registriert (Express matcht Routen in Reihenfolge) – sonst
+  // würde "notification-counts" als `:id` interpretiert.
+  @RequirePermission('users:read')
+  @Get('notification-counts')
+  getNotificationCounts() {
+    return this.usersService.getNotificationCounts();
   }
 
   @RequirePermission('users:read')
@@ -40,6 +58,12 @@ export class UsersController {
   @Get(':id/page')
   findPage(@Param('id') id: string, @Query() query: FindPageDto) {
     return this.usersService.findPage(id, query.pageSize);
+  }
+
+  @RequirePermission('users:read')
+  @Get(':id/stats')
+  getStats(@Param('id') id: string) {
+    return this.usersService.getStats(id);
   }
 
   @RequirePermission('users:invite')
@@ -66,5 +90,63 @@ export class UsersController {
   @Delete(':id')
   remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.usersService.remove(id, user.sub);
+  }
+
+  // Bewusst eigenes, restriktiveres Recht statt `users:deactivate` – siehe
+  // knowledge-base/auth/rbac-rework.md, Update 2026-08-16: Anonymisierung
+  // ist nicht reversibel.
+  @RequirePermission('users:delete')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post(':id/anonymize')
+  anonymize(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.usersService.anonymize(id, user.sub);
+  }
+
+  @RequirePermission('users:impersonate')
+  @HttpCode(HttpStatus.OK)
+  @Post(':id/impersonate')
+  impersonate(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.authService.impersonate(user, id);
+  }
+
+  @RequirePermission('users:update')
+  @HttpCode(HttpStatus.OK)
+  @Post(':id/reset-password')
+  resetPassword(@Param('id') id: string) {
+    return this.authService.adminRequestPasswordReset(id);
+  }
+
+  // `x-current-refresh-token`: das Frontend hängt hier den eigenen
+  // Refresh-Token-Cookie-Wert an, damit die eigene Sitzung als "aktuelle
+  // Sitzung" markiert werden kann (nur relevant, wenn `id` der eigenen
+  // Nutzer-ID entspricht). Absichtlich Header statt Query-Param, damit der
+  // Token nicht in Server-/Proxy-Logs landet.
+  @RequirePermission('users:update')
+  @Get(':id/sessions')
+  listSessions(
+    @Param('id') id: string,
+    @Headers('x-current-refresh-token') currentRefreshToken?: string,
+  ) {
+    return this.authService.listSessions(id, currentRefreshToken);
+  }
+
+  @RequirePermission('users:update')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete(':id/sessions/:sessionId')
+  revokeSession(
+    @Param('id') id: string,
+    @Param('sessionId') sessionId: string,
+  ) {
+    return this.authService.revokeSession(id, sessionId);
+  }
+
+  @RequirePermission('users:update')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post(':id/sessions/revoke-others')
+  revokeOtherSessions(
+    @Param('id') id: string,
+    @Headers('x-current-refresh-token') currentRefreshToken?: string,
+  ) {
+    return this.authService.revokeOtherSessions(id, currentRefreshToken);
   }
 }

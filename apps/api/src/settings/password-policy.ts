@@ -27,10 +27,7 @@ export function validatePasswordAgainstPolicy(
   if (settings.passwordRequireNumber && !/[0-9]/.test(password)) {
     violations.push('Mindestens eine Ziffer erforderlich.');
   }
-  if (
-    settings.passwordRequireSpecialChar &&
-    !/[^A-Za-z0-9]/.test(password)
-  ) {
+  if (settings.passwordRequireSpecialChar && !/[^A-Za-z0-9]/.test(password)) {
     violations.push('Mindestens ein Sonderzeichen erforderlich.');
   }
 

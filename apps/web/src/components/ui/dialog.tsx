@@ -58,13 +58,17 @@ function DialogContent({
           // Dialoge überschreiben das weiterhin gezielt schmaler (einfache
           // Umbenennen-Popups) oder breiter (viele Felder/Bild-Raster), je
           // nachdem, was der jeweilige Inhalt braucht.
-          // `overflow-hidden`: hält die Popup-Box selbst bei `max-h-*`
-          // deckelnd, sonst kann sie über den Viewport hinaus wachsen und
-          // ein innerer `overflow-y-auto`-Bereich (siehe z.B.
-          // global-module-form-dialog.tsx) bekommt nie eine begrenzte Höhe
-          // zum Scrollen – Inhalt wirkt dann auf kurzen (mobilen)
-          // Viewports "abgeschnitten, nicht scrollbar" statt zu scrollen.
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-hidden rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // `max-h-[calc(100vh-2rem)]` + `overflow-y-auto` HIER (nicht nur
+          // `overflow-hidden`, Nutzervorgabe: "popup darf nie aus dem Bild
+          // brechen") als globales Sicherheitsnetz: ohne eigene Höhen-
+          // begrenzung wuchs das Popup bei langem Inhalt (z.B. viele
+          // Rechte-Checkboxen) unbegrenzt über den Viewport hinaus, statt
+          // zu scrollen. Dialoge mit eigenem fixem Header/Footer und
+          // scrollendem Mittelteil (z.B. global-module-form-dialog.tsx)
+          // funktionieren weiterhin normal – das äußere Scrollen greift
+          // dort nur, falls selbst der eigene interne Scrollbereich nicht
+          // mehr reicht.
+          "fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100vh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className,
         )}
         {...props}

@@ -12,12 +12,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import {
-  ApiBearerAuth,
-  ApiConsumes,
-  ApiTags,
-  ApiBody,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiTags, ApiBody } from '@nestjs/swagger';
 import { MediaService } from './media.service';
 import { CropMediaDto } from './dto/crop-media.dto';
 import { QueryMediaDto } from './dto/query-media.dto';

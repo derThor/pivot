@@ -41,7 +41,7 @@ describe('Content-Versionierung & Rollback (e2e)', () => {
       data: {
         email: userEmail,
         lastName: 'E2E Content Versions Test',
-        roleId: adminRole.id,
+        userRoles: { create: { roleId: adminRole.id } },
         passwordHash: await argon2.hash(password),
       },
     });
@@ -182,7 +182,7 @@ describe('Content-Versionierung & Rollback (e2e)', () => {
       data: {
         email: readerEmail,
         lastName: 'E2E Versions Reader',
-        roleId: betrachterRole.id,
+        userRoles: { create: { roleId: betrachterRole.id } },
         passwordHash: await argon2.hash(password),
       },
     });
@@ -276,7 +276,7 @@ describe('Content-Versionierung & Rollback (e2e)', () => {
       data: {
         email: readerEmail,
         lastName: 'E2E Versions Delete Reader',
-        roleId: readerRole.id,
+        userRoles: { create: { roleId: readerRole.id } },
         passwordHash: await argon2.hash(password),
       },
     });

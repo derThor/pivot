@@ -6,28 +6,22 @@ import { useRouter } from "next/navigation";
 import { toastEdited } from "@/components/app-toast";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { RowActionButtons } from "@/components/row-action-buttons";
-import { EditUserDialog } from "@/components/edit-user-dialog";
-import type { CurrentUser, Role } from "@/lib/api-server";
+import type { CurrentUser } from "@/lib/api-server";
 import { formatName } from "@/lib/utils";
 
 export function UserRowActions({
   user,
   isSelf,
-  allowEmailChange,
-  roles,
 }: {
   user: CurrentUser;
   isSelf: boolean;
-  allowEmailChange: boolean;
-  roles: Role[];
 }) {
   const router = useRouter();
   const name = formatName(user);
-  const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   // Deaktiviert den Zugriff (Soft-Delete, siehe UsersService.remove) statt
-  // den Account wirklich zu löschen – über den "Bearbeiten"-Dialog jederzeit
+  // den Account wirklich zu löschen – über die Bearbeiten-Seite jederzeit
   // wieder reaktivierbar.
   async function handleDeactivate() {
     await fetch(`/api/users/${user.id}`, { method: "DELETE" });
@@ -38,19 +32,10 @@ export function UserRowActions({
   return (
     <div className="flex justify-center">
       <RowActionButtons
-        onEdit={() => setEditOpen(true)}
+        onEdit={() => router.push(`/dashboard/users/${user.id}/edit`)}
         onDelete={!isSelf ? () => setDeleteOpen(true) : undefined}
         editLabel={`„${name}“ bearbeiten`}
         deleteLabel={`„${name}“ deaktivieren`}
-      />
-
-      <EditUserDialog
-        user={user}
-        allowEmailChange={allowEmailChange}
-        roles={roles}
-        hideTrigger
-        open={editOpen}
-        onOpenChange={setEditOpen}
       />
 
       {!isSelf && (

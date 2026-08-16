@@ -48,28 +48,33 @@ describe('Content-Locking (e2e)', () => {
       where: { name: 'Admin' },
     });
 
-    await prisma.user.createMany({
-      data: [
-        {
+    const lockUserPasswordHash = await argon2.hash(password);
+    await Promise.all([
+      prisma.user.create({
+        data: {
           email: holderEmail,
           lastName: 'E2E Lock Holder',
-          roleId: autorRole.id,
-          passwordHash: await argon2.hash(password),
+          userRoles: { create: { roleId: autorRole.id } },
+          passwordHash: lockUserPasswordHash,
         },
-        {
+      }),
+      prisma.user.create({
+        data: {
           email: otherEmail,
           lastName: 'E2E Lock Other',
-          roleId: autorRole.id,
-          passwordHash: await argon2.hash(password),
+          userRoles: { create: { roleId: autorRole.id } },
+          passwordHash: lockUserPasswordHash,
         },
-        {
+      }),
+      prisma.user.create({
+        data: {
           email: adminEmail,
           lastName: 'E2E Lock Admin',
-          roleId: adminRole.id,
-          passwordHash: await argon2.hash(password),
+          userRoles: { create: { roleId: adminRole.id } },
+          passwordHash: lockUserPasswordHash,
         },
-      ],
-    });
+      }),
+    ]);
 
     const contentType = await prisma.contentType.create({
       data: {

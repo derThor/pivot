@@ -20,7 +20,7 @@ function toPermissionKey(p: { resource: string; action: string }): string {
 
 const roleInclude = {
   permissions: { include: { permission: true } },
-  _count: { select: { users: true } },
+  _count: { select: { userRoles: true } },
 } satisfies Prisma.RoleInclude;
 
 type RoleWithPermissions = Prisma.RoleGetPayload<{
@@ -35,7 +35,7 @@ function serializeRole(role: RoleWithPermissions) {
     isSystem: role.isSystem,
     isDefault: role.isDefault,
     canAccessDashboard: role.canAccessDashboard,
-    userCount: role._count.users,
+    userCount: role._count.userRoles,
     updatedAt: role.updatedAt,
     permissions: role.permissions.map((rp) => toPermissionKey(rp.permission)),
   };
@@ -162,7 +162,7 @@ export class RolesService {
   async remove(id: string) {
     const role = await this.prisma.role.findUnique({
       where: { id },
-      include: { _count: { select: { users: true } } },
+      include: { _count: { select: { userRoles: true } } },
     });
     if (!role) {
       throw new NotFoundException(`Rolle ${id} nicht gefunden.`);
@@ -172,7 +172,7 @@ export class RolesService {
         'System-Rollen können nicht gelöscht werden.',
       );
     }
-    if (role._count.users > 0) {
+    if (role._count.userRoles > 0) {
       throw new BadRequestException(
         'Rolle ist noch Benutzern zugewiesen und kann nicht gelöscht werden.',
       );

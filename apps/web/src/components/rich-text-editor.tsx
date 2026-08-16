@@ -179,7 +179,7 @@ export function RichTextEditor({
     if (!isSame) {
       editor.commands.setContent(value, { emitUpdate: false });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [value, editor]);
 
   // `useEditor` übernimmt einen geänderten `editable`-Wert nicht

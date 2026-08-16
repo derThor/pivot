@@ -49,7 +49,7 @@ function BreadcrumbLink({
     props: mergeProps<"a">(
       {
         className: cn(
-          "text-lime-700 transition-colors hover:text-lime-800 dark:text-lime-500 dark:hover:text-lime-400",
+          "text-muted-foreground transition-colors hover:text-foreground",
           className
         ),
       },
@@ -69,7 +69,7 @@ function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
       role="link"
       aria-disabled="true"
       aria-current="page"
-      className={cn("font-normal text-lime-400 dark:text-lime-600", className)}
+      className={cn("font-normal text-foreground", className)}
       {...props}
     />
   )

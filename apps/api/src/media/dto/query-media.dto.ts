@@ -3,7 +3,13 @@ import { Transform, Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import type { MediaCategory } from '../media.config';
 
-const MEDIA_CATEGORIES: MediaCategory[] = ['image', 'pdf', 'video', 'office', 'other'];
+const MEDIA_CATEGORIES: MediaCategory[] = [
+  'image',
+  'pdf',
+  'video',
+  'office',
+  'other',
+];
 // "document" ist keine echte `MediaCategory` (siehe media.config.ts),
 // sondern ein reines Filter-Pseudo-Typ fürs Frontend: fasst PDF + Office
 // zu einer gemeinsamen "Dokumente"-Pille zusammen (Nutzervorgabe,
@@ -42,7 +48,9 @@ export class QueryMediaDto {
 
   @ApiPropertyOptional({ description: 'Kommagetrennte Tag-IDs' })
   @IsOptional()
-  @Transform(({ value }) => (typeof value === 'string' ? value.split(',').filter(Boolean) : value))
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.split(',').filter(Boolean) : value,
+  )
   tagIds?: string[];
 
   @ApiPropertyOptional({ default: 1 })

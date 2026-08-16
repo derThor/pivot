@@ -399,6 +399,166 @@ jeweiligen Module selbst gebaut sind.
 - [ ] Formulare/Systemnachrichten/Websites-Karten nachziehen, sobald die
       jeweiligen Module existieren (siehe oben)
 
+### 2b.14 – Benutzer bearbeiten: volle Profilseite statt Dialog
+
+Neues Mehrsitzungs-Vorhaben (Nutzervorgabe, 2026-08-16, 1:1 nach
+Bildvorlage): der Stift in der Benutzer-Tabelle öffnet künftig eine eigene
+Seite (`/dashboard/users/[id]/edit`, Breadcrumb "Dashboard > Verwaltung >
+Benutzer > Bearbeiten") statt des bisherigen `EditUserDialog`-Popups – mit
+Tabs "Profil" / "Zugang & Sicherheit" / "Aktivität".
+
+**Bewusst nicht gebaut** (Nutzervorgabe): Website-Zugriff-Sektion (kein
+Multi-Site-Konzept vorhanden), Benachrichtigungen-Sektion (kein
+Notification-System vorhanden), "Anmeldung nur aus Firmennetz"
+(IP-Range-Login-Beschränkung). "Aktivität"-Tab vorerst nur als TODO
+vormerken, nicht umsetzen.
+
+**Größte Architektur-Entscheidung: Mehrfach-Rollen – umgesetzt (2026-08-16).**
+Nutzervorgabe: "Benutzer dürfen mehrere Rollen haben" – `User.roleId` war
+eine einzelne Pflicht-FK (`User` → `Role`, 1:n). Dafür jetzt eine n:m-
+Tabelle (`UserRole`, analog zu `RolePermission`). Umgesetzt:
+- Schema-Migration + Backfill (jeder bestehende `roleId`-Wert wurde zur
+  ersten `UserRole`-Zeile; additiver Push, SQL-Backfill, dann `roleId`-
+  Spalte entfernt – kein Datenverlust)
+- `AuthService.issueTokens()`: `permissions` im JWT ist jetzt die
+  Vereinigung aller Rechte über alle Rollen des Nutzers;
+  `canAccessDashboard` = mind. eine Rolle erlaubt es
+- JWT-Payload trägt `roleIds`/`roleNames` als Arrays (statt Singular
+  `roleId`/`roleName`) – alle Frontend-Stellen, die `user.role.name`
+  lasen (Nutzer-Tabelle, `no-dashboard-access.tsx`), lesen jetzt
+  `user.roles: {id,name}[]`; `isAdministrator`-Checks in
+  `roles-explorer.tsx` betreffen die Rollen-Entität selbst, nicht den
+  eingeloggten Nutzer, unverändert
+- `RolesService.remove()` (Rolle löschen, wenn `userCount === 0`) und
+  `UsersService.findAll({roleId})`-Filter auf die neue n:m-Beziehung
+  umgestellt (`userRoles: { some: { roleId } }`)
+- Seed, `CreateUserDto`/`UpdateUserDto` (`roleId` → `roleIds: string[]`)
+  umgestellt; `CreateUserDialog`/`EditUserDialog` senden vorerst weiter
+  nur eine einzelne gewählte Rolle als 1-Element-Array – ein echter
+  Mehrfach-Rollen-Picker kommt erst mit der neuen Profilseite unten
+
+**Weitere neue Felder/Konzepte, die für die Vorlage fehlen:**
+- `User.department`, `User.phone` (Stammdaten-Felder "Abteilung"/"Telefon")
+- Fehlgeschlagene Login-Versuche zählen (`AUTHENTICATION` – "Fehlversuche"
+  im "Konto"-Kasten) – neues Feld + Reset bei erfolgreichem Login
+- "Passwortwechsel bei nächster Anmeldung erzwingen" – neues
+  `mustChangePassword`-Flag, beim nächsten Login durchsetzen
+- "Aktive Sitzungen" mit Gerät/Browser/Ort + einzeln/gesammelt abmelden:
+  `RefreshToken` müsste dafür Geräte-Metadaten (User-Agent-Parsing) und
+  optional IP-Geolocation mitschreiben – aktuell nur Token-Hash +
+  Ablaufzeit. "Abmelden" pro Zeile = gezielt eine `RefreshToken`-Zeile
+  widerrufen, "Alle anderen Sitzungen beenden" = alle außer der
+  aktuellen widerrufen (ähnlich `AuthService.changePassword()`s
+  `revokeAllRefreshTokens`, aber mit Ausnahme der eigenen Sitzung)
+- 2FA-Toggle in "Anmeldung": UI-Element schon mit vorsehen, Funktion
+  bleibt Platzhalter bis zur separat geplanten echten 2FA-Umsetzung
+  (siehe 2b.13-Notiz zur "2FA"-Spalte in der Benutzer-Tabelle)
+**Geklärt (Nutzerentscheidung 2026-08-16) – drei zuvor offene Punkte:**
+
+- **"Benutzer löschen" = Anonymisierung, kein Hard-Delete.** Bestehende
+  Deaktivierung (`UsersService.remove()`, nur `isActive: false`,
+  reversibel über den Bearbeiten-Dialog) bleibt unverändert die schnelle
+  "Sperren"-Aktion aus der Tabellenzeile/dem Kopfbereich der neuen Seite.
+  "Benutzer löschen" (roter Button unten auf der neuen Seite) ist eine
+  **zweite, separate, nicht umkehrbare** Aktion:
+  - Neue Methode `UsersService.anonymize(id, currentUserId)` (eigener
+    Endpunkt `POST /users/:id/anonymize`, eigene Berechtigung
+    `users:delete` – bewusst restriktiver als `users:deactivate`, damit
+    diese stärkere Aktion separat vergeben werden kann)
+  - Setzt `email` auf eindeutigen Platzhalter (`deleted-<id>@anonymized.local`,
+    wegen Unique-Constraint), `firstName`/`lastName` auf "Gelöschter
+    Nutzer", `avatarUrl` auf `null`, `passwordHash` auf einen
+    zufälligen, nicht einlösbaren Wert (Login danach unmöglich),
+    `isActive: false`, künftige `department`/`phone`-Felder auf `null`
+  - Neues Feld `User.anonymizedAt DateTime?` – markiert den Zustand
+    eindeutig (unterscheidet "anonymisiert" von normalem "deaktiviert"),
+    UI blendet dann Bearbeiten-Optionen aus und zeigt "Gelöschter
+    Nutzer" statt echtem Namen
+  - `id` und die Zeile selbst bleiben erhalten (keine `contents_authorId_fkey`-
+    Verletzung, siehe [rbac-rework.md](../knowledge-base/auth/rbac-rework.md))
+    – nur alle personenbezogenen Daten sind entfernt
+  - Refresh-Tokens werden widerrufen (wie beim bestehenden `remove()`)
+  - Frontend: harte Bestätigung nötig (z.B. Namen eintippen), da nicht
+    reversibel
+- **"Konto entfernen"** (Sektion im Bild) nutzt **dieselbe
+  Anonymisierungs-Aktion** wie oben – kein separates Konzept mit
+  Inhalts-Reassignment auf einen "Ehemaliger Mitarbeiter"-Platzhalter-
+  Nutzer. Ein Button/eine Aktion für beide Stellen der Vorlage.
+- **"Als Nutzer ansehen" (Admin-Impersonation): wird gebaut**,
+  Sicherheitsdesign liegt nach Nutzervorgabe ("mach es so, wie du es für
+  richtig und sicher hältst") in eigenem Ermessen:
+  - Neuer Endpunkt `POST /users/:id/impersonate` (Berechtigung
+    `users:impersonate`, nur für Administrator-Rolle), gibt einen
+    kurzlebigen Access-Token (z.B. 15 Min., **kein** Refresh-Token) mit
+    den Rechten des Zielnutzers zurück, JWT-Payload erhält zusätzliches
+    Feld `impersonatedBy: <adminUserId>`
+  - Zielnutzer darf nicht selbst Administrator sein und nicht der
+    eigene Account (keine Rechte-Ketten/Privilege-Loops)
+  - Audit-Log-Eintrag (Tabelle existiert bereits, `AuditLog`/
+    `audit_logs`) bei Start der Impersonation: `action:
+    "user.impersonate"`, `userId: <adminUserId>`, `entityType: "User"`,
+    `entityId: <targetUserId>`
+  - Frontend: durchgängig sichtbarer Banner "Du siehst als X – Zurück zu
+    deinem Konto", eigenes Konto bleibt während der Impersonation separat
+    im Storage gehalten (nicht überschrieben) und wird beim Verlassen
+    wiederhergestellt
+
+**Zusätzlich aufgenommen (Nutzervorgabe 2026-08-16):** echte 2FA-Funktion
+bleibt weiterhin ein **eigenes, späteres Vorhaben** (siehe Phase 3,
+"2FA/TOTP") – wird hier nicht mit umgesetzt. Der Toggle im Tab "Zugang &
+Sicherheit" wird aber **jetzt schon als UI-Platzhalter** (Switch,
+deaktiviert/ohne Funktion) mitgebaut, damit die Fläche vorhanden ist,
+sobald die echte Umsetzung folgt – konsistent mit der bereits
+platzierten "2FA"-Spalte in der Benutzer-Tabelle.
+
+**Aufgabenliste (Umsetzung):**
+- [x] Schema: `UserRole`-n:m-Tabelle + Migration/Backfill (2026-08-16,
+      additiver Push → SQL-Backfill aus altem `roleId` → `roleId`-Spalte
+      entfernt; siehe [rbac-rework.md](../knowledge-base/auth/rbac-rework.md))
+- [x] Schema: `department`, `phone`, `mustChangePassword`,
+      Fehlversuche-Zähler (`failedLoginAttempts`), `anonymizedAt`,
+      `pendingActivation` auf `User` (2026-08-16)
+- [x] Backend: `AuthService`/`UsersService`/`RolesService` auf
+      Mehrfach-Rollen umgestellt (2026-08-16): JWT trägt `roleIds`/
+      `roleNames`-Arrays, Rechte-Vereinigung über alle Rollen,
+      `canAccessDashboard` = mind. eine Rolle erlaubt es;
+      `CreateUserDto`/`UpdateUserDto` nutzen `roleIds: string[]`
+- [x] Backend: Sitzungs-Endpoints (2026-08-16) – `GET/DELETE
+      /users/:id/sessions`, `POST /users/:id/sessions/revoke-others`,
+      `RefreshToken.userAgent`/`ipAddress`, `summarizeUserAgent()`
+- [x] Backend: `PATCH /users/:id` um `department`/`phone`/`roleIds`/
+      `mustChangePassword` erweitert (2026-08-16)
+- [x] Frontend: neue Route `/dashboard/users/[id]/edit`, ersetzt
+      `EditUserDialog` als primären Bearbeiten-Weg (`EditUserDialog`
+      gelöscht, 2026-08-16)
+- [x] Frontend: Tab "Profil" (Stammdaten, Mehrfach-Rollen-Checkboxen,
+      OHNE Website-Zugriff-Sektion) (2026-08-16)
+- [x] Frontend: Tab "Zugang & Sicherheit" (Anmeldung-Sektion ohne
+      Firmennetz-Option, Aktive-Sitzungen-Liste mit Pagination,
+      Konto-Info-Kasten) (2026-08-16)
+- [x] Frontend: Tab "Aktivität" – nur Platzhalter/TODO-Hinweis, keine
+      echten Zahlen (2026-08-16)
+- [x] Frontend: 2FA-Toggle im Tab "Zugang & Sicherheit" als deaktivierter
+      Platzhalter-Switch (2026-08-16; echte Umsetzung folgt separat in
+      Phase 3) – Aus-Farbe wurde global für alle Switches vereinheitlicht
+- [x] Backend: `UsersService.anonymize()` + `POST /users/:id/anonymize`
+      + Berechtigung `users:delete` (2026-08-16)
+- [x] Backend: `POST /users/:id/impersonate` + Berechtigung
+      `users:impersonate` + Audit-Log-Eintrag (2026-08-16)
+- [x] Frontend: "Benutzer löschen"-Bestätigungsdialog (2026-08-16) –
+      nutzt die bestehende `ConfirmDeleteDialog`-Konvention mit klarem
+      Warntext statt eines Namens-Eintipp-Feldes (kein neues UI-Muster
+      nur für diese eine Aktion); "Als Nutzer ansehen"-Banner mit
+      sicherem Zurückwechseln (`ImpersonationBanner`,
+      `admin_access_token`/`admin_refresh_token`-Cookie-Sicherung)
+- [x] `EditUserDialog`-Reste aufgeräumt (Datei gelöscht, 2026-08-16)
+- [x] Nutzerbezogene Systembenachrichtigungen (2026-08-16, zusätzlich zur
+      ursprünglichen Liste): wartende Freischaltungen/auffällige
+      Fehlversuche/anstehende Passwortwechsel als Glocke-Kategorien, alle
+      Kategorien einzeln ab-/anschaltbar, App-weiter `CacheService` +
+      DB-Indizes für die zugehörigen Abfragen (siehe
+      [backend-caching.md](../knowledge-base/tooling/backend-caching.md))
+
 ## Phase 3 – Plattform-Härtung
 
 - [ ] CI/CD-Pipeline (Lint, Typecheck, Tests, Build, ggf. Turborepo Remote

@@ -6,10 +6,14 @@ import { ConfigService } from '@nestjs/config';
 export interface JwtPayload {
   sub: string;
   email: string;
-  roleId: string;
-  roleName: string;
+  roleIds: string[];
+  roleNames: string[];
   permissions: string[];
   canAccessDashboard: boolean;
+  mustChangePassword: boolean;
+  /** Nur bei Impersonation gesetzt: Nutzer-ID des Administrators, der
+   *  gerade "als Nutzer ansehen" nutzt (siehe AuthService.impersonate()). */
+  impersonatedBy?: string;
 }
 
 @Injectable()

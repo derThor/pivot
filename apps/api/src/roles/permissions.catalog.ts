@@ -61,6 +61,11 @@ export const PERMISSIONS_CATALOG: PermissionDescriptor[] = [
   { resource: 'users', action: 'invite' },
   { resource: 'users', action: 'update' },
   { resource: 'users', action: 'deactivate' },
+  // Bewusst getrennt von `deactivate` (siehe knowledge-base/auth/
+  // rbac-rework.md, Update 2026-08-16): Anonymisierung ist nicht
+  // reversibel, braucht daher ein eigenes, restriktiveres Recht.
+  { resource: 'users', action: 'delete' },
+  { resource: 'users', action: 'impersonate' },
   { resource: 'roles', action: 'read' },
   { resource: 'roles', action: 'create' },
   { resource: 'roles', action: 'update' },
