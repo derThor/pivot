@@ -125,6 +125,14 @@ export function MoveToFolderDialog({
           <DialogFooter>
             <Button
               type="button"
+              variant="outline"
+              className="border-[#D4D4D4]"
+              onClick={() => setOpen(false)}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              type="button"
               onClick={handleMove}
               disabled={isSubmitting}
             >

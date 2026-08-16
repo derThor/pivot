@@ -143,6 +143,7 @@ export function MediaEditDialog({
               <Button
                 type="button"
                 variant="outline"
+                className="border-[#D4D4D4]"
                 onClick={() => onOpenChange(false)}
               >
                 Abbrechen

@@ -30,35 +30,22 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import type { Role } from "@/lib/api-server";
+import type { PermissionDescriptor, Role } from "@/lib/api-server";
+import { actionLabels, categoryLabels, resourceLabels } from "@/lib/permission-labels";
 
-const resourceLabels: Record<string, string> = {
-  content: "Inhalte",
-  media: "Medien",
-  categories: "Kategorien",
-  tags: "Tags",
-  users: "Benutzer",
-  roles: "Rollen",
-  settings: "Einstellungen",
-};
-
-const actionLabels: Record<string, string> = {
-  read: "Lesen",
-  create: "Erstellen",
-  update: "Bearbeiten",
-  delete: "Löschen",
-  manage: "Verwalten",
-};
-
-function groupByResource(catalog: string[]) {
-  const groups = new Map<string, string[]>();
-  for (const key of catalog) {
-    const [resource] = key.split(":");
-    const list = groups.get(resource) ?? [];
-    list.push(key);
-    groups.set(resource, list);
+function groupByCategory(catalog: PermissionDescriptor[]) {
+  const categories = new Map<PermissionDescriptor["category"], Map<string, PermissionDescriptor[]>>();
+  for (const permission of catalog) {
+    const resources = categories.get(permission.category) ?? new Map();
+    const list = resources.get(permission.resource) ?? [];
+    list.push(permission);
+    resources.set(permission.resource, list);
+    categories.set(permission.category, resources);
   }
-  return Array.from(groups.entries());
+  return Array.from(categories.entries()).map(
+    ([category, resources]) =>
+      [category, Array.from(resources.entries())] as const,
+  );
 }
 
 const roleSchema = z.object({
@@ -78,7 +65,7 @@ export function RoleFormDialog({
   onOpenChange: controlledOnOpenChange,
 }: {
   role?: Role;
-  permissionsCatalog: string[];
+  permissionsCatalog: PermissionDescriptor[];
   hideTrigger?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -132,7 +119,7 @@ export function RoleFormDialog({
     }
   }
 
-  const permissions = form.watch("permissions");
+  const formPermissions = form.watch("permissions");
 
   function togglePermission(key: string, checked: boolean) {
     const current = form.getValues("permissions");
@@ -235,37 +222,48 @@ export function RoleFormDialog({
                 </FormItem>
               )}
             />
-            <div className="flex flex-col gap-3 rounded-lg border p-3">
-              <p className="text-sm font-medium">Rechte</p>
-              <div className="grid max-h-64 grid-cols-2 gap-3 overflow-y-auto">
-                {groupByResource(permissionsCatalog).map(([resource, keys]) => (
-                  <div key={resource} className="flex flex-col gap-1.5">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      {resourceLabels[resource] ?? resource}
-                    </p>
-                    {keys.map((key) => {
-                      const action = key.split(":")[1];
-                      return (
-                        <div key={key} className="flex items-center gap-2">
-                          <Checkbox
-                            id={key}
-                            checked={permissions.includes(key)}
-                            onCheckedChange={(checked) =>
-                              togglePermission(key, checked === true)
-                            }
-                          />
-                          <Label htmlFor={key} className="font-normal">
-                            {actionLabels[action] ?? action}
-                          </Label>
-                        </div>
-                      );
-                    })}
+            <div className="flex flex-col gap-4 rounded-lg border p-3 max-h-80 overflow-y-auto">
+              {groupByCategory(permissionsCatalog).map(([category, resources]) => (
+                <div key={category} className="flex flex-col gap-2">
+                  <p className="text-sm font-medium">
+                    {categoryLabels[category]}
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {resources.map(([resource, permissions]) => (
+                      <div key={resource} className="flex flex-col gap-1.5">
+                        <p className="text-xs font-medium text-muted-foreground">
+                          {resourceLabels[resource] ?? resource}
+                        </p>
+                        {permissions.map(({ key, action }) => (
+                          <div key={key} className="flex items-center gap-2">
+                            <Checkbox
+                              id={key}
+                              checked={formPermissions.includes(key)}
+                              onCheckedChange={(checked) =>
+                                togglePermission(key, checked === true)
+                              }
+                            />
+                            <Label htmlFor={key} className="font-normal">
+                              {actionLabels[action] ?? action}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                className="border-[#D4D4D4]"
+                onClick={() => setOpen(false)}
+              >
+                Abbrechen
+              </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Speichert…" : "Speichern"}
               </Button>

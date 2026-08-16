@@ -3,30 +3,35 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { toastDeleted } from "@/components/app-toast";
+import { toastEdited } from "@/components/app-toast";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { RowActionButtons } from "@/components/row-action-buttons";
 import { EditUserDialog } from "@/components/edit-user-dialog";
-import type { CurrentUser } from "@/lib/api-server";
+import type { CurrentUser, Role } from "@/lib/api-server";
 import { formatName } from "@/lib/utils";
 
 export function UserRowActions({
   user,
   isSelf,
   allowEmailChange,
+  roles,
 }: {
   user: CurrentUser;
   isSelf: boolean;
   allowEmailChange: boolean;
+  roles: Role[];
 }) {
   const router = useRouter();
   const name = formatName(user);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  async function handleDelete() {
+  // Deaktiviert den Zugriff (Soft-Delete, siehe UsersService.remove) statt
+  // den Account wirklich zu löschen – über den "Bearbeiten"-Dialog jederzeit
+  // wieder reaktivierbar.
+  async function handleDeactivate() {
     await fetch(`/api/users/${user.id}`, { method: "DELETE" });
-    toastDeleted(`„${name}“ wurde gelöscht.`);
+    toastEdited(`„${name}“ wurde deaktiviert.`);
     router.refresh();
   }
 
@@ -36,12 +41,13 @@ export function UserRowActions({
         onEdit={() => setEditOpen(true)}
         onDelete={!isSelf ? () => setDeleteOpen(true) : undefined}
         editLabel={`„${name}“ bearbeiten`}
-        deleteLabel={`„${name}“ löschen`}
+        deleteLabel={`„${name}“ deaktivieren`}
       />
 
       <EditUserDialog
         user={user}
         allowEmailChange={allowEmailChange}
+        roles={roles}
         hideTrigger
         open={editOpen}
         onOpenChange={setEditOpen}
@@ -51,9 +57,9 @@ export function UserRowActions({
         <ConfirmDeleteDialog
           open={deleteOpen}
           onOpenChange={setDeleteOpen}
-          title={`„${name}“ löschen?`}
-          description="Diese Aktion kann nicht rückgängig gemacht werden."
-          onConfirm={handleDelete}
+          title={`„${name}“ deaktivieren?`}
+          description="Der Zugriff wird sofort entzogen. Über „Bearbeiten“ lässt sich das Konto jederzeit wieder aktivieren."
+          onConfirm={handleDeactivate}
         />
       )}
     </div>

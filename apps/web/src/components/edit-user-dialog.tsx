@@ -33,7 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { CurrentUser } from "@/lib/api-server";
+import type { CurrentUser, Role } from "@/lib/api-server";
 import { formatName } from "@/lib/utils";
 
 const editUserSchema = z.object({
@@ -41,6 +41,7 @@ const editUserSchema = z.object({
   lastName: z.string().min(1, "Nachname ist erforderlich."),
   email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben."),
   isActive: z.enum(["true", "false"]),
+  roleId: z.string().min(1, "Rolle ist erforderlich."),
 });
 
 type EditUserValues = z.infer<typeof editUserSchema>;
@@ -48,12 +49,14 @@ type EditUserValues = z.infer<typeof editUserSchema>;
 export function EditUserDialog({
   user,
   allowEmailChange,
+  roles,
   hideTrigger,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
 }: {
   user: CurrentUser;
   allowEmailChange: boolean;
+  roles: Role[];
   hideTrigger?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -72,6 +75,7 @@ export function EditUserDialog({
       lastName: user.lastName,
       email: user.email,
       isActive: user.isActive ? "true" : "false",
+      roleId: user.role.id,
     },
   });
 
@@ -87,6 +91,7 @@ export function EditUserDialog({
           lastName: values.lastName,
           email: values.email,
           isActive: values.isActive === "true",
+          roleId: values.roleId,
         }),
       });
 
@@ -190,33 +195,73 @@ export function EditUserDialog({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="isActive"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    items={{ true: "Aktiv", false: "Deaktiviert" }}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="true">Aktiv</SelectItem>
-                      <SelectItem value="false">Deaktiviert</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 gap-x-10 gap-y-10 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      items={{ true: "Aktiv", false: "Deaktiviert" }}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="true">Aktiv</SelectItem>
+                        <SelectItem value="false">Deaktiviert</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="roleId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rolle</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      items={Object.fromEntries(
+                        roles.map((role) => [role.id, role.name]),
+                      )}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {roles.map((role) => (
+                          <SelectItem key={role.id} value={role.id}>
+                            {role.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                className="border-[#D4D4D4]"
+                onClick={() => setOpen(false)}
+              >
+                Abbrechen
+              </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Speichert…" : "Speichern"}
               </Button>

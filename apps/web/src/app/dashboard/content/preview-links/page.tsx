@@ -1,8 +1,13 @@
+import { CreatePreviewLinkDialog } from "@/components/create-preview-link-dialog";
 import { PreviewLinksTable } from "@/components/preview-links-table";
 import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
-import { getAllPreviewLinks, getPublicSettings } from "@/lib/api-server";
+import {
+  getAllPreviewLinks,
+  getContentList,
+  getPublicSettings,
+} from "@/lib/api-server";
 
 export default async function PreviewLinksPage({
   searchParams,
@@ -11,7 +16,10 @@ export default async function PreviewLinksPage({
 }) {
   const { page: pageParam } = await searchParams;
   const page = Number(pageParam) || 1;
-  const settings = await getPublicSettings();
+  const [settings, content] = await Promise.all([
+    getPublicSettings(),
+    getContentList({ pageSize: 100 }),
+  ]);
   const previewLinks = await getAllPreviewLinks({
     page,
     pageSize: settings?.defaultPageSize ?? 10,
@@ -19,8 +27,11 @@ export default async function PreviewLinksPage({
 
   return (
     <div className="flex flex-col gap-10">
-      <PageHeader title="Vorschau-Links" />
-      <PageContent>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <PageHeader title="Vorschau-Links" />
+        <CreatePreviewLinkDialog contentItems={content?.items ?? []} />
+      </div>
+      <PageContent plain>
         <PreviewLinksTable items={previewLinks?.items ?? []} />
 
         {previewLinks && (

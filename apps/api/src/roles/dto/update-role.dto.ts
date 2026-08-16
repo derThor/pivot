@@ -29,7 +29,8 @@ export class UpdateRoleDto {
 
   @ApiPropertyOptional({
     type: [String],
-    description: 'Liste von "resource:action"-Strings, ersetzt die bisherigen Rechte.',
+    description:
+      'Liste von "resource:action"-Strings, ersetzt die bisherigen Rechte.',
   })
   @IsOptional()
   @IsArray()

@@ -150,7 +150,12 @@ export function FaqGroupDialog({
           </div>
           {submitError && <p className="text-sm text-destructive">{submitError}</p>}
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-[#D4D4D4]"
+              onClick={() => setOpen(false)}
+            >
               Abbrechen
             </Button>
             <Button type="submit" disabled={isSubmitting}>

@@ -9,7 +9,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { QueryRoleDto } from './dto/query-role.dto';
-import { PERMISSIONS_CATALOG } from './permissions.catalog';
+import {
+  PERMISSIONS_CATALOG,
+  PERMISSION_CATEGORY_BY_RESOURCE,
+} from './permissions.catalog';
 
 function toPermissionKey(p: { resource: string; action: string }): string {
   return `${p.resource}:${p.action}`;
@@ -20,7 +23,9 @@ const roleInclude = {
   _count: { select: { users: true } },
 } satisfies Prisma.RoleInclude;
 
-type RoleWithPermissions = Prisma.RoleGetPayload<{ include: typeof roleInclude }>;
+type RoleWithPermissions = Prisma.RoleGetPayload<{
+  include: typeof roleInclude;
+}>;
 
 function serializeRole(role: RoleWithPermissions) {
   return {
@@ -31,6 +36,7 @@ function serializeRole(role: RoleWithPermissions) {
     isDefault: role.isDefault,
     canAccessDashboard: role.canAccessDashboard,
     userCount: role._count.users,
+    updatedAt: role.updatedAt,
     permissions: role.permissions.map((rp) => toPermissionKey(rp.permission)),
   };
 }
@@ -44,7 +50,7 @@ export class RolesService {
     const [roles, total] = await Promise.all([
       this.prisma.role.findMany({
         include: roleInclude,
-        orderBy: { name: 'asc' },
+        orderBy: { sortOrder: 'asc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
@@ -60,7 +66,7 @@ export class RolesService {
   async findPage(id: string, pageSize: number) {
     const target = await this.prisma.role.findUniqueOrThrow({ where: { id } });
     const rank = await this.prisma.role.count({
-      where: { name: { lt: target.name } },
+      where: { sortOrder: { lt: target.sortOrder } },
     });
     return { page: Math.floor(rank / pageSize) + 1 };
   }
@@ -87,11 +93,19 @@ export class RolesService {
     }
 
     const permissionIds = await this.resolvePermissionIds(dto.permissions);
+    // Neue Rollen landen immer unter allen bestehenden (Nutzervorgabe,
+    // 2026-08-16: Administrator/Manager/Redakteur/Gast bleiben fix oben,
+    // jede neue Rolle kommt darunter) – ohne das würde `sortOrder` auf den
+    // Schema-Default `0` fallen und mit Administrator kollidieren.
+    const maxSortOrder = await this.prisma.role.aggregate({
+      _max: { sortOrder: true },
+    });
     const role = await this.prisma.role.create({
       data: {
         name: dto.name,
         description: dto.description,
         canAccessDashboard: dto.canAccessDashboard ?? true,
+        sortOrder: (maxSortOrder._max.sortOrder ?? -1) + 1,
         permissions: {
           create: permissionIds.map((permissionId) => ({ permissionId })),
         },
@@ -167,7 +181,12 @@ export class RolesService {
   }
 
   getPermissionsCatalog() {
-    return PERMISSIONS_CATALOG.map(toPermissionKey);
+    return PERMISSIONS_CATALOG.map((p) => ({
+      resource: p.resource,
+      action: p.action,
+      key: toPermissionKey(p),
+      category: PERMISSION_CATEGORY_BY_RESOURCE[p.resource],
+    }));
   }
 
   private async resolvePermissionIds(keys: string[]): Promise<string[]> {

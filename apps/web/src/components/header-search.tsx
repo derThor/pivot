@@ -81,7 +81,7 @@ export function HeaderSearch({
 
   return (
     <div ref={containerRef} className="relative h-11 w-full min-w-0 shrink sm:w-96">
-      <div className="flex h-11 w-full items-center gap-2 rounded-full border bg-card px-4">
+      <div className="flex h-11 w-full items-center gap-2 rounded-full border bg-card px-4 transition-colors hover:bg-sidebar-accent focus-within:bg-sidebar-accent">
         <Search className="size-4 shrink-0 text-muted-foreground" />
         <Input
           ref={inputRef}

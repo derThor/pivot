@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { Check, Copy } from "lucide-react";
 
 import { toastDeleted } from "@/components/app-toast";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -20,14 +20,26 @@ import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { EditPreviewLinkDialog } from "@/components/edit-preview-link-dialog";
 import { HighlightText } from "@/components/highlight-text";
 import { RowActionButtons } from "@/components/row-action-buttons";
-import { SelectionToolbar } from "@/components/selection-toolbar";
 import { useHighlightParam } from "@/hooks/use-highlight-param";
-import { useSelection } from "@/hooks/use-selection";
-import { formatName } from "@/lib/utils";
 import type { PreviewLinkWithContent } from "@/lib/api-server";
+
+const dateFormatter = new Intl.DateTimeFormat("de-DE", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
 
 function previewUrl(token: string) {
   return `${window.location.origin}/preview/${token}`;
+}
+
+// Zeigt nie den vollen Token in der Tabelle (Sicherheits-Gewohnheit wie
+// bei API-Keys üblich, 1:1 nach Bildvorlage) – erste 4 + letzte 3 Zeichen
+// reichen zum Wiedererkennen, ohne den vollständigen Token auf den
+// Bildschirm zu bringen.
+function maskToken(token: string) {
+  if (token.length <= 8) return token;
+  return `${token.slice(0, 4)}…${token.slice(-3)}`;
 }
 
 export function PreviewLinksTable({
@@ -39,15 +51,11 @@ export function PreviewLinksTable({
   const { activeId, query: highlightQuery } = useHighlightParam(
     "preview-link-row",
   );
-  const { selected, toggle, toggleAll, clear, allSelected, someSelected, count } =
-    useSelection(items.map((item) => item.id));
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [editOpenId, setEditOpenId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PreviewLinkWithContent | null>(
     null,
   );
-
-  const byId = new Map(items.map((item) => [item.id, item]));
 
   async function handleCopy(link: PreviewLinkWithContent) {
     await navigator.clipboard.writeText(previewUrl(link.token));
@@ -55,78 +63,42 @@ export function PreviewLinksTable({
     setTimeout(() => setCopiedId((current) => (current === link.id ? null : current)), 2000);
   }
 
-  async function revokeLink(link: PreviewLinkWithContent) {
-    await fetch(`/api/content/${link.content.id}/preview-links/${link.id}`, {
-      method: "DELETE",
-    });
-  }
-
   async function handleRevoke() {
     if (!deleteTarget) return;
-    await revokeLink(deleteTarget);
+    await fetch(`/api/content/${deleteTarget.content.id}/preview-links/${deleteTarget.id}`, {
+      method: "DELETE",
+    });
     toastDeleted(`Vorschau-Link für „${deleteTarget.content.title}“ wurde widerrufen.`);
     router.refresh();
   }
 
-  async function handleBulkDelete() {
-    const revokedCount = selected.size;
-    await Promise.all(
-      [...selected]
-        .map((id) => byId.get(id))
-        .filter((link): link is PreviewLinkWithContent => Boolean(link))
-        .map((link) => revokeLink(link)),
-    );
-    clear();
-    toastDeleted(`${revokedCount} Vorschau-Links wurden widerrufen.`);
-    router.refresh();
-  }
-
   return (
-    <div className="flex flex-col gap-3">
-      <SelectionToolbar
-        count={count}
-        entityLabelPlural="Vorschau-Links"
-        onDelete={handleBulkDelete}
-        onClear={clear}
-      />
-      <div className="overflow-hidden">
-        <Table>
-          <TableHeader>
+    <div className="overflow-hidden rounded-[10px] bg-card shadow-[0_1px_3px_0_rgba(0,0,0,0.1),0_1px_2px_-1px_rgba(0,0,0,0.1),0_-1px_2px_0_rgba(0,0,0,0.05)]">
+      <Table>
+        <TableHeader className="bg-background">
+          <TableRow>
+            <TableHead>Titel</TableHead>
+            <TableHead>Token</TableHead>
+            <TableHead>Läuft ab</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-center">Aktionen</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.length === 0 ? (
             <TableRow>
-              <TableHead className="w-10">
-                <Checkbox
-                  checked={allSelected}
-                  indeterminate={someSelected}
-                  onCheckedChange={toggleAll}
-                  aria-label="Alle auswählen"
-                />
-              </TableHead>
-              <TableHead>Inhalt</TableHead>
-              <TableHead>Läuft ab</TableHead>
-              <TableHead>Erstellt von</TableHead>
-              <TableHead className="text-center">Aktionen</TableHead>
+              <TableCell
+                colSpan={5}
+                className="h-24 text-center text-muted-foreground"
+              >
+                Keine aktiven Vorschau-Links.
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  Keine aktiven Vorschau-Links.
-                </TableCell>
-              </TableRow>
-            ) : (
-              items.map((link) => (
+          ) : (
+            items.map((link) => {
+              const isExpired = new Date(link.expiresAt) < new Date();
+              return (
                 <TableRow key={link.id} id={`preview-link-row-${link.id}`}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selected.has(link.id)}
-                      onCheckedChange={() => toggle(link.id)}
-                      aria-label={`Vorschau-Link für ${link.content.title} auswählen`}
-                    />
-                  </TableCell>
                   <TableCell className="max-w-xs truncate font-medium">
                     <Link
                       href={`/dashboard/content/${link.content.id}/edit`}
@@ -139,10 +111,21 @@ export function PreviewLinksTable({
                       />
                     </Link>
                   </TableCell>
-                  <TableCell>
-                    {new Date(link.expiresAt).toLocaleString("de-DE")}
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {maskToken(link.token)}
                   </TableCell>
-                  <TableCell>{formatName(link.createdBy)}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {dateFormatter.format(new Date(link.expiresAt))}
+                  </TableCell>
+                  <TableCell>
+                    {isExpired ? (
+                      <Badge variant="secondary">Abgelaufen</Badge>
+                    ) : (
+                      <Badge variant="secondary" className="bg-green-100 text-green-700">
+                        Aktiv
+                      </Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <div className="flex justify-center">
                       <RowActionButtons
@@ -174,11 +157,11 @@ export function PreviewLinksTable({
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              );
+            })
+          )}
+        </TableBody>
+      </Table>
 
       <ConfirmDeleteDialog
         open={deleteTarget !== null}

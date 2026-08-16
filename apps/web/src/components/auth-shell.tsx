@@ -43,6 +43,14 @@ export function AuthShell({
           alt=""
           className="absolute inset-0 size-full object-cover"
         />
+        {/* Marketing-Badge oben links (Nutzervorgabe, 2026-08-16, 1:1 nach
+            Bildvorlage) – auf allen drei Auth-Seiten (Login/Registrieren/
+            Passwort vergessen), da sie sich diese gemeinsame `AuthShell`
+            teilen. */}
+        <div className="absolute top-8 left-10 inline-flex items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm xl:left-14">
+          <span className="size-2 shrink-0 rounded-full bg-primary" />
+          Websoftware für alle Bereiche
+        </div>
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-10 pt-24 pb-10 xl:px-14 xl:pb-14">
           <h2 className="max-w-sm text-3xl font-bold leading-tight text-white xl:text-4xl">
             Eine Plattform<span className="text-primary">.</span> für jeden

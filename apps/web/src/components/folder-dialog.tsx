@@ -131,6 +131,14 @@ export function FolderDialog({
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-[#D4D4D4]"
+              onClick={() => setOpen(false)}
+            >
+              Abbrechen
+            </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Speichert…" : "Speichern"}
             </Button>

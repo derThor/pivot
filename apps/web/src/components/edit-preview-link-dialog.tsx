@@ -115,7 +115,12 @@ export function EditPreviewLinkDialog({
           </Select>
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+          <Button
+            type="button"
+            variant="outline"
+            className="border-[#D4D4D4]"
+            onClick={() => setOpen(false)}
+          >
             Abbrechen
           </Button>
           <Button type="button" disabled={isSaving} onClick={handleSave}>

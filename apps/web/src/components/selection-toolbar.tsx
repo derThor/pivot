@@ -11,6 +11,9 @@ export function SelectionToolbar({
   onDelete,
   onClear,
   children,
+  actionLabel,
+  confirmTitle,
+  confirmDescription,
 }: {
   count: number;
   entityLabelPlural: string;
@@ -18,6 +21,12 @@ export function SelectionToolbar({
   onClear: () => void;
   /** Zusätzliche Aktions-Buttons vor "Auswahl aufheben"/Löschen (z.B. "Verschieben" bei Medien). */
   children?: React.ReactNode;
+  /** Überschreibt den Button-Text (Default: "{entityLabelPlural} löschen") –
+   * für Entitäten, bei denen die Aktion kein echtes Löschen ist (z.B.
+   * Benutzer-Deaktivierung). */
+  actionLabel?: string;
+  confirmTitle?: string;
+  confirmDescription?: string;
 }) {
   if (count === 0) return null;
 
@@ -34,11 +43,14 @@ export function SelectionToolbar({
           trigger={
             <Button type="button" variant="outline" size="sm">
               <Trash2 />
-              {entityLabelPlural} löschen
+              {actionLabel ?? `${entityLabelPlural} löschen`}
             </Button>
           }
-          title={`${count} ${entityLabelPlural} löschen?`}
-          description="Diese Aktion kann nicht rückgängig gemacht werden."
+          title={confirmTitle ?? `${count} ${entityLabelPlural} löschen?`}
+          description={
+            confirmDescription ??
+            "Diese Aktion kann nicht rückgängig gemacht werden."
+          }
           onConfirm={onDelete}
         />
       </div>

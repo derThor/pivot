@@ -325,6 +325,80 @@ tatsächlich). Details siehe
 - [ ] Individuelle Sprache pro Benutzer
 - [ ] Individuelle Zeitzone
 
+### 2b.13 – Rollen & Rechte: granulare Rechte + visuelles Redesign
+
+Mehrsitzungs-Vorhaben (Nutzerhinweis, 2026-08-16: "das sind große Änderungen
+über mehrere Sessions"). Ziel: die bisherige einfache Tabelle + Anlegen/
+Bearbeiten-Dialog (`/dashboard/roles`) durch eine Split-View-Seite ersetzen,
+nach vorliegender Bildvorlage (Rollen-Liste links, Detail-Panel rechts mit
+Umfang-Anzeige, Kategorie-Tabs, Rechte-Karten pro Ressource) – analog zum
+bereits umgesetzten Muster bei Medien (Masonry + Detail-Panel) und
+Navigation (Menü-Liste + Einträge-Panel, siehe
+[navigation-management.md](../knowledge-base/content/navigation-management.md)).
+
+**Bereits umgesetzt (2026-08-16):**
+- [x] Backend-Rechte-Katalog von 13 groben Bundle-Rechten auf 46
+      feingranulare Rechte aufgesplittet (`content:publish`/`schedule`,
+      eigene `navigation`/`webhooks`/`gallery`/`faq`/`preview-links`-
+      Ressourcen, `users`/`roles`/`settings` in einzelne Aktionen
+      aufgesplittet) + Kategorisierung (Kern/Erweiterungen/Verwaltung) für
+      die UI-Gruppierung. 7 Beispielrollen (Administrator, Chefredaktion,
+      Redakteur, Autor, Medienpflege, Formular-Manager, Gast/Praktikum)
+      nach Bildvorlage geseedet. Details:
+      [rbac-rework.md](../knowledge-base/auth/rbac-rework.md).
+- [x] `DELETE /users/:id` von Hard-Delete auf Soft-Delete (`isActive`)
+      umgestellt, inkl. Refresh-Token-Widerruf.
+
+**Bewusst zurückgestellt** (Nutzervorgabe, 2026-08-16: "Formular und
+Systembenachrichtigungen nicht beachten, das kommt später"): Rechte-Karten
+für **Formulare** (Modul existiert noch nicht, siehe 2b.10),
+**Systemnachrichten** und **Websites/Multi-Site** (beide ohne eigene
+Rechte-Ressource im Backend) werden in der neuen Seite vorerst NICHT
+angezeigt – nur die 13 real existierenden Ressourcen (Seiten, Medien,
+Kategorien, Tags, Menüs, Bausteine, Galerien, FAQs, Vorschau-Links,
+Webhooks, Benutzer, Rollen & Rechte, Einstellungen). Nachziehen, sobald die
+jeweiligen Module selbst gebaut sind.
+
+**Visuelles Redesign umgesetzt (2026-08-16):**
+- [x] Seite `/dashboard/roles` auf Split-View umgestellt (`?role=<id>`-
+      URL-Pattern wie bei `/dashboard/navigation?menu=`, akzeptiert
+      zusätzlich `?highlight=` von der globalen Suche): links Rollen-Liste
+      (Name, Nutzeranzahl, Rechteanzahl bzw. "alle Rechte" bei
+      Administrator, "kein Login" bei `canAccessDashboard=false`), rechts
+      Detail-Panel. Neue Komponente `roles-explorer.tsx`.
+- [x] Detail-Panel: Beschreibung (Textarea) + "Zugriff auf das Backend"
+      (Switch) + Rechte-Checkboxen als EIN gemeinsames Formular mit
+      Dirty-State-Tracking, "Zurücksetzen"/"Rechte speichern" (Rollenname
+      bleibt reine Anzeige, kein Inline-Rename – Anlegen weiterhin über
+      den bestehenden `RoleFormDialog`)
+- [x] "Umfang"-Bereich: Fortschrittsbalken (vergeben/verfügbar),
+      Schreibrechte-Anzahl (Aktionen ≠ `read`), Nutzeranzahl, "Zuletzt
+      geändert" (`Role.updatedAt` jetzt in `serializeRole()` ergänzt)
+- [x] Kategorie-Tabs (Alle/Kern/Erweiterungen/Verwaltung, mit echten
+      Trefferzahlen aus dem Katalog) + "Nur vergebene Rechte"-Filter
+- [x] Rechte-Karten pro Ressource: Icon, "X/Y Rechte", Quick-Toggle
+      "Alle"/"Keine" (abhängig vom aktuellen Auswahlstatus), Checkboxen
+      gruppiert. Labels/Icons in `lib/permission-labels.ts` zentralisiert
+      (vorher in `role-form-dialog.tsx` dupliziert)
+- [x] "Rechte exportieren" (Button im Seitenkopf, Client-seitiger
+      JSON-Download aller Rollen+Rechte, kein Backend-Endpoint nötig)
+- [x] "Rolle duplizieren" (Quick-Action unten in der Rollen-Liste, legt
+      Kopie der aktuell gewählten Rolle an und springt direkt dorthin)
+- [x] Administrator-Rolle in der neuen UI schreibgeschützt (Lock-Icon,
+      "Geschützt"-Badge, alle Eingaben disabled) – rein clientseitiger
+      Schutz vor versehentlicher Selbstaussperrung, das Backend erlaubt
+      technisch weiterhin das Ändern (kein neues Risiko, nur UX-Schutz)
+- [x] Alte Komponenten entfernt: `roles-table.tsx`, `role-row-actions.tsx`
+
+**Noch offen / nicht verifiziert:**
+- [ ] Echter Browser-/visueller Abgleich gegen die Bildvorlage (bisher nur
+      per SSR-HTML-Inspektion über `curl` verifiziert – kein Playwright/
+      Chromium in diesem Projekt verfügbar, kein Screenshot gemacht).
+      Feinschliff bei Abständen/Farben/Icon-Auswahl wahrscheinlich nötig.
+- [ ] Mobile/schmale Viewports der neuen Split-View ungetestet
+- [ ] Formulare/Systemnachrichten/Websites-Karten nachziehen, sobald die
+      jeweiligen Module existieren (siehe oben)
+
 ## Phase 3 – Plattform-Härtung
 
 - [ ] CI/CD-Pipeline (Lint, Typecheck, Tests, Build, ggf. Turborepo Remote

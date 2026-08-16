@@ -3,6 +3,15 @@
 **Datum:** 2026-08-02
 **Betroffene Bereiche:** apps/web
 
+> **Update 2026-08-16 (Vorschau-Links unter Seiten einsortiert):**
+> "verschiebe vorschau-links unter seiten" – `app-sidebar.tsx`s
+> `navGroups`: "Vorschau-Links" war ein eigenständiges Item auf oberster
+> Ebene innerhalb der "Inhalte"-Gruppe, jetzt `children`-Eintrag von
+> "Seiten" (neben FAQs/Galerien, gleiches Muster wie "Tags" unter
+> "Medien"). Reine Config-Änderung – Breadcrumbs/aktiver Sidebar-Status
+> lesen `navGroups` bereits generisch inkl. `children`, keine weitere
+> Anpassung nötig.
+
 ## Was wurde gebaut
 
 Next.js-Dashboard mit shadcn/ui-Komponenten: `Sidebar`, `Card`, `Table`,

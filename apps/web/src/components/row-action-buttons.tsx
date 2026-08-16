@@ -25,7 +25,7 @@ export function RowActionButtons({
    * es nur eine Löschen-Aktion gibt). */
   onEdit?: () => void;
   /** Weggelassen = kein Löschen-Button (z.B. bei fehlender Berechtigung/
-   * Selbstlöschschutz, siehe role-row-actions.tsx/user-row-actions.tsx). */
+   * Selbstlöschschutz, siehe user-row-actions.tsx). */
   onDelete?: () => void;
   editLabel?: string;
   deleteLabel?: string;

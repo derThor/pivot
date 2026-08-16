@@ -10,6 +10,35 @@
 `src/app/dashboard/content/preview-links/page.tsx`,
 `src/app/dashboard/content/[id]/edit/page.tsx`)
 
+> **Update 2026-08-16 (Übersichtsseite 1:1 nach Bildvorlage, gleicher
+> Tabellenkopf-Stil wie Tags):** "passe vorschaulinks genauso an, wie auf
+> dem bild. beachte tags den header der tabelle. soll hier auch so sein"
+> – `PreviewLinksTable` komplett neu:
+> - Spalten jetzt Titel/Token/Läuft ab/Status/Aktionen (vorher
+>   Checkbox/Inhalt/Läuft ab/Erstellt von/Aktionen) – Massenauswahl
+>   (`useSelection`/`SelectionToolbar`/Checkbox-Spalte) entfernt, "Erstellt
+>   von" entfernt, dafür neue **Token**-Spalte (maskiert:
+>   `maskToken()` zeigt nur die ersten 4 + letzten 3 Zeichen, nie den
+>   vollen Token auf dem Bildschirm) und neue **Status**-Spalte
+>   (`Badge`, grün "Aktiv" vs. grau "Abgelaufen", clientseitig aus
+>   `expiresAt` vs. `new Date()` berechnet, kein Server-Feld nötig).
+> - Tabellen-Wrapper + Kopfzeile wie bei Tags:
+>   `rounded-[10px] bg-card shadow-sm` ums Ganze,
+>   `<TableHeader className="bg-background">` (weiß statt Standard-Grau).
+> - **Kopieren-Button in den Aktionen bewusst behalten**, obwohl die
+>   Bildvorlage dort nur 2 Icons (Bearbeiten/Löschen) zeigt – explizite
+>   Nutzervorgabe ("vorschau kopieren button soll so bleiben"), da sonst
+>   niemand den eigentlichen Link mehr aus der Übersicht kopieren könnte
+>   (nur noch aus dem Bearbeiten-Popup des jeweiligen Inhalts).
+> - **Neuer "+ Link erstellen"-Button** auf der Übersichtsseite
+>   (`create-preview-link-dialog.tsx`, neu) – anders als das bestehende
+>   `preview-links-dialog.tsx` (pro Inhalt, kennt `contentId` schon aus
+>   dem Kontext) braucht dieser zusätzlich eine Inhalts-Auswahl
+>   (`<Select>` mit `getContentList()`), da die globale Liste
+>   inhaltsübergreifend ist. Nutzt denselben bestehenden
+>   `POST /content/:id/preview-links`-Endpoint, keine Backend-Änderung
+>   nötig.
+
 ## Was wurde gebaut
 
 - Modell `ContentPreviewToken` (`token`, `contentId`, `expiresAt`,

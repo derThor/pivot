@@ -85,7 +85,10 @@ export class AuthService {
     }
 
     const tokens = await this.issueTokens(user.id, user.email);
-    return { ...tokens, ...(verificationLinkDevOnly && { verificationLinkDevOnly }) };
+    return {
+      ...tokens,
+      ...(verificationLinkDevOnly && { verificationLinkDevOnly }),
+    };
   }
 
   async login(dto: LoginDto) {
@@ -118,6 +121,14 @@ export class AuthService {
         'Refresh-Token ungültig oder abgelaufen.',
       );
     }
+    // Ohne diesen Check könnte ein deaktivierter Nutzer mit einem noch
+    // gültigen Refresh-Token beliebig lange neue Access-Tokens holen –
+    // `UsersService.remove()` widerruft zwar alle Refresh-Tokens beim
+    // Deaktivieren, aber ein Request, der genau in diesem Moment "in
+    // Flight" war, würde diesen Check sonst umgehen.
+    if (!stored.user.isActive) {
+      throw new UnauthorizedException('Konto ist deaktiviert.');
+    }
 
     // Rotation: altes Token widerrufen, neues Paar ausstellen
     await this.prisma.refreshToken.update({
@@ -145,10 +156,7 @@ export class AuthService {
     }
 
     const settings = await this.settings.get();
-    const violations = validatePasswordAgainstPolicy(
-      dto.newPassword,
-      settings,
-    );
+    const violations = validatePasswordAgainstPolicy(dto.newPassword, settings);
     if (violations.length > 0) {
       throw new BadRequestException(violations.join(' '));
     }
@@ -207,10 +215,7 @@ export class AuthService {
     }
 
     const settings = await this.settings.get();
-    const violations = validatePasswordAgainstPolicy(
-      dto.newPassword,
-      settings,
-    );
+    const violations = validatePasswordAgainstPolicy(dto.newPassword, settings);
     if (violations.length > 0) {
       throw new BadRequestException(violations.join(' '));
     }
@@ -296,10 +301,7 @@ export class AuthService {
     });
   }
 
-  private async issueTokens(
-    userId: string,
-    email: string,
-  ): Promise<TokenPair> {
+  private async issueTokens(userId: string, email: string): Promise<TokenPair> {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
       include: {

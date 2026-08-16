@@ -87,6 +87,37 @@ export class GlobalModulesService {
     }
   }
 
+  // Globale Module haben keine eigene Permission-Ressource im Katalog –
+  // welches Recht greift, hängt vom referenzierten Modul-Typ ab (dessen
+  // `slug` deckt sich bewusst mit den Katalog-Ressourcen `gallery`/`faq`,
+  // siehe packages/database/prisma/seed.ts). Alle anderen Modul-Typen sind
+  // nur als Inline-Baustein in Content vorgesehen (nie als globales Modul,
+  // die Dashboard-UI bietet dafür keinen Weg) – als Fallback greift dort
+  // `settings`, damit ein API-Aufruf trotzdem plausibel gegated bleibt.
+  async resolveResource(moduleTypeId: string): Promise<string> {
+    const moduleType = await this.prisma.moduleType.findUnique({
+      where: { id: moduleTypeId },
+      select: { slug: true },
+    });
+    if (!moduleType) {
+      throw new BadRequestException('Modul-Typ nicht gefunden.');
+    }
+    return ['gallery', 'faq'].includes(moduleType.slug)
+      ? moduleType.slug
+      : 'settings';
+  }
+
+  async resolveResourceForModule(id: string): Promise<string> {
+    const globalModule = await this.prisma.globalModule.findUnique({
+      where: { id },
+      select: { moduleTypeId: true },
+    });
+    if (!globalModule) {
+      throw new NotFoundException(`Globales Modul ${id} nicht gefunden.`);
+    }
+    return this.resolveResource(globalModule.moduleTypeId);
+  }
+
   async create(dto: CreateGlobalModuleDto) {
     await this.assertModuleTypeExists(dto.moduleTypeId);
     const created = await this.prisma.globalModule.create({

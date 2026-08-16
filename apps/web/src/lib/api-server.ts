@@ -506,6 +506,7 @@ export interface Role {
   isDefault: boolean;
   canAccessDashboard: boolean;
   userCount: number;
+  updatedAt: string;
   permissions: string[];
 }
 
@@ -523,8 +524,15 @@ export function getRoles(params?: { page?: number; pageSize?: number }) {
   return apiFetch<RoleListResponse>(`/roles${query ? `?${query}` : ""}`);
 }
 
+export interface PermissionDescriptor {
+  resource: string;
+  action: string;
+  key: string;
+  category: "core" | "extensions" | "administration";
+}
+
 export function getPermissionsCatalog() {
-  return apiFetch<string[]>("/permissions");
+  return apiFetch<PermissionDescriptor[]>("/permissions");
 }
 
 export interface AppSettings {

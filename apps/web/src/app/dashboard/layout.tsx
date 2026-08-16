@@ -35,7 +35,7 @@ export default async function DashboardLayout({
   // diese Seite abgefragt, um unnötige Requests für alle anderen Rollen zu
   // vermeiden.
   const canViewSystemMessages =
-    (user.permissions ?? []).includes("settings:manage");
+    (user.permissions ?? []).includes("settings:read");
   const [storageUsage, webhooks] = canViewSystemMessages
     ? await Promise.all([getMediaStorageUsage(), getWebhooks({ pageSize: 1 })])
     : [null, null];

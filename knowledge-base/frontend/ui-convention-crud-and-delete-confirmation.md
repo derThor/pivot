@@ -4,6 +4,40 @@
 **Betroffene Bereiche:** apps/web (übergreifende Konvention, nicht auf ein
 Feature beschränkt)
 
+> **Update 2026-08-16 (Abbrechen-Button überall, einheitlicher Border):**
+> "überall bei popup abbrechen hinzufügen. border so nehmen, wie die
+> border von aktionen." – app-weiter Sweep über alle ~29
+> `DialogContent`-Komponenten in `apps/web/src/components`:
+> - **Fehlende Abbrechen-Buttons ergänzt** (14 Dialoge hatten in ihrem
+>   `DialogFooter` nur den Submit-Button, keinen Abbrechen daneben):
+>   `create-preview-link-dialog`, `navigation-item-dialog`,
+>   `media-upload-dialog`, `webhook-dialog` (hatte gar kein
+>   `DialogFooter`, nur einen einzelnen Button), `taxonomy-item-dialog`,
+>   `role-form-dialog`, `navigation-dialog`, `move-to-folder-dialog`,
+>   `media-tags-dialog`, `media-focal-point-dialog`, `media-crop-dialog`,
+>   `folder-dialog`, `edit-user-dialog`, `create-user-dialog`. Bei
+>   Komponenten mit `onOpenChange`-Prop (kein eigenes `open`/`setOpen`)
+>   ruft der Abbrechen-Button `onOpenChange(false)` auf, sonst `setOpen(false)`.
+>   Zusätzlich in den Upload-/Link-Tabs von `file-picker-dialog`,
+>   `video-picker-dialog`, `image-picker-dialog` (Bibliothek-Tab bleibt
+>   unangetastet – reines Durchsuchen ohne Formular, kein Abbrechen
+>   nötig).
+> - **Border korrigiert**: bereits vorhandene Abbrechen-Buttons nutzten
+>   `variant="outline"` mit dem Standard-`--border`-Token
+>   (`oklch(0.967 0 0)`, sehr hell/kaum sichtbar) – auf
+>   `border-[#D4D4D4]` umgestellt (dieselbe Farbe wie der Bearbeiten-
+>   Button in `RowActionButtons`), betroffen: `media-edit-dialog`,
+>   `gallery-editor` (Bildunterschrift-Popup), `gallery-dialog`,
+>   `faq-question-dialog`, `faq-group-dialog`, `edit-preview-link-dialog`.
+> - **Bewusst ausgenommen**: `insert-shared-block-dialog`s "Zurück"-Button
+>   (Schritt-zurück in einem 2-Stufen-Formular, kein echtes Abbrechen –
+>   ein zusätzlicher dritter Button wäre redundant, Dialog bleibt über
+>   X/Backdrop schließbar) und die beiden "Fertig"-Popups in
+>   `block-editor-field.tsx` (Baustein-Feld-Bearbeiten, Innen-/
+>   Außenabstand) – Änderungen dort wirken sofort live über `onChange`,
+>   es gibt keinen separaten Entwurfszustand zum Verwerfen, "Fertig"
+>   deckt Speichern+Schließen in einem ab.
+
 > **Update 2026-08-04:** Konvention um Massenauswahl + Sammel-Löschen
 > erweitert – gilt jetzt für **jede** Listen-Ansicht (Tabelle oder Grid),
 > nicht nur Einzel-Löschen. Details im neuen Abschnitt

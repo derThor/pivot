@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -9,6 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ContentStatus } from '@pivot/database';
 import { ContentService } from './content.service';
 import { CreateContentDto } from './dto/create-content.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
@@ -30,6 +32,26 @@ import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 export class ContentController {
   constructor(private readonly contentService: ContentService) {}
 
+  // Veröffentlichen/Planen sind eigene Rechte über `content:create`/`update`
+  // hinaus (z.B. "Redakteur": darf planen, aber nicht direkt veröffentlichen
+  // – siehe packages/database/prisma/seed.ts). `status` steckt im generischen
+  // Create/Update-DTO, es gibt keine eigenen Publish/Schedule-Endpoints,
+  // daher hier manuell geprüft statt per `@RequirePermission`.
+  private assertStatusPermission(user: JwtPayload, status?: ContentStatus) {
+    if (
+      status === ContentStatus.PUBLISHED &&
+      !user.permissions.includes('content:publish')
+    ) {
+      throw new ForbiddenException('Fehlende Berechtigung: content:publish');
+    }
+    if (
+      status === ContentStatus.SCHEDULED &&
+      !user.permissions.includes('content:schedule')
+    ) {
+      throw new ForbiddenException('Fehlende Berechtigung: content:schedule');
+    }
+  }
+
   @RequirePermission('content:read')
   @Get()
   findAll(@Query() query: QueryContentDto) {
@@ -48,13 +70,13 @@ export class ContentController {
     return this.contentService.findByPreviewToken(token);
   }
 
-  @RequirePermission('content:read')
+  @RequirePermission('preview-links:read')
   @Get('preview-links')
   findAllPreviewLinks(@Query() query: QueryPreviewLinksDto) {
     return this.contentService.findAllPreviewLinks(query);
   }
 
-  @RequirePermission('content:read')
+  @RequirePermission('preview-links:read')
   @Get('preview-links/:linkId/page')
   findPreviewLinkPage(
     @Param('linkId') linkId: string,
@@ -72,6 +94,7 @@ export class ContentController {
   @RequirePermission('content:create')
   @Post()
   create(@Body() dto: CreateContentDto, @CurrentUser() user: JwtPayload) {
+    this.assertStatusPermission(user, dto.status);
     return this.contentService.create(dto, user.sub);
   }
 
@@ -82,6 +105,7 @@ export class ContentController {
     @Body() dto: UpdateContentDto,
     @CurrentUser() user: JwtPayload,
   ) {
+    this.assertStatusPermission(user, dto.status);
     return this.contentService.update(id, dto, user.sub);
   }
 
@@ -135,13 +159,13 @@ export class ContentController {
     );
   }
 
-  @RequirePermission('content:read')
+  @RequirePermission('preview-links:read')
   @Get(':id/preview-links')
   findPreviewLinks(@Param('id') id: string) {
     return this.contentService.findPreviewLinks(id);
   }
 
-  @RequirePermission('content:read')
+  @RequirePermission('preview-links:create')
   @Post(':id/preview-links')
   createPreviewLink(
     @Param('id') id: string,
@@ -151,7 +175,10 @@ export class ContentController {
     return this.contentService.createPreviewLink(id, user.sub, dto);
   }
 
-  @RequirePermission('content:read')
+  // Verlängert nur die Gültigkeit eines bestehenden Links (kein separates
+  // Recht im Katalog dafür) – fachlich dieselbe Fähigkeit wie einen neuen
+  // Link auszustellen, deshalb `preview-links:create`.
+  @RequirePermission('preview-links:create')
   @Patch(':id/preview-links/:linkId')
   updatePreviewLink(
     @Param('id') id: string,
@@ -161,12 +188,9 @@ export class ContentController {
     return this.contentService.updatePreviewLink(id, linkId, dto);
   }
 
-  @RequirePermission('content:read')
+  @RequirePermission('preview-links:revoke')
   @Delete(':id/preview-links/:linkId')
-  revokePreviewLink(
-    @Param('id') id: string,
-    @Param('linkId') linkId: string,
-  ) {
+  revokePreviewLink(@Param('id') id: string, @Param('linkId') linkId: string) {
     return this.contentService.revokePreviewLink(id, linkId);
   }
 }

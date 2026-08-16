@@ -55,7 +55,7 @@ export function CommandPalette({
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
   const permissions = user.permissions ?? [];
-  const canManageSettings = permissions.includes("settings:manage");
+  const canViewSettings = permissions.includes("settings:read");
 
   // Globaler Strg/Cmd+K-Shortcut öffnet die Palette von überall im
   // Dashboard aus – unabhängig davon, wo der Fokus gerade liegt (siehe
@@ -156,7 +156,7 @@ export function CommandPalette({
       label: "Konto",
       onSelect: goTo("/dashboard/account"),
     },
-    ...(canManageSettings
+    ...(canViewSettings
       ? [
           {
             id: "action-settings",
@@ -204,7 +204,7 @@ export function CommandPalette({
     }
     return result;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trimmedQuery, searchResults, canManageSettings]);
+  }, [trimmedQuery, searchResults, canViewSettings]);
 
   const flatItems = useMemo(() => groups.flatMap((group) => group.items), [groups]);
 

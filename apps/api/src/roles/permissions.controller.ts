@@ -5,7 +5,7 @@ import { RequirePermission } from '../auth/decorators/permissions.decorator';
 
 @ApiTags('permissions')
 @ApiBearerAuth()
-@RequirePermission('roles:manage')
+@RequirePermission('roles:read')
 @Controller('permissions')
 export class PermissionsController {
   constructor(private readonly rolesService: RolesService) {}

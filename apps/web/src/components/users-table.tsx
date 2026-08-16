@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-import { toastDeleted } from "@/components/app-toast";
+import { toastEdited } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -14,12 +14,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { HighlightText } from "@/components/highlight-text";
-import { UserRoleSelect } from "@/components/user-role-select";
 import { UserRowActions } from "@/components/user-row-actions";
 import { SelectionToolbar } from "@/components/selection-toolbar";
 import { useSelection } from "@/hooks/use-selection";
 import { useHighlightParam } from "@/hooks/use-highlight-param";
 import { formatName } from "@/lib/utils";
+import { roleBadgeColor } from "@/lib/role-colors";
 import type { CurrentUser, Role } from "@/lib/api-server";
 
 export function UsersTable({
@@ -41,13 +41,17 @@ export function UsersTable({
   const { selected, toggle, toggleAll, clear, allSelected, someSelected, count } =
     useSelection(deletableIds);
 
-  async function handleBulkDelete() {
+  async function handleBulkDeactivate() {
     const count = selected.size;
     await Promise.all(
       [...selected].map((id) => fetch(`/api/users/${id}`, { method: "DELETE" })),
     );
     clear();
-    toastDeleted(count === 1 ? "1 Benutzer wurde gelöscht." : `${count} Benutzer wurden gelöscht.`);
+    toastEdited(
+      count === 1
+        ? "1 Benutzer wurde deaktiviert."
+        : `${count} Benutzer wurden deaktiviert.`,
+    );
     router.refresh();
   }
 
@@ -56,8 +60,11 @@ export function UsersTable({
       <SelectionToolbar
         count={count}
         entityLabelPlural="Benutzer"
-        onDelete={handleBulkDelete}
+        onDelete={handleBulkDeactivate}
         onClear={clear}
+        actionLabel="Benutzer deaktivieren"
+        confirmTitle={`${count} Benutzer deaktivieren?`}
+        confirmDescription="Der Zugriff wird sofort entzogen. Über „Bearbeiten“ lässt sich jedes Konto jederzeit wieder aktivieren."
       />
       <div className="overflow-hidden">
         <Table>
@@ -73,7 +80,6 @@ export function UsersTable({
               </TableHead>
               <TableHead>Name</TableHead>
               <TableHead>E-Mail</TableHead>
-              <TableHead>Rolle</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-center">Aktionen</TableHead>
             </TableRow>
@@ -82,7 +88,7 @@ export function UsersTable({
             {users.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={5}
                   className="h-24 text-center text-muted-foreground"
                 >
                   Noch keine Benutzer vorhanden.
@@ -103,20 +109,21 @@ export function UsersTable({
                       )}
                     </TableCell>
                     <TableCell className="font-medium">
-                      <HighlightText
-                        text={formatName(user)}
-                        query={highlightQuery}
-                        active={activeId === user.id}
-                      />
+                      <div className="flex flex-col items-start gap-1">
+                        <HighlightText
+                          text={formatName(user)}
+                          query={highlightQuery}
+                          active={activeId === user.id}
+                        />
+                        <Badge
+                          variant="secondary"
+                          className={roleBadgeColor(user.role.id)}
+                        >
+                          {user.role.name}
+                        </Badge>
+                      </div>
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <UserRoleSelect
-                        userId={user.id}
-                        roleId={user.role.id}
-                        roles={roles}
-                      />
-                    </TableCell>
                     <TableCell>
                       <Badge
                         variant="secondary"
@@ -134,6 +141,7 @@ export function UsersTable({
                         user={user}
                         isSelf={isSelf}
                         allowEmailChange={allowEmailChange}
+                        roles={roles}
                       />
                     </TableCell>
                   </TableRow>

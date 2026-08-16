@@ -157,10 +157,20 @@ export function FilePickerDialog({
               {uploadError && (
                 <p className="text-sm text-destructive">{uploadError}</p>
               )}
-              <Button type="submit" disabled={isUploading}>
-                <Upload />
-                {isUploading ? "Lädt hoch…" : "Hochladen & einfügen"}
-              </Button>
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-[#D4D4D4]"
+                  onClick={() => onOpenChange(false)}
+                >
+                  Abbrechen
+                </Button>
+                <Button type="submit" disabled={isUploading}>
+                  <Upload />
+                  {isUploading ? "Lädt hoch…" : "Hochladen & einfügen"}
+                </Button>
+              </div>
             </form>
           </TabsContent>
         </Tabs>

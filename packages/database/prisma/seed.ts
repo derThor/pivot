@@ -11,6 +11,8 @@ const PERMISSIONS: { resource: string; action: string }[] = [
   { resource: "content", action: "create" },
   { resource: "content", action: "update" },
   { resource: "content", action: "delete" },
+  { resource: "content", action: "publish" },
+  { resource: "content", action: "schedule" },
   { resource: "media", action: "read" },
   { resource: "media", action: "create" },
   { resource: "media", action: "update" },
@@ -23,47 +25,116 @@ const PERMISSIONS: { resource: string; action: string }[] = [
   { resource: "tags", action: "create" },
   { resource: "tags", action: "update" },
   { resource: "tags", action: "delete" },
+  { resource: "navigation", action: "read" },
+  { resource: "navigation", action: "update" },
+  { resource: "navigation", action: "reorder" },
+  { resource: "module-types", action: "read" },
+  { resource: "gallery", action: "read" },
+  { resource: "gallery", action: "create" },
+  { resource: "gallery", action: "update" },
+  { resource: "gallery", action: "delete" },
+  { resource: "faq", action: "read" },
+  { resource: "faq", action: "create" },
+  { resource: "faq", action: "update" },
+  { resource: "faq", action: "delete" },
+  { resource: "preview-links", action: "read" },
+  { resource: "preview-links", action: "create" },
+  { resource: "preview-links", action: "revoke" },
+  { resource: "webhooks", action: "read" },
+  { resource: "webhooks", action: "create" },
+  { resource: "webhooks", action: "update" },
+  { resource: "webhooks", action: "delete" },
+  { resource: "users", action: "read" },
+  { resource: "users", action: "invite" },
+  { resource: "users", action: "update" },
+  { resource: "users", action: "deactivate" },
+  { resource: "roles", action: "read" },
+  { resource: "roles", action: "create" },
+  { resource: "roles", action: "update" },
+  { resource: "settings", action: "read" },
+  { resource: "settings", action: "update" },
+];
+
+// Alte, jetzt durch feingranulare Aktionen ersetzte Bundle-Rechte – werden
+// nach dem Anlegen der neuen Rechte gelöscht (cascadet automatisch alle
+// `RolePermission`-Zeilen weg, die noch darauf verweisen). Kein
+// Schema-Migrationsschritt nötig, `Permission` ist rein datengetrieben.
+const OBSOLETE_PERMISSIONS: { resource: string; action: string }[] = [
   { resource: "users", action: "manage" },
   { resource: "roles", action: "manage" },
   { resource: "settings", action: "manage" },
 ];
 
+// Namens-Migration (Nutzervorgabe, 2026-08-16): die bisherigen 4
+// Rollennamen ("Admin"/"Editor"/"Autor"/"Nutzer") wurden umbenannt statt
+// neu angelegt (per `upsert` über den jeweils NEUEN Namen unten – die
+// alten Zeilen existieren dadurch nicht mehr, `User.roleId` bleibt aber
+// unverändert, da nur `name` geändert wird, nicht die Zeile selbst
+// gelöscht/neu erstellt wird). "Autor" behält zufällig denselben Namen.
+// Reihenfolge/Beschreibungen 1:1 nach Bildvorlage.
+//
+// Später (noch am 2026-08-16) auf Nutzervorgabe wieder auf 3 Rollen
+// reduziert: Chefredaktion, Autor, Medienpflege, Formular-Manager entfernt
+// (per Direktzugriff auf die DB gelöscht, siehe
+// knowledge-base/auth/rbac-rework.md – der Seed legt entfernte Rollen
+// nicht automatisch an, nur noch vorhandene werden aktualisiert).
 const ROLES: {
   name: string;
   description: string;
   isDefault?: boolean;
   canAccessDashboard: boolean;
+  sortOrder: number;
   permissions: { resource: string; action: string }[];
 }[] = [
   {
-    name: "Admin",
+    name: "Administrator",
     description: "Voller Zugriff auf alle Bereiche.",
     canAccessDashboard: true,
+    sortOrder: 0,
     permissions: PERMISSIONS,
   },
+  // Direkt unter Administrator (Nutzervorgabe, 2026-08-16): operative
+  // Vollmacht für praktisch alles Tagesgeschäft, aber bewusst OHNE die
+  // beiden Rechte, die die Rechte-/Rollen-Architektur selbst verändern
+  // könnten (`roles:create`/`roles:update`) und ohne `settings:update`
+  // (globale System-Konfiguration) – das bleibt Administrator vorbehalten.
+  // Lesend darf Manager beides trotzdem einsehen (`roles:read`,
+  // `settings:read` sind Teil von `PERMISSIONS` und damit inbegriffen).
   {
-    name: "Editor",
-    description: "Kann Inhalte, Medien, Kategorien und Tags verwalten.",
+    name: "Manager",
+    description:
+      "Operative Leitung: verwaltet Inhalte, Medien, Benutzer und alle Erweiterungen – außer Rollen/Rechte, globale Einstellungen und Webhooks.",
     canAccessDashboard: true,
-    permissions: PERMISSIONS.filter((p) =>
-      ["content", "media", "categories", "tags"].includes(p.resource),
-    ),
-  },
-  {
-    name: "Autor",
-    description: "Kann Inhalte und Medien anlegen und bearbeiten.",
-    canAccessDashboard: true,
+    sortOrder: 1,
     permissions: PERMISSIONS.filter(
       (p) =>
-        ["content", "media"].includes(p.resource) && p.action !== "delete",
+        !(p.resource === "roles" && p.action !== "read") &&
+        !(p.resource === "settings" && p.action !== "read") &&
+        p.resource !== "webhooks",
     ),
   },
   {
-    name: "Nutzer",
+    name: "Redakteur",
+    description: "Pflegt Inhalte, veröffentlicht aber nicht selbst.",
+    canAccessDashboard: true,
+    sortOrder: 2,
+    permissions: PERMISSIONS.filter(
+      (p) =>
+        (p.resource === "content" &&
+          ["read", "create", "update", "schedule"].includes(p.action)) ||
+        (p.resource === "media" &&
+          ["read", "create", "update"].includes(p.action)) ||
+        (["categories", "tags"].includes(p.resource) &&
+          ["read", "create", "update"].includes(p.action)),
+    ),
+  },
+  {
+    name: "Gast",
     description:
       "Registrierter Benutzer ohne Zugriff auf das Verwaltungs-Dashboard.",
     isDefault: true,
     canAccessDashboard: false,
+    sortOrder: 3,
     permissions: [],
   },
 ];
@@ -82,23 +153,49 @@ async function main() {
     permissionRecords.map((p) => [`${p.resource}:${p.action}`, p.id]),
   );
 
+  // Alt-Name -> Neu-Name (Nutzervorgabe, 2026-08-16: auf die 7
+  // Beispiel-Rollen umstellen) – per `id` umbenennen statt neu anzulegen,
+  // damit `User.roleId` erhalten bleibt (kein Datenverlust für bereits
+  // zugewiesene Nutzer). Ein simples `upsert({ where: { name: NEUER_NAME } })`
+  // würde das NICHT leisten: es fände unter dem neuen Namen nichts, legte
+  // eine zusätzliche, leere Rolle an und ließe die alte verwaist stehen.
+  const ROLE_RENAMES: Record<string, string> = {
+    Admin: "Administrator",
+    Editor: "Chefredaktion",
+    Nutzer: "Gast / Praktikum",
+    "Gast / Praktikum": "Gast",
+  };
+
   const roleByName = new Map<string, { id: string }>();
   for (const roleDef of ROLES) {
-    const role = await prisma.role.upsert({
-      where: { name: roleDef.name },
-      update: {
-        description: roleDef.description,
-        isDefault: roleDef.isDefault ?? false,
-        canAccessDashboard: roleDef.canAccessDashboard,
-      },
-      create: {
-        name: roleDef.name,
-        description: roleDef.description,
-        isSystem: true,
-        isDefault: roleDef.isDefault ?? false,
-        canAccessDashboard: roleDef.canAccessDashboard,
-      },
+    const oldName = Object.entries(ROLE_RENAMES).find(
+      ([, newName]) => newName === roleDef.name,
+    )?.[0];
+    const existing = await prisma.role.findFirst({
+      where: { name: oldName ? { in: [oldName, roleDef.name] } : roleDef.name },
     });
+
+    const role = existing
+      ? await prisma.role.update({
+          where: { id: existing.id },
+          data: {
+            name: roleDef.name,
+            description: roleDef.description,
+            isDefault: roleDef.isDefault ?? false,
+            canAccessDashboard: roleDef.canAccessDashboard,
+            sortOrder: roleDef.sortOrder,
+          },
+        })
+      : await prisma.role.create({
+          data: {
+            name: roleDef.name,
+            sortOrder: roleDef.sortOrder,
+            description: roleDef.description,
+            isSystem: true,
+            isDefault: roleDef.isDefault ?? false,
+            canAccessDashboard: roleDef.canAccessDashboard,
+          },
+        });
     roleByName.set(roleDef.name, role);
 
     await prisma.rolePermission.deleteMany({ where: { roleId: role.id } });
@@ -109,6 +206,13 @@ async function main() {
       })),
     });
   }
+
+  // Alte Bundle-Rechte entfernen (siehe OBSOLETE_PERMISSIONS oben) –
+  // `onDelete: Cascade` auf `RolePermission.permission` räumt betroffene
+  // Zuordnungen automatisch mit ab.
+  await prisma.permission.deleteMany({
+    where: { OR: OBSOLETE_PERMISSIONS.map((p) => ({ resource: p.resource, action: p.action })) },
+  });
 
   await prisma.appSettings.upsert({
     where: { id: 1 },
@@ -132,7 +236,7 @@ async function main() {
     });
   }
 
-  const adminRole = roleByName.get("Admin")!;
+  const adminRole = roleByName.get("Administrator")!;
   const admin = await prisma.user.upsert({
     where: { email: "admin@pivot.dev" },
     update: {},

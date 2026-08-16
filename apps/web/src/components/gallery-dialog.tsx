@@ -143,7 +143,12 @@ export function GalleryDialog({
             {submitError && <p className="text-sm text-destructive">{submitError}</p>}
           </div>
           <div className="flex shrink-0 justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-[#D4D4D4]"
+              onClick={() => setOpen(false)}
+            >
               Abbrechen
             </Button>
             <Button type="submit" disabled={isSubmitting}>

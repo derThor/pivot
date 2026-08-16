@@ -24,11 +24,15 @@ function Tabs({
 }
 
 const tabsListVariants = cva(
-  "group/tabs-list inline-flex w-fit max-w-full items-center justify-center overflow-x-auto rounded-lg p-1 text-muted-foreground group-data-horizontal/tabs:h-10 group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col data-[variant=line]:rounded-none",
+  "group/tabs-list inline-flex w-fit max-w-full items-center justify-center overflow-x-auto rounded-xl p-1 text-muted-foreground group-data-horizontal/tabs:h-10 group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col data-[variant=line]:rounded-none",
   {
     variants: {
       variant: {
-        default: "bg-muted",
+        // `bg-muted` ist praktisch unsichtbar (--muted liegt bei ~98%
+        // Helligkeit, kaum Unterschied zu --card/--background) – explizite
+        // Farbe statt Theme-Token, damit die Tab-Leiste als eigene Spur
+        // erkennbar bleibt (Nutzervorgabe, 2026-08-16, 1:1 nach Bildvorlage).
+        default: "bg-[#F4F4F5]",
         line: "gap-1 bg-transparent",
       },
     },

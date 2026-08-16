@@ -495,6 +495,7 @@ export function GalleryEditor({
             <Button
               type="button"
               variant="outline"
+              className="border-[#D4D4D4]"
               onClick={() => setCaptionTarget(null)}
             >
               Abbrechen

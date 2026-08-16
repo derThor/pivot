@@ -96,6 +96,14 @@ export function MediaTagsDialog({
         )}
         {error && <p className="text-sm text-destructive">{error}</p>}
         <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            className="border-[#D4D4D4]"
+            onClick={() => onOpenChange(false)}
+          >
+            Abbrechen
+          </Button>
           <Button type="button" onClick={handleSave} disabled={isSaving}>
             {isSaving ? "Speichert…" : "Speichern"}
           </Button>

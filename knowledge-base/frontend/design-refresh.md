@@ -19,6 +19,15 @@ alle Row-Action-Komponenten der Listen-Ansichten)
 > darunter zeigt jetzt einen klaren Zwischenraum zwischen beiden
 > Hintergründen).
 
+> **Update 2026-08-16 (Marketing-Badge oben links auf allen drei
+> Auth-Seiten):** "und füge das auf der login, registrieren und
+> passwort vergessen seite ein" – kleines Badge oben links im Bild
+> (`bg-black/40 backdrop-blur-sm`, lime Punkt, "Websoftware für alle
+> Bereiche"), 1:1 nach Bildvorlage. Nur einmal in `auth-shell.tsx`
+> ergänzt, nicht auf den drei Seiten einzeln – Login/Registrieren/
+> Passwort-vergessen (und Passwort-zurücksetzen) teilen sich diese eine
+> Shell-Komponente bereits, siehe direkt darunter.
+
 > **Update 2026-08-15 (Feste Logos statt konfigurierbar, Auth-Shell
 > responsive + Marketing-Overlay, globaler `destructive`-Button-Stil,
 > Breadcrumb-Farben):**

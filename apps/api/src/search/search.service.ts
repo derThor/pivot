@@ -71,10 +71,10 @@ export class SearchService {
     if (permissions.includes('media:read')) {
       tasks.push(this.searchMedia(q, limit));
     }
-    if (permissions.includes('users:manage')) {
+    if (permissions.includes('users:read')) {
       tasks.push(this.searchUsers(q, limit));
     }
-    if (permissions.includes('roles:manage')) {
+    if (permissions.includes('roles:read')) {
       tasks.push(this.searchRoles(q, limit));
     }
 
@@ -195,9 +195,9 @@ export class SearchService {
       case 'media':
         return permissions.includes('media:read');
       case 'user':
-        return permissions.includes('users:manage');
+        return permissions.includes('users:read');
       case 'role':
-        return permissions.includes('roles:manage');
+        return permissions.includes('roles:read');
     }
   }
 
@@ -266,16 +266,24 @@ export class SearchService {
       const schema = moduleType.schema as {
         fields?: { type?: string; fields?: { type?: string }[] }[];
       };
-      const repeaterField = (schema?.fields ?? []).find((f) => f.type === 'repeater');
+      const repeaterField = (schema?.fields ?? []).find(
+        (f) => f.type === 'repeater',
+      );
       if (!repeaterField) continue;
-      const hasImageSubField = (repeaterField.fields ?? []).some((f) => f.type === 'image');
+      const hasImageSubField = (repeaterField.fields ?? []).some(
+        (f) => f.type === 'image',
+      );
       (hasImageSubField ? galleryTypeIds : faqTypeIds).push(moduleType.id);
     }
     return { faqTypeIds, galleryTypeIds };
   }
 
-  private async searchGlobalModules(q: string, take: number): Promise<SearchResult[]> {
-    const { faqTypeIds, galleryTypeIds } = await this.resolveGlobalModuleTypeIds();
+  private async searchGlobalModules(
+    q: string,
+    take: number,
+  ): Promise<SearchResult[]> {
+    const { faqTypeIds, galleryTypeIds } =
+      await this.resolveGlobalModuleTypeIds();
     const typeIds = [...faqTypeIds, ...galleryTypeIds];
     if (typeIds.length === 0) return [];
 
@@ -300,7 +308,8 @@ export class SearchService {
     take: number,
     skip: number,
   ): Promise<PagedSearchResult> {
-    const { faqTypeIds, galleryTypeIds } = await this.resolveGlobalModuleTypeIds();
+    const { faqTypeIds, galleryTypeIds } =
+      await this.resolveGlobalModuleTypeIds();
     const typeIds = type === 'gallery' ? galleryTypeIds : faqTypeIds;
     if (typeIds.length === 0) return { items: [], total: 0 };
 

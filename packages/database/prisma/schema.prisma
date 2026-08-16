@@ -17,6 +17,10 @@ model Role {
   isSystem           Boolean  @default(false)
   isDefault          Boolean  @default(false)
   canAccessDashboard Boolean  @default(true)
+  // Feste Anzeige-Reihenfolge in der Rollen-Liste (Nutzervorgabe,
+  // 2026-08-16: Administrator, Manager, Redakteur, Gast statt
+  // alphabetisch) – gleiches Muster wie `NavigationItem.sortOrder`.
+  sortOrder          Int      @default(0)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

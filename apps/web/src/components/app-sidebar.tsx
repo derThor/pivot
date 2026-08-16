@@ -101,6 +101,11 @@ export const navGroups = [
             url: "/dashboard/content/galleries",
             icon: Images,
           },
+          {
+            title: "Vorschau-Links",
+            url: "/dashboard/content/preview-links",
+            icon: Link2,
+          },
         ],
       },
       {
@@ -114,12 +119,7 @@ export const navGroups = [
         title: "Menüs",
         url: "/dashboard/navigation",
         icon: Compass,
-        permission: "settings:manage",
-      },
-      {
-        title: "Vorschau-Links",
-        url: "/dashboard/content/preview-links",
-        icon: Link2,
+        permission: "navigation:read",
       },
     ],
   },
@@ -132,14 +132,14 @@ export const navGroups = [
         subtitle: "Konten & Zugänge",
         url: "/dashboard/users",
         icon: Users,
-        permission: "users:manage",
+        permission: "users:read",
       },
       {
         title: "Rollen & Rechte",
         subtitle: "Berechtigungen",
         url: "/dashboard/roles",
         icon: ShieldCheck,
-        permission: "roles:manage",
+        permission: "roles:read",
       },
       {
         title: "Websites",
@@ -152,14 +152,14 @@ export const navGroups = [
         subtitle: "Automatisierte Events",
         url: "/dashboard/webhooks",
         icon: Webhook,
-        permission: "settings:manage",
+        permission: "webhooks:read",
       },
       {
         title: "Systemnachrichten",
         subtitle: "Meldungen & Toasts",
         url: "/dashboard/system-messages",
         icon: MessageSquare,
-        permission: "settings:manage",
+        permission: "settings:read",
       },
     ],
   },
@@ -191,7 +191,10 @@ export const ROUTE_ALIASES: Record<string, string> = {
  * `/dashboard/content/abc123/edit` den Menüpunkt "Seiten"
  * (`/dashboard/content`) aktiv.
  */
-function findBestMatchingUrl(pathname: string, urls: string[]): string | null {
+export function findBestMatchingUrl(
+  pathname: string,
+  urls: string[],
+): string | null {
   let best: string | null = null;
   let bestLength = -1;
   for (const url of urls) {
@@ -242,7 +245,7 @@ export function AppSidebar({
       ),
     }))
     .filter((group) => group.originalItemCount === 0 || group.items.length > 0);
-  const canManageSettings = permissions.includes("settings:manage");
+  const canViewSettings = permissions.includes("settings:read");
 
   // Best-match aktive Item-URL für den aktuellen Pfad – steuert die
   // Hervorhebung des Menüpunkts (siehe `findBestMatchingUrl`). Gruppen
@@ -550,7 +553,7 @@ export function AppSidebar({
       </SidebarContent>
       <SidebarFooter className="border-t px-[25px] transition-[padding] duration-200 ease-linear group-data-[collapsible=icon]:px-[10px]">
         <SidebarMenu>
-          {canManageSettings && (
+          {canViewSettings && (
             <SidebarMenuItem>
               <SidebarMenuButton
                 render={<Link href="/dashboard/settings" />}

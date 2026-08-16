@@ -11,7 +11,7 @@ export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
   @ApiBearerAuth()
-  @RequirePermission('settings:manage')
+  @RequirePermission('settings:read')
   @Get()
   get() {
     return this.settingsService.get();
@@ -24,7 +24,7 @@ export class SettingsController {
   }
 
   @ApiBearerAuth()
-  @RequirePermission('settings:manage')
+  @RequirePermission('settings:update')
   @Patch()
   update(@Body() dto: UpdateSettingsDto) {
     return this.settingsService.update(dto);

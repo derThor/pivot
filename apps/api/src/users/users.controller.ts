@@ -20,36 +20,49 @@ import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @ApiTags('users')
 @ApiBearerAuth()
-@RequirePermission('users:manage')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @RequirePermission('users:read')
   @Get()
   findAll(@Query() query: QueryUserDto) {
     return this.usersService.findAll(query);
   }
 
+  @RequirePermission('users:read')
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
 
+  @RequirePermission('users:read')
   @Get(':id/page')
   findPage(@Param('id') id: string, @Query() query: FindPageDto) {
     return this.usersService.findPage(id, query.pageSize);
   }
 
+  @RequirePermission('users:invite')
   @Post()
-  create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto);
+  create(@Body() dto: CreateUserDto, @CurrentUser() user: JwtPayload) {
+    return this.usersService.create(dto, user);
   }
 
+  @RequirePermission('users:update')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.usersService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.usersService.update(id, dto, user);
   }
 
+  // Soft-Delete (setzt `isActive: false`, siehe UsersService.remove) – als
+  // eigenes `users:deactivate` statt `users:update`, weil das
+  // administrative Recht "jemandem den Zugriff entziehen" unabhängig von
+  // reinen Profil-Änderungen vergeben werden soll.
+  @RequirePermission('users:deactivate')
   @Delete(':id')
   remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.usersService.remove(id, user.sub);

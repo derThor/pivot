@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -12,6 +13,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { QueryUserDto } from './dto/query-user.dto';
+import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 const publicSelect = {
   id: true,
@@ -34,15 +36,17 @@ export class UsersService {
   ) {}
 
   async findAll(query: QueryUserDto) {
-    const { page, pageSize } = query;
+    const { page, pageSize, roleId } = query;
+    const where = roleId ? { roleId } : undefined;
     const [items, total] = await Promise.all([
       this.prisma.user.findMany({
+        where,
         select: publicSelect,
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-      this.prisma.user.count(),
+      this.prisma.user.count({ where }),
     ]);
     return {
       items,
@@ -70,7 +74,31 @@ export class UsersService {
     return user;
   }
 
-  async create(dto: CreateUserDto) {
+  // Nur Administratoren dürfen die Administrator-Rolle vergeben
+  // (Nutzervorgabe, 2026-08-16) – `users:update`/`users:invite` allein
+  // hätten sonst z.B. Manager erlaubt, sich oder andere zum Admin zu
+  // machen (`roles:read` reicht, um die Rollen-ID zu ermitteln).
+  // Namensbasiert wie `isAdministrator`-Checks im Frontend, da
+  // Administrator die einzige Rolle ist, die diese Sonderbehandlung
+  // braucht.
+  private async assertMayAssignRole(
+    actingUser: JwtPayload,
+    roleId: string | undefined,
+  ) {
+    if (!roleId || actingUser.roleName === 'Administrator') return;
+    const role = await this.prisma.role.findUnique({
+      where: { id: roleId },
+      select: { name: true },
+    });
+    if (role?.name === 'Administrator') {
+      throw new ForbiddenException(
+        'Nur Administratoren können die Administrator-Rolle vergeben.',
+      );
+    }
+  }
+
+  async create(dto: CreateUserDto, actingUser: JwtPayload) {
+    await this.assertMayAssignRole(actingUser, dto.roleId);
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -102,7 +130,8 @@ export class UsersService {
     });
   }
 
-  async update(id: string, dto: UpdateUserDto) {
+  async update(id: string, dto: UpdateUserDto, actingUser: JwtPayload) {
+    await this.assertMayAssignRole(actingUser, dto.roleId);
     const existing = await this.findOneRaw(id);
 
     if (dto.email && dto.email !== existing.email) {
@@ -138,6 +167,15 @@ export class UsersService {
     });
   }
 
+  // Soft-Delete statt `prisma.user.delete()`: ein Hard-Delete brach mit
+  // einem FK-Constraint-Fehler (`contents_authorId_fkey`), sobald der
+  // Nutzer irgendeinen Content verfasst hatte – praktisch jeder Editor
+  // nach der ersten Seite. Passt außerdem besser zum Rechtenamen
+  // `users:deactivate` (siehe knowledge-base/auth/rbac-rework.md): der
+  // Zugriff wird entzogen, die Autorenschaft bestehender Inhalte bleibt
+  // aber nachvollziehbar erhalten. Bestehende Refresh-Tokens werden
+  // widerrufen, damit der Zugriffsentzug sofort greift statt erst nach
+  // Ablauf des Access-Tokens (siehe AuthService.refresh()).
   async remove(id: string, currentUserId: string) {
     if (id === currentUserId) {
       throw new BadRequestException(
@@ -145,7 +183,13 @@ export class UsersService {
       );
     }
     await this.findOne(id);
-    await this.prisma.user.delete({ where: { id } });
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id }, data: { isActive: false } }),
+      this.prisma.refreshToken.updateMany({
+        where: { userId: id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
   }
 
   private async findOneRaw(id: string) {

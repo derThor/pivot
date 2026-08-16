@@ -84,7 +84,7 @@ export function DashboardHeader({
   return (
     <header className="sticky top-0 z-40 flex h-20 min-w-0 shrink-0 items-center gap-3 border-b bg-background/70 px-4 py-4 backdrop-blur-md">
       <SidebarTrigger />
-      <div className="ml-2">
+      <div className="ml-6">
         <AdminMenu permissions={permissions} />
       </div>
       <div className="ml-auto flex min-w-0 items-center gap-2">
@@ -119,7 +119,7 @@ export function DashboardHeader({
             render={
               <Button
                 variant="ghost"
-                className="h-11 shrink-0 gap-2 rounded-full border bg-card pl-1.5 pr-3 hover:bg-muted/40"
+                className="h-11 shrink-0 gap-2 rounded-full border bg-card pl-1.5 pr-3 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-popup-open:border-transparent data-popup-open:bg-primary data-popup-open:text-primary-foreground"
               />
             }
           >

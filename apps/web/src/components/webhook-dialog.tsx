@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -118,9 +119,19 @@ export function WebhookDialog() {
             ))}
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Wird angelegt…" : "Webhook anlegen"}
-          </Button>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-[#D4D4D4]"
+              onClick={() => setOpen(false)}
+            >
+              Abbrechen
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Wird angelegt…" : "Webhook anlegen"}
+            </Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
