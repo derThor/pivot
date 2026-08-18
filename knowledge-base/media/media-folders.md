@@ -71,6 +71,25 @@ apps/web (`src/components/media-folder-browser.tsx`,
 > Systemordner (`folder.isSystem`), exakt dasselbe Schutzmuster wie
 > `RoleRowActions` für `role.isSystem`.
 
+> **Update 2026-08-17 (zweiter Systemordner "Avatare"):** Gleiches Muster
+> ein zweites Mal für Profilfoto-Uploads ("Mein Konto") genutzt – Details
+> siehe [self-service-auth-flows.md](../auth/self-service-auth-flows.md).
+> Wichtiger Stolperstein dabei: Sobald mehr als ein Systemordner existiert,
+> reicht `folders.find(f => f.isSystem)` allein nicht mehr aus, um einen
+> bestimmten Systemordner zu finden (nicht-deterministisch, welcher
+> zurückkommt) – jede Stelle, die gezielt **einen bestimmten**
+> Systemordner sucht, muss zusätzlich nach `folder.name` filtern
+> (`dashboard/settings/page.tsx`s Logo-Lookup wurde entsprechend
+> nachgezogen).
+>
+> **Nachtrag, selbiger Tag:** `FolderTileMenu`s "Löschen"-Eintrag war für
+> Systemordner zwar bereits `disabled`, sah dabei aber weiterhin wie ein
+> normaler, anklickbarer roter Löschen-Eintrag aus (Nutzer-Feedback anhand
+> Screenshot: nicht erkennbar, dass er blockiert ist). Ergänzt: ein
+> `Lock`-Icon rechtsbündig (`ml-auto`) im selben Menüpunkt, nur wenn
+> `folder.isSystem` – gleiches "Geschützt"-Symbol wie beim
+> Administrator-Rollen-Badge in `roles-explorer.tsx`.
+
 ## Was wurde gebaut
 
 - Neues Backend-Modul `media-folders`: `GET /media-folders` (liefert

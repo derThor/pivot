@@ -29,7 +29,7 @@ describe('Kategorien/Tags-Flow (e2e)', () => {
     await cleanup();
 
     const editorRole = await prisma.role.findFirstOrThrow({
-      where: { name: 'Editor' },
+      where: { name: 'Chefredaktion' },
     });
     await prisma.user.create({
       data: {

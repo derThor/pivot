@@ -5,40 +5,42 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import {
+  Bell,
+  Contrast,
+  History,
+  Menu,
+  Palette,
+  Plug,
+  Shield,
+  type LucideIcon,
+} from "lucide-react";
 
 import { toastEdited } from "@/components/app-toast";
+import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
+import { SegmentedPicker } from "@/components/segmented-picker";
+import { SwitchRow } from "@/components/switch-row";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
 import { LogoUploadField } from "@/components/logo-upload-field";
-import { PageContent } from "@/components/page-content";
+import { cn } from "@/lib/utils";
 import type { AppSettings } from "@/lib/api-server";
 
-const companyFields = [
-  { key: "companyName", label: "Firmenname" },
-  { key: "companyStreet", label: "Straße und Hausnummer" },
-  { key: "companyPostalCode", label: "PLZ" },
-  { key: "companyCity", label: "Ort" },
-  { key: "companyCountry", label: "Land" },
-  { key: "companyRepresentative", label: "Vertretungsberechtigte Person" },
-  { key: "companyEmail", label: "E-Mail" },
-  { key: "companyPhone", label: "Telefon" },
-  { key: "companyRegisterCourt", label: "Registergericht" },
-  { key: "companyRegisterNumber", label: "Handelsregisternummer" },
-  { key: "companyVatId", label: "USt-IdNr." },
+// Feste Akzentfarben-Auswahl (1:1 nach Bildvorlage) + freier Farbwähler
+// (Nutzervorgabe, 2026-08-17). Lime ist die bestehende Markenfarbe – ein
+// Klick darauf setzt `accentColor` zurück auf `null` (Standard) statt den
+// Hex-Wert explizit zu speichern.
+const ACCENT_PRESETS = [
+  { label: "Lime (Standard)", hex: "#C8EE44" },
+  { label: "Blau", hex: "#93B7EE" },
+  { label: "Orange", hex: "#E8A33D" },
+  { label: "Navy", hex: "#151E2E" },
 ] as const;
-
-type CompanyFieldKey = (typeof companyFields)[number]["key"];
 
 const settingsSchema = z.object({
   allowRegistration: z.boolean(),
@@ -53,30 +55,90 @@ const settingsSchema = z.object({
   passwordRequireLowercase: z.boolean(),
   passwordRequireNumber: z.boolean(),
   passwordRequireSpecialChar: z.boolean(),
+  passwordExpiryDays: z.number().int().min(1).nullable(),
+  failedLoginLockoutThreshold: z.number().int().min(1).nullable(),
+  passwordBlockLeaked: z.boolean(),
+  passwordPreventReuseEnabled: z.boolean(),
+  allowTwoFactor: z.boolean(),
+  requireTwoFactorForAdmins: z.boolean(),
+  requireTwoFactorForAll: z.boolean(),
+  requireTwoFactorForPublishers: z.boolean(),
+  sessionIdleTimeoutMinutes: z.number().int().min(1).nullable(),
+  accentColor: z.string().nullable(),
+  tableDensity: z.enum(["compact", "normal", "airy"]),
+  sidebarCollapsedByDefault: z.boolean(),
+  keyboardShortcutsEnabled: z.boolean(),
+  reduceMotion: z.boolean(),
   defaultPageSize: z.number().int().min(1).max(100),
 });
 
 type SettingsValues = z.infer<typeof settingsSchema>;
 
-function SwitchRow({
-  label,
-  description,
-  checked,
-  onCheckedChange,
-}: {
-  label: string;
-  description: string;
-  checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
-}) {
+type SectionId =
+  | "access"
+  | "security"
+  | "display"
+  | "integrations"
+  | "notifications"
+  | "protocol";
+
+const SECTIONS: {
+  id: SectionId;
+  title: string;
+  subtitle: string;
+  icon: LucideIcon;
+}[] = [
+  {
+    id: "access",
+    title: "Zugriff & Funktionen",
+    subtitle: "Module ein- und ausschalten",
+    icon: Menu,
+  },
+  {
+    id: "security",
+    title: "Sicherheit",
+    subtitle: "Passwörter, 2FA, Sitzungen",
+    icon: Shield,
+  },
+  {
+    id: "display",
+    title: "Darstellung",
+    subtitle: "Logo, Akzentfarbe, Dichte",
+    icon: Contrast,
+  },
+  {
+    id: "integrations",
+    title: "Integrationen",
+    subtitle: "API-Schlüssel, Dienste",
+    icon: Plug,
+  },
+  {
+    id: "notifications",
+    title: "Benachrichtigungen",
+    subtitle: "Absender & Systemmails",
+    icon: Bell,
+  },
+  {
+    id: "protocol",
+    title: "Protokoll",
+    subtitle: "Änderungen & Export",
+    icon: History,
+  },
+];
+
+/** Einheitliche Platzhalter-Karte für Bereiche ohne echte Funktion dahinter
+ * (gleiche Konvention wie die Darstellung-/Benachrichtigungen-Tabs auf
+ * "Mein Konto") – kein erfundener Inhalt, nur ein ehrlicher Hinweis. */
+function PlaceholderCard({ title, note }: { title: string; note: string }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-2">
-      <div className="flex flex-col gap-0.5">
-        <Label>{label}</Label>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </div>
-      <Switch checked={checked} onCheckedChange={onCheckedChange} />
-    </div>
+    <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground">{note}</p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -88,18 +150,23 @@ export function SettingsForm({
   logoFolderId: string | null;
 }) {
   const router = useRouter();
+  const [activeSection, setActiveSection] = useState<SectionId>("access");
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [companyValues, setCompanyValues] = useState<
-    Record<CompanyFieldKey, string>
-  >(
-    Object.fromEntries(
-      companyFields.map(({ key }) => [key, settings[key] ?? ""]),
-    ) as Record<CompanyFieldKey, string>,
-  );
+
+  const defaultMediaStorageQuotaMb =
+    settings.mediaStorageQuotaMb != null ?
+      String(settings.mediaStorageQuotaMb)
+    : "";
+
   const [mediaStorageQuotaMb, setMediaStorageQuotaMb] = useState(
-    settings.mediaStorageQuotaMb != null ? String(settings.mediaStorageQuotaMb) : "",
+    defaultMediaStorageQuotaMb,
+  );
+
+  const defaultMaxUploadSizeMb =
+    settings.maxUploadSizeMb != null ? String(settings.maxUploadSizeMb) : "";
+  const [maxUploadSizeMb, setMaxUploadSizeMb] = useState(
+    defaultMaxUploadSizeMb,
   );
   const [isClearingCache, setIsClearingCache] = useState(false);
 
@@ -113,28 +180,83 @@ export function SettingsForm({
     }
   }
 
+  const [isRevokingAllSessions, setIsRevokingAllSessions] = useState(false);
+  async function handleRevokeAllSessions() {
+    setIsRevokingAllSessions(true);
+    try {
+      const res = await fetch("/api/settings/revoke-all-sessions", {
+        method: "POST",
+      });
+      const data = await res.json().catch(() => null);
+      toastEdited(
+        `Alle Sitzungen wurden beendet${data?.count != null ? ` (${data.count})` : ""}.`,
+      );
+    } finally {
+      setIsRevokingAllSessions(false);
+    }
+  }
+
+  const [isForcingPasswordResetAll, setIsForcingPasswordResetAll] =
+    useState(false);
+  async function handleForcePasswordResetAll() {
+    setIsForcingPasswordResetAll(true);
+    try {
+      const res = await fetch("/api/settings/force-password-reset-all", {
+        method: "POST",
+      });
+      const data = await res.json().catch(() => null);
+      toastEdited(
+        `Passwort-Reset wurde für alle Konten erzwungen${data?.count != null ? ` (${data.count})` : ""}.`,
+      );
+    } finally {
+      setIsForcingPasswordResetAll(false);
+    }
+  }
+
+  const defaultValues: SettingsValues = {
+    allowRegistration: settings.allowRegistration,
+    allowPasswordReset: settings.allowPasswordReset,
+    allowEmailChange: settings.allowEmailChange,
+    requireAdminActivation: settings.requireAdminActivation,
+    autosaveEnabled: settings.autosaveEnabled,
+    mediaResponsiveVariantsEnabled: settings.mediaResponsiveVariantsEnabled,
+    maintenanceModeEnabled: settings.maintenanceModeEnabled,
+    passwordMinLength: settings.passwordMinLength,
+    passwordRequireUppercase: settings.passwordRequireUppercase,
+    passwordRequireLowercase: settings.passwordRequireLowercase,
+    passwordRequireNumber: settings.passwordRequireNumber,
+    passwordRequireSpecialChar: settings.passwordRequireSpecialChar,
+    passwordExpiryDays: settings.passwordExpiryDays,
+    failedLoginLockoutThreshold: settings.failedLoginLockoutThreshold,
+    passwordBlockLeaked: settings.passwordBlockLeaked,
+    passwordPreventReuseEnabled: settings.passwordPreventReuseEnabled,
+    allowTwoFactor: settings.allowTwoFactor,
+    requireTwoFactorForAdmins: settings.requireTwoFactorForAdmins,
+    requireTwoFactorForAll: settings.requireTwoFactorForAll,
+    requireTwoFactorForPublishers: settings.requireTwoFactorForPublishers,
+    sessionIdleTimeoutMinutes: settings.sessionIdleTimeoutMinutes,
+    accentColor: settings.accentColor,
+    tableDensity: settings.tableDensity as "compact" | "normal" | "airy",
+    sidebarCollapsedByDefault: settings.sidebarCollapsedByDefault,
+    keyboardShortcutsEnabled: settings.keyboardShortcutsEnabled,
+    reduceMotion: settings.reduceMotion,
+    defaultPageSize: settings.defaultPageSize,
+  };
+
   const form = useForm<SettingsValues>({
     resolver: zodResolver(settingsSchema),
-    defaultValues: {
-      allowRegistration: settings.allowRegistration,
-      allowPasswordReset: settings.allowPasswordReset,
-      allowEmailChange: settings.allowEmailChange,
-      requireAdminActivation: settings.requireAdminActivation,
-      autosaveEnabled: settings.autosaveEnabled,
-      mediaResponsiveVariantsEnabled: settings.mediaResponsiveVariantsEnabled,
-      maintenanceModeEnabled: settings.maintenanceModeEnabled,
-      passwordMinLength: settings.passwordMinLength,
-      passwordRequireUppercase: settings.passwordRequireUppercase,
-      passwordRequireLowercase: settings.passwordRequireLowercase,
-      passwordRequireNumber: settings.passwordRequireNumber,
-      passwordRequireSpecialChar: settings.passwordRequireSpecialChar,
-      defaultPageSize: settings.defaultPageSize,
-    },
+    defaultValues,
   });
+
+  function handleDiscard() {
+    form.reset(defaultValues);
+    setMediaStorageQuotaMb(defaultMediaStorageQuotaMb);
+    setMaxUploadSizeMb(defaultMaxUploadSizeMb);
+    setError(null);
+  }
 
   async function onSubmit(values: SettingsValues) {
     setError(null);
-    setSuccess(false);
     setIsSubmitting(true);
     try {
       const res = await fetch("/api/settings", {
@@ -142,9 +264,11 @@ export function SettingsForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...values,
-          ...companyValues,
           mediaStorageQuotaMb: mediaStorageQuotaMb.trim()
             ? Number(mediaStorageQuotaMb)
+            : null,
+          maxUploadSizeMb: maxUploadSizeMb.trim()
+            ? Number(maxUploadSizeMb)
             : null,
         }),
       });
@@ -157,7 +281,6 @@ export function SettingsForm({
         return;
       }
 
-      setSuccess(true);
       toastEdited("Die Einstellungen wurden gespeichert.");
       router.refresh();
     } catch {
@@ -169,77 +292,85 @@ export function SettingsForm({
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="flex w-full flex-col"
-      >
-        <PageContent className="gap-4">
-          <Tabs defaultValue="company">
-            <TabsList>
-              <TabsTrigger value="company">Firma</TabsTrigger>
-              <TabsTrigger value="access">Zugriff & Funktionen</TabsTrigger>
-              <TabsTrigger value="password-policy">
-                Passwort-Richtlinie
-              </TabsTrigger>
-              <TabsTrigger value="display">Darstellung</TabsTrigger>
-            </TabsList>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Einstellungen
+            </h1>
+            <DashboardBreadcrumbs />
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="border-[#D4D4D4]"
+              onClick={handleDiscard}
+              disabled={isSubmitting}
+            >
+              Verwerfen
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Speichert…" : "Speichern"}
+            </Button>
+          </div>
+        </div>
 
-            <TabsContent value="company">
-              <Card className="border-none bg-transparent shadow-none">
-                <CardHeader>
-                  <CardTitle>Firmenangaben</CardTitle>
-                  <CardDescription>
-                    Für Impressum und Datenschutzhinweise.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 gap-x-10 gap-y-10 sm:grid-cols-2">
-                  {companyFields.map(({ key, label }) => (
-                    <div key={key} className="flex flex-col gap-2">
-                      <Label htmlFor={key}>{label}</Label>
-                      <Input
-                        id={key}
-                        value={companyValues[key]}
-                        onChange={(e) =>
-                          setCompanyValues((prev) => ({
-                            ...prev,
-                            [key]: e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
-              <Card className="mt-6 border-none bg-transparent shadow-none">
-                <CardHeader>
-                  <CardTitle>Firmenlogo</CardTitle>
-                  <CardDescription>
-                    Wird aktuell an keiner Stelle im Dashboard angezeigt
-                    (Sidebar-Logo und Anmelde-Bild sind fest hinterlegt und
-                    nicht veränderbar).
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 gap-x-10 gap-y-10 sm:grid-cols-3">
-                  <LogoUploadField
-                    field="companyLogoUrl"
-                    label="Firmenlogo"
-                    currentUrl={settings.companyLogoUrl}
-                    folderId={logoFolderId}
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+          <div className="overflow-hidden rounded-xl border border-[#E5E5E5] bg-card shadow-sm lg:w-80 lg:shrink-0">
+            <div className="flex flex-col divide-y divide-[#F0F0F0]">
+              {SECTIONS.map((section) => {
+                const isActive = section.id === activeSection;
+                const Icon = section.icon;
+                return (
+                  <button
+                    key={section.id}
+                    type="button"
+                    onClick={() => setActiveSection(section.id)}
+                    className={cn(
+                      "flex items-start gap-3 border-l-4 px-4 py-4 text-left transition-colors",
+                      isActive ?
+                        "border-l-primary bg-primary/15"
+                      : "border-l-transparent hover:bg-muted/50",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "flex size-9 shrink-0 items-center justify-center rounded-lg",
+                        isActive ?
+                          "bg-primary/25 text-foreground"
+                        : "bg-[#F4F4F5] text-muted-foreground",
+                      )}
+                    >
+                      <Icon className="size-4" />
+                    </span>
+                    <span className="flex flex-col gap-0.5">
+                      <span className="text-sm font-semibold">
+                        {section.title}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {section.subtitle}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-            <TabsContent value="access">
-              <Card className="border-none bg-transparent shadow-none">
+          <div className="flex min-w-0 flex-1 flex-col gap-4">
+            {activeSection === "access" && (
+              <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
                 <CardHeader>
                   <CardTitle>Zugriff & Funktionen</CardTitle>
-                  <CardDescription>
-                    Steuert, welche Selbstbedienungs-Funktionen verfügbar sind.
-                  </CardDescription>
+                  <p className="text-sm text-muted-foreground">
+                    Steuert, welche Selbstbedienungs-Funktionen verfügbar
+                    sind.
+                  </p>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-10">
+                <CardContent className="flex flex-col gap-3">
                   <FormField
                     control={form.control}
                     name="allowRegistration"
@@ -338,7 +469,7 @@ export function SettingsForm({
                       </FormItem>
                     )}
                   />
-                  <div className="flex items-center justify-between gap-4 py-2">
+                  <div className="flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
                     <div className="flex flex-col gap-0.5">
                       <Label htmlFor="mediaStorageQuotaMb">
                         Medien-Speicherkontingent (MB)
@@ -358,7 +489,29 @@ export function SettingsForm({
                       placeholder="Unbegrenzt"
                     />
                   </div>
-                  <div className="flex items-center justify-between gap-4 py-2">
+                  <div className="flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+                    <div className="flex flex-col gap-0.5">
+                      <Label htmlFor="maxUploadSizeMb">
+                        Maximale Dateigröße pro Upload (MB)
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Gilt für jeden Upload (Medien, Profilbild,
+                        Firmenlogo). Verschärft nur die technischen
+                        Kategorie-Obergrenzen, hebt sie nie auf. Leer lassen
+                        für keine zusätzliche Grenze.
+                      </p>
+                    </div>
+                    <Input
+                      id="maxUploadSizeMb"
+                      type="number"
+                      min={1}
+                      className="w-32"
+                      value={maxUploadSizeMb}
+                      onChange={(e) => setMaxUploadSizeMb(e.target.value)}
+                      placeholder="Unbegrenzt"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
                     <div className="flex flex-col gap-0.5">
                       <Label>Cache</Label>
                       <p className="text-sm text-muted-foreground">
@@ -380,158 +533,522 @@ export function SettingsForm({
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
+            )}
 
-            <TabsContent value="password-policy">
-              <Card className="border-none bg-transparent shadow-none">
-                <CardHeader>
-                  <CardTitle>Passwort-Richtlinie</CardTitle>
-                  <CardDescription>
-                    Gilt für Registrierung, neue Benutzer, Passwort ändern und
-                    Passwort-Reset.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-10">
-                  <FormField
-                    control={form.control}
-                    name="passwordMinLength"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center justify-between gap-4">
-                          <Label htmlFor="passwordMinLength">
-                            Mindestlänge
-                          </Label>
-                          <FormControl>
-                            <Input
-                              id="passwordMinLength"
-                              type="number"
-                              min={4}
-                              max={128}
-                              className="w-24"
-                              {...field}
-                              onChange={(e) =>
-                                field.onChange(e.target.valueAsNumber)
-                              }
+            {activeSection === "security" && (
+              <>
+                <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+                  <CardHeader>
+                    <CardTitle>Passwort-Richtlinie</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Gilt für Registrierung, neue Benutzer, Passwort ändern
+                      und Passwort-Reset.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                      <FormField
+                        control={form.control}
+                        name="passwordMinLength"
+                        render={({ field }) => (
+                          <FormItem>
+                            <SegmentedPicker
+                              label="Mindestlänge"
+                              value={field.value}
+                              onChange={field.onChange}
+                              options={[
+                                { label: "8", value: 8 },
+                                { label: "10", value: 10 },
+                                { label: "12", value: 12 },
+                                { label: "16", value: 16 },
+                              ]}
                             />
-                          </FormControl>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  <div className="flex flex-col gap-10">
-                    <FormField
-                      control={form.control}
-                      name="passwordRequireUppercase"
-                      render={({ field }) => (
-                        <FormItem>
-                          <SwitchRow
-                            label="Großbuchstabe erforderlich"
-                            description="Mindestens ein Großbuchstabe (A-Z)."
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="passwordRequireLowercase"
-                      render={({ field }) => (
-                        <FormItem>
-                          <SwitchRow
-                            label="Kleinbuchstabe erforderlich"
-                            description="Mindestens ein Kleinbuchstabe (a-z)."
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="passwordRequireNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <SwitchRow
-                            label="Ziffer erforderlich"
-                            description="Mindestens eine Ziffer (0-9)."
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="passwordRequireSpecialChar"
-                      render={({ field }) => (
-                        <FormItem>
-                          <SwitchRow
-                            label="Sonderzeichen erforderlich"
-                            description="Mindestens ein Zeichen, das kein Buchstabe/Ziffer ist."
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="display">
-              <Card className="border-none bg-transparent shadow-none">
-                <CardHeader>
-                  <CardTitle>Darstellung</CardTitle>
-                  <CardDescription>
-                    Gilt für alle Listen-Ansichten im Dashboard (Inhalte,
-                    Medien, Kategorien, Tags, Benutzer, Rollen,
-                    Versionshistorie).
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <FormField
-                    control={form.control}
-                    name="defaultPageSize"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center justify-between gap-4">
-                          <Label htmlFor="defaultPageSize">
-                            Einträge pro Seite
-                          </Label>
-                          <FormControl>
-                            <Input
-                              id="defaultPageSize"
-                              type="number"
-                              min={1}
-                              max={100}
-                              className="w-24"
-                              {...field}
-                              onChange={(e) =>
-                                field.onChange(e.target.valueAsNumber)
-                              }
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="passwordExpiryDays"
+                        render={({ field }) => (
+                          <FormItem>
+                            <SegmentedPicker
+                              label="Wechsel nach Tagen"
+                              value={field.value}
+                              onChange={field.onChange}
+                              options={[
+                                { label: "90", value: 90 },
+                                { label: "180", value: 180 },
+                                { label: "365", value: 365 },
+                                { label: "nie", value: null },
+                              ]}
                             />
-                          </FormControl>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="failedLoginLockoutThreshold"
+                        render={({ field }) => (
+                          <FormItem>
+                            <SegmentedPicker
+                              label="Sperre nach Fehlversuchen"
+                              value={field.value}
+                              onChange={field.onChange}
+                              options={[
+                                { label: "3", value: 3 },
+                                { label: "5", value: 5 },
+                                { label: "10", value: 10 },
+                                { label: "nie", value: null },
+                              ]}
+                            />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      <SwitchRow
+                        label="Groß-/Kleinschreibung und Zahl erforderlich"
+                        description="Mindestens ein Großbuchstabe, ein Kleinbuchstabe und eine Ziffer."
+                        checked={
+                          form.watch("passwordRequireUppercase") &&
+                          form.watch("passwordRequireLowercase") &&
+                          form.watch("passwordRequireNumber")
+                        }
+                        onCheckedChange={(checked) => {
+                          form.setValue("passwordRequireUppercase", checked);
+                          form.setValue("passwordRequireLowercase", checked);
+                          form.setValue("passwordRequireNumber", checked);
+                        }}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="passwordRequireSpecialChar"
+                        render={({ field }) => (
+                          <FormItem>
+                            <SwitchRow
+                              label="Sonderzeichen erforderlich"
+                              description="Mindestens ein Zeichen, das kein Buchstabe/Ziffer ist."
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="passwordBlockLeaked"
+                        render={({ field }) => (
+                          <FormItem>
+                            <SwitchRow
+                              label="Bekannte geleakte Passwörter blockieren"
+                              description="Prüfung gegen die Have-I-Been-Pwned-Datenbank (k-Anonymität, das Passwort selbst verlässt den Server nie)."
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="passwordPreventReuseEnabled"
+                        render={({ field }) => (
+                          <FormItem>
+                            <SwitchRow
+                              label="Letzte 5 Passwörter nicht erneut zulassen"
+                              description="Verhindert die Wiederverwendung eines der letzten 5 Passwörter desselben Kontos."
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          {success && (
-            <p className="text-sm text-muted-foreground">Gespeichert.</p>
-          )}
-        </PageContent>
-        <PageContent plain className="mt-10 items-start">
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Speichert…" : "Einstellungen speichern"}
-          </Button>
-        </PageContent>
+                <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+                  <CardHeader>
+                    <CardTitle>Anmeldung</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      2FA per Authenticator-App (z.B. Google Authenticator,
+                      Authy, Microsoft Authenticator), Sitzungsdauer und
+                      globale Konto-Aktionen.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-3">
+                    <FormField
+                      control={form.control}
+                      name="allowTwoFactor"
+                      render={({ field }) => (
+                        <FormItem>
+                          <SwitchRow
+                            label="2FA verfügbar machen"
+                            description="Schaltet das Feature systemweit ein/aus. Deaktiviert blendet die Einrichtung überall aus und der zweite Faktor wird beim Login nicht mehr abgefragt, auch wenn einzelne Nutzer ihn zuvor eingerichtet hatten."
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="requireTwoFactorForAll"
+                      render={({ field }) => (
+                        <FormItem>
+                          <SwitchRow
+                            label="Zwei-Faktor für alle Konten erzwingen"
+                            description="Nutzer ohne 2FA werden beim Login zur Einrichtung geführt."
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            disabled={!form.watch("allowTwoFactor")}
+                          />
+                        </FormItem>
+                      )}
+                    />
+                    <div
+                      className={cn(
+                        "grid transition-all duration-300 ease-in-out",
+                        form.watch("requireTwoFactorForAll") ?
+                          "grid-rows-[0fr] opacity-0"
+                        : "grid-rows-[1fr] opacity-100",
+                      )}
+                    >
+                      <div className="flex flex-col gap-3 overflow-hidden">
+                        <FormField
+                          control={form.control}
+                          name="requireTwoFactorForPublishers"
+                          render={({ field }) => (
+                            <FormItem>
+                              <SwitchRow
+                                label="Zwei-Faktor für Rollen mit Veröffentlichungsrecht"
+                                description="Gilt für jede Rolle mit dem Recht, Inhalte zu veröffentlichen."
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                disabled={!form.watch("allowTwoFactor")}
+                              />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="requireTwoFactorForAdmins"
+                          render={({ field }) => (
+                            <FormItem>
+                              <SwitchRow
+                                label="Zwei-Faktor für Administratoren erzwingen"
+                                description="Administrator-Konten ohne eingerichtete 2FA werden nach dem Login zur Einrichtung gezwungen, bevor sie das Dashboard nutzen können."
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                disabled={!form.watch("allowTwoFactor")}
+                              />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name="sessionIdleTimeoutMinutes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <SwitchRow
+                            label="Sitzung nach 8 Std. Inaktivität beenden"
+                            description="Beendet eine Sitzung automatisch, wenn 8 Stunden lang keine Anfrage mehr einging."
+                            checked={field.value != null}
+                            onCheckedChange={(checked) =>
+                              field.onChange(checked ? 480 : null)
+                            }
+                          />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="mt-1 flex flex-col gap-3 border-t border-[#F0F0F0] pt-4 sm:flex-row">
+                      <ConfirmDeleteDialog
+                        trigger={
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="border-[#D4D4D4]"
+                            disabled={isRevokingAllSessions}
+                          >
+                            {isRevokingAllSessions ?
+                              "Beendet…"
+                            : "Alle Sitzungen beenden"}
+                          </Button>
+                        }
+                        variant="default"
+                        title="Alle Sitzungen beenden?"
+                        description="Jeder angemeldete Nutzer (inklusive dir selbst) wird sofort abgemeldet und muss sich neu anmelden."
+                        confirmLabel="Beenden"
+                        confirmingLabel="Beendet…"
+                        onConfirm={handleRevokeAllSessions}
+                      />
+                      <ConfirmDeleteDialog
+                        trigger={
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="border-[#D4D4D4] text-destructive hover:text-destructive"
+                            disabled={isForcingPasswordResetAll}
+                          >
+                            {isForcingPasswordResetAll ?
+                              "Erzwingt…"
+                            : "Passwort-Reset für alle erzwingen"}
+                          </Button>
+                        }
+                        title="Passwort-Reset für alle Konten erzwingen?"
+                        description="Jeder aktive Nutzer muss beim nächsten Login ein neues Passwort vergeben."
+                        confirmLabel="Erzwingen"
+                        confirmingLabel="Erzwingt…"
+                        onConfirm={handleForcePasswordResetAll}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+
+            {activeSection === "display" && (
+              <>
+                <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+                  <CardHeader>
+                    <CardTitle>Marke</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Wirkt im Backend.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="flex flex-col gap-2">
+                      <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                        Logo
+                      </span>
+                      <div className="rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+                        <LogoUploadField
+                          field="companyLogoUrl"
+                          label="Firmenlogo"
+                          currentUrl={settings.companyLogoUrl}
+                          folderId={logoFolderId}
+                        />
+                      </div>
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="accentColor"
+                      render={({ field }) => {
+                        const current = field.value ?? ACCENT_PRESETS[0].hex;
+                        const isCustom = !ACCENT_PRESETS.some(
+                          (preset) =>
+                            preset.hex.toLowerCase() ===
+                            current.toLowerCase(),
+                        );
+                        // Grobe Helligkeitsschätzung, nur um das
+                        // Paletten-Icon auf der eigenen Farbe lesbar zu
+                        // halten (hell → dunkles Icon, dunkel → helles Icon).
+                        const r = parseInt(current.slice(1, 3), 16);
+                        const g = parseInt(current.slice(3, 5), 16);
+                        const b = parseInt(current.slice(5, 7), 16);
+                        const isLightCustom =
+                          (r * 299 + g * 587 + b * 114) / 1000 > 150;
+                        return (
+                          <FormItem>
+                            <div className="flex flex-col gap-2">
+                              <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                Akzentfarbe
+                              </span>
+                              <div className="flex items-center gap-3 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+                                <div className="flex items-center gap-2">
+                                  {ACCENT_PRESETS.map((preset) => {
+                                    const isSelected =
+                                      current.toLowerCase() ===
+                                      preset.hex.toLowerCase();
+                                    return (
+                                      <button
+                                        key={preset.hex}
+                                        type="button"
+                                        aria-label={preset.label}
+                                        onClick={() =>
+                                          field.onChange(
+                                            preset.hex ===
+                                              ACCENT_PRESETS[0].hex ?
+                                              null
+                                            : preset.hex,
+                                          )
+                                        }
+                                        className={cn(
+                                          "size-8 shrink-0 rounded-full ring-2 ring-offset-2 transition-all",
+                                          isSelected ?
+                                            "ring-foreground"
+                                          : "ring-transparent",
+                                        )}
+                                        style={{ backgroundColor: preset.hex }}
+                                      />
+                                    );
+                                  })}
+                                  <label
+                                    className={cn(
+                                      "relative flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-all",
+                                      isCustom ?
+                                        cn(
+                                          "ring-2 ring-foreground ring-offset-2",
+                                          isLightCustom ?
+                                            "text-foreground"
+                                          : "text-white",
+                                        )
+                                      : "border border-dashed border-muted-foreground/40 text-muted-foreground",
+                                    )}
+                                    style={
+                                      isCustom ?
+                                        { backgroundColor: current }
+                                      : undefined
+                                    }
+                                    title="Eigene Farbe wählen"
+                                  >
+                                    <Palette className="size-4" />
+                                    <input
+                                      type="color"
+                                      className="absolute inset-0 size-full cursor-pointer opacity-0"
+                                      value={current}
+                                      onChange={(e) =>
+                                        field.onChange(e.target.value)
+                                      }
+                                    />
+                                  </label>
+                                </div>
+                                <span className="ml-auto shrink-0 font-mono text-sm text-muted-foreground">
+                                  {current.toLowerCase()}
+                                </span>
+                              </div>
+                            </div>
+                          </FormItem>
+                        );
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+
+                <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+                  <CardHeader>
+                    <CardTitle>Oberfläche</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Gilt für alle Nutzer im Dashboard.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-4">
+                    <FormField
+                      control={form.control}
+                      name="tableDensity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <SegmentedPicker
+                            label="Tabellendichte"
+                            value={field.value}
+                            onChange={field.onChange}
+                            options={[
+                              { label: "Kompakt", value: "compact" },
+                              { label: "Normal", value: "normal" },
+                              { label: "Luftig", value: "airy" },
+                            ]}
+                          />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="defaultPageSize"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+                            <Label htmlFor="defaultPageSize">
+                              Einträge pro Seite
+                            </Label>
+                            <FormControl>
+                              <Input
+                                id="defaultPageSize"
+                                type="number"
+                                min={1}
+                                max={100}
+                                className="w-24"
+                                {...field}
+                                onChange={(e) =>
+                                  field.onChange(e.target.valueAsNumber)
+                                }
+                              />
+                            </FormControl>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="sidebarCollapsedByDefault"
+                      render={({ field }) => (
+                        <FormItem>
+                          <SwitchRow
+                            label="Seitenleiste eingeklappt starten"
+                            description="Gilt nur, solange der Nutzer die Seitenleiste noch nicht selbst umgeschaltet hat."
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="keyboardShortcutsEnabled"
+                      render={({ field }) => (
+                        <FormItem>
+                          <SwitchRow
+                            label="Tastaturkürzel aktiv"
+                            description="Strg/Cmd+K öffnet die Befehlspalette."
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="reduceMotion"
+                      render={({ field }) => (
+                        <FormItem>
+                          <SwitchRow
+                            label="Bewegungen reduzieren"
+                            description="Deaktiviert Übergänge und Animationen im Dashboard."
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              </>
+            )}
+
+            {activeSection === "integrations" && (
+              <PlaceholderCard
+                title="Integrationen"
+                note="API-Schlüssel und externe Dienste sind in Vorbereitung und folgen in einem späteren Ausbauschritt. Bereits vorhandene Webhooks werden weiterhin über die eigene Webhooks-Seite unter Verwaltung verwaltet."
+              />
+            )}
+
+            {activeSection === "notifications" && (
+              <PlaceholderCard
+                title="Benachrichtigungen"
+                note="Ein eigener Mail-Absender und der Versand von Systemmails sind in Vorbereitung und folgen in einem späteren Ausbauschritt. Welche Systembenachrichtigungen im Dashboard erscheinen, lässt sich weiterhin auf der Seite Systemnachrichten einstellen."
+              />
+            )}
+
+            {activeSection === "protocol" && (
+              <PlaceholderCard
+                title="Protokoll"
+                note="Eine übergreifende, exportierbare Änderungshistorie über alle Benutzer hinweg ist in Vorbereitung und folgt in einem späteren Ausbauschritt. Die Aktivität einzelner Benutzer ist bereits über deren Profilseite (Tab „Aktivität“) einsehbar."
+              />
+            )}
+          </div>
+        </div>
       </form>
     </Form>
   );

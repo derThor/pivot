@@ -209,3 +209,32 @@
     margin-right: 0 !important;
   }
 }
+
+/* Darstellung → "Tabellendichte" (Nutzervorgabe, 2026-08-17): überschreibt
+   nur die vertikale Zeilen-Innenabstand von Table-Zellen/-Köpfen
+   (ui/table.tsx, Standard `py-5`) – horizontaler Abstand bleibt für alle
+   Dichten gleich. `[data-density]` sitzt auf dem Dashboard-Wrapper (siehe
+   dashboard/layout.tsx), gilt dadurch für jede Tabelle im Dashboard. */
+[data-density="compact"] [data-slot="table-cell"],
+[data-density="compact"] [data-slot="table-head"] {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+[data-density="airy"] [data-slot="table-cell"],
+[data-density="airy"] [data-slot="table-head"] {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+
+/* Darstellung → "Bewegungen reduzieren" (Nutzervorgabe, 2026-08-17):
+   deaktiviert Übergänge/Animationen app-weit innerhalb des
+   Dashboard-Wrappers, ohne jede einzelne `transition-*`-Klasse anfassen
+   zu müssen. */
+[data-reduce-motion="true"] *,
+[data-reduce-motion="true"] *::before,
+[data-reduce-motion="true"] *::after {
+  transition-duration: 0.001ms !important;
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+}

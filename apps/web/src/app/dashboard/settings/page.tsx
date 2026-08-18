@@ -1,6 +1,5 @@
 import { SettingsForm } from "@/components/settings-form";
 import { PageContent } from "@/components/page-content";
-import { PageHeader } from "@/components/page-header";
 import { getMediaFolders, getSettings } from "@/lib/api-server";
 
 export default async function SettingsPage() {
@@ -8,21 +7,28 @@ export default async function SettingsPage() {
     getSettings(),
     getMediaFolders(),
   ]);
-  const logoFolderId = folders?.find((folder) => folder.isSystem)?.id ?? null;
+  // Nach Namen filtern statt nur `isSystem`: seit dem "Avatare"-Systemordner
+  // (Profilfoto-Upload, 2026-08-17) gibt es mehr als einen isSystem-Ordner.
+  const logoFolderId =
+    folders?.find((folder) => folder.isSystem && folder.name === "Logo")
+      ?.id ?? null;
 
-  return (
-    <div className="flex flex-col gap-10">
-      <PageHeader title="Einstellungen" />
-
-      {settings === null ? (
+  if (settings === null) {
+    return (
+      <div className="flex flex-col gap-10">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Einstellungen
+          </h1>
+        </div>
         <PageContent>
           <p className="text-sm text-muted-foreground">
             Keine Berechtigung, Einstellungen zu verwalten.
           </p>
         </PageContent>
-      ) : (
-        <SettingsForm settings={settings} logoFolderId={logoFolderId} />
-      )}
-    </div>
-  );
+      </div>
+    );
+  }
+
+  return <SettingsForm settings={settings} logoFolderId={logoFolderId} />;
 }

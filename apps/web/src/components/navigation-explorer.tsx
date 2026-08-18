@@ -325,10 +325,13 @@ export function NavigationExplorer({
 
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
-      <div className="rounded-[10px] bg-card p-3 shadow-sm lg:w-80 lg:shrink-0 lg:self-start">
-        <div className="flex flex-col gap-1">
+      <div className="overflow-hidden rounded-[10px] bg-card shadow-sm lg:w-72 lg:shrink-0 lg:self-start">
+        <p className="border-b border-[#F0F0F0] py-5 pr-4 pl-6 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+          Menüs · {menus.length}
+        </p>
+        <div className="flex flex-col divide-y divide-[#F0F0F0]">
           {menus.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-muted-foreground">
+            <p className="px-4 py-5 text-sm text-muted-foreground">
               Noch keine Menüs vorhanden.
             </p>
           ) : (
@@ -339,21 +342,14 @@ export function NavigationExplorer({
                   key={menu.id}
                   href={`/dashboard/navigation?menu=${menu.id}`}
                   className={cn(
-                    "flex items-center justify-between gap-2 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors",
+                    "flex flex-col gap-0.5 border-l-4 px-4 py-5 text-sm transition-colors",
                     active
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted/50",
+                      ? "border-l-primary bg-primary/15"
+                      : "border-l-transparent hover:bg-muted/50",
                   )}
                 >
-                  <span className="min-w-0 truncate">{menu.name}</span>
-                  <span
-                    className={cn(
-                      "shrink-0 text-xs",
-                      active
-                        ? "text-primary-foreground/80"
-                        : "text-muted-foreground",
-                    )}
-                  >
+                  <span className="truncate font-medium">{menu.name}</span>
+                  <span className="text-xs text-muted-foreground">
                     {menu._count.items}{" "}
                     {menu._count.items === 1 ? "Eintrag" : "Einträge"}
                   </span>

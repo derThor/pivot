@@ -55,6 +55,10 @@ const PERMISSIONS: { resource: string; action: string }[] = [
   { resource: "roles", action: "update" },
   { resource: "settings", action: "read" },
   { resource: "settings", action: "update" },
+  { resource: "privacy", action: "read" },
+  { resource: "privacy", action: "create" },
+  { resource: "privacy", action: "update" },
+  { resource: "privacy", action: "delete" },
 ];
 
 // Alte, jetzt durch feingranulare Aktionen ersetzte Bundle-Rechte – werden
@@ -238,6 +242,24 @@ async function main() {
   } else if (!existingLogoFolder.isSystem) {
     await prisma.mediaFolder.update({
       where: { id: existingLogoFolder.id },
+      data: { isSystem: true },
+    });
+  }
+
+  // Systemordner für Profilfoto-Uploads (Mein Konto/Benutzer) – gleiches
+  // Muster wie "Logo": Ordner selbst nicht löschbar (isSystem), einzelne
+  // Bilder darin (z.B. nach Nutzer-Löschung) aber schon (Nutzervorgabe,
+  // 2026-08-17).
+  const existingAvatarFolder = await prisma.mediaFolder.findFirst({
+    where: { name: 'Avatare', parentId: null },
+  });
+  if (!existingAvatarFolder) {
+    await prisma.mediaFolder.create({
+      data: { name: 'Avatare', parentId: null, isSystem: true },
+    });
+  } else if (!existingAvatarFolder.isSystem) {
+    await prisma.mediaFolder.update({
+      where: { id: existingAvatarFolder.id },
       data: { isSystem: true },
     });
   }

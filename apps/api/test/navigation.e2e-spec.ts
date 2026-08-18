@@ -37,7 +37,7 @@ describe('Navigation (e2e)', () => {
     prisma = app.get(PrismaService);
     await cleanup();
 
-    const adminRole = await prisma.role.findFirstOrThrow({ where: { name: 'Admin' } });
+    const adminRole = await prisma.role.findFirstOrThrow({ where: { name: 'Administrator' } });
     const adminUser = await prisma.user.create({
       data: {
         email: adminEmail,

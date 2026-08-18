@@ -18,7 +18,7 @@ import type { GlobalModule, ModuleType } from "@/lib/api-server";
 // Exakte Werte aus der Figma-Referenz übernommen (nicht die generischen
 // Badge-/Card-Tokens aus globals.css), damit Farben/Radien/Abstände 1:1
 // übereinstimmen – siehe Nutzervorgabe "muss exakt so aussehen".
-const iconBgClassName = "bg-[#BCE64D]/28";
+const iconBgClassName = "bg-primary/25";
 const darkTextClassName = "text-[#132033]";
 const countBadgeClassName = "bg-[#ECECEC] text-[#526074]";
 const publishedBadgeClassName = "bg-green-100 text-green-700";

@@ -384,7 +384,7 @@ describe('Auth-Härtung (e2e)', () => {
       adminAccessToken = adminLogin.body.accessToken;
 
       const editorRole = await prisma.role.findFirstOrThrow({
-        where: { name: 'Editor' },
+        where: { name: 'Chefredaktion' },
       });
       for (const email of emails) {
         await prisma.user.create({

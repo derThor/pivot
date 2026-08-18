@@ -169,4 +169,54 @@ umgebaut:
   das weiterhin eine gemeinsame Karte/ein Zähler-Punkt.
 - "Websites" bleibt weiterhin ein Platzhalter-Link ohne echte Zielseite
   (unverändert, siehe [faq-and-gallery-dedicated-pages.md](../content/faq-and-gallery-dedicated-pages.md)
+
+## Nachtrag 2026-08-17: Nutzer-Dropdown (Avatar oben rechts) nach Bildvorlage umgebaut
+
+Das bisherige Avatar-Dropdown (`dashboard-header.tsx`) war ein einfaches
+2-Punkte-Menü ("Konto" / "Abmelden"). Nach Bildvorlage zu einem reichhaltigeren
+Panel ausgebaut:
+
+- **Kopfbereich**: großer Avatar + Name + E-Mail.
+- **Badges**: **alle** zugewiesenen Rollen (`user.roles.map(...)`, dunkler
+  `bg-neutral-900`-Chip – bewusst andere Farbe als die grünen Rollen-Badges
+  auf `Mein Konto`/`Benutzer bearbeiten`, da dieses Panel 1:1 der Bildvorlage
+  folgt) + `2FA aktiv`/`2FA inaktiv`-Badge (grün/rot, nur wenn
+  `allowTwoFactor` global an ist – neuer Prop, aus
+  `settings.allowTwoFactor` in `dashboard/layout.tsx` durchgereicht). Zeigte
+  anfangs nur `user.roles[0]` (eine Rolle) – Nutzer hatte sich testweise
+  mehrere Rollen zugewiesen und sah nur "Administrator"; korrigiert auf
+  Anzeige aller zugewiesenen Rollen.
+- **Drei Menüpunkte** (Icon in grauer Box + Titel + Unterzeile), alle als
+  echte Links: "Mein Konto" → `/dashboard/account`, "Sicherheit & 2FA" →
+  `/dashboard/account?tab=security`, "Benachrichtigungen" →
+  `/dashboard/account?tab=notifications`. `MyAccountView` liest jetzt einen
+  `?tab=`-Query-Parameter (`useSearchParams`) als initialen Tab – Vorrang
+  hat weiterhin der bestehende Lockout-Fall (`mustChangePassword`/
+  `twoFactorSetupRequired` erzwingt "Sicherheit", auch bei anderem
+  Query-Parameter).
+- **"Einstellungen"**-Zeile mit Chevron, hinter `settings:read` verborgen
+  (gleiche Berechtigungsprüfung wie der Sidebar-Footer-Link in
+  `app-sidebar.tsx`).
+- **"Abmelden"**: `DropdownMenuItem variant="destructive"` (automatisch rot)
+  statt manueller Farbklassen, Icon in `bg-destructive/10`-Box.
+- **Fußzeile "Letzte Anmeldung"**: nutzt echtes `user.lastLoginAt` +
+  `formatRelativeTime()` (bereits an mehreren Stellen im Projekt
+  verwendet). Die Bildvorlage zeigte zusätzlich einen Ort ("· Münster") –
+  dafür gibt es **keine Backend-Grundlage** (keine IP-Geolocation, Sessions
+  speichern nur User-Agent-Zusammenfassung + Zeitstempel, siehe
+  `common/utils/user-agent.ts`), deshalb bewusst weggelassen statt
+  erfunden.
+- **"3 aktive Regeln"-Unterzeile bei Benachrichtigungen**: es gibt kein
+  Regel-basiertes Benachrichtigungssystem (der `Benachrichtigungen`-Tab auf
+  `Mein Konto` ist weiterhin ein "in Vorbereitung"-Platzhalter, siehe
+  `self-service-auth-flows.md`) – durch eine statische, nicht erfundene
+  Unterzeile "Einstellungen & Hinweise" ersetzt (gleiches Muster wie die
+  anderen beiden Menüpunkte, die ebenfalls statische Beschreibungen statt
+  Live-Zähler zeigen).
+- **"Ansicht testen"** aus der Bildvorlage wurde auf Nutzerwunsch
+  ausdrücklich **nicht** gebaut (kein entsprechendes Feature vorhanden).
+- Chevron rotiert jetzt beim Öffnen (`group-data-popup-open:rotate-180`).
+
+Per Playwright verifiziert: Panel-Layout, Mehrfach-Rollen-Badges, und der
+`?tab=security`-Deep-Link (Ziel-Tab tatsächlich aktiv nach Klick).
   bzw. ursprünglich `app-sidebar.tsx`).

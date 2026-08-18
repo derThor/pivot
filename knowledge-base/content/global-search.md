@@ -232,3 +232,48 @@
 - Kein e2e-Test für die neuen `:id/page`-Endpoints und die
   `/api/search/locate`-BFF-Route (nur manuell per `curl` gegen die
   laufenden Dev-Server verifiziert).
+
+## Nachtrag 2026-08-17: Grundregel Treffer-Klick, Benutzer-Fix, Tags-Regression behoben
+
+**Grundregel (gilt für jeden aktuellen und künftigen Suchbereich):** Hat
+der Treffertyp eine eigene Detailseite (eigene Route, kein
+Listen+Dialog-Pattern), springt ein Klick in der Suche **immer direkt
+dorthin** – nie zur Liste mit markierter Zeile. Nur wenn es *keine*
+Detailseite gibt (Bearbeitung läuft über Dialog auf der Listenseite),
+wird stattdessen der Suchbegriff im Treffer per `highlight`/`q`-Query-Param
+markiert (`useHighlightParam` + `HighlightText`, siehe oben). Aktueller
+Stand pro Bereich:
+
+| Typ | Ziel bei Klick |
+|---|---|
+| `content` | Detailseite (`/dashboard/content/:id/edit`) |
+| `user` | Detailseite (`/dashboard/users/:id/edit`) – **neu**, siehe unten |
+| `category`, `tag`, `previewLink` | Liste + Markierung (kein Dialog-Pattern hat eine eigene Route) |
+| `media` | Explorer + `folder`-Param + Markierung |
+| `role` | Explorer (Liste+Detail auf einer Seite) + Markierung |
+
+**Fix 1 – `user`-Treffer landete auf der Liste statt der Detailseite:**
+`searchResultHref()` in `lib/search.ts` behandelte nur `content` als
+Sonderfall mit eigener Route. `user` fällt seit dem RBAC-Rework aber
+ebenfalls unter "hat eine echte Detailseite"
+(`/dashboard/users/[id]/edit/page.tsx`, rendert `UserEditView`). Jetzt vor
+dem generischen `locateResult()`-Zweig abgefangen, genau wie `content`.
+
+**Fix 2 – Tag-Treffer markierten den Suchbegriff nicht:** Regression aus
+dem `TagsManager`-Umbau vom 2026-08-16 (siehe
+[design-refresh.md](../frontend/design-refresh.md) bzw. Kommentar oben in
+`tags-manager.tsx`): die generische `TaxonomyManager`-Tabelle (mit
+`useHighlightParam`/`HighlightText`/Zeilen-`id`) wurde für Tags durch eine
+komplett eigene `TagsManager`-Komponente ersetzt, die die
+Such-Markierung schlicht nie mitbekommen hat – Kategorien nutzen weiterhin
+`TaxonomyManager` und waren nie betroffen. Nachgerüstet: `useHighlightParam("taxonomy-row")`
++ `HighlightText` + `id={`taxonomy-row-${tag.id}`}` auf der `TableRow`,
+identisch zum bestehenden Muster. Lehre: wenn eine gemeinsam genutzte
+Listen-Komponente durch eine bereichsspezifische ersetzt wird, muss
+`useHighlightParam`/`HighlightText` explizit mit übernommen werden – wird
+sonst stillschweigend nicht mehr gebaut, ohne dass Typecheck/Build etwas
+davon merkt.
+
+Beide Fixes per Playwright verifiziert (Klick auf Benutzer-Treffer landet
+auf `/dashboard/users/:id/edit`; Klick auf Tag-Treffer scrollt zur Zeile
+und färbt sie orange ein).

@@ -64,6 +64,12 @@ export class ContentController {
     return this.contentService.search(query.q, query.limit);
   }
 
+  @RequirePermission('content:delete')
+  @Get('trash')
+  findTrashed(@Query() query: QueryContentDto) {
+    return this.contentService.findTrashed(query);
+  }
+
   @Public()
   @Get('preview/:token')
   findByPreviewToken(@Param('token') token: string) {
@@ -111,8 +117,20 @@ export class ContentController {
 
   @RequirePermission('content:delete')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.contentService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.contentService.remove(id, user.sub);
+  }
+
+  @RequirePermission('content:delete')
+  @Post(':id/restore')
+  restore(@Param('id') id: string) {
+    return this.contentService.restore(id);
+  }
+
+  @RequirePermission('content:delete')
+  @Delete(':id/permanent')
+  permanentDelete(@Param('id') id: string) {
+    return this.contentService.permanentDelete(id);
   }
 
   @RequirePermission('content:update')

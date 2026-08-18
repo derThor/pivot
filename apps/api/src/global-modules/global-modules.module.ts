@@ -5,5 +5,6 @@ import { GlobalModulesController } from './global-modules.controller';
 @Module({
   controllers: [GlobalModulesController],
   providers: [GlobalModulesService],
+  exports: [GlobalModulesService],
 })
 export class GlobalModulesModule {}

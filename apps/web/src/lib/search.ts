@@ -151,6 +151,12 @@ export async function searchResultHref(
   if (result.type === "content") {
     return `/dashboard/content/${result.id}/edit`;
   }
+  // Benutzer haben wie Inhalte eine eigene Detailseite (Bearbeiten-Ansicht)
+  // – dahin springt man direkt, statt zur Liste mit markierter Zeile
+  // (Nutzervorgabe: "muss die Detailseite aufgerufen werden").
+  if (result.type === "user") {
+    return `/dashboard/users/${result.id}/edit`;
+  }
 
   const location = await locateResult(result, defaultPageSize);
   const params = new URLSearchParams({ highlight: result.id, q: searchTerm });

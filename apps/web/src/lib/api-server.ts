@@ -21,6 +21,8 @@ export interface CurrentUser {
   emailVerifiedAt: string | null;
   lastLoginAt: string | null;
   mustChangePassword: boolean;
+  twoFactorEnabled: boolean;
+  twoFactorEnabledAt: string | null;
   failedLoginAttempts: number;
   anonymizedAt: string | null;
   createdAt: string;
@@ -31,6 +33,8 @@ export interface CurrentUser {
   canAccessDashboard?: boolean;
   /** Nur bei getCurrentUser() während einer Impersonation gesetzt (Admin-ID). */
   impersonatedBy?: string;
+  /** Nur bei getCurrentUser() (GET /auth/me) vorhanden, nicht bei getUsers(). */
+  twoFactorSetupRequired?: boolean;
 }
 
 export interface UserSession {
@@ -61,6 +65,35 @@ export function getUserStats(id: string) {
   );
 }
 
+export interface ActivityLogEntry {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  user: { id: string; firstName: string | null; lastName: string };
+}
+
+export interface ActivityLogResponse {
+  items: ActivityLogEntry[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
+export function getUserActivity(id: string, page = 1, pageSize = 10) {
+  return apiFetch<ActivityLogResponse>(
+    `/users/${id}/activity?page=${page}&pageSize=${pageSize}`,
+  );
+}
+
+/** "Diese Woche"-Kachel auf "Mein Konto" – eigener `/auth/me/stats`-Endpoint
+ * statt `getUserStats()`, siehe Kommentar an AuthController.getMyStats(). */
+export function getMyWeeklyStats() {
+  return apiFetch<{ contentCount: number; mediaCount: number }>(
+    "/auth/me/stats",
+  );
+}
+
 // Eigener Fetch statt `apiFetch()`: braucht zusätzlich den Refresh-Token-
 // Cookie-Wert als Header, damit das Backend die eigene Sitzung als
 // "aktuelle Sitzung" markieren kann (siehe UsersController.listSessions).
@@ -71,6 +104,25 @@ export async function getUserSessions(id: string) {
   const refreshToken = cookieStore.get(REFRESH_TOKEN_COOKIE)?.value;
 
   const res = await fetch(`${API_URL}/users/${id}/sessions`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      ...(refreshToken && { "x-current-refresh-token": refreshToken }),
+    },
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  return res.json() as Promise<UserSession[]>;
+}
+
+/** Eigene Sitzungen auf "Mein Konto" – eigener `/auth/me/sessions`-Endpoint
+ * statt `getUserSessions()`, siehe Kommentar an AuthController.listMySessions(). */
+export async function getMySessions() {
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
+  if (!accessToken) return null;
+  const refreshToken = cookieStore.get(REFRESH_TOKEN_COOKIE)?.value;
+
+  const res = await fetch(`${API_URL}/auth/me/sessions`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       ...(refreshToken && { "x-current-refresh-token": refreshToken }),
@@ -104,6 +156,7 @@ export interface ContentListItem {
   contentType: { id: string; name: string; slug: string };
   author: AuthorRef;
   categories: CategoryRef[];
+  sectionsCount: number;
 }
 
 export interface ContentListResponse {
@@ -611,11 +664,26 @@ export interface AppSettings {
   mediaResponsiveVariantsEnabled: boolean;
   maintenanceModeEnabled: boolean;
   mediaStorageQuotaMb: number | null;
+  maxUploadSizeMb: number | null;
   passwordMinLength: number;
   passwordRequireUppercase: boolean;
   passwordRequireLowercase: boolean;
   passwordRequireNumber: boolean;
   passwordRequireSpecialChar: boolean;
+  allowTwoFactor: boolean;
+  requireTwoFactorForAdmins: boolean;
+  requireTwoFactorForAll: boolean;
+  requireTwoFactorForPublishers: boolean;
+  passwordExpiryDays: number | null;
+  failedLoginLockoutThreshold: number | null;
+  passwordBlockLeaked: boolean;
+  passwordPreventReuseEnabled: boolean;
+  sessionIdleTimeoutMinutes: number | null;
+  accentColor: string | null;
+  tableDensity: string;
+  sidebarCollapsedByDefault: boolean;
+  keyboardShortcutsEnabled: boolean;
+  reduceMotion: boolean;
   defaultPageSize: number;
   notifyMaintenanceMode: boolean;
   notifyStorageQuota: boolean;
@@ -636,10 +704,57 @@ export interface AppSettings {
   companyRegisterCourt: string | null;
   companyRegisterNumber: string | null;
   companyVatId: string | null;
+  companySupervisoryAuthority: string | null;
+  dpoIsExternal: boolean;
+  dpoName: string | null;
+  dpoCompany: string | null;
+  dpoEmail: string | null;
+  dpoPhone: string | null;
+  dpoAppointedAt: string | null;
+  dpoReportedAt: string | null;
+  dpoSupervisoryAuthority: string | null;
+  dpoLastContactAt: string | null;
+  dpoListInLegalTexts: boolean;
+  dpoNotifyOnIncident: boolean;
+  dpoMonthlyReportEnabled: boolean;
+  retentionFormSubmissionsDays: number | null;
+  retentionAccessLogMonths: number;
+  retentionDeactivatedAccountsMonths: number;
+  retentionTrashDays: number;
   updatedAt: string;
 }
 
 export type PublicSettings = Omit<AppSettings, "id" | "updatedAt">;
+
+export interface CompanyLocation {
+  id: string;
+  name: string;
+  isPrimary: boolean;
+  street: string | null;
+  postalCode: string | null;
+  city: string | null;
+  phone: string | null;
+  openingHours: string | null;
+  employeeCount: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function getCompanyLocations() {
+  return apiFetch<CompanyLocation[]>("/company-locations");
+}
+
+export interface CompanyChange {
+  id: string;
+  action: string;
+  metadata: { field: string; wasEmpty: boolean } | null;
+  createdAt: string;
+  user: { id: string; firstName: string | null; lastName: string };
+}
+
+export function getCompanyChanges() {
+  return apiFetch<CompanyChange[]>("/settings/company/changes");
+}
 
 export function getSettings() {
   return apiFetch<AppSettings>("/settings");
@@ -673,4 +788,180 @@ export interface MediaCounts {
 export function getMediaCounts(folderId?: string | null) {
   const query = folderId ? `?folderId=${encodeURIComponent(folderId)}` : "";
   return apiFetch<MediaCounts>(`/media/counts${query}`);
+}
+
+// ---------- Datenschutz-Seite (Verwaltung → Datenschutz, 2026-08-18) ----------
+
+export type LegalDocumentStatus = "current" | "stale" | "missing";
+
+export interface LegalDocument {
+  id: string;
+  key: string;
+  title: string;
+  slug: string;
+  generatedContent: string;
+  manualAddendum: string | null;
+  lastGeneratedAt: string | null;
+  contentId: string | null;
+  contentStatus: "DRAFT" | "PUBLISHED" | "SCHEDULED" | "ARCHIVED" | null;
+  status: LegalDocumentStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function getLegalDocuments() {
+  return apiFetch<LegalDocument[]>("/legal-documents");
+}
+
+export type DeletionRequestStatus =
+  | "open"
+  | "in_progress"
+  | "completed"
+  | "rejected";
+
+export interface DeletionRequest {
+  id: string;
+  requesterName: string;
+  requesterEmail: string;
+  reason: string | null;
+  status: DeletionRequestStatus;
+  dueAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function getDeletionRequests() {
+  return apiFetch<DeletionRequest[]>("/deletion-requests");
+}
+
+export interface ProcessingActivity {
+  id: string;
+  purpose: string;
+  legalBasis: string | null;
+  dataCategories: string | null;
+  recipients: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function getProcessingActivities() {
+  return apiFetch<ProcessingActivity[]>("/processing-activities");
+}
+
+export interface DataProcessor {
+  id: string;
+  name: string;
+  purpose: string | null;
+  hasContract: boolean;
+  contractDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function getDataProcessors() {
+  return apiFetch<DataProcessor[]>("/data-processors");
+}
+
+export type PrivacyIncidentSeverity = "low" | "medium" | "high";
+export type PrivacyIncidentStatus = "open" | "resolved";
+
+export interface PrivacyIncident {
+  id: string;
+  title: string;
+  description: string | null;
+  severity: PrivacyIncidentSeverity;
+  status: PrivacyIncidentStatus;
+  occurredAt: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function getPrivacyIncidents() {
+  return apiFetch<PrivacyIncident[]>("/privacy-incidents");
+}
+
+export interface RetentionAuditLogEntry {
+  id: string;
+  action: string;
+  createdAt: string;
+}
+
+export function getRetentionAccessLogDue() {
+  return apiFetch<RetentionAuditLogEntry[]>("/privacy/retention/access-log");
+}
+
+export interface RetentionDeactivatedAccount {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string;
+  deactivatedAt: string;
+}
+
+export function getRetentionDeactivatedAccountsDue() {
+  return apiFetch<RetentionDeactivatedAccount[]>(
+    "/privacy/retention/deactivated-accounts",
+  );
+}
+
+export interface RetentionTrashItem {
+  id: string;
+  label: string;
+  deletedAt: string;
+}
+
+export interface RetentionTrashDue {
+  content: RetentionTrashItem[];
+  media: RetentionTrashItem[];
+  categories: RetentionTrashItem[];
+  tags: RetentionTrashItem[];
+}
+
+export function getRetentionTrashDue() {
+  return apiFetch<RetentionTrashDue>("/privacy/retention/trash");
+}
+
+export type TrashType =
+  | "content"
+  | "media"
+  | "categories"
+  | "tags"
+  | "gallery"
+  | "faq";
+
+export interface TrashItem {
+  id: string;
+  type: TrashType;
+  title: string;
+  subtitle: string | null;
+  deletedAt: string;
+  deletedBy: { id: string; firstName: string | null; lastName: string } | null;
+  sizeBytes: number | null;
+  expiresAt: string;
+  daysLeft: number;
+  expired: boolean;
+}
+
+export interface TrashStats {
+  total: number;
+  expiringSoonCount: number;
+  storageBytes: number;
+  retentionDays: number;
+  typesCount: number;
+  countsByType: Partial<Record<TrashType, number>>;
+}
+
+export interface TrashListResult {
+  items: TrashItem[];
+  stats: TrashStats;
+}
+
+export function getTrash(filter?: { type?: TrashType; q?: string }) {
+  const params = new URLSearchParams();
+  if (filter?.type) params.set("type", filter.type);
+  if (filter?.q) params.set("q", filter.q);
+  const search = params.toString();
+  return apiFetch<TrashListResult>(`/trash${search ? `?${search}` : ""}`);
 }

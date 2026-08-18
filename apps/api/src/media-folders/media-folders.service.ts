@@ -69,30 +69,30 @@ export class MediaFoldersService {
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, actingUserId: string) {
     const folder = await this.findOneOrThrow(id);
     if (folder.isSystem) {
       throw new BadRequestException(
         'Systemordner können nicht gelöscht werden.',
       );
     }
-    await this.removeRecursive(id);
+    await this.removeRecursive(id, actingUserId);
   }
 
   /**
    * Löscht einen Ordner kaskadierend: erst alle Unterordner (rekursiv),
-   * dann die Medien direkt im Ordner über `MediaService.remove()` (löscht
-   * dieselbe Weise die Datei von Disk wie beim Einzel-Löschen), zuletzt
-   * den Ordner selbst. Die Warnung vor dem unwiderruflichen Löschen von
-   * Inhalten erfolgt im Frontend vor dem Aufruf.
+   * dann die Medien direkt im Ordner über `MediaService.remove()`
+   * (Papierkorb – Soft-Delete, dieselbe Behandlung wie beim
+   * Einzel-Löschen), zuletzt der Ordner selbst (Ordner sind nicht
+   * papierkorb-fähig, nur die Medien darin).
    */
-  private async removeRecursive(folderId: string) {
+  private async removeRecursive(folderId: string, actingUserId: string) {
     const children = await this.prisma.mediaFolder.findMany({
       where: { parentId: folderId },
       select: { id: true },
     });
     for (const child of children) {
-      await this.removeRecursive(child.id);
+      await this.removeRecursive(child.id, actingUserId);
     }
 
     const media = await this.prisma.media.findMany({
@@ -100,7 +100,7 @@ export class MediaFoldersService {
       select: { id: true },
     });
     for (const item of media) {
-      await this.mediaService.remove(item.id);
+      await this.mediaService.remove(item.id, actingUserId);
     }
 
     await this.prisma.mediaFolder.delete({ where: { id: folderId } });

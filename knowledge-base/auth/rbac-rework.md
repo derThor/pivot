@@ -402,3 +402,59 @@ Arrays unverändert.
 `roleIds: [gewählteRolle]`) – ein echter Mehrfach-Rollen-Picker ist Teil der
 neuen Profilseite (2b.14), noch nicht gebaut. `users-table.tsx` rendert
 bereits mehrere Rollen-Badges nebeneinander (`user.roles.map(...)`).
+
+## Update 2026-08-17: Zufälliges Passwort beim Admin-Anlegen statt Admin-Vorgabe
+
+Nutzervorgabe: Wenn ein Admin einen neuen Benutzer anlegt, soll das Passwort
+nicht mehr vom Admin selbst vergeben werden.
+
+**Was geändert wurde:**
+- `CreateUserDto` (`apps/api/src/users/dto/create-user.dto.ts`): Feld
+  `password` entfernt.
+- `UsersService.create()`: setzt statt `argon2.hash(dto.password)` einen
+  `argon2.hash(randomBytes(32).toString('hex'))`-Hash – ein zufälliger,
+  niemandem bekannter Hash. Exakt dasselbe Muster wie bereits in
+  `anonymize()` weiter unten in derselben Datei ("Login danach unmöglich",
+  bis der Nutzer über den Reset-Link ein eigenes Passwort setzt). Der
+  Aufruf von `validatePasswordAgainstPolicy` entfällt hier dadurch
+  komplett (kein admin-vergebenes Passwort mehr zu prüfen); `SettingsService`
+  bleibt im Service für andere Methoden (`assertEmailChangeAllowed`,
+  `getNotificationCounts`) injiziert.
+- `UsersController.create()`: verschickt direkt im Anschluss an
+  `usersService.create()` den bestehenden Passwort-Reset-Link
+  (`authService.adminRequestPasswordReset(created.id)` – derselbe Code-Pfad
+  wie der "Passwort zurücksetzen"-Button auf der Benutzer-Seite, inkl.
+  `PasswordResetToken` + `MailerService.sendPasswordResetEmail`, aktuell
+  Dev-Stub-Log). `AuthService` war über `forwardRef` bereits im Controller
+  injiziert (für `impersonate`/`reset-password`).
+- Frontend `CreateUserDialog`: Felder "Passwort"/"Passwort bestätigen"
+  entfernt (inkl. `PasswordInput`, `PasswordPolicyChecklist`,
+  `isPasswordValid`, `PasswordPolicy`-Prop). Erfolgs-Toast weist jetzt
+  darauf hin, dass eine E-Mail zum Festlegen des Passworts verschickt
+  wurde. `dashboard/users/page.tsx` reicht `passwordPolicy` nicht mehr an
+  den Dialog durch (der `settings`-Fetch selbst bleibt, wird weiterhin für
+  `defaultPageSize` gebraucht).
+
+**Warum diese Lösung statt eines neuen Mechanismus:** Die App hatte mit
+`adminRequestPasswordReset` (Reset-Link per E-Mail) und
+`mustChangePassword`/`PasswordChangeGuard` bereits eine vollständige
+Infrastruktur, um einen Nutzer ohne bekanntes Passwort startklar zu machen
+und ihn zur eigenen Passwortwahl zu zwingen. Ein Admin-sichtbares
+Zufallspasswort (z.B. einmalig in der UI angezeigt) hätte diese
+Infrastruktur umgangen und wäre ein zweiter, paralleler Mechanismus
+gewesen – auf Nutzerentscheidung (2026-08-17) verworfen zugunsten der
+Wiederverwendung des Reset-Link-Flows.
+
+Self-Service-Registrierung (`AuthService.register`/`RegisterDto`) ist davon
+**nicht** betroffen – dort wählt der Nutzer sein Passwort weiterhin selbst,
+das war nie die admin-vergebene Variante.
+
+## Update 2026-08-17: Hinweistext unter der Rollen-Auswahl in `UserEditView`
+
+Nach Bildvorlage ergänzt: unter dem Rollen-Grid in der Benutzer-
+Profilseite steht jetzt "Rechte kommen aus der Rolle. Einzelrechte lassen
+sich unter **Rollen & Rechte** anpassen." mit Link auf `/dashboard/roles`
+– rein erklärender Text, keine Funktionsänderung. Macht für Admins ohne
+RBAC-Hintergrundwissen den Zusammenhang zwischen der Rollen-Checkbox hier
+und der granularen Rechteverwaltung auf der Rollen-Seite (siehe oben)
+explizit.

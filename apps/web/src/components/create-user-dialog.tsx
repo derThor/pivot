@@ -10,7 +10,6 @@ import { Plus } from "lucide-react";
 import { toastCreated } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
 import {
   Dialog,
   DialogContent,
@@ -34,17 +33,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PasswordPolicyChecklist } from "@/components/password-policy-checklist";
-import { isPasswordValid, type PasswordPolicy } from "@/lib/password-policy";
 import type { Role } from "@/lib/api-server";
 
 export function CreateUserDialog({
   roles,
-  passwordPolicy,
   triggerLabel = "Neuer Benutzer",
 }: {
   roles: Role[];
-  passwordPolicy: PasswordPolicy;
   triggerLabel?: string;
 }) {
   const router = useRouter();
@@ -57,26 +52,13 @@ export function CreateUserDialog({
 
   const createUserSchema = useMemo(
     () =>
-      z
-        .object({
-          firstName: z.string().optional(),
-          lastName: z.string().min(1, "Nachname ist erforderlich."),
-          email: z
-            .string()
-            .email("Bitte eine gültige E-Mail-Adresse eingeben."),
-          password: z
-            .string()
-            .refine((value) => isPasswordValid(value, passwordPolicy), {
-              message: "Passwort erfüllt nicht alle Anforderungen.",
-            }),
-          confirmPassword: z.string(),
-          roleId: z.string().min(1, "Bitte eine Rolle wählen."),
-        })
-        .refine((data) => data.password === data.confirmPassword, {
-          message: "Passwörter stimmen nicht überein.",
-          path: ["confirmPassword"],
-        }),
-    [passwordPolicy],
+      z.object({
+        firstName: z.string().optional(),
+        lastName: z.string().min(1, "Nachname ist erforderlich."),
+        email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben."),
+        roleId: z.string().min(1, "Bitte eine Rolle wählen."),
+      }),
+    [],
   );
 
   type CreateUserValues = z.infer<typeof createUserSchema>;
@@ -87,13 +69,9 @@ export function CreateUserDialog({
       firstName: "",
       lastName: "",
       email: "",
-      password: "",
-      confirmPassword: "",
       roleId: defaultRoleId,
     },
   });
-
-  const password = form.watch("password");
 
   async function onSubmit(values: CreateUserValues) {
     setError(null);
@@ -106,7 +84,6 @@ export function CreateUserDialog({
           firstName: values.firstName || undefined,
           lastName: values.lastName,
           email: values.email,
-          password: values.password,
           roleIds: [values.roleId],
         }),
       });
@@ -118,7 +95,9 @@ export function CreateUserDialog({
       }
 
       setOpen(false);
-      toastCreated(`„${values.firstName ? `${values.firstName} ` : ""}${values.lastName}“ wurde angelegt.`);
+      toastCreated(
+        `„${values.firstName ? `${values.firstName} ` : ""}${values.lastName}“ wurde angelegt. Eine E-Mail zum Festlegen des Passworts wurde an ${values.email} gesendet.`,
+      );
       form.reset();
       router.refresh();
     } catch {
@@ -188,36 +167,6 @@ export function CreateUserDialog({
                   <FormLabel>E-Mail</FormLabel>
                   <FormControl>
                     <Input type="email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Passwort</FormLabel>
-                  <FormControl>
-                    <PasswordInput {...field} />
-                  </FormControl>
-                  <PasswordPolicyChecklist
-                    password={password}
-                    policy={passwordPolicy}
-                  />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Passwort bestätigen</FormLabel>
-                  <FormControl>
-                    <PasswordInput {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

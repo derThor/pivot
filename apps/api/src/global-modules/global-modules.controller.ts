@@ -108,6 +108,25 @@ export class GlobalModulesController {
     const resource =
       await this.globalModulesService.resolveResourceForModule(id);
     this.assertPermission(user, this.toPermissionKey(resource, 'delete'));
-    return this.globalModulesService.remove(id);
+    return this.globalModulesService.remove(id, user.sub);
+  }
+
+  @Post(':id/restore')
+  async restore(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    const resource =
+      await this.globalModulesService.resolveResourceForModule(id);
+    this.assertPermission(user, this.toPermissionKey(resource, 'delete'));
+    return this.globalModulesService.restore(id);
+  }
+
+  @Delete(':id/permanent')
+  async permanentDelete(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const resource =
+      await this.globalModulesService.resolveResourceForModule(id);
+    this.assertPermission(user, this.toPermissionKey(resource, 'delete'));
+    return this.globalModulesService.permanentDelete(id);
   }
 }

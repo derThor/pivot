@@ -536,8 +536,33 @@ platzierten "2FA"-Spalte in der Benutzer-Tabelle.
 - [x] Frontend: Tab "Zugang & Sicherheit" (Anmeldung-Sektion ohne
       Firmennetz-Option, Aktive-Sitzungen-Liste mit Pagination,
       Konto-Info-Kasten) (2026-08-16)
-- [x] Frontend: Tab "Aktivität" – nur Platzhalter/TODO-Hinweis, keine
-      echten Zahlen (2026-08-16)
+- [x] Frontend: Tab "Aktivität" – echte, serverseitig paginierte
+      Zeitleiste statt Platzhalter (2026-08-17, Nachtrag): neuer globaler
+      `AuditLogService` (`apps/api/src/audit-log/`, gleiches
+      `@Global()`-Muster wie `CacheService`), `GET /users/:id/activity`
+      (nutzt `PaginationControls` im `onPageChange`-Modus, echtes
+      `skip`/`take` statt Alles-laden-und-schneiden). Erfasste Ereignisse:
+      `user.created`, `user.role_changed`, `user.password_changed`,
+      `user.2fa_enabled`/`2fa_disabled`, `user.impersonate` (Bestandsfeature,
+      jetzt auch in der Zeitleiste sichtbar), `media.uploaded`,
+      `content.published`. **Bewusst nicht wie in der Bildvorlage
+      gebaut:** kein "Formular veröffentlicht"-Eintrag (kein Formular-Modul
+      in dieser App, siehe `UsersService.getStats()`-Kommentar), "Einladung
+      angenommen" durch den tatsächlichen Erstellungsweg ersetzt
+      (Admin-angelegt vs. Selbstregistrierung); Medien-Uploads erscheinen
+      als einzelne echte Einträge, nicht als erfundene Sammelzahl wie
+      "12 Medien hochgeladen". Siehe
+      [user-activity-log.md](../knowledge-base/auth/user-activity-log.md).
+
+      **Laufende Konvention (Nutzervorgabe 2026-08-17):** jede künftige
+      Aktion, die für einen Nutzer relevant ist (neue Sicherheits-Funktion,
+      neue Content-/Medien-Aktion, neue Admin-Aktion an einem Konto),
+      bekommt beim Bauen einen passenden `AuditLogService.record()`-Aufruf
+      UND einen zugehörigen Fall in
+      `apps/web/src/components/user-activity-timeline.tsx`s
+      `describeActivity()` – die Zeitleiste soll nicht stillschweigend
+      hinter neuen Features zurückbleiben. Bei jedem neuen Feature mit
+      einer nutzerbezogenen Aktion kurz prüfen, ob es hier reingehört.
 - [x] Frontend: 2FA-Toggle im Tab "Zugang & Sicherheit" als deaktivierter
       Platzhalter-Switch (2026-08-16; echte Umsetzung folgt separat in
       Phase 3) – Aus-Farbe wurde global für alle Switches vereinheitlicht
@@ -564,7 +589,13 @@ platzierten "2FA"-Spalte in der Benutzer-Tabelle.
 - [ ] CI/CD-Pipeline (Lint, Typecheck, Tests, Build, ggf. Turborepo Remote
       Cache)
 - [ ] Echter Mail-Versand für Passwort-Reset/E-Mail-Verifikation (aktuell
-      Dev-Stub, siehe Phase 2a), 2FA/TOTP
+      Dev-Stub, siehe Phase 2a)
+- [x] 2FA/TOTP (2026-08-17) – Self-Service-Einrichtung (QR-Code,
+      Recovery-Codes), optionale Erzwingung für Administrator-Konten,
+      globaler An/Aus-Schalter unter Einstellungen → Sicherheit. Löst den
+      Platzhalter-Switch (siehe 2b.14-Eintrag oben) und die
+      Platzhalter-Spalte in der Benutzertabelle ein. Details:
+      [two-factor-authentication.md](../knowledge-base/auth/two-factor-authentication.md)
 - [ ] Audit-Log tatsächlich befüllen (aktuell nur Datenmodell)
 - [ ] Dark-Mode-Umschalter im Dashboard
 - [ ] Redis-Anbindung für Caching/Sessions aktivieren
@@ -623,7 +654,9 @@ platzierten "2FA"-Spalte in der Benutzer-Tabelle.
 - [ ] Azure AD Login
 - [ ] Organisationsverwaltung
 - [ ] Datenexport (DSGVO)
-- [ ] Aufbewahrungsrichtlinien
+- [x] Aufbewahrungsrichtlinien (Datenschutz-Seite, 2026-08-18: Fristen als
+      Richtwerte + manuelle Review-Listen statt automatischer Löschung,
+      siehe knowledge-base/auth/privacy-page.md)
 - [ ] Archivierung
 - [ ] Mehrsprachigkeit vollständig (Locale-Switching in UI, Fallback-Ketten)
 

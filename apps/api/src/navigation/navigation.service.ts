@@ -240,9 +240,9 @@ export class NavigationService {
   private async assertContentExists(contentId: string) {
     const exists = await this.prisma.content.findUnique({
       where: { id: contentId },
-      select: { id: true },
+      select: { id: true, deletedAt: true },
     });
-    if (!exists) {
+    if (!exists || exists.deletedAt) {
       throw new BadRequestException('Ziel-Inhalt nicht gefunden.');
     }
   }

@@ -478,14 +478,7 @@ export function RolesExplorer({
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex items-center gap-3">
                                   {Icon && (
-                                    <span
-                                      className={cn(
-                                        "flex size-11 shrink-0 items-center justify-center rounded-xl",
-                                        assignedKeys.length > 0
-                                          ? "bg-primary/15 text-primary"
-                                          : "bg-muted text-muted-foreground",
-                                      )}
-                                    >
+                                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#F4F4F5] text-muted-foreground">
                                       <Icon className="size-5" />
                                     </span>
                                   )}

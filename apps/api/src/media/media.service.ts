@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -7,6 +9,8 @@ import { randomUUID } from 'node:crypto';
 import { copyFile, readFile, unlink, writeFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
+import { SettingsService } from '../settings/settings.service';
 import { CropMediaDto } from './dto/crop-media.dto';
 import { QueryMediaDto } from './dto/query-media.dto';
 import { UpdateMediaDto } from './dto/update-media.dto';
@@ -74,6 +78,9 @@ export class MediaService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly imageProcessing: MediaImageProcessingService,
+    private readonly auditLog: AuditLogService,
+    @Inject(forwardRef(() => SettingsService))
+    private readonly settings: SettingsService,
   ) {}
 
   async findAll(query: QueryMediaDto) {
@@ -102,6 +109,7 @@ export class MediaService {
         tagIds.length > 0 && {
           tags: { some: { tagId: { in: tagIds } } },
         }),
+      deletedAt: null,
     };
 
     const [items, total] = await Promise.all([
@@ -138,6 +146,7 @@ export class MediaService {
    */
   async getCounts(folderId?: string) {
     const scope: Prisma.MediaWhereInput = {
+      deletedAt: null,
       ...(folderId === 'root' && { folderId: null }),
       ...(folderId && folderId !== 'root' && { folderId }),
     };
@@ -169,6 +178,7 @@ export class MediaService {
   async findUnused() {
     const [allMedia, contents, settings] = await Promise.all([
       this.prisma.media.findMany({
+        where: { deletedAt: null },
         orderBy: { createdAt: 'desc' },
         include: {
           uploadedBy: { select: { id: true, firstName: true, lastName: true } },
@@ -177,6 +187,7 @@ export class MediaService {
         },
       }),
       this.prisma.content.findMany({
+        where: { deletedAt: null },
         select: { data: true, ogImageUrl: true },
       }),
       this.prisma.appSettings.findUnique({ where: { id: 1 } }),
@@ -228,6 +239,7 @@ export class MediaService {
     const media = await this.prisma.media.findUniqueOrThrow({ where: { id } });
     const targetUrl = normalizeUrl(media.url);
     const contents = await this.prisma.content.findMany({
+      where: { deletedAt: null },
       select: { data: true, ogImageUrl: true },
     });
     let count = 0;
@@ -270,7 +282,18 @@ export class MediaService {
     alt?: string,
     folderId?: string,
   ) {
-    const maxSize = maxSizeForMimeType(file.mimetype);
+    // Effektive Obergrenze = Minimum aus technischer Kategorie-Obergrenze
+    // und der optionalen Admin-Einstellung (Nutzervorgabe, 2026-08-18) –
+    // die Einstellung kann nur verschärfen, nie über die Kategorie-Grenze
+    // hinaus aufweichen. Gilt für jeden Upload-Weg, da Avatar/Firmenlogo
+    // ebenfalls über diese Methode laufen (siehe UsersService.updateAvatar()).
+    const settings = await this.settings.get();
+    const maxSize = Math.min(
+      maxSizeForMimeType(file.mimetype),
+      settings.maxUploadSizeMb
+        ? settings.maxUploadSizeMb * 1024 * 1024
+        : Infinity,
+    );
     if (file.size > maxSize) {
       await unlink(file.path).catch(() => {});
       throw new BadRequestException(
@@ -296,6 +319,13 @@ export class MediaService {
         variants: variants.length ? { create: variants } : undefined,
       },
       include: { variants: true, ...TAGS_INCLUDE },
+    });
+    await this.auditLog.record({
+      action: 'media.uploaded',
+      entityType: 'Media',
+      entityId: media.id,
+      userId: uploadedById,
+      metadata: { filename: file.originalname },
     });
     return mapMediaTags(media);
   }
@@ -614,13 +644,43 @@ export class MediaService {
     return mapMediaTags(media);
   }
 
-  async remove(id: string) {
+  /** Papierkorb: Soft-Delete – die physische Datei bleibt liegen, damit
+   * `restore()` sie zurückgeben kann. Erst `permanentDelete()` löscht die
+   * Datei wirklich von Disk (Nutzervorgabe, 2026-08-18, "überall da wo man
+   * löschen kann"). */
+  async remove(id: string, actingUserId: string) {
+    const media = await this.prisma.media.findUnique({ where: { id } });
+    if (!media) {
+      throw new NotFoundException(`Medium ${id} nicht gefunden.`);
+    }
+    await this.prisma.media.update({
+      where: { id },
+      data: { deletedAt: new Date(), deletedById: actingUserId },
+    });
+  }
+
+  async restore(id: string) {
+    const media = await this.prisma.media.findUnique({ where: { id } });
+    if (!media || !media.deletedAt) {
+      throw new NotFoundException(
+        `Medium ${id} befindet sich nicht im Papierkorb.`,
+      );
+    }
+    return this.prisma.media.update({
+      where: { id },
+      data: { deletedAt: null, deletedById: null },
+    });
+  }
+
+  async permanentDelete(id: string) {
     const media = await this.prisma.media.findUnique({
       where: { id },
       include: { variants: true },
     });
-    if (!media) {
-      throw new NotFoundException(`Medium ${id} nicht gefunden.`);
+    if (!media || !media.deletedAt) {
+      throw new NotFoundException(
+        `Medium ${id} befindet sich nicht im Papierkorb.`,
+      );
     }
 
     await this.prisma.media.delete({ where: { id } });
@@ -637,6 +697,52 @@ export class MediaService {
         }),
       ),
     );
+  }
+
+  /** Ungepaginiert für den vereinheitlichten Papierkorb (`TrashService`),
+   * der alle sechs Typen zu einer gemeinsamen Liste zusammenführt. */
+  findAllTrashed() {
+    return this.prisma.media.findMany({
+      where: { deletedAt: { not: null } },
+      orderBy: { deletedAt: 'desc' },
+      include: {
+        deletedBy: { select: { id: true, firstName: true, lastName: true } },
+        variants: { select: { size: true } },
+        folder: { select: { name: true } },
+      },
+    });
+  }
+
+  async findTrashed(query: QueryMediaDto) {
+    const { page, pageSize } = query;
+    const where = { deletedAt: { not: null } };
+    const [items, total] = await Promise.all([
+      this.prisma.media.findMany({
+        where,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy: { deletedAt: 'desc' },
+        include: {
+          uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+          deletedBy: { select: { id: true, firstName: true, lastName: true } },
+          variants: true,
+          ...TAGS_INCLUDE,
+        },
+      }),
+      this.prisma.media.count({ where }),
+    ]);
+    return {
+      items: items.map(mapMediaTags),
+      meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
+    };
+  }
+
+  async findTrashedOlderThan(cutoff: Date) {
+    return this.prisma.media.findMany({
+      where: { deletedAt: { not: null, lt: cutoff } },
+      orderBy: { deletedAt: 'asc' },
+      select: { id: true, filename: true, deletedAt: true },
+    });
   }
 
   private async findOneOrThrow(id: string) {

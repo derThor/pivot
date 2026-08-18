@@ -39,6 +39,13 @@ export async function POST(request: Request) {
   }
 
   const tokens = await backendRes.json();
+
+  // 2FA aktiv: statt Tokens nur ein kurzlebiges Challenge-Token, das der
+  // Client an /api/auth/2fa/login-verify weiterreicht – noch keine Cookies.
+  if (tokens.mfaRequired) {
+    return NextResponse.json(tokens);
+  }
+
   const cookieStore = await cookies();
   for (const cookie of buildAuthCookies(tokens, remember !== false)) {
     cookieStore.set(cookie.name, cookie.value, cookie.options);

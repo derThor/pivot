@@ -14,7 +14,9 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { QueryCategoryDto } from './dto/query-category.dto';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { FindPageDto } from '../common/dto/find-page.dto';
+import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @ApiTags('categories')
 @ApiBearerAuth()
@@ -34,6 +36,12 @@ export class CategoriesController {
     return this.categoriesService.findPage(id, query.pageSize);
   }
 
+  @RequirePermission('categories:delete')
+  @Get('trash')
+  findTrashed(@Query() query: QueryCategoryDto) {
+    return this.categoriesService.findTrashed(query);
+  }
+
   @RequirePermission('categories:create')
   @Post()
   create(@Body() dto: CreateCategoryDto) {
@@ -48,7 +56,19 @@ export class CategoriesController {
 
   @RequirePermission('categories:delete')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.categoriesService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.categoriesService.remove(id, user.sub);
+  }
+
+  @RequirePermission('categories:delete')
+  @Post(':id/restore')
+  restore(@Param('id') id: string) {
+    return this.categoriesService.restore(id);
+  }
+
+  @RequirePermission('categories:delete')
+  @Delete(':id/permanent')
+  permanentDelete(@Param('id') id: string) {
+    return this.categoriesService.permanentDelete(id);
   }
 }

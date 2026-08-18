@@ -45,7 +45,7 @@ describe('Content-Locking (e2e)', () => {
       where: { name: 'Autor' },
     });
     const adminRole = await prisma.role.findFirstOrThrow({
-      where: { name: 'Admin' },
+      where: { name: 'Administrator' },
     });
 
     const lockUserPasswordHash = await argon2.hash(password);

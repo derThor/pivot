@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Lock, MoreVertical, Pencil, Trash2 } from "lucide-react";
 
 import { toastDeleted } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,9 @@ export function FolderTileMenu({ folder }: { folder: MediaFolder }) {
           >
             <Trash2 />
             Löschen
+            {folder.isSystem && (
+              <Lock className="ml-auto size-3.5 text-muted-foreground" />
+            )}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

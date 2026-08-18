@@ -65,6 +65,12 @@ export class MediaController {
     return this.mediaService.getCounts(folderId);
   }
 
+  @RequirePermission('media:delete')
+  @Get('trash')
+  findTrashed(@Query() query: QueryMediaDto) {
+    return this.mediaService.findTrashed(query);
+  }
+
   @RequirePermission('media:create')
   @Post()
   @ApiConsumes('multipart/form-data')
@@ -115,7 +121,19 @@ export class MediaController {
 
   @RequirePermission('media:delete')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.mediaService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.mediaService.remove(id, user.sub);
+  }
+
+  @RequirePermission('media:delete')
+  @Post(':id/restore')
+  restore(@Param('id') id: string) {
+    return this.mediaService.restore(id);
+  }
+
+  @RequirePermission('media:delete')
+  @Delete(':id/permanent')
+  permanentDelete(@Param('id') id: string) {
+    return this.mediaService.permanentDelete(id);
   }
 }

@@ -1,13 +1,22 @@
 import { redirect } from "next/navigation";
-import { AccountTabs } from "@/components/account-tabs";
-import { PageHeader } from "@/components/page-header";
-import { getCurrentUser, getPublicSettings } from "@/lib/api-server";
+import { MyAccountView } from "@/components/my-account-view";
+import {
+  getCurrentUser,
+  getMySessions,
+  getMyWeeklyStats,
+  getPublicSettings,
+  getRoles,
+} from "@/lib/api-server";
 
 export default async function AccountPage() {
-  const [user, publicSettings] = await Promise.all([
-    getCurrentUser(),
-    getPublicSettings(),
-  ]);
+  const [user, publicSettings, roles, weeklyStats, sessions] =
+    await Promise.all([
+      getCurrentUser(),
+      getPublicSettings(),
+      getRoles({ pageSize: 100 }),
+      getMyWeeklyStats(),
+      getMySessions(),
+    ]);
 
   if (!user) {
     redirect("/login");
@@ -21,15 +30,18 @@ export default async function AccountPage() {
     passwordRequireSpecialChar: true,
   };
 
-  return (
-    <div className="flex flex-col gap-10">
-      <PageHeader title="Konto" />
+  const primaryRole =
+    roles?.items.find((role) => role.id === user.roles[0]?.id) ?? null;
 
-      <AccountTabs
-        user={user}
-        allowEmailChange={publicSettings?.allowEmailChange ?? true}
-        passwordPolicy={passwordPolicy}
-      />
-    </div>
+  return (
+    <MyAccountView
+      user={user}
+      allowEmailChange={publicSettings?.allowEmailChange ?? true}
+      allowTwoFactor={publicSettings?.allowTwoFactor ?? true}
+      passwordPolicy={passwordPolicy}
+      primaryRole={primaryRole}
+      weeklyStats={weeklyStats ?? { contentCount: 0, mediaCount: 0 }}
+      sessions={sessions ?? []}
+    />
   );
 }

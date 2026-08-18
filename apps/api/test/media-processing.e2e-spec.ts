@@ -34,7 +34,7 @@ describe('Medienverarbeitung & -verwaltung (e2e)', () => {
 
     await cleanup();
 
-    const editorRole = await prisma.role.findFirstOrThrow({ where: { name: 'Editor' } });
+    const editorRole = await prisma.role.findFirstOrThrow({ where: { name: 'Chefredaktion' } });
     await prisma.user.create({
       data: {
         email: userEmail,

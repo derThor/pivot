@@ -18,12 +18,28 @@ import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { TwoFactorVerifyDto } from './dto/two-factor-verify.dto';
+import { TwoFactorDisableDto } from './dto/two-factor-disable.dto';
+import { TwoFactorLoginVerifyDto } from './dto/two-factor-login-verify.dto';
+import { TwoFactorService } from './two-factor/two-factor.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
+import type { TwoFactorChallengePayload } from './strategies/jwt.strategy';
 import ms from '../common/utils/ms';
 import { summarizeUserAgent } from '../common/utils/user-agent';
+import { isPasswordLeaked } from '../common/utils/pwned-password';
 
 export interface TokenPair {
   accessToken: string;
   refreshToken: string;
+}
+
+// Login-Antwort, wenn der Nutzer 2FA aktiviert hat: statt echter Tokens nur
+// ein kurzlebiges, eng zweckgebundenes Challenge-Token (siehe
+// issueTwoFactorChallengeToken()) – erst nach POST /auth/2fa/login-verify
+// mit gültigem Code gibt es ein echtes TokenPair.
+export interface MfaChallengeResponse {
+  mfaRequired: true;
+  challengeToken: string;
 }
 
 // Rohe Anfrage-Metadaten (User-Agent/IP), auf jedem ausgestellten
@@ -36,6 +52,7 @@ export interface RequestMeta {
 const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1h
 const IMPERSONATION_TTL_MS = 15 * 60 * 1000; // 15min, kein Refresh-Token
+const MFA_CHALLENGE_TTL_MS = 5 * 60 * 1000; // 5min – knapp bemessen, der Nutzer hat das Handy bereits in der Hand
 
 @Injectable()
 export class AuthService {
@@ -45,6 +62,8 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly settings: SettingsService,
     private readonly mailer: MailerService,
+    private readonly twoFactor: TwoFactorService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -64,6 +83,7 @@ export class AuthService {
     if (violations.length > 0) {
       throw new BadRequestException(violations.join(' '));
     }
+    await this.assertPasswordNotLeaked(settings, dto.password);
 
     const defaultRole = await this.prisma.role.findFirstOrThrow({
       where: { isDefault: true },
@@ -75,10 +95,20 @@ export class AuthService {
         firstName: dto.firstName,
         lastName: dto.lastName,
         passwordHash,
+        passwordChangedAt: new Date(),
         userRoles: { create: { roleId: defaultRole.id } },
         isActive: !settings.requireAdminActivation,
         pendingActivation: settings.requireAdminActivation,
       },
+    });
+    await this.recordPasswordHistory(user.id, passwordHash);
+
+    await this.auditLog.record({
+      action: 'user.created',
+      entityType: 'User',
+      entityId: user.id,
+      userId: user.id,
+      metadata: { method: 'self_registered' },
     });
 
     const verificationLinkDevOnly = await this.issueEmailVerification(
@@ -102,15 +132,31 @@ export class AuthService {
     };
   }
 
-  async login(dto: LoginDto, meta: RequestMeta = {}) {
+  async login(
+    dto: LoginDto,
+    meta: RequestMeta = {},
+  ): Promise<TokenPair | MfaChallengeResponse> {
+    const settings = await this.settings.get();
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
     if (!user || !(await argon2.verify(user.passwordHash, dto.password))) {
       if (user) {
+        const failedLoginAttempts = user.failedLoginAttempts + 1;
+        // Automatische Sperre nach N Fehlversuchen (Nutzervorgabe,
+        // 2026-08-17) – setzt denselben `isActive: false`-Zustand wie die
+        // manuelle "Sperren"-Aktion (siehe UsersService.remove()), damit
+        // "Gesperrt"-Badge und "Entsperren"-Button im Bearbeiten-Dialog
+        // ohne Sonderfall funktionieren.
+        const shouldLock =
+          settings.failedLoginLockoutThreshold != null &&
+          failedLoginAttempts >= settings.failedLoginLockoutThreshold;
         await this.prisma.user.update({
           where: { id: user.id },
-          data: { failedLoginAttempts: { increment: 1 } },
+          data: {
+            failedLoginAttempts,
+            ...(shouldLock && { isActive: false }),
+          },
         });
       }
       throw new UnauthorizedException('Ungültige Zugangsdaten.');
@@ -119,15 +165,226 @@ export class AuthService {
       throw new UnauthorizedException('Konto ist deaktiviert.');
     }
 
-    if (user.failedLoginAttempts > 0) {
+    // Passwort-Ablauf (Nutzervorgabe, 2026-08-17): erzwingt einen
+    // Passwortwechsel über denselben `mustChangePassword`-Mechanismus wie
+    // "Passwortwechsel bei nächster Anmeldung erzwingen" – Konten ohne
+    // `passwordChangedAt` (vor Einführung dieses Felds) laufen bewusst nie
+    // ab, statt einen erfundenen Startzeitpunkt anzunehmen.
+    const passwordExpired =
+      settings.passwordExpiryDays != null &&
+      user.passwordChangedAt != null &&
+      Date.now() - user.passwordChangedAt.getTime() >
+        settings.passwordExpiryDays * 24 * 60 * 60 * 1000;
+
+    if (user.failedLoginAttempts > 0 || passwordExpired) {
       await this.prisma.user.update({
         where: { id: user.id },
-        data: { failedLoginAttempts: 0 },
+        data: {
+          ...(user.failedLoginAttempts > 0 && { failedLoginAttempts: 0 }),
+          ...(passwordExpired && { mustChangePassword: true }),
+        },
       });
     }
-    await this.touchLastLogin(user.id, user.lastLoginAt);
 
+    // Passwort ist korrekt, aber noch kein vollständiger Login: solange der
+    // zweite Faktor nicht bestätigt ist, gibt es weder echte Tokens noch ein
+    // aktualisiertes `lastLoginAt` (siehe loginWithTwoFactor() unten).
+    if (settings.allowTwoFactor && user.twoFactorEnabled) {
+      const challengeToken = await this.issueTwoFactorChallengeToken(user.id);
+      return { mfaRequired: true, challengeToken };
+    }
+
+    await this.touchLastLogin(user.id, user.lastLoginAt);
     return this.issueTokens(user.id, user.email, meta);
+  }
+
+  private async issueTwoFactorChallengeToken(userId: string): Promise<string> {
+    const payload: TwoFactorChallengePayload = {
+      sub: userId,
+      purpose: 'mfa-challenge',
+    };
+    return this.jwt.signAsync(payload, {
+      secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
+      expiresIn: Math.floor(MFA_CHALLENGE_TTL_MS / 1000),
+    });
+  }
+
+  // Zweiter Schritt des Logins bei aktivierter 2FA: nimmt das Challenge-Token
+  // aus login() plus TOTP- oder Recovery-Code entgegen und stellt bei Erfolg
+  // echte Tokens aus – exakt dieselbe issueTokens()-Instanz wie ein
+  // normaler Login, damit sich beide Wege in nichts unterscheiden.
+  async loginWithTwoFactor(
+    dto: TwoFactorLoginVerifyDto,
+    meta: RequestMeta = {},
+  ): Promise<TokenPair> {
+    let payload: TwoFactorChallengePayload;
+    try {
+      payload = await this.jwt.verifyAsync<TwoFactorChallengePayload>(
+        dto.challengeToken,
+        { secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET') },
+      );
+    } catch {
+      throw new UnauthorizedException(
+        'Challenge-Token ungültig oder abgelaufen.',
+      );
+    }
+    if (payload.purpose !== 'mfa-challenge') {
+      throw new UnauthorizedException('Challenge-Token ungültig.');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
+    if (!user || !user.isActive || !user.twoFactorEnabled) {
+      throw new UnauthorizedException(
+        'Zwei-Faktor-Authentifizierung nicht verfügbar.',
+      );
+    }
+
+    const isValidTotpCode =
+      !!user.twoFactorSecret &&
+      (await this.twoFactor.verifyCode(
+        this.twoFactor.decryptSecret(user.twoFactorSecret),
+        dto.code,
+      ));
+
+    if (isValidTotpCode) {
+      await this.touchLastLogin(user.id, user.lastLoginAt);
+      return this.issueTokens(user.id, user.email, meta);
+    }
+
+    // Fallback: einer der einmalig einlösbaren Recovery-Codes.
+    const matchIndex = await this.twoFactor.matchRecoveryCode(
+      user.twoFactorRecoveryCodes,
+      dto.code,
+    );
+    if (matchIndex === -1) {
+      throw new UnauthorizedException('Ungültiger Code.');
+    }
+    const remainingRecoveryCodes = [...user.twoFactorRecoveryCodes];
+    remainingRecoveryCodes.splice(matchIndex, 1);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { twoFactorRecoveryCodes: remainingRecoveryCodes },
+    });
+    await this.touchLastLogin(user.id, user.lastLoginAt);
+    return this.issueTokens(user.id, user.email, meta);
+  }
+
+  // Self-Service-Einrichtung (Konto-Seite "Sicherheit"-Tab): erzeugt ein
+  // neues Secret und überschreibt ein evtl. vorheriges, nie bestätigtes
+  // (twoFactorEnabled bleibt bis verifyTwoFactorSetup() auf false – ein
+  // generiertes, aber nicht bestätigtes Secret aktiviert nichts).
+  async setupTwoFactor(userId: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+    const settings = await this.settings.get();
+    if (!settings.allowTwoFactor) {
+      throw new BadRequestException(
+        'Zwei-Faktor-Authentifizierung ist derzeit deaktiviert.',
+      );
+    }
+
+    const secret = this.twoFactor.generateSecret();
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { twoFactorSecret: this.twoFactor.encryptSecret(secret) },
+    });
+    const qrCodeDataUrl = await this.twoFactor.buildQrCodeDataUrl(
+      secret,
+      user.email,
+    );
+    return { secret, qrCodeDataUrl };
+  }
+
+  // Bestätigt die Einrichtung mit dem ersten gescannten Code und schaltet
+  // 2FA scharf. Recovery-Codes werden nur hier (und nicht schon bei
+  // setupTwoFactor()) erzeugt, damit ein abgebrochener Setup-Versuch keine
+  // toten Codes hinterlässt.
+  async verifyTwoFactorSetup(userId: string, dto: TwoFactorVerifyDto) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+    if (!user.twoFactorSecret) {
+      throw new BadRequestException(
+        'Es läuft keine 2FA-Einrichtung. Bitte zuerst einen QR-Code anfordern.',
+      );
+    }
+    const secret = this.twoFactor.decryptSecret(user.twoFactorSecret);
+    if (!(await this.twoFactor.verifyCode(secret, dto.code))) {
+      throw new BadRequestException('Code ist ungültig oder abgelaufen.');
+    }
+
+    const recoveryCodes = this.twoFactor.generateRecoveryCodes();
+    const hashedRecoveryCodes =
+      await this.twoFactor.hashRecoveryCodes(recoveryCodes);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        twoFactorEnabled: true,
+        twoFactorEnabledAt: new Date(),
+        twoFactorRecoveryCodes: hashedRecoveryCodes,
+      },
+    });
+    await this.auditLog.record({
+      action: 'user.2fa_enabled',
+      entityType: 'User',
+      entityId: userId,
+      userId,
+    });
+    // Codes verlassen den Server nur dieses eine Mal im Klartext.
+    return { recoveryCodes };
+  }
+
+  // Self-Service-Deaktivierung – Passwort-Bestätigung statt eines weiteren
+  // TOTP-Codes, da der Nutzer hier gerade den zweiten Faktor loswerden will
+  // (könnte z.B. genau deshalb keinen gültigen Code mehr haben).
+  async disableTwoFactor(userId: string, dto: TwoFactorDisableDto) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+    if (!(await argon2.verify(user.passwordHash, dto.password))) {
+      throw new UnauthorizedException('Passwort ist falsch.');
+    }
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        twoFactorEnabled: false,
+        twoFactorEnabledAt: null,
+        twoFactorSecret: null,
+        twoFactorRecoveryCodes: [],
+      },
+    });
+    await this.auditLog.record({
+      action: 'user.2fa_disabled',
+      entityType: 'User',
+      entityId: userId,
+      userId,
+    });
+  }
+
+  // "Neue Codes generieren" (Mein Konto → Sicherheit): die alten Codes sind
+  // gehasht und lassen sich nicht erneut anzeigen (siehe Offener Punkt in
+  // knowledge-base/auth/two-factor-authentication.md) – dies ersetzt sie
+  // komplett durch einen frischen Satz, alte werden dadurch ungültig.
+  async regenerateRecoveryCodes(userId: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+    if (!user.twoFactorEnabled) {
+      throw new BadRequestException(
+        'Zwei-Faktor-Authentifizierung ist nicht aktiviert.',
+      );
+    }
+    const recoveryCodes = this.twoFactor.generateRecoveryCodes();
+    const hashedRecoveryCodes =
+      await this.twoFactor.hashRecoveryCodes(recoveryCodes);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { twoFactorRecoveryCodes: hashedRecoveryCodes },
+    });
+    return { recoveryCodes };
   }
 
   // Schreibt `lastLoginAt` nur, wenn der letzte Wert mind. 2 Minuten
@@ -175,6 +432,28 @@ export class AuthService {
       throw new UnauthorizedException('Konto ist deaktiviert.');
     }
 
+    // Inaktivitäts-Timeout (Nutzervorgabe, 2026-08-17): `lastUsedAt` steht
+    // faktisch für "Zeitpunkt der letzten Aktivität dieser Sitzung", da
+    // jede Anfrage über die Middleware bei abgelaufenem Access-Token genau
+    // hier rotiert – ein wirklich untätiger Tab löst keine neuen Requests
+    // aus. Prüfung vor der Rotation, nicht danach, sonst würde ein
+    // längst überzogenes Token sich durch den bloßen Aufruf selbst
+    // verlängern.
+    const settings = await this.settings.get();
+    if (
+      settings.sessionIdleTimeoutMinutes != null &&
+      Date.now() - stored.lastUsedAt.getTime() >
+        settings.sessionIdleTimeoutMinutes * 60 * 1000
+    ) {
+      await this.prisma.refreshToken.update({
+        where: { id: stored.id },
+        data: { revokedAt: new Date() },
+      });
+      throw new UnauthorizedException(
+        'Sitzung wegen Inaktivität beendet. Bitte erneut anmelden.',
+      );
+    }
+
     // Rotation: altes Token widerrufen, neues Paar ausstellen
     await this.prisma.refreshToken.update({
       where: { id: stored.id },
@@ -210,11 +489,26 @@ export class AuthService {
     if (violations.length > 0) {
       throw new BadRequestException(violations.join(' '));
     }
+    await this.assertPasswordNotLeaked(settings, dto.newPassword);
+    if (settings.passwordPreventReuseEnabled) {
+      await this.assertPasswordNotReused(userId, user.passwordHash, dto.newPassword);
+    }
 
     const passwordHash = await argon2.hash(dto.newPassword);
     await this.prisma.user.update({
       where: { id: userId },
-      data: { passwordHash, mustChangePassword: false },
+      data: {
+        passwordHash,
+        mustChangePassword: false,
+        passwordChangedAt: new Date(),
+      },
+    });
+    await this.recordPasswordHistory(userId, passwordHash);
+    await this.auditLog.record({
+      action: 'user.password_changed',
+      entityType: 'User',
+      entityId: userId,
+      userId,
     });
     await this.revokeAllRefreshTokens(userId);
   }
@@ -269,19 +563,96 @@ export class AuthService {
     if (violations.length > 0) {
       throw new BadRequestException(violations.join(' '));
     }
+    await this.assertPasswordNotLeaked(settings, dto.newPassword);
+    if (settings.passwordPreventReuseEnabled) {
+      const currentUser = await this.prisma.user.findUniqueOrThrow({
+        where: { id: stored.userId },
+      });
+      await this.assertPasswordNotReused(
+        stored.userId,
+        currentUser.passwordHash,
+        dto.newPassword,
+      );
+    }
 
     const passwordHash = await argon2.hash(dto.newPassword);
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: stored.userId },
-        data: { passwordHash, mustChangePassword: false },
+        data: {
+          passwordHash,
+          mustChangePassword: false,
+          passwordChangedAt: new Date(),
+        },
       }),
       this.prisma.passwordResetToken.update({
         where: { id: stored.id },
         data: { usedAt: new Date() },
       }),
     ]);
+    await this.recordPasswordHistory(stored.userId, passwordHash);
+    await this.auditLog.record({
+      action: 'user.password_changed',
+      entityType: 'User',
+      entityId: stored.userId,
+      userId: stored.userId,
+    });
     await this.revokeAllRefreshTokens(stored.userId);
+  }
+
+  private async assertPasswordNotLeaked(
+    settings: { passwordBlockLeaked: boolean },
+    password: string,
+  ) {
+    if (settings.passwordBlockLeaked && (await isPasswordLeaked(password))) {
+      throw new BadRequestException(
+        'Dieses Passwort wurde in bekannten Datenlecks gefunden. Bitte ein anderes wählen.',
+      );
+    }
+  }
+
+  // Prüft gegen den aktuellen Hash + die letzten 4 PasswordHistory-Einträge
+  // (zusammen 5, siehe AppSettings.passwordPreventReuseEnabled).
+  private async assertPasswordNotReused(
+    userId: string,
+    currentPasswordHash: string,
+    newPassword: string,
+  ) {
+    const recent = await this.prisma.passwordHistory.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 4,
+    });
+    const hashesToCheck = [
+      currentPasswordHash,
+      ...recent.map((entry) => entry.passwordHash),
+    ];
+    for (const hash of hashesToCheck) {
+      if (await argon2.verify(hash, newPassword)) {
+        throw new BadRequestException(
+          'Dieses Passwort wurde kürzlich bereits verwendet. Bitte ein anderes wählen.',
+        );
+      }
+    }
+  }
+
+  // Merkt sich den neuen Hash und entfernt Einträge jenseits der letzten 5
+  // (siehe assertPasswordNotReused()).
+  private async recordPasswordHistory(userId: string, passwordHash: string) {
+    await this.prisma.passwordHistory.create({
+      data: { userId, passwordHash },
+    });
+    const excess = await this.prisma.passwordHistory.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      skip: 5,
+      select: { id: true },
+    });
+    if (excess.length > 0) {
+      await this.prisma.passwordHistory.deleteMany({
+        where: { id: { in: excess.map((entry) => entry.id) } },
+      });
+    }
   }
 
   async verifyEmail(token: string) {
@@ -468,6 +839,9 @@ export class AuthService {
         permissions,
         canAccessDashboard: roles.some((role) => role.canAccessDashboard),
         mustChangePassword: false,
+        // Ziel-Konto kann nie Administrator sein (siehe Check oben) – die
+        // Erzwingung greift nur für Admins, hier also immer false.
+        twoFactorSetupRequired: false,
         impersonatedBy: admin.sub,
       },
       {
@@ -502,6 +876,47 @@ export class AuthService {
     });
   }
 
+  // Globale Admin-Aktion auf der Einstellungsseite ("Alle Sitzungen
+  // beenden", Nutzervorgabe 2026-08-17) – widerruft jedes noch gültige
+  // Refresh-Token systemweit, nicht nur eines einzelnen Kontos (anders als
+  // revokeAllRefreshTokens() oben). Meldet jeden betroffenen Nutzer selbst
+  // als Akteur an, nicht den auslösenden Admin – die Sitzung *dieses*
+  // Nutzers wurde beendet, unabhängig davon, wer die Aktion ausgelöst hat.
+  async revokeAllSessionsGlobally(actingUserId: string) {
+    const { count } = await this.prisma.refreshToken.updateMany({
+      where: { revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    await this.auditLog.record({
+      action: 'auth.all_sessions_revoked',
+      entityType: 'System',
+      entityId: 'global',
+      userId: actingUserId,
+      metadata: { count },
+    });
+    return { count };
+  }
+
+  // Globale Admin-Aktion ("Passwort-Reset für alle erzwingen") – setzt
+  // `mustChangePassword` für jedes aktive, nicht anonymisierte Konto.
+  // Gleicher Mechanismus wie die bestehende Einzel-Nutzer-Aktion in
+  // UpdateUserDto, greift wie dort erst beim nächsten Token (Login/
+  // Refresh), kein sofortiger Zwangs-Logout.
+  async forcePasswordResetForAllUsers(actingUserId: string) {
+    const { count } = await this.prisma.user.updateMany({
+      where: { isActive: true, anonymizedAt: null, mustChangePassword: false },
+      data: { mustChangePassword: true },
+    });
+    await this.auditLog.record({
+      action: 'auth.password_reset_forced_all',
+      entityType: 'System',
+      entityId: 'global',
+      userId: actingUserId,
+      metadata: { count },
+    });
+    return { count };
+  }
+
   private async issueTokens(
     userId: string,
     email: string,
@@ -534,6 +949,21 @@ export class AuthService {
     // Dashboard-Zugriff, sobald mindestens eine zugewiesene Rolle ihn erlaubt.
     const canAccessDashboard = roles.some((role) => role.canAccessDashboard);
 
+    // Siehe TwoFactorSetupGuard: erzwingt 2FA-Einrichtung, wenn eine der
+    // drei unabhängigen Pflicht-Stufen greift (Nutzervorgabe, 2026-08-17:
+    // "für alle Konten" / "für Rollen mit Veröffentlichungsrecht" / die
+    // bestehende "für Administratoren") – jede für sich ODER-verknüpft,
+    // nur solange das Feature global überhaupt erlaubt ist (allowTwoFactor).
+    const settings = await this.settings.get();
+    const twoFactorSetupRequired =
+      settings.allowTwoFactor &&
+      !user.twoFactorEnabled &&
+      (settings.requireTwoFactorForAll ||
+        (settings.requireTwoFactorForAdmins &&
+          roles.some((role) => role.name === 'Administrator')) ||
+        (settings.requireTwoFactorForPublishers &&
+          permissions.includes('content:publish')));
+
     const accessTtl = this.config.get<string>('JWT_ACCESS_TTL', '15m');
     const accessToken = await this.jwt.signAsync(
       {
@@ -544,6 +974,7 @@ export class AuthService {
         permissions,
         canAccessDashboard,
         mustChangePassword: user.mustChangePassword,
+        twoFactorSetupRequired,
       },
       {
         secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),

@@ -29,6 +29,8 @@ const profileSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().min(1, "Nachname ist erforderlich."),
   email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben."),
+  department: z.string().optional(),
+  phone: z.string().optional(),
 });
 
 type ProfileValues = z.infer<typeof profileSchema>;
@@ -58,6 +60,8 @@ export function AccountForm({
       firstName: user.firstName ?? "",
       lastName: user.lastName,
       email: user.email,
+      department: user.department ?? "",
+      phone: user.phone ?? "",
     },
   });
 
@@ -73,6 +77,8 @@ export function AccountForm({
           firstName: values.firstName || undefined,
           lastName: values.lastName,
           email: values.email,
+          department: values.department || undefined,
+          phone: values.phone || undefined,
         }),
       });
 
@@ -93,9 +99,9 @@ export function AccountForm({
   }
 
   return (
-    <Card className="border-none bg-transparent shadow-none">
+    <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
       <CardHeader>
-        <CardTitle>Profil</CardTitle>
+        <CardTitle>Persönliche Angaben</CardTitle>
         <CardDescription>Deine Kontodaten.</CardDescription>
       </CardHeader>
       <CardContent>
@@ -155,6 +161,34 @@ export function AccountForm({
                 </FormItem>
               )}
             />
+            <div className="grid grid-cols-1 gap-x-10 gap-y-10 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="department"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Abteilung</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefon</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             {success && (
               <p className="text-sm text-muted-foreground">Gespeichert.</p>

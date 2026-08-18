@@ -15,13 +15,16 @@ import {
   Images,
   LayoutGrid,
   LayoutTemplate,
+  Link2,
   Maximize2,
+  Monitor,
   MousePointerClick,
   Pencil,
   Quote,
   Ruler,
   Search,
   SeparatorHorizontal,
+  Smartphone,
   Square,
   Trash2,
   Video as VideoIcon,
@@ -33,6 +36,7 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -298,53 +302,158 @@ const SPACING_SIDE_LABELS: Record<SpacingSide, string> = {
   left: "Links",
 };
 
-// Vier Eingabefelder für einen Breakpoint (Mobil oder Desktop) eines
-// Innen-/Außenabstands – als Kreuz angeordnet (Oben/Rechts/Unten/Links um
-// ein Mittelfeld, wie ein Box-Modell), statt einer schlichten 4er-Reihe –
-// macht auf den ersten Blick klar, welches Feld welche Seite meint (siehe
-// Spacing-Dialog unten).
-function SpacingCrossInputs({
-  idPrefix,
-  box,
+const SPACING_PRESETS = [0, 8, 16, 24, 32, 48, 64];
+
+type SpacingBreakpoint = keyof ResponsiveSpacing;
+
+/** Einzelnes Zahlenfeld im Box-Modell – Position im Grid vermittelt die
+ * Seite, daher kein sichtbares Label je Feld (nur `aria-label`). */
+function SpacingSideInput({
+  side,
+  value,
   onChange,
 }: {
-  idPrefix: string;
-  box: BoxSpacing | undefined;
-  onChange: (side: SpacingSide, value: string) => void;
+  side: SpacingSide;
+  value: number | undefined;
+  onChange: (value: string) => void;
 }) {
-  function field(side: SpacingSide) {
+  return (
+    <Input
+      type="number"
+      min={0}
+      value={value ?? ""}
+      placeholder="0"
+      onChange={(e) => onChange(e.target.value)}
+      aria-label={SPACING_SIDE_LABELS[side]}
+      // Bewusst klein und fest (nicht `w-full`, nicht die Standard-`h-12`):
+      // die Box-Modell-Grids sind `justify-items-center`, die Spaltenbreite
+      // bestimmt allein das Innenabstand-/"Inhalt"-Element – ein großes
+      // Eingabefeld würde die Spalte unnötig aufblähen (Nutzervorgabe,
+      // 2026-08-18: "Inputs kleiner, innerer Bereich breiter").
+      className="h-9 w-12 min-w-0 shrink-0 px-1 text-center text-sm leading-normal"
+    />
+  );
+}
+
+/** Verschachteltes Box-Modell (Außenabstand außen, Innenabstand innen um
+ * einen "Inhalt"-Platzhalter) für einen Breakpoint – 1:1 nach Bildvorlage
+ * (Nutzervorgabe, 2026-08-18). Ersetzt die frühere Kreuz-Darstellung mit
+ * getrennten Innen-/Außenabstand-Blöcken. Das Ketten-Icon je Box koppelt
+ * optional alle vier Seiten dieser Box aneinander (ein Wert für alle),
+ * Default entkoppelt (jede Seite einzeln), damit bereits unterschiedlich
+ * gesetzte Seiten nicht überschrieben werden. */
+function SpacingBoxEditor({
+  margin,
+  padding,
+  onChangeMargin,
+  onChangeMarginAll,
+  onChangePadding,
+  onChangePaddingAll,
+}: {
+  margin: BoxSpacing | undefined;
+  padding: BoxSpacing | undefined;
+  onChangeMargin: (side: SpacingSide, value: string) => void;
+  /** Setzt alle vier Seiten in einem Zug (verknüpfter Modus) – ein
+   * viermaliger Einzel-Aufruf von `onChangeMargin` würde sich gegenseitig
+   * überschreiben, da jeder Aufruf noch vom alten Stand ausgeht. */
+  onChangeMarginAll: (value: string) => void;
+  onChangePadding: (side: SpacingSide, value: string) => void;
+  onChangePaddingAll: (value: string) => void;
+}) {
+  const [marginLinked, setMarginLinked] = useState(false);
+  const [paddingLinked, setPaddingLinked] = useState(false);
+
+  function setMarginSide(side: SpacingSide, v: string) {
+    if (marginLinked) {
+      onChangeMarginAll(v);
+    } else {
+      onChangeMargin(side, v);
+    }
+  }
+  function setPaddingSide(side: SpacingSide, v: string) {
+    if (paddingLinked) {
+      onChangePaddingAll(v);
+    } else {
+      onChangePadding(side, v);
+    }
+  }
+
+  function LinkToggle({
+    active,
+    onClick,
+  }: {
+    active: boolean;
+    onClick: () => void;
+  }) {
     return (
-      <div className="flex flex-col items-center gap-1">
-        <Label htmlFor={`${idPrefix}-${side}`} className="text-xs text-muted-foreground">
-          {SPACING_SIDE_LABELS[side]}
-        </Label>
-        <Input
-          id={`${idPrefix}-${side}`}
-          type="number"
-          min={0}
-          value={box?.[side] ?? ""}
-          onChange={(e) => onChange(side, e.target.value)}
-          // Kein festes `w-*`: die Basis-`Input`-Komponente bringt schon
-          // `w-full min-w-0` mit – ein fester Pixelwert hier würde das
-          // überschreiben und auf sehr schmalen Bildschirmen erzwungenes
-          // horizontales Scrollen verursachen (das Feld könnte nicht mehr
-          // schrumpfen, egal wie wenig Platz tatsächlich da ist).
-          className="min-w-0 text-center"
-        />
-      </div>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={active}
+        aria-label="Alle Seiten gemeinsam ändern"
+        className={cn(
+          "flex size-7 shrink-0 items-center justify-center rounded-md border bg-card transition-colors",
+          active
+            ? "border-primary bg-primary/25 text-[#132033]"
+            : "border-[#E5E5E5] text-muted-foreground hover:text-foreground",
+        )}
+      >
+        <Link2 className="size-3.5" />
+      </button>
     );
   }
+
   return (
-    <div className="grid grid-cols-3 items-center justify-items-center gap-2">
-      <div />
-      {field("top")}
-      <div />
-      {field("left")}
-      <Square className="size-5 text-muted-foreground" aria-hidden />
-      {field("right")}
-      <div />
-      {field("bottom")}
-      <div />
+    // `overflow-x-auto` als Sicherheitsnetz für sehr schmale Mobilgeräte
+    // (<360px): die feste Mindestbreite des Box-Modells (Inhalt-Box +
+    // 4 Eingabefelder + 2 Rahmen) passt auf die meisten Handys, soll bei
+    // extremen Ausnahmen aber scrollen statt Text abzuschneiden
+    // (Nutzer-Bugreport, 2026-08-18: Footer-/Presets-Text wurde
+    // rechts abgeschnitten).
+    <div className="overflow-x-auto">
+    <div className="w-fit min-w-full rounded-xl border border-[#E5E5E5] bg-[#FAFAFA] p-3">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+          Außenabstand <span className="font-normal normal-case">margin, px</span>
+        </span>
+        <LinkToggle active={marginLinked} onClick={() => setMarginLinked((v) => !v)} />
+      </div>
+      {/* Bewusst verschachtelte Flex-Zeilen statt eines gemeinsamen CSS-
+          Grids für außen+innen: geteilte Grid-Spalten zwischen äußerem
+          und innerem Box-Modell zwangen beide auf dieselbe Spaltenbreite
+          und quetschten dadurch die "Inhalt"-Box gegen das rechte
+          Innenabstand-Feld (Nutzer-Bugreport, 2026-08-18). Jede Ebene
+          bekommt hier ihre eigene, unabhängige Breite. */}
+      <div className="mx-auto flex w-fit flex-col items-center gap-1.5">
+        <SpacingSideInput side="top" value={margin?.top} onChange={(v) => setMarginSide("top", v)} />
+        <div className="flex items-center gap-1.5">
+          <SpacingSideInput side="left" value={margin?.left} onChange={(v) => setMarginSide("left", v)} />
+
+          <div className="rounded-xl border border-green-300 bg-green-50 p-3">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold tracking-wide text-green-700 uppercase">
+                Innenabstand <span className="font-normal normal-case">padding</span>
+              </span>
+              <LinkToggle active={paddingLinked} onClick={() => setPaddingLinked((v) => !v)} />
+            </div>
+            <div className="flex flex-col items-center gap-1.5">
+              <SpacingSideInput side="top" value={padding?.top} onChange={(v) => setPaddingSide("top", v)} />
+              <div className="flex items-center gap-1.5">
+                <SpacingSideInput side="left" value={padding?.left} onChange={(v) => setPaddingSide("left", v)} />
+                <div className="flex h-12 min-w-20 items-center justify-center rounded-lg border border-[#D4D4D4] bg-card px-3 text-sm text-muted-foreground">
+                  Inhalt
+                </div>
+                <SpacingSideInput side="right" value={padding?.right} onChange={(v) => setPaddingSide("right", v)} />
+              </div>
+              <SpacingSideInput side="bottom" value={padding?.bottom} onChange={(v) => setPaddingSide("bottom", v)} />
+            </div>
+          </div>
+
+          <SpacingSideInput side="right" value={margin?.right} onChange={(v) => setMarginSide("right", v)} />
+        </div>
+        <SpacingSideInput side="bottom" value={margin?.bottom} onChange={(v) => setMarginSide("bottom", v)} />
+      </div>
+    </div>
     </div>
   );
 }
@@ -365,6 +474,7 @@ export function BlockEditorField({
   const [draggingInstanceId, setDraggingInstanceId] = useState<string | null>(null);
   const [editingInstanceId, setEditingInstanceId] = useState<string | null>(null);
   const [spacingInstanceId, setSpacingInstanceId] = useState<string | null>(null);
+  const [spacingTab, setSpacingTab] = useState<SpacingBreakpoint>("mobile");
   const [resizingLayoutId, setResizingLayoutId] = useState<string | null>(null);
   const [imagePicker, setImagePicker] = useState<{
     instanceId: string;
@@ -525,6 +635,46 @@ export function BlockEditorField({
     updateInstanceLayout(instanceId, { ...instance.layout, [kind]: nextResponsive });
   }
 
+  // Setzt alle vier Seiten auf einmal (verknüpfte Ketten-Boxen, "Innen
+  // schnell"-Presets) – bewusst EIN Lese-Schreib-Zyklus statt viermal
+  // `updateSpacing()` in einer Schleife: mehrere synchrone Aufrufe
+  // hintereinander lesen alle denselben (noch nicht aktualisierten)
+  // `value`-Stand, jeder Aufruf überschreibt den vorherigen also wieder –
+  // am Ende hätte nur die zuletzt verarbeitete Seite tatsächlich einen
+  // Wert (Nutzer-Bugreport, 2026-08-18: "nur in padding links").
+  function updateSpacingAllSides(
+    instanceId: string,
+    kind: "padding" | "margin",
+    breakpoint: keyof ResponsiveSpacing,
+    rawValue: string,
+  ) {
+    const instance = value.find((i) => i.id === instanceId);
+    if (!instance) return;
+    const numericValue = rawValue.trim() === "" ? undefined : Number(rawValue);
+    const nextBox: BoxSpacing = {
+      top: numericValue,
+      right: numericValue,
+      bottom: numericValue,
+      left: numericValue,
+    };
+    const currentResponsive = instance.layout?.[kind];
+    const nextResponsive: ResponsiveSpacing = { ...currentResponsive, [breakpoint]: nextBox };
+    updateInstanceLayout(instanceId, { ...instance.layout, [kind]: nextResponsive });
+  }
+
+  // Löscht Innen- und Außenabstand für einen Breakpoint komplett (Reset-
+  // Button im Abstände-Dialog) – der jeweils andere Breakpoint bleibt
+  // unangetastet.
+  function resetSpacing(instanceId: string, breakpoint: SpacingBreakpoint) {
+    const instance = value.find((i) => i.id === instanceId);
+    if (!instance || !instance.layout) return;
+    updateInstanceLayout(instanceId, {
+      ...instance.layout,
+      padding: { ...instance.layout.padding, [breakpoint]: undefined },
+      margin: { ...instance.layout.margin, [breakpoint]: undefined },
+    });
+  }
+
   // Block-weite Größenänderung per Zieh-Griff (für Module ohne eigenes
   // Bild-Feld, z.B. Zitat) – analog zu `EditableImageField.startResize`,
   // schreibt aber in `instance.layout` statt in einen Feldwert.
@@ -564,47 +714,54 @@ export function BlockEditorField({
           `overflow-x-visible` daneben würde also ignoriert. Einzige echte
           Lösung gegen abgeschnittene Schatten: Innenabstand, der dem
           Schatten Platz gibt, bevor der Container ihn kappt. */}
-      <div className="flex w-full shrink-0 flex-col gap-3 self-start md:sticky md:top-4 md:max-h-[calc(100vh-2rem)] md:w-60 md:overflow-y-auto md:p-2">
-        <div className="relative shrink-0">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Bausteine durchsuchen"
-            className="pl-8"
-          />
+      <div className="flex w-full shrink-0 flex-col gap-3 self-start md:sticky md:top-4 md:max-h-[calc(100vh-2rem)] md:w-72 md:overflow-y-auto">
+        <div className="flex flex-col gap-3 rounded-xl border border-[#E5E5E5] bg-card p-4 shadow-sm">
+          <div className="relative shrink-0">
+            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Bausteine durchsuchen"
+              className="pl-8"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {filteredTypes.map((moduleType) => {
+              const Icon = iconFor(moduleType);
+              return (
+                <div
+                  key={moduleType.id}
+                  draggable
+                  onDragStart={(e) => {
+                    setDraggingPaletteId(moduleType.id);
+                    e.dataTransfer.setData("text/plain", `new:${moduleType.id}`);
+                  }}
+                  onDragEnd={() => setDraggingPaletteId(null)}
+                  className={cn(
+                    "flex cursor-grab flex-col items-center gap-1.5 rounded-lg border border-[#D4D4D4] bg-card p-3 text-center transition-colors hover:border-primary active:cursor-grabbing",
+                    draggingPaletteId === moduleType.id && "opacity-50",
+                  )}
+                >
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/25 text-[#132033]">
+                    <Icon className="size-4" />
+                  </span>
+                  <span className="text-xs font-medium">{moduleType.name}</span>
+                </div>
+              );
+            })}
+            {filteredTypes.length === 0 && (
+              <p className="col-span-2 text-xs text-muted-foreground">
+                Keine Bausteine gefunden.
+              </p>
+            )}
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          {filteredTypes.map((moduleType) => {
-            const Icon = iconFor(moduleType);
-            return (
-              <div
-                key={moduleType.id}
-                draggable
-                onDragStart={(e) => {
-                  setDraggingPaletteId(moduleType.id);
-                  e.dataTransfer.setData("text/plain", `new:${moduleType.id}`);
-                }}
-                onDragEnd={() => setDraggingPaletteId(null)}
-                className={cn(
-                  "flex cursor-grab flex-col items-center gap-1.5 rounded-lg border bg-card p-3 text-center shadow-md transition-colors hover:border-orange-400 active:cursor-grabbing",
-                  draggingPaletteId === moduleType.id && "opacity-50",
-                )}
-              >
-                <Icon className="size-5 text-orange-500" />
-                <span className="text-xs font-medium">{moduleType.name}</span>
-              </div>
-            );
-          })}
-          {filteredTypes.length === 0 && (
-            <p className="col-span-2 text-xs text-muted-foreground">
-              Keine Bausteine gefunden.
-            </p>
-          )}
-        </div>
+        <p className="text-sm text-muted-foreground">
+          Baustein per Drag &amp; Drop rechts platzieren.
+        </p>
       </div>
 
-      <div className="flex w-full min-w-0 flex-1 flex-col rounded-lg border bg-white shadow-card dark:bg-neutral-950">
+      <div className="flex w-full min-w-0 flex-1 flex-col rounded-lg border">
         {/* `flow-root` statt `flex flex-col`: Blöcke mit Links-/
             Rechtsbündig floaten (siehe `blockLayoutClasses`) – Flex-Kinder
             ignorieren `float` komplett, außerdem fängt `flow-root` das
@@ -1137,84 +1294,110 @@ export function BlockEditorField({
         open={spacingInstanceId !== null}
         onOpenChange={(open) => !open && setSpacingInstanceId(null)}
       >
-        <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-xl">
+        <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-lg">
           <DialogHeader className="shrink-0">
-            <DialogTitle>Innen-/Außenabstand</DialogTitle>
+            <DialogTitle>Abstände</DialogTitle>
+            <DialogDescription>
+              Leer heißt: Wert wird vererbt. Desktop greift ab 640px
+              Bildschirmbreite.
+            </DialogDescription>
           </DialogHeader>
           {spacingInstance && (
-            <div className="flex flex-col gap-5 overflow-y-auto">
-              <p className="text-sm text-muted-foreground">
-                Mobil-Wert gilt als Standard, der Desktop-Wert überschreibt ihn
-                je Seite ab 640px Bildschirmbreite. Leer lassen für keinen
-                eigenen Wert.
-              </p>
+            <div className="flex flex-col gap-4 overflow-y-auto">
+              <div className="flex gap-1 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-1">
+                <button
+                  type="button"
+                  onClick={() => setSpacingTab("mobile")}
+                  className={cn(
+                    "flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors",
+                    spacingTab === "mobile"
+                      ? "border-primary bg-white shadow-sm"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Smartphone className="size-4" />
+                  Mobil
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSpacingTab("desktop")}
+                  className={cn(
+                    "flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors",
+                    spacingTab === "desktop"
+                      ? "border-primary bg-white shadow-sm"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Monitor className="size-4" />
+                  Desktop
+                </button>
+              </div>
+
+              <SpacingBoxEditor
+                margin={spacingInstance.layout?.margin?.[spacingTab]}
+                padding={spacingInstance.layout?.padding?.[spacingTab]}
+                onChangeMargin={(side, v) =>
+                  updateSpacing(spacingInstance.id, "margin", spacingTab, side, v)
+                }
+                onChangeMarginAll={(v) =>
+                  updateSpacingAllSides(spacingInstance.id, "margin", spacingTab, v)
+                }
+                onChangePadding={(side, v) =>
+                  updateSpacing(spacingInstance.id, "padding", spacingTab, side, v)
+                }
+                onChangePaddingAll={(v) =>
+                  updateSpacingAllSides(spacingInstance.id, "padding", spacingTab, v)
+                }
+              />
+
               <div className="flex flex-col gap-2">
-                <Label>Innenabstand (px)</Label>
-                {/* `flex-wrap` statt Container-Query: bricht rein anhand
-                    des tatsächlich beim Rendern verfügbaren Platzes um,
-                    unabhängig von Breiten-Messungen des (portalierten)
-                    Dialogs – Mobil-/Desktop-Kreuz stehen nebeneinander,
-                    sobald beide nebeneinander passen (min. ~16rem je
-                    Kreuz), sonst untereinander. */}
-                <div className="flex flex-wrap gap-4">
-                  <div className="flex min-w-64 flex-1 flex-col items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      Mobil
-                    </span>
-                    <SpacingCrossInputs
-                      idPrefix="padding-mobile"
-                      box={spacingInstance.layout?.padding?.mobile}
-                      onChange={(side, v) =>
-                        updateSpacing(spacingInstance.id, "padding", "mobile", side, v)
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  Innen schnell
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {SPACING_PRESETS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() =>
+                        updateSpacingAllSides(
+                          spacingInstance.id,
+                          "padding",
+                          spacingTab,
+                          String(preset),
+                        )
                       }
-                    />
-                  </div>
-                  <div className="flex min-w-64 flex-1 flex-col items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      Desktop
-                    </span>
-                    <SpacingCrossInputs
-                      idPrefix="padding-desktop"
-                      box={spacingInstance.layout?.padding?.desktop}
-                      onChange={(side, v) =>
-                        updateSpacing(spacingInstance.id, "padding", "desktop", side, v)
-                      }
-                    />
-                  </div>
+                      className="rounded-md bg-muted px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+                    >
+                      {preset}
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
-                <Label>Außenabstand (px)</Label>
-                <div className="flex flex-wrap gap-4">
-                  <div className="flex min-w-64 flex-1 flex-col items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      Mobil
-                    </span>
-                    <SpacingCrossInputs
-                      idPrefix="margin-mobile"
-                      box={spacingInstance.layout?.margin?.mobile}
-                      onChange={(side, v) =>
-                        updateSpacing(spacingInstance.id, "margin", "mobile", side, v)
-                      }
-                    />
-                  </div>
-                  <div className="flex min-w-64 flex-1 flex-col items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      Desktop
-                    </span>
-                    <SpacingCrossInputs
-                      idPrefix="margin-desktop"
-                      box={spacingInstance.layout?.margin?.desktop}
-                      onChange={(side, v) =>
-                        updateSpacing(spacingInstance.id, "margin", "desktop", side, v)
-                      }
-                    />
-                  </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+                <span className="text-sm text-muted-foreground">
+                  {SPACING_SIDES.some(
+                    (side) =>
+                      spacingInstance.layout?.margin?.[spacingTab]?.[side] !== undefined ||
+                      spacingInstance.layout?.padding?.[spacingTab]?.[side] !== undefined,
+                  )
+                    ? "Eigene Werte gesetzt"
+                    : "Keine eigenen Werte"}
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => resetSpacing(spacingInstance.id, spacingTab)}
+                  >
+                    Zurücksetzen
+                  </Button>
+                  <Button type="button" onClick={() => setSpacingInstanceId(null)}>
+                    Fertig
+                  </Button>
                 </div>
               </div>
-              <Button type="button" onClick={() => setSpacingInstanceId(null)}>
-                Fertig
-              </Button>
             </div>
           )}
         </DialogContent>

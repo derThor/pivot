@@ -1,17 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Monitor, ShieldOff } from "lucide-react";
+import { Monitor, ShieldCheck, ShieldOff } from "lucide-react";
 
 import { toastEdited, toastDeleted } from "@/components/app-toast";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
+import { ExportProfileButton } from "@/components/export-profile-button";
 import { PaginationControls } from "@/components/pagination-controls";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserActivityTimeline } from "@/components/user-activity-timeline";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,12 +30,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import type { CurrentUser, Role, UserSession } from "@/lib/api-server";
+import type {
+  ActivityLogResponse,
+  CurrentUser,
+  Role,
+  UserSession,
+} from "@/lib/api-server";
+import { mediaUrl } from "@/lib/media";
 import { cn, formatName, formatRelativeTime, initials } from "@/lib/utils";
 
 const profileSchema = z.object({
@@ -56,20 +60,24 @@ export function UserEditView({
   user,
   roles,
   allowEmailChange,
+  allowTwoFactor,
   viewerId,
   viewerPermissions,
   viewerIsAdministrator,
   sessions,
   stats,
+  activity,
 }: {
   user: CurrentUser;
   roles: Role[];
   allowEmailChange: boolean;
+  allowTwoFactor: boolean;
   viewerId: string;
   viewerPermissions: string[];
   viewerIsAdministrator: boolean;
   sessions: UserSession[];
   stats: { contentCount: number; mediaCount: number };
+  activity: ActivityLogResponse;
 }) {
   const router = useRouter();
   const name = formatName(user);
@@ -85,6 +93,7 @@ export function UserEditView({
   const [isActive, setIsActive] = useState(user.isActive);
   const [isSaving, setIsSaving] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [isDisablingTwoFactor, setIsDisablingTwoFactor] = useState(false);
   const [isImpersonating, setIsImpersonating] = useState(false);
   const [isTogglingActive, setIsTogglingActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -188,6 +197,24 @@ export function UserEditView({
     }
   }
 
+  // Notausgang bei Geräteverlust ohne gültigen Recovery-Code – anders als
+  // die Self-Service-Deaktivierung (Konto-Seite) ohne Passwort-Bestätigung,
+  // der Admin bestätigt sich bereits über sein eigenes users:update-Recht.
+  async function handleDisableTwoFactor() {
+    setIsDisablingTwoFactor(true);
+    try {
+      const res = await fetch(`/api/users/${user.id}/disable-2fa`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        toastEdited(`Zwei-Faktor-Authentifizierung für „${name}“ wurde deaktiviert.`);
+        router.refresh();
+      }
+    } finally {
+      setIsDisablingTwoFactor(false);
+    }
+  }
+
   async function handleImpersonate() {
     setIsImpersonating(true);
     try {
@@ -246,6 +273,7 @@ export function UserEditView({
           >
             ‹ Zurück
           </Button>
+          <ExportProfileButton user={user} />
           <Button
             type="button"
             variant="outline"
@@ -261,9 +289,12 @@ export function UserEditView({
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 rounded-xl border border-[#E5E5E5] bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Avatar size="lg" className="size-14">
+            {user.avatarUrl && (
+              <AvatarImage src={mediaUrl({ url: user.avatarUrl })} />
+            )}
             <AvatarFallback className="bg-neutral-900 text-lg font-medium text-white">
               {initials(user)}
             </AvatarFallback>
@@ -276,23 +307,28 @@ export function UserEditView({
                 className={
                   isActive
                     ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
-                    : "bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300"
+                    : "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
                 }
               >
                 {isActive ? "Aktiv" : "Gesperrt"}
               </Badge>
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <span className="inline-flex text-muted-foreground/60" />
+              {allowTwoFactor && (
+                <Badge
+                  variant="secondary"
+                  className={
+                    user.twoFactorEnabled
+                      ? "gap-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
+                      : "gap-1 bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
                   }
                 >
-                  <ShieldOff className="size-4" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  Zwei-Faktor-Authentifizierung noch nicht verfügbar
-                </TooltipContent>
-              </Tooltip>
+                  {user.twoFactorEnabled ? (
+                    <ShieldCheck className="size-3" />
+                  ) : (
+                    <ShieldOff className="size-3" />
+                  )}
+                  {user.twoFactorEnabled ? "2FA aktiv" : "2FA inaktiv"}
+                </Badge>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
               <span>{user.email}</span>
@@ -364,7 +400,7 @@ export function UserEditView({
           <TabsContent value="profil">
             <Form {...form}>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                <div className="flex flex-col gap-6 rounded-xl border border-[#E5E5E5] bg-card p-6 lg:col-span-2">
+                <div className="flex flex-col gap-6 rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6 lg:col-span-2">
                   <h2 className="font-semibold">Stammdaten</h2>
                   <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
                     <FormField
@@ -494,6 +530,17 @@ export function UserEditView({
                             );
                           })}
                         </div>
+                        <p className="mt-3 text-sm text-muted-foreground">
+                          Rechte kommen aus der Rolle. Einzelrechte lassen sich
+                          unter{" "}
+                          <Link
+                            href="/dashboard/roles"
+                            className="font-semibold text-foreground hover:underline"
+                          >
+                            Rollen & Rechte
+                          </Link>{" "}
+                          anpassen.
+                        </p>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -501,7 +548,7 @@ export function UserEditView({
                 </div>
 
                 <div className="flex flex-col gap-4">
-                  <div className="rounded-xl border border-[#E5E5E5] bg-card p-6">
+                  <div className="rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6">
                     <h3 className="text-xs font-medium text-muted-foreground uppercase">
                       Aktivität
                     </h3>
@@ -526,7 +573,7 @@ export function UserEditView({
                   </div>
 
                   {canDelete && !isSelf && (
-                    <div className="flex flex-col gap-3 rounded-xl border border-[#E5E5E5] bg-card p-6">
+                    <div className="flex flex-col gap-3 rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6">
                       <h3 className="font-semibold text-destructive">
                         Konto entfernen
                       </h3>
@@ -559,7 +606,7 @@ export function UserEditView({
             <Form {...form}>
               <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
                 <div className="flex flex-col gap-4 lg:col-span-2">
-                  <div className="flex flex-col gap-4 rounded-xl border border-[#E5E5E5] bg-card p-6">
+                  <div className="flex flex-col gap-4 rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6">
                     <h2 className="font-semibold">Anmeldung</h2>
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center justify-between rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
@@ -568,10 +615,34 @@ export function UserEditView({
                             Zwei-Faktor-Authentifizierung
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Noch nicht verfügbar
+                            {!allowTwoFactor
+                              ? "Systemweit deaktiviert (siehe Einstellungen)"
+                              : user.twoFactorEnabled
+                                ? "Vom Nutzer selbst eingerichtet"
+                                : "Vom Nutzer noch nicht eingerichtet"}
                           </p>
                         </div>
-                        <Switch checked={false} disabled />
+                        {allowTwoFactor && user.twoFactorEnabled ? (
+                          <ConfirmDeleteDialog
+                            trigger={
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="border-[#D4D4D4]"
+                                disabled={isDisablingTwoFactor}
+                              >
+                                Deaktivieren
+                              </Button>
+                            }
+                            title="Zwei-Faktor-Authentifizierung deaktivieren?"
+                            description={`Entfernt den zweiten Faktor von „${name}“ – z.B. bei Verlust des Geräts ohne verbliebenen Recovery-Code. Der Nutzer kann 2FA anschließend erneut einrichten.`}
+                            confirmLabel="Deaktivieren"
+                            confirmingLabel="Deaktiviert…"
+                            onConfirm={handleDisableTwoFactor}
+                          />
+                        ) : (
+                          <Switch checked={false} disabled />
+                        )}
                       </div>
                       <FormField
                         control={form.control}
@@ -646,19 +717,18 @@ export function UserEditView({
                       onPageChange={setSessionsPage}
                     />
                     {sessionsState.some((s) => !s.isCurrent) && (
-                      <Button
+                      <button
                         type="button"
-                        variant="link"
-                        className="self-start px-0 text-destructive"
+                        className="self-start rounded-xl border border-[#E5E5E5] bg-transparent px-3 py-2 text-[12.5px] font-medium text-destructive transition-colors duration-150 hover:bg-destructive/5"
                         onClick={handleRevokeOthers}
                       >
                         Alle anderen Sitzungen beenden
-                      </Button>
+                      </button>
                     )}
                   </div>
                 </div>
 
-                <div className="h-fit rounded-xl border border-[#E5E5E5] bg-card p-6">
+                <div className="h-fit rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6">
                   <h3 className="text-xs font-medium text-muted-foreground uppercase">
                     Konto
                   </h3>
@@ -696,12 +766,9 @@ export function UserEditView({
           </TabsContent>
 
           <TabsContent value="aktivitaet">
-            <div className="rounded-xl border border-[#E5E5E5] bg-card p-6">
-              <h2 className="font-semibold">Verlauf</h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Der Aktivitätsverlauf ist in Vorbereitung und folgt in einem
-                späteren Ausbauschritt.
-              </p>
+            <div className="rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6">
+              <h2 className="mb-4 font-semibold">Verlauf</h2>
+              <UserActivityTimeline userId={user.id} initialData={activity} />
             </div>
           </TabsContent>
         </Tabs>

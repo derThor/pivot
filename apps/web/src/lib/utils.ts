@@ -15,6 +15,10 @@ export function formatRelativeTime(iso: string) {
   const days = Math.floor(hours / 24)
   if (days === 1) return "gestern"
   if (days < 7) return `vor ${days} Tagen`
+  const weeks = Math.floor(days / 7)
+  if (weeks < 5) return weeks === 1 ? "vor 1 Woche" : `vor ${weeks} Wochen`
+  const months = Math.floor(days / 30)
+  if (months < 12) return months === 1 ? "vor 1 Monat" : `vor ${months} Monaten`
   return new Date(iso).toLocaleDateString("de-DE", {
     day: "2-digit",
     month: "2-digit",

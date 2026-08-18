@@ -290,3 +290,15 @@ kompletten Durchgang).
 - Content-Picker im "Eintrag hinzufügen"-Dialog ist eine flache Liste
   ohne Live-Suche/Filterung – bei vielen Inhalten unhandlich, siehe
   Stolpersteine.
+
+## Update 2026-08-17: Menü-Sidebar an "Rollen & Rechte"-Look angeglichen
+
+`navigation-explorer.tsx`s linke Menü-Liste zeigte volle grüne Pillen
+(`bg-primary text-primary-foreground`, einzeilig Name+Zähler
+nebeneinander) – auf Nutzerwunsch 1:1 an das Sidebar-Muster von
+`roles-explorer.tsx` angeglichen: Kopfzeile "Menüs · N" als Label statt
+Pille, Einträge per `divide-y` getrennt, aktive Auswahl über linken
+4px-Akzentbalken + `bg-primary/15`-Tönung statt Vollfüllung, Name/Zähler
+zweizeilig untereinander statt nebeneinander. Kartenbreite von `lg:w-80`
+auf `lg:w-72` angepasst (Rollen-Wert). Rein optische Änderung, keine
+Verhaltensänderung.

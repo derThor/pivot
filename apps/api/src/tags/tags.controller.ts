@@ -14,7 +14,9 @@ import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { QueryTagDto } from './dto/query-tag.dto';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { FindPageDto } from '../common/dto/find-page.dto';
+import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @ApiTags('tags')
 @ApiBearerAuth()
@@ -32,6 +34,12 @@ export class TagsController {
   @Get('all')
   findAllUnpaginated() {
     return this.tagsService.findAllUnpaginated();
+  }
+
+  @RequirePermission('tags:delete')
+  @Get('trash')
+  findTrashed(@Query() query: QueryTagDto) {
+    return this.tagsService.findTrashed(query);
   }
 
   @RequirePermission('tags:read')
@@ -54,7 +62,19 @@ export class TagsController {
 
   @RequirePermission('tags:delete')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.tagsService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.tagsService.remove(id, user.sub);
+  }
+
+  @RequirePermission('tags:delete')
+  @Post(':id/restore')
+  restore(@Param('id') id: string) {
+    return this.tagsService.restore(id);
+  }
+
+  @RequirePermission('tags:delete')
+  @Delete(':id/permanent')
+  permanentDelete(@Param('id') id: string) {
+    return this.tagsService.permanentDelete(id);
   }
 }

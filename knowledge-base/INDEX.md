@@ -24,6 +24,8 @@ Themenbereiche/Umgruppierungen: siehe [PROCESS.md](./PROCESS.md)).
 | [admin-activation-and-permission-nav.md](./auth/admin-activation-and-permission-nav.md) | Admin-Freischaltung für Registrierungen (Einstellung), rollenabhängige Navigation | 2026-08-03 |
 | [read-permissions-and-dashboard-access.md](./auth/read-permissions-and-dashboard-access.md) | Lese-Rechte pro Ressource (`content:read` etc.) + `Role.canAccessDashboard`, neue Default-Rolle "Nutzer" | 2026-08-03 |
 | [user-profile-page-plan.md](./auth/user-profile-page-plan.md) | Volle Benutzer-Bearbeiten-Seite (Profil/Zugang & Sicherheit/Aktivität), Anonymisierung, Admin-Impersonation, erzwungener Passwortwechsel, aktive Sitzungen (siehe ROADMAP 2b.14) | 2026-08-16 |
+| [company-page.md](./auth/company-page.md) | Firma-Seite unter Verwaltung: Stammdaten/Standorte, Vollständigkeit + Letzte Änderungen; Rechtstexte/Bank & Steuern bewusst nicht gebaut | 2026-08-17 |
+| [privacy-page.md](./auth/privacy-page.md) | Datenschutz-Seite unter Verwaltung: Rechtstexte-Generierung (inkl. Content-Verknüpfung), Aufbewahrung-Review-Listen, Papierkorb für Content/Medien/Kategorien/Tags, 5 einfache CRUD-Tabs, CSV-Bericht; e2e-Test-Infrastruktur (ESM-Transform + veraltete Rollennamen) im selben Zug repariert | 2026-08-18 |
 
 ## Content (`content/`)
 
@@ -43,6 +45,8 @@ Themenbereiche/Umgruppierungen: siehe [PROCESS.md](./PROCESS.md)).
 | [navigation-management.md](./content/navigation-management.md) | Navigationsverwaltung (mehrere benannte Menüs, Einträge beliebig tief verschachtelbar, zeigen auf Inhalte oder externe URLs); dokumentiert auch den am selben Tag zurückgebauten "Seitenbaum"-Ansatz | 2026-08-06 |
 | [page-designer.md](./content/page-designer.md) | Seiten-Designer: `ModuleType`-Modell (öffentlich lesbar) + Feldtyp `"modules"`, Gutenberg-artiger Block-Editor mit Bild-Resize/Ausrichtung (echtes CSS-Float) und Block-Level-Layout für Nicht-Bild-Bausteine (Zitat etc., reihen sich neben ausgerichtetem Bild ein); inkl. Bugfixes (öffentliche Vorschau, Doppel-Breiten-Anwendung) und der sechs verworfenen Vorläufer | 2026-08-08 |
 | [faq-and-gallery-dedicated-pages.md](./content/faq-and-gallery-dedicated-pages.md) | FAQ- und Galerie-Verwaltung: eigene, auf das Datenmuster zugeschnittene Seiten statt generischer Global-Module-Tabelle (weiterhin auf `GlobalModule` aufbauend) | 2026-08-15 |
+| [trash-page.md](./content/trash-page.md) | Vereinheitlichter Papierkorb (`/dashboard/trash`) für Seiten/Medien/Kategorien/Tags/Galerien/FAQs, `deletedById` überall ergänzt, eigener Sidebar-Eintrag (kein Icon-Overlay in Listen mehr), keine automatische Löschung nach Fristablauf (nur Sperrung) | 2026-08-18 |
+| [content-list-and-editor-redesign.md](./content/content-list-and-editor-redesign.md) | Seiten-Übersicht neu (Stat-Kacheln, Pfad/Abschnitte-Spalten, `sectionsCount`-Heuristik, keine Massenauswahl mehr), Content-Editor von 3 auf 2 Tabs (Einstellungen+SEO zusammengelegt, Status als `SegmentedPicker`) | 2026-08-18 |
 
 ## Medien (`media/`)
 

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { AccountLockBanner } from "@/components/account-lock-banner";
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { NoDashboardAccess } from "@/components/no-dashboard-access";
@@ -15,6 +16,7 @@ import {
   getWebhooks,
 } from "@/lib/api-server";
 import { formatName } from "@/lib/utils";
+import { buildAccentColorCss } from "@/lib/accent-color";
 
 export default async function DashboardLayout({
   children,
@@ -100,26 +102,54 @@ export default async function DashboardLayout({
   // Konstanten-Exports daraus werden beim Import in eine Server Component
   // zu Client-Referenzen statt echten Werten (kein string mehr).
   const sidebarState = (await cookies()).get("sidebar_state")?.value;
-  const defaultOpen = sidebarState !== "false";
+  // Kein Cookie gesetzt (erster Besuch/neuer Browser) → Fallback auf den
+  // globalen Darstellung-Standard statt hart "offen" (Nutzervorgabe,
+  // 2026-08-17, "Seitenleiste eingeklappt starten"). Ein bereits vom Nutzer
+  // gesetztes Cookie hat immer Vorrang.
+  const defaultOpen =
+    sidebarState != null ?
+      sidebarState !== "false"
+    : !settings?.sidebarCollapsedByDefault;
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar user={user} />
-      <SidebarInset>
-        {user.impersonatedBy && (
-          <ImpersonationBanner targetName={formatName(user)} />
-        )}
-        {!user.emailVerifiedAt && <EmailVerificationBanner />}
-        <DashboardHeader
-          user={user}
-          defaultPageSize={settings?.defaultPageSize ?? 10}
-          systemMessageCount={systemMessageCount}
-          notifyLocalDrafts={settings?.notifyLocalDrafts !== false}
+    <div
+      id="accent-scope"
+      data-density={settings?.tableDensity ?? "normal"}
+      data-reduce-motion={settings?.reduceMotion ? "true" : undefined}
+    >
+      {settings?.accentColor && (
+        <style
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{
+            __html: buildAccentColorCss(settings.accentColor),
+          }}
         />
-        <div className="flex min-w-0 flex-1 flex-col gap-6 bg-background px-5 pt-4 pb-5 sm:px-10 sm:pt-6 sm:pb-10">
-          {children}
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+      )}
+      <SidebarProvider defaultOpen={defaultOpen}>
+        <AppSidebar user={user} />
+        <SidebarInset>
+          {user.impersonatedBy && (
+            <ImpersonationBanner targetName={formatName(user)} />
+          )}
+          {user.mustChangePassword ? (
+            <AccountLockBanner reason="password" />
+          ) : (
+            user.twoFactorSetupRequired && <AccountLockBanner reason="2fa" />
+          )}
+          {!user.emailVerifiedAt && <EmailVerificationBanner />}
+          <DashboardHeader
+            user={user}
+            defaultPageSize={settings?.defaultPageSize ?? 10}
+            systemMessageCount={systemMessageCount}
+            notifyLocalDrafts={settings?.notifyLocalDrafts !== false}
+            allowTwoFactor={settings?.allowTwoFactor ?? false}
+            keyboardShortcutsEnabled={settings?.keyboardShortcutsEnabled !== false}
+          />
+          <div className="flex min-w-0 flex-1 flex-col gap-6 bg-background px-5 pt-4 pb-5 sm:px-10 sm:pt-6 sm:pb-10">
+            {children}
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    </div>
   );
 }

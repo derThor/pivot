@@ -9,6 +9,62 @@ import {
 
 const API_URL = process.env.API_URL ?? "http://localhost:3001/v1";
 const PROTECTED_PREFIX = "/dashboard";
+// Einzige Seite, die PasswordChangeGuard/TwoFactorSetupGuard im Backend
+// trotz aktivem `mustChangePassword`/`twoFactorSetupRequired` erreichbar
+// lassen (siehe AllowPasswordChangeRequired()/AllowTwoFactorSetupRequired()
+// auf den /auth/me-, /auth/password- und /auth/2fa/*-Routen) – jede andere
+// Dashboard-Seite würde sonst nur leere "keine Berechtigung"-Zustände
+// zeigen, ohne dass der Nutzer erfährt, warum (siehe AccountLockBanner).
+const ACCOUNT_PATH = "/dashboard/account";
+
+interface LockoutPayload {
+  mustChangePassword?: boolean;
+  twoFactorSetupRequired?: boolean;
+}
+
+// Nur zur UX-Weiterleitung, keine Signaturprüfung nötig: die eigentliche
+// Durchsetzung passiert serverseitig per Guard, dieser Decode entscheidet
+// lediglich, ob die Middleware vorsorglich zu /dashboard/account umleitet.
+// `atob()` statt `Buffer.from()`: Middleware läuft standardmäßig im
+// Edge-Runtime, der kein Node-`Buffer` kennt.
+function decodeAccessToken(token: string): LockoutPayload | null {
+  try {
+    const segment = token.split(".")[1];
+    const base64 = segment.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(
+      base64.length + ((4 - (base64.length % 4)) % 4),
+      "=",
+    );
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
+}
+
+function applyLockoutRedirect(
+  request: NextRequest,
+  accessToken: string,
+  response: NextResponse,
+): NextResponse {
+  if (request.nextUrl.pathname === ACCOUNT_PATH) {
+    return response;
+  }
+  const payload = decodeAccessToken(accessToken);
+  if (!payload) {
+    return response;
+  }
+  const reason = payload.mustChangePassword
+    ? "password"
+    : payload.twoFactorSetupRequired
+      ? "2fa"
+      : null;
+  if (!reason) {
+    return response;
+  }
+  const url = new URL(ACCOUNT_PATH, request.url);
+  url.searchParams.set("reason", reason);
+  return NextResponse.redirect(url);
+}
 
 // `fetch()` hier läuft server-seitig (Next.js-Middleware) und schickt sonst
 // Nodes eigenen User-Agent statt dem des echten Browsers – ohne explizite
@@ -56,7 +112,7 @@ export async function middleware(request: NextRequest) {
 
   if (pathname.startsWith(PROTECTED_PREFIX)) {
     if (accessToken) {
-      return NextResponse.next();
+      return applyLockoutRedirect(request, accessToken, NextResponse.next());
     }
 
     if (refreshToken) {
@@ -67,7 +123,11 @@ export async function middleware(request: NextRequest) {
           request.headers.get("x-real-ip"),
       });
       if (refreshed) {
-        return applyAuthCookies(NextResponse.next(), refreshed);
+        return applyLockoutRedirect(
+          request,
+          refreshed.accessToken,
+          applyAuthCookies(NextResponse.next(), refreshed),
+        );
       }
     }
 

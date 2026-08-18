@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Eye } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ContentPreviewRender } from "@/components/content-preview-render";
 import { PageContent } from "@/components/page-content";
+import { PreviewBanner } from "@/components/preview-banner";
 import { getContent, getGlobalModules, getModuleTypes } from "@/lib/api-server";
 
 /** Interne Vorschau für angemeldete Redakteure: nutzt dieselbe Authentifizierung
@@ -39,11 +40,7 @@ export default async function ContentStandardPreviewPage({
           <ArrowLeft />
           Zurück zur Bearbeitung
         </Button>
-        <div className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400">
-          <Eye className="size-4 shrink-0" />
-          Interne Vorschau – nur für angemeldete Redakteur:innen sichtbar, kein
-          Freigabe-Link.
-        </div>
+        <PreviewBanner title="Interne Vorschau – nur für angemeldete Redakteur:innen sichtbar, kein Freigabe-Link." />
       </div>
 
       <PageContent className="mx-auto max-w-3xl">

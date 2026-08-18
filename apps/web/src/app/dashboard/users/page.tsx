@@ -58,10 +58,9 @@ export default async function UsersPage({
           >
             Rollen verwalten
           </Button>
-          {roles && settings && (
+          {roles && (
             <CreateUserDialog
               roles={roles.items}
-              passwordPolicy={settings}
               triggerLabel="Benutzer einladen"
             />
           )}
@@ -84,7 +83,11 @@ export default async function UsersPage({
               }}
             />
             <div className="rounded-[10px] bg-card shadow-sm">
-              <UsersTable users={users.items} currentUserId={currentUser?.id} />
+              <UsersTable
+                users={users.items}
+                currentUserId={currentUser?.id}
+                allowTwoFactor={settings?.allowTwoFactor ?? true}
+              />
             </div>
             <PaginationControls
               page={users.meta.page}

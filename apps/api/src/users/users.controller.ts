@@ -18,6 +18,7 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
+import { QueryActivityDto } from './dto/query-activity.dto';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { FindPageDto } from '../common/dto/find-page.dto';
@@ -66,10 +67,23 @@ export class UsersController {
     return this.usersService.getStats(id);
   }
 
+  @RequirePermission('users:read')
+  @Get(':id/activity')
+  getActivity(@Param('id') id: string, @Query() query: QueryActivityDto) {
+    return this.usersService.getActivity(id, query.page, query.pageSize);
+  }
+
+  // Kein admin-vergebenes Passwort mehr (Nutzervorgabe, 2026-08-17):
+  // usersService.create() setzt einen zufälligen, nie offengelegten Hash;
+  // hier wird direkt der bestehende Passwort-Reset-Link verschickt, über
+  // den der neue Nutzer sein eigenes Passwort setzt (gleicher Mechanismus
+  // wie der "Passwort zurücksetzen"-Button, siehe adminRequestPasswordReset).
   @RequirePermission('users:invite')
   @Post()
-  create(@Body() dto: CreateUserDto, @CurrentUser() user: JwtPayload) {
-    return this.usersService.create(dto, user);
+  async create(@Body() dto: CreateUserDto, @CurrentUser() user: JwtPayload) {
+    const created = await this.usersService.create(dto, user);
+    await this.authService.adminRequestPasswordReset(created.id);
+    return created;
   }
 
   @RequirePermission('users:update')
@@ -114,6 +128,18 @@ export class UsersController {
   @Post(':id/reset-password')
   resetPassword(@Param('id') id: string) {
     return this.authService.adminRequestPasswordReset(id);
+  }
+
+  // Notausgang bei Geräteverlust ohne gültigen Recovery-Code (2026-08-17,
+  // siehe UsersService.disableTwoFactor()).
+  @RequirePermission('users:update')
+  @HttpCode(HttpStatus.OK)
+  @Post(':id/disable-2fa')
+  disableTwoFactor(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.usersService.disableTwoFactor(id, user.sub);
   }
 
   // `x-current-refresh-token`: das Frontend hängt hier den eigenen

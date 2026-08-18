@@ -6,7 +6,6 @@ import { ImageIcon, Trash2 } from "lucide-react";
 
 import { toastDeleted, toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { mediaUrl } from "@/lib/media";
 import type { MediaListResponse } from "@/lib/api-server";
 
@@ -117,9 +116,18 @@ export function LogoUploadField({
 
   return (
     <div className="flex flex-col gap-2">
-      <Label>{label}</Label>
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="group/upload relative block size-32 shrink-0 cursor-pointer overflow-hidden rounded-md border border-dashed text-left transition-colors hover:border-orange-400 has-disabled:pointer-events-none has-disabled:opacity-50">
+      <div className="flex items-center gap-2">
+        <span className="flex h-8 w-full flex-1 items-center justify-start overflow-hidden rounded-md border bg-background px-2">
+          {currentUrl ?
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={mediaUrl({ url: currentUrl })}
+              alt={label}
+              className="h-full w-auto object-contain"
+            />
+          : <ImageIcon className="size-4 text-muted-foreground" />}
+        </span>
+        <label className="has-disabled:pointer-events-none has-disabled:opacity-50">
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp,image/svg+xml"
@@ -131,24 +139,13 @@ export function LogoUploadField({
               if (nextFile) void handleUpload(nextFile);
             }}
           />
-          {currentUrl ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={mediaUrl({ url: currentUrl })}
-                alt={label}
-                className="size-full object-contain"
-              />
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm font-medium text-white opacity-0 transition-opacity group-hover/upload:opacity-100">
-                {isUploading ? "Lädt hoch…" : "Ersetzen"}
-              </div>
-            </>
-          ) : (
-            <div className="flex size-full flex-col items-center justify-center gap-1 text-sm text-muted-foreground">
-              <ImageIcon className="size-5" />
-              {isUploading ? "Lädt hoch…" : "Bild hinzufügen"}
-            </div>
-          )}
+          <span className="inline-flex h-8 cursor-pointer items-center rounded-md border border-[#D4D4D4] bg-background px-3 text-sm font-medium transition-colors hover:bg-muted">
+            {isUploading ?
+              "Lädt hoch…"
+            : currentUrl ?
+              "Ersetzen"
+            : "Hinzufügen"}
+          </span>
         </label>
         {currentUrl && (
           <Button

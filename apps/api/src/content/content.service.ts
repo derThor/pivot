@@ -9,6 +9,7 @@ import { randomBytes } from 'node:crypto';
 import { ContentStatus, Prisma } from '@pivot/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import { CreateContentDto } from './dto/create-content.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
 import { QueryContentDto } from './dto/query-content.dto';
@@ -36,16 +37,39 @@ function mapContentCategories<
   };
 }
 
+/** Heuristik für die "Abschnitte"-Spalte der Seiten-Übersicht: `data` ist
+ * schema-getrieben (pro ContentType unterschiedliche Feldnamen), daher kein
+ * fester Schlüssel für den Seiten-Designer-Baustein-Array möglich, ohne
+ * zusätzlich das volle `ContentType.schema` zu laden. Bevorzugt ein
+ * Array-Feld, dessen Einträge wie Bausteine aussehen (Objekte mit `type`),
+ * fällt sonst auf das erste gefundene Array zurück (analog zur Papierkorb-
+ * Galerie/FAQ-Zählung in `trash.service.ts`). */
+function countSections(data: unknown): number {
+  if (!data || typeof data !== 'object') return 0;
+  const arrays = Object.values(data as Record<string, unknown>).filter(
+    (v): v is unknown[] => Array.isArray(v),
+  );
+  if (arrays.length === 0) return 0;
+  const blockLike = arrays.find(
+    (arr) =>
+      arr.length > 0 &&
+      arr.every((item) => item && typeof item === 'object' && 'type' in item),
+  );
+  return (blockLike ?? arrays[0]).length;
+}
+
 @Injectable()
 export class ContentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly webhooksService: WebhooksService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   async findAll(query: QueryContentDto) {
     const { page, pageSize, status, contentTypeId } = query;
     const where = {
+      deletedAt: null,
       ...(status && { status }),
       ...(contentTypeId && { contentTypeId }),
     };
@@ -70,7 +94,10 @@ export class ContentService {
     ]);
 
     return {
-      items: items.map(mapContentCategories),
+      items: items.map((c) => ({
+        ...mapContentCategories(c),
+        sectionsCount: countSections(c.data),
+      })),
       meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
     };
   }
@@ -110,7 +137,8 @@ export class ContentService {
              ct.name AS "contentTypeName"
       FROM contents c
       JOIN content_types ct ON ct.id = c."contentTypeId"
-      WHERE to_tsvector('german',
+      WHERE c."deletedAt" IS NULL
+        AND to_tsvector('german',
               c.title || ' ' || coalesce(c.excerpt, '') || ' ' ||
               coalesce(c."seoTitle", '') || ' ' ||
               coalesce(c."seoDescription", '') || ' ' || c.data::text
@@ -142,7 +170,8 @@ export class ContentService {
       SELECT COUNT(*)::bigint AS count
       FROM contents c
       JOIN content_types ct ON ct.id = c."contentTypeId"
-      WHERE to_tsvector('german',
+      WHERE c."deletedAt" IS NULL
+        AND to_tsvector('german',
               c.title || ' ' || coalesce(c.excerpt, '') || ' ' ||
               coalesce(c."seoTitle", '') || ' ' ||
               coalesce(c."seoDescription", '') || ' ' || c.data::text
@@ -184,7 +213,7 @@ export class ContentService {
         lockedBy: { select: { id: true, firstName: true, lastName: true } },
       },
     });
-    if (!content) {
+    if (!content || content.deletedAt) {
       throw new NotFoundException(`Inhalt ${id} nicht gefunden.`);
     }
     return mapContentCategories(content);
@@ -240,6 +269,13 @@ export class ContentService {
         id: content.id,
         title: content.title,
         slug: content.slug,
+      });
+      await this.auditLog.record({
+        action: 'content.published',
+        entityType: 'Content',
+        entityId: content.id,
+        userId: authorId,
+        metadata: { title: content.title },
       });
     }
 
@@ -313,6 +349,13 @@ export class ContentService {
         title: content.title,
         slug: content.slug,
       });
+      await this.auditLog.record({
+        action: 'content.published',
+        entityType: 'Content',
+        entityId: content.id,
+        userId: editorId,
+        metadata: { title: content.title },
+      });
     }
 
     return mapContentCategories(content);
@@ -328,7 +371,11 @@ export class ContentService {
   async publishDueScheduled(): Promise<number> {
     const now = new Date();
     const due = await this.prisma.content.findMany({
-      where: { status: ContentStatus.SCHEDULED, scheduledFor: { lte: now } },
+      where: {
+        status: ContentStatus.SCHEDULED,
+        scheduledFor: { lte: now },
+        deletedAt: null,
+      },
       select: { id: true, title: true, slug: true },
     });
     if (due.length === 0) return 0;
@@ -358,9 +405,93 @@ export class ContentService {
     }
   }
 
-  async remove(id: string) {
+  /** Papierkorb: Soft-Delete statt Hard-Delete (Nutzervorgabe, 2026-08-18,
+   * "überall da wo man löschen kann"). Endgültiges Löschen nur noch über
+   * `permanentDelete()`, ausschließlich für bereits im Papierkorb liegende
+   * Inhalte. */
+  async remove(id: string, actingUserId: string) {
     await this.findOne(id);
+    await this.prisma.content.update({
+      where: { id },
+      data: { deletedAt: new Date(), deletedById: actingUserId },
+    });
+  }
+
+  async restore(id: string) {
+    const content = await this.prisma.content.findUnique({ where: { id } });
+    if (!content || !content.deletedAt) {
+      throw new NotFoundException(
+        `Inhalt ${id} befindet sich nicht im Papierkorb.`,
+      );
+    }
+    return this.prisma.content.update({
+      where: { id },
+      data: { deletedAt: null, deletedById: null },
+    });
+  }
+
+  async permanentDelete(id: string) {
+    const content = await this.prisma.content.findUnique({ where: { id } });
+    if (!content || !content.deletedAt) {
+      throw new NotFoundException(
+        `Inhalt ${id} befindet sich nicht im Papierkorb.`,
+      );
+    }
     await this.prisma.content.delete({ where: { id } });
+  }
+
+  /** Ungepaginiert für den vereinheitlichten Papierkorb (`TrashService`),
+   * der alle sechs Typen zu einer gemeinsamen Liste zusammenführt. */
+  findAllTrashed() {
+    return this.prisma.content.findMany({
+      where: { deletedAt: { not: null } },
+      orderBy: { deletedAt: 'desc' },
+      include: {
+        deletedBy: { select: { id: true, firstName: true, lastName: true } },
+        contentType: { select: { name: true, slug: true } },
+      },
+    });
+  }
+
+  async findTrashed(query: QueryContentDto) {
+    const { page, pageSize } = query;
+    const where = { deletedAt: { not: null } };
+
+    const [items, total] = await Promise.all([
+      this.prisma.content.findMany({
+        where,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy: { deletedAt: 'desc' },
+        include: {
+          author: { select: { id: true, firstName: true, lastName: true } },
+          contentType: { select: { id: true, name: true, slug: true } },
+          deletedBy: { select: { id: true, firstName: true, lastName: true } },
+          categories: {
+            include: {
+              category: { select: { id: true, name: true, slug: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.content.count({ where }),
+    ]);
+
+    return {
+      items: items.map(mapContentCategories),
+      meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
+    };
+  }
+
+  /** Für die Datenschutz-Aufbewahrung-Review-Liste: Papierkorb-Einträge
+   * älter als `cutoff`, ohne Paginierung (die Review-Liste zeigt alle auf
+   * einmal). */
+  async findTrashedOlderThan(cutoff: Date) {
+    return this.prisma.content.findMany({
+      where: { deletedAt: { not: null, lt: cutoff } },
+      orderBy: { deletedAt: 'asc' },
+      select: { id: true, title: true, deletedAt: true },
+    });
   }
 
   /**

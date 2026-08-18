@@ -79,12 +79,75 @@ model AppSettings {
   mediaResponsiveVariantsEnabled Boolean @default(true)
   maintenanceModeEnabled     Boolean  @default(false)
   mediaStorageQuotaMb        Int?
+  // Maximale Dateigröße pro Upload (Nutzervorgabe, 2026-08-18) – gilt für
+  // jeden Upload-Weg in der App (Medienbibliothek, Avatar, Firmenlogo,
+  // alle laufen über MediaService.create()). null = keine Admin-Grenze,
+  // nur die technischen Kategorie-Obergrenzen aus media.config.ts greifen
+  // weiterhin. Ist ein Wert gesetzt, gilt das Minimum aus beiden – die
+  // Kategorie-Obergrenze kann per Einstellung nur verschärft, nie
+  // aufgeweicht werden.
+  maxUploadSizeMb            Int?
   passwordMinLength          Int      @default(8)
   passwordRequireUppercase   Boolean  @default(true)
   passwordRequireLowercase   Boolean  @default(true)
   passwordRequireNumber      Boolean  @default(true)
   passwordRequireSpecialChar Boolean  @default(true)
   defaultPageSize            Int      @default(10)
+  // Globaler Schalter fürs gesamte 2FA/TOTP-Feature (Nutzervorgabe,
+  // 2026-08-17) – bei false bleibt jeder vorhandene UserRole.twoFactorEnabled
+  // wirkungslos (Login überspringt den zweiten Faktor komplett) und die
+  // Einrichtung wird im Dashboard nirgends mehr angezeigt. Gleiche
+  // "allow*"-Namenskonvention wie allowRegistration/allowPasswordReset.
+  allowTwoFactor             Boolean  @default(true)
+  // Erzwingt bei aktivem allowTwoFactor, dass Administrator-Konten 2FA
+  // eingerichtet haben, bevor der Rest des Dashboards nutzbar ist (siehe
+  // TwoFactorSetupGuard) – gleiche "require*"-Konvention wie
+  // requireAdminActivation.
+  requireTwoFactorForAdmins  Boolean  @default(false)
+  // Zusätzliche, feingranulare 2FA-Pflicht-Stufen (Nutzervorgabe,
+  // 2026-08-17, "Sicherheit"-Tab-Redesign) – bestehen unabhängig
+  // nebeneinander (jede kann für sich an/aus sein), TwoFactorSetupGuard
+  // prüft alle drei ODER-verknüpft. "…ForAll" gilt für jedes Konto,
+  // "…ForPublishers" nur für Rollen mit `content:publish`-Recht.
+  requireTwoFactorForAll        Boolean  @default(false)
+  requireTwoFactorForPublishers Boolean  @default(false)
+  // Passwort-Ablauf: erzwingt nach N Tagen seit der letzten Passwort-
+  // Änderung (User.passwordChangedAt) beim nächsten Login einen
+  // Passwortwechsel (setzt mustChangePassword, gleicher Mechanismus wie
+  // requireAdminActivation). null = kein Ablauf.
+  passwordExpiryDays         Int?
+  // Sperrt ein Konto automatisch (isActive=false, gleicher Zustand wie
+  // die manuelle "Sperren"-Aktion) nach N aufeinanderfolgenden
+  // Fehlversuchen (siehe AuthService.login()). null = keine automatische
+  // Sperre – User.failedLoginAttempts zählt dann weiterhin nur zur
+  // Anzeige/Systembenachrichtigung.
+  failedLoginLockoutThreshold Int?
+  // Prüft ein neues Passwort bei Registrierung/Passwortwechsel/-Reset
+  // gegen die Have-I-Been-Pwned-Passwort-API (k-Anonymitäts-Abfrage,
+  // Klartext-Passwort verlässt den Server nie – siehe
+  // common/utils/pwned-password.ts).
+  passwordBlockLeaked        Boolean  @default(false)
+  // Verhindert die Wiederverwendung eines der letzten 5 Passwörter eines
+  // Kontos (siehe PasswordHistory-Modell unten). Feste Anzahl 5 (wie in
+  // der Bildvorlage "Letzte 5 Passwörter nicht erneut zulassen") statt
+  // eines weiteren konfigurierbaren Zahlenfelds.
+  passwordPreventReuseEnabled Boolean @default(false)
+  // Beendet eine Sitzung (Refresh-Token), wenn seit der letzten
+  // Token-Erneuerung mehr als N Minuten vergangen sind (siehe
+  // RefreshToken.lastUsedAt, AuthService.refresh()). null = kein
+  // Inaktivitäts-Timeout, nur die feste expiresAt-Ablaufzeit gilt.
+  sessionIdleTimeoutMinutes  Int?
+  // Darstellung (Nutzervorgabe, 2026-08-17, "Darstellung"-Tab-Redesign).
+  // Hex-Farbe, null = Standard-Markenfarbe (#C8EE44, siehe globals.css).
+  // Nur der Farbton wird übernommen (siehe lib/accent-color.ts) – Helligkeit
+  // /Sättigung folgen demselben Muster wie die bisherige Lime-Palette, damit
+  // Kontrast/Lesbarkeit für jede gewählte Farbe konsistent bleiben.
+  accentColor                String?
+  // "compact" | "normal" | "airy" – Standard-Zeilenhöhe in Tabellen.
+  tableDensity               String   @default("normal")
+  sidebarCollapsedByDefault  Boolean  @default(false)
+  keyboardShortcutsEnabled   Boolean  @default(true)
+  reduceMotion               Boolean  @default(false)
   // Ein/Aus je Systembenachrichtigung-Kategorie (Nutzervorgabe, 2026-08-16:
   // Karte auf /dashboard/system-messages) – bestimmt, ob die jeweilige
   // Kategorie überhaupt als Banner/Glocken-Zähler auftaucht, unabhängig
@@ -109,9 +172,156 @@ model AppSettings {
   companyRegisterCourt       String?
   companyRegisterNumber      String?
   companyVatId               String?
+  // Firma-Seite (Nutzervorgabe, 2026-08-17, unter Verwaltung statt
+  // Einstellungen) – ergänzt die bestehenden Firmenangaben um das in der
+  // Bildvorlage gezeigte Feld "Aufsichtsbehörde" (z.B. Kammer bei
+  // reglementierten Berufen).
+  companySupervisoryAuthority String?
+  // Datenschutz-Seite (Nutzervorgabe, 2026-08-18, "Verwaltung → Datenschutz"
+  // 1:1 nach Bildvorlage). Datenschutzbeauftragter: entweder eine externe
+  // Person/Kanzlei (dpoIsExternal=true) oder intern benannt – reine
+  // Kontaktfelder, keine eigene Rolle/Berechtigung.
+  dpoIsExternal Boolean @default(true)
+  dpoName       String?
+  dpoCompany    String?
+  dpoEmail      String?
+  dpoPhone      String?
+  // Erweiterung "Datenschutzbeauftragter"-Tab (Nutzervorgabe, 2026-08-18,
+  // 1:1 nach Bildvorlage). dpoSupervisoryAuthority ist bewusst ein eigenes
+  // Feld statt companySupervisoryAuthority wiederzuverwenden: dort geht es
+  // um berufsständische Kammern, hier um die für Datenschutz zuständige
+  // Aufsichtsbehörde – zwei unterschiedliche reale Konzepte.
+  dpoAppointedAt          DateTime?
+  dpoReportedAt           DateTime?
+  dpoSupervisoryAuthority String?
+  dpoLastContactAt        DateTime?
+  // Wirkt sich auf die Rechtstexte-Generierung aus (Impressum/
+  // Datenschutzerklärung bekommen einen DSB-Absatz, siehe
+  // LegalDocumentsService) – kein reiner Anzeige-Schalter.
+  dpoListInLegalTexts     Boolean @default(false)
+  // Löst beim Anlegen eines Vorfalls eine Mail (Dev-Stub wie alle
+  // System-Mails, siehe MailerService) an dpoEmail aus.
+  dpoNotifyOnIncident     Boolean @default(false)
+  // Monatlicher Bericht per Cron (PrivacyReportSchedulerService), nutzt
+  // denselben CSV-Generator wie der manuelle "Bericht erzeugen"-Button.
+  dpoMonthlyReportEnabled Boolean @default(false)
+  // Aufbewahrungsfristen – reine Richtwerte, KEINE automatische
+  // Hintergrund-Löschung (explizite Nutzervorgabe: Löschung immer manuell
+  // über die Review-Listen auf der Datenschutz-Seite). null bei
+  // retentionFormSubmissionsDays = "unbegrenzt". Für Formular-Einsendungen
+  // existiert in dieser App kein Formular-Modul – der Wert wird nur
+  // gespeichert, es gibt dafür keine Review-Liste (siehe privacy-view.tsx).
+  retentionFormSubmissionsDays       Int?    @default(90)
+  retentionAccessLogMonths           Int     @default(12)
+  retentionDeactivatedAccountsMonths Int     @default(6)
+  retentionTrashDays                 Int     @default(30)
   updatedAt                  DateTime @updatedAt
 
   @@map("app_settings")
+}
+
+// Datenschutz-Seite → Tab "Rechtstexte" (Nutzervorgabe, 2026-08-18): aus den
+// Firmen-Stammdaten (AppSettings.company*) generierte Rechtstexte.
+// `generatedContent` wird bei "Neu erzeugen" komplett ersetzt,
+// `manualAddendum` bleibt dabei unangetastet (manuelle Ergänzungen bleiben
+// erhalten). "Veraltet" wird nicht über ein eigenes Feld getrackt, sondern
+// dynamisch geprüft: lastGeneratedAt vs. neuester company.field_updated
+// AuditLog-Eintrag (siehe LegalDocumentsService).
+model LegalDocument {
+  id               String    @id @default(cuid())
+  key              String    @unique
+  title            String
+  slug             String
+  generatedContent String    @db.Text
+  manualAddendum   String?   @db.Text
+  lastGeneratedAt  DateTime?
+  // Verknüpfter echter Content-Eintrag (Nutzervorgabe, 2026-08-18: Rechtstexte
+  // sollen auch als echte Seite unter "Seiten" auftauchen, nicht nur in dieser
+  // Tabelle). Lose Referenz (kein FK) wie an anderen Stellen in der App (z.B.
+  // Medien-Referenzen per URL) – wird bei "Neu erzeugen" angelegt/aktualisiert.
+  contentId        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@map("legal_documents")
+}
+
+// Datenschutz-Seite → restliche Tabs (Nutzervorgabe, 2026-08-18): einfache
+// echte Listen ohne Bildvorlage ("einfache echte Listen jetzt"), bewusst
+// schlank gehalten (nur die Felder, die für Titel/Status/Zähler auf der
+// Übersichtsseite gebraucht werden), kein Pixel-Mockup zum Nachbauen.
+model DeletionRequest {
+  id             String    @id @default(cuid())
+  requesterName  String
+  requesterEmail String
+  reason         String?
+  status         String    @default("open") // open | in_progress | completed | rejected
+  dueAt          DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("deletion_requests")
+}
+
+model ProcessingActivity {
+  id             String   @id @default(cuid())
+  purpose        String
+  legalBasis     String?
+  dataCategories String?
+  recipients     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("processing_activities")
+}
+
+model DataProcessor {
+  id           String    @id @default(cuid())
+  name         String
+  purpose      String?
+  hasContract  Boolean   @default(false)
+  contractDate DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("data_processors")
+}
+
+model PrivacyIncident {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  severity    String    @default("low") // low | medium | high
+  status      String    @default("open") // open | resolved
+  occurredAt  DateTime?
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("privacy_incidents")
+}
+
+// Firma-Seite → Tab "Standorte" (Nutzervorgabe, 2026-08-17): mehrere
+// Adressen derselben (einen) Firma – kein Mandanten-/Multi-Firmen-Konzept
+// ("es soll nur eine Firma unter Verwaltung geben"), nur eine Liste
+// zusätzlicher Adressen. `employeeCount` ist ein manuell vom Admin
+// gepflegtes Zahlenfeld (keine echte Mitarbeiterverwaltung in dieser App)
+// – kein erfundener, automatisch berechneter Wert.
+model CompanyLocation {
+  id            String   @id @default(cuid())
+  name          String
+  isPrimary     Boolean  @default(false)
+  street        String?
+  postalCode    String?
+  city          String?
+  phone         String?
+  openingHours  String?
+  employeeCount Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("company_locations")
 }
 
 model User {
@@ -124,6 +334,12 @@ model User {
   department          String?
   phone               String?
   isActive            Boolean   @default(true)
+  // Zeitpunkt, seit dem `isActive` zuletzt auf false steht – Grundlage für
+  // die Datenschutz-Aufbewahrungsfrist "Deaktivierte Konten" (siehe
+  // AppSettings.retentionDeactivatedAccountsMonths). Wird bei Deaktivierung
+  // gesetzt und bei Reaktivierung wieder auf null geräumt (gleiches Muster
+  // wie pendingActivation).
+  deactivatedAt       DateTime?
   // Selbstregistrierung bei aktivierter `AppSettings.requireAdminActivation`
   // (siehe AuthService.register()) – unterscheidet "wartet auf
   // Freischaltung" von einer normalen, von einem Admin deaktivierten
@@ -140,10 +356,32 @@ model User {
   // Login zurückgesetzt (siehe `AuthService.login()`). Aktuell nur
   // Anzeige im "Konto"-Kasten, keine automatische Sperre nach X Versuchen.
   failedLoginAttempts Int       @default(0)
+  // Zeitpunkt der letzten Passwort-Änderung (Erstanlage, Self-Service-
+  // Änderung, Reset) – Grundlage für AppSettings.passwordExpiryDays.
+  // Bewusst kein Rückwirkungs-Backfill nötig: NULL zählt in der
+  // Ablauf-Prüfung als "läuft nie ab", bis das Passwort das erste Mal
+  // nach Einführung dieses Felds geändert wird (kein erfundener Wert für
+  // bereits bestehende Konten).
+  passwordChangedAt  DateTime?
   // Zeitpunkt der Anonymisierung ("Benutzer löschen", nicht reversibel) –
   // unterscheidet den Zustand von einer normalen Deaktivierung
   // (`isActive: false`, reversibel). Siehe UsersService.anonymize().
   anonymizedAt        DateTime?
+  // TOTP-2FA (Nutzervorgabe, 2026-08-17). `twoFactorSecret` liegt
+  // AES-256-GCM-verschlüsselt vor (siehe totp-encryption.ts) – anders als
+  // Passwort-/Token-Hashes muss das Secret bei jeder Login-Prüfung wieder
+  // im Klartext vorliegen, Hashing wie bei passwordHash scheidet aus.
+  // `twoFactorEnabled` bleibt false, bis der erste Code nach dem Scannen
+  // bestätigt wurde (TwoFactorService.verifySetup) – ein nur generiertes,
+  // nie bestätigtes Secret aktiviert 2FA nicht. `twoFactorRecoveryCodes`
+  // sind einzeln argon2-gehashte Einmal-Codes, verbrauchte werden aus dem
+  // Array entfernt (siehe AuthService.loginWithTwoFactor()).
+  twoFactorSecret         String?
+  twoFactorEnabled        Boolean   @default(false)
+  // Nur zur Anzeige ("eingerichtet am ..." auf "Mein Konto") – bewusst
+  // kein erfundener Wert, wird bei jeder verifyTwoFactorSetup() gesetzt.
+  twoFactorEnabledAt      DateTime?
+  twoFactorRecoveryCodes  String[]  @default([])
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -151,11 +389,20 @@ model User {
 
   contents                Content[]                @relation("ContentAuthor")
   lockedContents          Content[]                @relation("ContentLockedBy")
+  // Papierkorb (Nutzervorgabe, 2026-08-18): wer hat den Eintrag gelöscht
+  // (in den Papierkorb verschoben) – für die "Gelöscht von"-Spalte auf
+  // der Papierkorb-Seite.
+  deletedContents      Content[]      @relation("ContentDeletedBy")
+  deletedMedia         Media[]        @relation("MediaDeletedBy")
+  deletedCategories    Category[]     @relation("CategoryDeletedBy")
+  deletedTags          Tag[]          @relation("TagDeletedBy")
+  deletedGlobalModules GlobalModule[] @relation("GlobalModuleDeletedBy")
   createdPreviewTokens    ContentPreviewToken[]
   contentVersions         ContentVersion[]
-  media                   Media[]
+  media                   Media[]                  @relation("MediaUploadedBy")
   auditLogs               AuditLog[]
   refreshTokens           RefreshToken[]
+  passwordHistory         PasswordHistory[]
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens     PasswordResetToken[]
 
@@ -184,8 +431,27 @@ model RefreshToken {
   // IP-Adresse direkt statt einer (sonst erfundenen) Stadt.
   userAgent String?
   ipAddress String?
+  // Für AppSettings.sessionIdleTimeoutMinutes: bei jedem Refresh
+  // aktualisiert (siehe AuthService.refresh()), Startwert = createdAt.
+  lastUsedAt DateTime  @default(now())
 
   @@map("refresh_tokens")
+}
+
+// Letzte Passwort-Hashes pro Konto, für AppSettings.passwordPreventReuseEnabled
+// ("letzte 5 Passwörter nicht erneut zulassen") – argon2-gehasht wie
+// User.passwordHash, nie im Klartext. Älteste Einträge über die feste
+// Grenze hinaus werden bei jeder Passwort-Änderung gelöscht (siehe
+// AuthService.recordPasswordHistory()).
+model PasswordHistory {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("password_history")
 }
 
 model EmailVerificationToken {
@@ -272,6 +538,12 @@ model GlobalModule {
   // werden (siehe gallery-settings.ts). `null`/fehlende Keys fallen im
   // Frontend auf Defaults zurück.
   settings  Json?
+  // Papierkorb, siehe Content.deletedAt – Galerien/FAQs teilen sich dieses
+  // Modell (unterschieden nur über moduleType.slug), daher hier statt in
+  // zwei getrennten Modellen.
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?      @relation("GlobalModuleDeletedBy", fields: [deletedById], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -300,6 +572,12 @@ model Content {
   robotsFollow   Boolean   @default(true)
   scheduledFor   DateTime?
   publishedAt DateTime?
+  // Papierkorb (Nutzervorgabe, 2026-08-18, "überall da wo man löschen
+  // kann") – Soft-Delete statt Hard-Delete. null = nicht gelöscht. Jede
+  // Leseabfrage in ContentService (inkl. der beiden rohen SQL-Queries in
+  // search()/searchCount()) muss deletedAt: null filtern, sonst tauchen
+  // Papierkorb-Einträge wieder in normalen Listen auf.
+  deletedAt   DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -312,6 +590,9 @@ model Content {
   lockedById String?
   lockedBy   User?     @relation("ContentLockedBy", fields: [lockedById], references: [id])
   lockedAt   DateTime?
+
+  deletedById String?
+  deletedBy   User?   @relation("ContentDeletedBy", fields: [deletedById], references: [id])
 
   versions        ContentVersion[]
   categories      ContentCategory[]
@@ -357,6 +638,10 @@ model Category {
   name        String            @unique
   slug        String            @unique
   description String?
+  // Papierkorb, siehe Content.deletedAt.
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?             @relation("CategoryDeletedBy", fields: [deletedById], references: [id])
   contents    ContentCategory[]
 
   @@map("categories")
@@ -376,6 +661,10 @@ model Tag {
   id        String       @id @default(cuid())
   name      String       @unique
   slug      String       @unique
+  // Papierkorb, siehe Content.deletedAt.
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?        @relation("TagDeletedBy", fields: [deletedById], references: [id])
   createdAt DateTime     @default(now())
   contents  ContentTag[]
   media     MediaTag[]
@@ -459,11 +748,18 @@ model Media {
   focalX      Float?
   focalY      Float?
   thumbnailUrl String?
+  // Papierkorb, siehe Content.deletedAt. Anders als bei Content löscht
+  // remove() aktuell auch die physische Datei von Disk – das ändert sich:
+  // Soft-Delete lässt die Datei liegen, erst permanentDelete() löscht sie
+  // wirklich (siehe MediaService).
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?      @relation("MediaDeletedBy", fields: [deletedById], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
 
   uploadedById String
-  uploadedBy   User   @relation(fields: [uploadedById], references: [id])
+  uploadedBy   User   @relation("MediaUploadedBy", fields: [uploadedById], references: [id])
 
   folderId String?
   folder   MediaFolder? @relation(fields: [folderId], references: [id])
@@ -512,6 +808,7 @@ model AuditLog {
   user   User   @relation(fields: [userId], references: [id])
 
   @@index([entityType, entityId])
+  @@index([userId, createdAt])
   @@map("audit_logs")
 }
 

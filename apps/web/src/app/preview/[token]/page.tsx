@@ -1,5 +1,5 @@
-import { Eye } from "lucide-react";
 import { ContentPreviewRender } from "@/components/content-preview-render";
+import { PreviewBanner } from "@/components/preview-banner";
 import {
   getContentByPreviewToken,
   getGlobalModules,
@@ -31,11 +31,7 @@ export default async function ContentPreviewPage({
 
   return (
     <div className="mx-auto flex min-h-svh w-full max-w-3xl flex-col gap-6 bg-background p-8">
-      <div className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400">
-        <Eye className="size-4 shrink-0" />
-        Dies ist eine Vorschau über einen Freigabe-Link – der Inhalt ist
-        möglicherweise noch nicht veröffentlicht.
-      </div>
+      <PreviewBanner title="Dies ist eine Vorschau über einen Freigabe-Link – der Inhalt ist möglicherweise noch nicht veröffentlicht." />
 
       <ContentPreviewRender
         content={content}

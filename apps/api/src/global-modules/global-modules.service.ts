@@ -18,9 +18,10 @@ export class GlobalModulesService {
   // (Galerien-/FAQ-Übersicht): paginiertes `{items, meta}`, siehe
   // QueryGlobalModuleDto.
   findAll(query: QueryGlobalModuleDto = new QueryGlobalModuleDto()) {
-    const where = query.moduleTypeId
-      ? { moduleTypeId: query.moduleTypeId }
-      : undefined;
+    const where = {
+      deletedAt: null,
+      ...(query.moduleTypeId && { moduleTypeId: query.moduleTypeId }),
+    };
     const include = {
       moduleType: { select: { id: true, name: true, icon: true } },
     } as const;
@@ -61,6 +62,7 @@ export class GlobalModulesService {
       where: {
         moduleTypeId: target.moduleTypeId,
         name: { lt: target.name },
+        deletedAt: null,
       },
     });
     return { page: Math.floor(rank / pageSize) + 1 };
@@ -71,7 +73,7 @@ export class GlobalModulesService {
       where: { id },
       include: { moduleType: { select: { id: true, name: true, icon: true } } },
     });
-    if (!globalModule) {
+    if (!globalModule || globalModule.deletedAt) {
       throw new NotFoundException(`Globales Modul ${id} nicht gefunden.`);
     }
     return globalModule;
@@ -143,17 +145,69 @@ export class GlobalModulesService {
     return this.findOne(id);
   }
 
-  async remove(id: string) {
+  /** Papierkorb: Soft-Delete (Nutzervorgabe, 2026-08-18, "überall da wo man
+   * löschen kann") – gilt gleichermaßen für Galerien und FAQs, da beide
+   * dieses Modell teilen. */
+  async remove(id: string, actingUserId: string) {
     await this.assertExists(id);
+    await this.prisma.globalModule.update({
+      where: { id },
+      data: { deletedAt: new Date(), deletedById: actingUserId },
+    });
+  }
+
+  async restore(id: string) {
+    const globalModule = await this.prisma.globalModule.findUnique({
+      where: { id },
+    });
+    if (!globalModule || !globalModule.deletedAt) {
+      throw new NotFoundException(
+        `Globales Modul ${id} befindet sich nicht im Papierkorb.`,
+      );
+    }
+    return this.prisma.globalModule.update({
+      where: { id },
+      data: { deletedAt: null, deletedById: null },
+    });
+  }
+
+  async permanentDelete(id: string) {
+    const globalModule = await this.prisma.globalModule.findUnique({
+      where: { id },
+    });
+    if (!globalModule || !globalModule.deletedAt) {
+      throw new NotFoundException(
+        `Globales Modul ${id} befindet sich nicht im Papierkorb.`,
+      );
+    }
     await this.prisma.globalModule.delete({ where: { id } });
+  }
+
+  findTrashed() {
+    return this.prisma.globalModule.findMany({
+      where: { deletedAt: { not: null } },
+      orderBy: { deletedAt: 'desc' },
+      include: {
+        moduleType: { select: { id: true, name: true, icon: true, slug: true } },
+        deletedBy: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+  }
+
+  findTrashedOlderThan(cutoff: Date) {
+    return this.prisma.globalModule.findMany({
+      where: { deletedAt: { not: null, lt: cutoff } },
+      orderBy: { deletedAt: 'asc' },
+      select: { id: true, name: true, deletedAt: true },
+    });
   }
 
   private async assertExists(id: string) {
     const exists = await this.prisma.globalModule.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, deletedAt: true },
     });
-    if (!exists) {
+    if (!exists || exists.deletedAt) {
       throw new NotFoundException(`Globales Modul ${id} nicht gefunden.`);
     }
   }

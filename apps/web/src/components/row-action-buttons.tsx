@@ -11,7 +11,10 @@ import { cn } from "@/lib/utils";
  * ausgerollt). Quadratisch (`rounded-lg`) statt der sonst für Icon-Buttons
  * üblichen `rounded-full`-Basis aus `ui/button.tsx` – bewusster Kontrast
  * zu echten "runden" Icon-Buttons wie Glocke/Avatar im Header, die einen
- * anderen Zweck haben (Trigger, kein Zeilen-Aktion-Paar). */
+ * anderen Zweck haben (Trigger, kein Zeilen-Aktion-Paar). Löschen steht
+ * immer zuletzt/rechts (Nutzervorgabe, 2026-08-18) – ein separates
+ * Papierkorb-Icon/Overlay gibt es bewusst nicht mehr, seit Papierkorb
+ * einen eigenen Sidebar-Eintrag hat. */
 export function RowActionButtons({
   onEdit,
   onDelete,

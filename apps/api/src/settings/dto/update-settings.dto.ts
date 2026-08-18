@@ -1,11 +1,16 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
+  IsEmail,
+  IsIn,
   IsInt,
+  IsISO8601,
   IsOptional,
   IsString,
+  Matches,
   Max,
   Min,
+  ValidateIf,
 } from 'class-validator';
 
 export class UpdateSettingsDto {
@@ -53,6 +58,16 @@ export class UpdateSettingsDto {
   @Min(1)
   mediaStorageQuotaMb?: number | null;
 
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Maximale Dateigröße pro Upload in MB, leer = nur die technischen Kategorie-Obergrenzen.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  maxUploadSizeMb?: number | null;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsInt()
@@ -80,12 +95,116 @@ export class UpdateSettingsDto {
   @IsBoolean()
   passwordRequireSpecialChar?: boolean;
 
+  @ApiPropertyOptional({
+    description: 'Globaler Schalter fürs 2FA/TOTP-Feature.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  allowTwoFactor?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      'Erzwingt bei aktivem allowTwoFactor 2FA für Administrator-Konten.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  requireTwoFactorForAdmins?: boolean;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsInt()
   @Min(1)
   @Max(100)
   defaultPageSize?: number;
+
+  @ApiPropertyOptional({
+    description: 'Erzwingt 2FA für jedes Konto, unabhängig von der Rolle.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  requireTwoFactorForAll?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Erzwingt 2FA für Rollen mit dem Recht "content:publish".',
+  })
+  @IsOptional()
+  @IsBoolean()
+  requireTwoFactorForPublishers?: boolean;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Passwort-Ablauf in Tagen, leer = kein Ablauf.',
+  })
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsInt()
+  @Min(1)
+  passwordExpiryDays?: number | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Sperrt ein Konto automatisch nach N Fehlversuchen, leer = keine automatische Sperre.',
+  })
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsInt()
+  @Min(1)
+  failedLoginLockoutThreshold?: number | null;
+
+  @ApiPropertyOptional({
+    description: 'Prüft neue Passwörter gegen die Have-I-Been-Pwned-API.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  passwordBlockLeaked?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Verhindert die Wiederverwendung der letzten 5 Passwörter.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  passwordPreventReuseEnabled?: boolean;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Beendet eine Sitzung nach N Minuten Inaktivität, leer = kein Timeout.',
+  })
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsInt()
+  @Min(1)
+  sessionIdleTimeoutMinutes?: number | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Hex-Akzentfarbe, leer = Standard-Markenfarbe.',
+  })
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @Matches(/^#[0-9a-fA-F]{6}$/)
+  accentColor?: string | null;
+
+  @ApiPropertyOptional({ enum: ['compact', 'normal', 'airy'] })
+  @IsOptional()
+  @IsIn(['compact', 'normal', 'airy'])
+  tableDensity?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  sidebarCollapsedByDefault?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  keyboardShortcutsEnabled?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  reduceMotion?: boolean;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -181,4 +300,96 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsString()
   companyVatId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  companySupervisoryAuthority?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  dpoIsExternal?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  dpoName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  dpoCompany?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsEmail()
+  dpoEmail?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  dpoPhone?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsISO8601()
+  dpoAppointedAt?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsISO8601()
+  dpoReportedAt?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  dpoSupervisoryAuthority?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsISO8601()
+  dpoLastContactAt?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  dpoListInLegalTexts?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  dpoNotifyOnIncident?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  dpoMonthlyReportEnabled?: boolean;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Aufbewahrung Formular-Einsendungen in Tagen, leer = unbegrenzt.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  retentionFormSubmissionsDays?: number | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  retentionAccessLogMonths?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  retentionDeactivatedAccountsMonths?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  retentionTrashDays?: number;
 }

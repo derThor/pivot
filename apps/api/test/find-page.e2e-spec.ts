@@ -50,7 +50,7 @@ describe('Pagination-Sprung für Suchtreffer (e2e)', () => {
     await cleanup();
 
     const adminRole = await prisma.role.findFirstOrThrow({
-      where: { name: 'Admin' },
+      where: { name: 'Administrator' },
     });
     const adminUser = await prisma.user.create({
       data: {
@@ -221,7 +221,7 @@ describe('Pagination-Sprung für Suchtreffer (e2e)', () => {
         lastName: 'Aaa Zuerst Alphabetisch',
         userRoles: {
           create: {
-            roleId: (await prisma.role.findFirstOrThrow({ where: { name: 'Admin' } })).id,
+            roleId: (await prisma.role.findFirstOrThrow({ where: { name: 'Administrator' } })).id,
           },
         },
         passwordHash: await argon2.hash(password),

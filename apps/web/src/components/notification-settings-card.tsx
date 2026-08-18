@@ -54,7 +54,7 @@ export function NotificationSettingsCard({
   }
 
   return (
-    <div className="flex h-fit flex-col gap-1 rounded-xl border border-[#E5E5E5] bg-card p-6">
+    <div className="flex h-fit flex-col gap-1 rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6">
       <h2 className="mb-2 font-semibold">Benachrichtigungen</h2>
       <div className="flex flex-col divide-y divide-[#F0F0F0]">
         {ROWS.map((row) => (

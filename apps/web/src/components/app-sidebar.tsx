@@ -12,8 +12,9 @@ import {
   Settings,
   FolderTree,
   Tags,
-  Globe,
   Webhook,
+  Building2,
+  Lock,
   Link2,
   Compass,
   Layers,
@@ -22,6 +23,7 @@ import {
   HelpCircle,
   Images,
   MessageSquare,
+  Trash2,
 } from "lucide-react";
 
 import {
@@ -87,7 +89,7 @@ export const navGroups = [
     items: [{ title: "Dashboard", url: "/dashboard", icon: LayoutDashboard }],
   },
   {
-    label: "Inhalte",
+    label: "Webseite",
     icon: Layers,
     items: [
       {
@@ -121,12 +123,27 @@ export const navGroups = [
         icon: Compass,
         permission: "navigation:read",
       },
+      { title: "Papierkorb", url: "/dashboard/trash", icon: Trash2 },
     ],
   },
   {
     label: "Verwaltung",
     icon: ShieldCheck,
     items: [
+      {
+        title: "Firma",
+        subtitle: "Firmenangaben & Standorte",
+        url: "/dashboard/company",
+        icon: Building2,
+        permission: "settings:read",
+      },
+      {
+        title: "Datenschutz",
+        subtitle: "Rechtstexte & Aufbewahrung",
+        url: "/dashboard/privacy",
+        icon: Lock,
+        permission: "privacy:read",
+      },
       {
         title: "Benutzer",
         subtitle: "Konten & Zugänge",
@@ -140,12 +157,6 @@ export const navGroups = [
         url: "/dashboard/roles",
         icon: ShieldCheck,
         permission: "roles:read",
-      },
-      {
-        title: "Websites",
-        subtitle: "Verbundene Seiten",
-        url: "/dashboard/sites",
-        icon: Globe,
       },
       {
         title: "Webhooks",

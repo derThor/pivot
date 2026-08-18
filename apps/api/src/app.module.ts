@@ -7,6 +7,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { CacheModule } from './cache/cache.module';
+import { AuditLogModule } from './audit-log/audit-log.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ContentModule } from './content/content.module';
@@ -23,6 +24,14 @@ import { SearchModule } from './search/search.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { NavigationModule } from './navigation/navigation.module';
 import { GlobalModulesModule } from './global-modules/global-modules.module';
+import { CompanyLocationsModule } from './company-locations/company-locations.module';
+import { LegalDocumentsModule } from './legal-documents/legal-documents.module';
+import { DeletionRequestsModule } from './deletion-requests/deletion-requests.module';
+import { ProcessingActivitiesModule } from './processing-activities/processing-activities.module';
+import { DataProcessorsModule } from './data-processors/data-processors.module';
+import { PrivacyIncidentsModule } from './privacy-incidents/privacy-incidents.module';
+import { PrivacyModule } from './privacy/privacy.module';
+import { TrashModule } from './trash/trash.module';
 import { validateEnv } from './common/config/env.validation';
 
 @Module({
@@ -38,6 +47,7 @@ import { validateEnv } from './common/config/env.validation';
     ScheduleModule.forRoot(),
     PrismaModule,
     CacheModule,
+    AuditLogModule,
     AuthModule,
     UsersModule,
     ContentModule,
@@ -54,6 +64,14 @@ import { validateEnv } from './common/config/env.validation';
     WebhooksModule,
     NavigationModule,
     GlobalModulesModule,
+    CompanyLocationsModule,
+    LegalDocumentsModule,
+    DeletionRequestsModule,
+    ProcessingActivitiesModule,
+    DataProcessorsModule,
+    PrivacyIncidentsModule,
+    PrivacyModule,
+    TrashModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

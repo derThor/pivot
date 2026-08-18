@@ -10,7 +10,8 @@ import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { CacheService } from '../cache/cache.service';
-import { validatePasswordAgainstPolicy } from '../settings/password-policy';
+import { MediaService } from '../media/media.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -29,6 +30,8 @@ const publicSelect = {
   emailVerifiedAt: true,
   lastLoginAt: true,
   mustChangePassword: true,
+  twoFactorEnabled: true,
+  twoFactorEnabledAt: true,
   failedLoginAttempts: true,
   anonymizedAt: true,
   createdAt: true,
@@ -54,6 +57,8 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly settings: SettingsService,
     private readonly cache: CacheService,
+    private readonly media: MediaService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   async findAll(query: QueryUserDto) {
@@ -139,12 +144,6 @@ export class UsersService {
       throw new ConflictException('E-Mail-Adresse wird bereits verwendet.');
     }
 
-    const settings = await this.settings.get();
-    const violations = validatePasswordAgainstPolicy(dto.password, settings);
-    if (violations.length > 0) {
-      throw new BadRequestException(violations.join(' '));
-    }
-
     const roleIds = dto.roleIds?.length
       ? dto.roleIds
       : [
@@ -154,7 +153,12 @@ export class UsersService {
             })
           ).id,
         ];
-    const passwordHash = await argon2.hash(dto.password);
+    // Kein admin-vergebenes Passwort mehr (Nutzervorgabe, 2026-08-17): der
+    // Hash ist zufällig und wird nie offengelegt, genau wie bei
+    // anonymize() unten. Der Zugang läuft über den bestehenden
+    // Passwort-Reset-Link, den der Controller nach dem Anlegen verschickt
+    // (siehe UsersController.create()).
+    const passwordHash = await argon2.hash(randomBytes(32).toString('hex'));
 
     const user = await this.prisma.user.create({
       data: {
@@ -165,6 +169,13 @@ export class UsersService {
         passwordHash,
       },
       select: publicSelect,
+    });
+    await this.auditLog.record({
+      action: 'user.created',
+      entityType: 'User',
+      entityId: user.id,
+      userId: actingUser.sub,
+      metadata: { method: 'admin_created' },
     });
     return toPublicUser(user);
   }
@@ -181,6 +192,7 @@ export class UsersService {
     if (dto.email && dto.email !== existing.email) {
       await this.assertEmailChangeAllowed(dto.email);
     }
+    let newRoleNames: string[] | undefined;
     if (dto.roleIds) {
       if (dto.roleIds.length === 0) {
         throw new BadRequestException(
@@ -193,6 +205,20 @@ export class UsersService {
       if (roles.length !== dto.roleIds.length) {
         throw new BadRequestException('Rolle nicht gefunden.');
       }
+      // Nur wirklich geänderte Zuweisungen loggen, nicht jedes Speichern
+      // des Formulars mit unveränderten Rollen (Vergleich über Set, da die
+      // Reihenfolge der IDs keine Bedeutung hat).
+      const currentUserRoles = await this.prisma.userRole.findMany({
+        where: { userId: id },
+        select: { roleId: true },
+      });
+      const currentRoleIds = new Set(currentUserRoles.map((ur) => ur.roleId));
+      const roleIdsChanged =
+        dto.roleIds.length !== currentRoleIds.size ||
+        dto.roleIds.some((roleId) => !currentRoleIds.has(roleId));
+      if (roleIdsChanged) {
+        newRoleNames = roles.map((role) => role.name);
+      }
     }
 
     const { roleIds, ...rest } = dto;
@@ -201,7 +227,14 @@ export class UsersService {
         where: { id },
         // `pendingActivation` verschwindet automatisch, sobald ein Admin
         // den Nutzer aktiviert (siehe Schema-Kommentar zu `User.pendingActivation`).
-        data: rest.isActive ? { ...rest, pendingActivation: false } : rest,
+        // `deactivatedAt` folgt demselben Muster für die Datenschutz-
+        // Aufbewahrungsfrist "Deaktivierte Konten".
+        data:
+          rest.isActive ?
+            { ...rest, pendingActivation: false, deactivatedAt: null }
+          : rest.isActive === false ?
+            { ...rest, deactivatedAt: new Date() }
+          : rest,
       }),
       ...(roleIds
         ? [
@@ -212,6 +245,15 @@ export class UsersService {
           ]
         : []),
     ]);
+    if (newRoleNames) {
+      await this.auditLog.record({
+        action: 'user.role_changed',
+        entityType: 'User',
+        entityId: id,
+        userId: actingUser.sub,
+        metadata: { roleNames: newRoleNames },
+      });
+    }
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id },
       select: publicSelect,
@@ -234,6 +276,35 @@ export class UsersService {
     return toPublicUser(user);
   }
 
+  // Admin-Notausgang bei Handy-/Gerätverlust ohne (mehr) gültigen
+  // Recovery-Code (Nutzervorgabe, 2026-08-17) – bewusst ohne
+  // Passwort-Bestätigung wie bei der Self-Service-Deaktivierung
+  // (AuthService.disableTwoFactor()): der Admin bestätigt sich bereits über
+  // sein eigenes `users:update`-Recht, nicht über das Passwort des
+  // betroffenen Nutzers. Kein eigenes Recht wie `users:deactivate` – reine
+  // Feld-Änderung am Nutzer, gleiche Einordnung wie das erzwungene
+  // `mustChangePassword` in UpdateUserDto.
+  async disableTwoFactor(id: string, actingUserId: string) {
+    await this.findOneRaw(id);
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: {
+        twoFactorEnabled: false,
+        twoFactorEnabledAt: null,
+        twoFactorSecret: null,
+        twoFactorRecoveryCodes: [],
+      },
+      select: publicSelect,
+    });
+    await this.auditLog.record({
+      action: 'user.2fa_disabled',
+      entityType: 'User',
+      entityId: id,
+      userId: actingUserId,
+    });
+    return toPublicUser(user);
+  }
+
   // Soft-Delete statt `prisma.user.delete()`: ein Hard-Delete brach mit
   // einem FK-Constraint-Fehler (`contents_authorId_fkey`), sobald der
   // Nutzer irgendeinen Content verfasst hatte – praktisch jeder Editor
@@ -251,7 +322,10 @@ export class UsersService {
     }
     await this.findOne(id);
     await this.prisma.$transaction([
-      this.prisma.user.update({ where: { id }, data: { isActive: false } }),
+      this.prisma.user.update({
+        where: { id },
+        data: { isActive: false, deactivatedAt: new Date() },
+      }),
       this.prisma.refreshToken.updateMany({
         where: { userId: id, revokedAt: null },
         data: { revokedAt: new Date() },
@@ -306,10 +380,93 @@ export class UsersService {
   // der "2FA"-Spalte in der Benutzer-Tabelle).
   async getStats(id: string) {
     const [contentCount, mediaCount] = await Promise.all([
-      this.prisma.content.count({ where: { authorId: id } }),
-      this.prisma.media.count({ where: { uploadedById: id } }),
+      this.prisma.content.count({
+        where: { authorId: id, deletedAt: null },
+      }),
+      this.prisma.media.count({
+        where: { uploadedById: id, deletedAt: null },
+      }),
     ]);
     return { contentCount, mediaCount };
+  }
+
+  // "Verlauf" im "Aktivität"-Tab (2b.14-Nachtrag, 2026-08-17) – echte,
+  // serverseitig paginierte Zeitleiste über AuditLogService.findForUser()
+  // statt der Bildvorlage 1:1 zu folgen: "Formular veröffentlicht" fehlt
+  // absichtlich (kein Formular-Modul in dieser App, siehe getStats() oben),
+  // "Einladung angenommen" wurde durch den tatsächlichen Erstellungsweg
+  // ersetzt (Admin-angelegt vs. Selbstregistrierung).
+  async getActivity(id: string, page: number, pageSize: number) {
+    return this.auditLog.findForUser(id, page, pageSize);
+  }
+
+  // "Diese Woche"-Kachel auf "Mein Konto" – anders als getStats() oben
+  // (Lebenszeit-Summe für die admin-seitige Benutzer-Profilseite) auf die
+  // laufende Kalenderwoche begrenzt. Wochenstart = Montag 00:00 lokale
+  // Zeit, gängigste Konvention im deutschsprachigen Raum.
+  async getWeeklyStats(id: string) {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    const isoWeekday = (now.getDay() + 6) % 7; // Montag=0 .. Sonntag=6
+    startOfWeek.setDate(now.getDate() - isoWeekday);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const [contentCount, mediaCount] = await Promise.all([
+      this.prisma.content.count({
+        where: {
+          authorId: id,
+          createdAt: { gte: startOfWeek },
+          deletedAt: null,
+        },
+      }),
+      this.prisma.media.count({
+        where: {
+          uploadedById: id,
+          createdAt: { gte: startOfWeek },
+          deletedAt: null,
+        },
+      }),
+    ]);
+    return { contentCount, mediaCount };
+  }
+
+  // Self-Service-Avatar ("Foto ändern" auf "Mein Konto") – nutzt denselben
+  // Upload-Mechanismus wie das Firmenlogo in den Einstellungen
+  // (MediaService.create()), aber als eigener Endpunkt statt über
+  // `POST /media`: jeder Nutzer darf sein eigenes Foto ändern, unabhängig
+  // vom `media:create`-Recht, das z.B. die Rolle "Gast" nicht hat.
+  // Landet im nicht löschbaren Systemordner "Avatare" (Nutzervorgabe,
+  // 2026-08-17, gleiches Muster wie der "Logo"-Ordner) – der Ordner selbst
+  // ist geschützt (`MediaFolder.isSystem`), einzelne Bilder darin lassen
+  // sich aber ganz normal löschen.
+  async updateAvatar(id: string, file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Keine Datei übermittelt.');
+    }
+    const existing = await this.findOneRaw(id);
+    const avatarFolder = await this.prisma.mediaFolder.findFirst({
+      where: { name: 'Avatare', isSystem: true },
+    });
+    const media = await this.media.create(file, id, undefined, avatarFolder?.id);
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: { avatarUrl: media.url },
+      select: publicSelect,
+    });
+
+    // Vorheriges Profilfoto aufräumen (gleiches Muster wie beim Ersetzen des
+    // Firmenlogos) – sonst sammeln sich im Avatare-Ordner bei jedem erneuten
+    // Hochladen verwaiste Dateien an.
+    if (existing.avatarUrl && existing.avatarUrl !== media.url) {
+      const oldMedia = await this.prisma.media.findFirst({
+        where: { url: existing.avatarUrl, uploadedById: id },
+      });
+      if (oldMedia) {
+        await this.media.remove(oldMedia.id, id).catch(() => {});
+      }
+    }
+
+    return toPublicUser(user);
   }
 
   // Ab wie vielen Fehlversuchen in Folge ein Nutzer als "auffällig" für die
@@ -368,6 +525,22 @@ export class UsersService {
         return { pendingActivation, failedLogins, pendingPasswordChange };
       },
     );
+  }
+
+  /** Datenschutz-Aufbewahrung "Deaktivierte Konten": Konten, die schon
+   * länger als `cutoff` deaktiviert sind – für die manuelle Review-Liste,
+   * kein automatisches Löschen. */
+  async findDeactivatedOlderThan(cutoff: Date) {
+    return this.prisma.user.findMany({
+      where: { isActive: false, deactivatedAt: { not: null, lt: cutoff } },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        deactivatedAt: true,
+      },
+    });
   }
 
   private async findOneRaw(id: string) {

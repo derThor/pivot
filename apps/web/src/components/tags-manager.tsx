@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { toastDeleted } from "@/components/app-toast";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
+import { HighlightText } from "@/components/highlight-text";
 import { RowActionButtons } from "@/components/row-action-buttons";
 import {
   Table,
@@ -15,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TaxonomyItemDialog } from "@/components/taxonomy-item-dialog";
+import { useHighlightParam } from "@/hooks/use-highlight-param";
 import { tagDotColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
 import type { Tag } from "@/lib/api-server";
@@ -39,6 +41,7 @@ export function TagsManager({
   items: Tag[];
 }) {
   const router = useRouter();
+  const { activeId, query: highlightQuery } = useHighlightParam("taxonomy-row");
   const [editTarget, setEditTarget] = useState<Tag | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Tag | null>(null);
 
@@ -94,13 +97,17 @@ export function TagsManager({
               </TableRow>
             ) : (
               items.map((tag) => (
-                <TableRow key={tag.id}>
+                <TableRow key={tag.id} id={`taxonomy-row-${tag.id}`}>
                   <TableCell className="font-medium">
                     <span className="flex items-center gap-2">
                       <span
                         className={cn("size-2 shrink-0 rounded-full", tagDotColor(tag.id))}
                       />
-                      {tag.name}
+                      <HighlightText
+                        text={tag.name}
+                        query={highlightQuery}
+                        active={activeId === tag.id}
+                      />
                     </span>
                   </TableCell>
                   <TableCell className="text-muted-foreground">

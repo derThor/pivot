@@ -3,9 +3,19 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, ChevronDown, LogOut, UserCog } from "lucide-react";
+import {
+  Bell,
+  ChevronDown,
+  ChevronRight,
+  LogOut,
+  Settings,
+  ShieldCheck,
+  ShieldOff,
+  UserCog,
+} from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminMenu } from "@/components/admin-menu";
@@ -19,7 +29,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { CurrentUser } from "@/lib/api-server";
-import { cn, formatName, initials } from "@/lib/utils";
+import { mediaUrl } from "@/lib/media";
+import { cn, formatName, formatRelativeTime, initials } from "@/lib/utils";
 import { listLocalDrafts, onLocalDraftsChanged } from "@/lib/local-drafts";
 
 export function DashboardHeader({
@@ -27,11 +38,15 @@ export function DashboardHeader({
   defaultPageSize,
   systemMessageCount = 0,
   notifyLocalDrafts = true,
+  allowTwoFactor = false,
+  keyboardShortcutsEnabled = true,
 }: {
   user: CurrentUser;
   defaultPageSize: number;
   systemMessageCount?: number;
   notifyLocalDrafts?: boolean;
+  allowTwoFactor?: boolean;
+  keyboardShortcutsEnabled?: boolean;
 }) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -78,6 +93,7 @@ export function DashboardHeader({
   // (Nutzer-Feedback: "ich habe 3 Nachrichten, Badge zeigt nur 1").
   const totalMessageCount =
     systemMessageCount + (notifyLocalDrafts ? localDraftCount : 0);
+  const canViewSettings = permissions.includes("settings:read");
 
   return (
     <header className="sticky top-0 z-40 flex h-20 min-w-0 shrink-0 items-center gap-3 border-b bg-background/70 px-4 py-4 backdrop-blur-md">
@@ -106,6 +122,7 @@ export function DashboardHeader({
           defaultPageSize={defaultPageSize}
           open={paletteOpen}
           onOpenChange={setPaletteOpen}
+          shortcutsEnabled={keyboardShortcutsEnabled}
         />
         {!mobileSearchOpen && (
           <>
@@ -130,28 +147,143 @@ export function DashboardHeader({
                 render={
                   <Button
                     variant="ghost"
-                    className="h-11 shrink-0 gap-2 rounded-full border bg-card pl-1.5 pr-3 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-popup-open:border-transparent data-popup-open:bg-primary data-popup-open:text-primary-foreground"
+                    className="group h-11 shrink-0 gap-2 rounded-full border bg-card pl-1.5 pr-3 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-popup-open:border-transparent data-popup-open:bg-primary data-popup-open:text-primary-foreground"
                   />
                 }
               >
                 <Avatar>
+                  {user.avatarUrl && (
+                    <AvatarImage src={mediaUrl({ url: user.avatarUrl })} />
+                  )}
                   <AvatarFallback>{initials(user)}</AvatarFallback>
                 </Avatar>
                 <span className="hidden text-sm font-medium sm:inline">
                   {formatName(user)}
                 </span>
-                <ChevronDown className="size-4 text-muted-foreground" />
+                <ChevronDown className="size-4 text-muted-foreground transition-transform group-data-popup-open:rotate-180" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent side="bottom" align="end">
-                <DropdownMenuItem render={<Link href="/dashboard/account" />}>
-                  <UserCog />
-                  Konto
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut}>
-                  <LogOut />
-                  {isLoggingOut ? "Wird abgemeldet…" : "Abmelden"}
-                </DropdownMenuItem>
+              <DropdownMenuContent side="bottom" align="end" className="w-80 p-0">
+                <div className="flex items-center gap-3 p-4">
+                  <Avatar size="lg" className="size-11">
+                    {user.avatarUrl && (
+                      <AvatarImage src={mediaUrl({ url: user.avatarUrl })} />
+                    )}
+                    <AvatarFallback className="bg-neutral-900 text-white">
+                      {initials(user)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{formatName(user)}</p>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {user.email}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 px-4 pb-4">
+                  {user.roles.map((role) => (
+                    <Badge
+                      key={role.id}
+                      className="bg-neutral-900 text-white hover:bg-neutral-900"
+                    >
+                      {role.name}
+                    </Badge>
+                  ))}
+                  {allowTwoFactor && (
+                    <Badge
+                      variant="secondary"
+                      className={
+                        user.twoFactorEnabled
+                          ? "gap-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
+                          : "gap-1 bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
+                      }
+                    >
+                      {user.twoFactorEnabled ? (
+                        <ShieldCheck className="size-3" />
+                      ) : (
+                        <ShieldOff className="size-3" />
+                      )}
+                      {user.twoFactorEnabled ? "2FA aktiv" : "2FA inaktiv"}
+                    </Badge>
+                  )}
+                </div>
+                <DropdownMenuSeparator className="mx-0" />
+                <div className="flex flex-col p-2">
+                  <DropdownMenuItem
+                    render={<Link href="/dashboard/account" />}
+                    className="h-auto items-start gap-3 py-2.5"
+                  >
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                      <UserCog className="size-4" />
+                    </span>
+                    <span className="flex flex-col">
+                      <span className="font-medium">Mein Konto</span>
+                      <span className="text-xs text-muted-foreground">
+                        Profil, Sprache, Zeitzone
+                      </span>
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    render={<Link href="/dashboard/account?tab=security" />}
+                    className="h-auto items-start gap-3 py-2.5"
+                  >
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                      <ShieldCheck className="size-4" />
+                    </span>
+                    <span className="flex flex-col">
+                      <span className="font-medium">Sicherheit &amp; 2FA</span>
+                      <span className="text-xs text-muted-foreground">
+                        Passwort, Authenticator, Sitzungen
+                      </span>
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    render={<Link href="/dashboard/account?tab=notifications" />}
+                    className="h-auto items-start gap-3 py-2.5"
+                  >
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                      <Bell className="size-4" />
+                    </span>
+                    <span className="flex flex-col">
+                      <span className="font-medium">Benachrichtigungen</span>
+                      <span className="text-xs text-muted-foreground">
+                        Einstellungen &amp; Hinweise
+                      </span>
+                    </span>
+                  </DropdownMenuItem>
+                </div>
+                {canViewSettings && (
+                  <>
+                    <DropdownMenuSeparator className="mx-0" />
+                    <div className="p-2">
+                      <DropdownMenuItem
+                        render={<Link href="/dashboard/settings" />}
+                        className="justify-between"
+                      >
+                        Einstellungen
+                        <ChevronRight className="size-4 text-muted-foreground" />
+                      </DropdownMenuItem>
+                    </div>
+                  </>
+                )}
+                <DropdownMenuSeparator className="mx-0" />
+                <div className="p-2">
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    className="gap-3"
+                  >
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-destructive/10">
+                      <LogOut className="size-4" />
+                    </span>
+                    {isLoggingOut ? "Wird abgemeldet…" : "Abmelden"}
+                  </DropdownMenuItem>
+                </div>
+                {user.lastLoginAt && (
+                  <p className="border-t px-4 py-2.5 text-xs text-muted-foreground">
+                    Letzte Anmeldung: {formatRelativeTime(user.lastLoginAt)}
+                  </p>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </>

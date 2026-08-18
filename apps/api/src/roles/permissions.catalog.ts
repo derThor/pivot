@@ -71,6 +71,10 @@ export const PERMISSIONS_CATALOG: PermissionDescriptor[] = [
   { resource: 'roles', action: 'update' },
   { resource: 'settings', action: 'read' },
   { resource: 'settings', action: 'update' },
+  { resource: 'privacy', action: 'read' },
+  { resource: 'privacy', action: 'create' },
+  { resource: 'privacy', action: 'update' },
+  { resource: 'privacy', action: 'delete' },
 ];
 
 export const PERMISSION_CATEGORY_BY_RESOURCE: Record<
@@ -90,4 +94,5 @@ export const PERMISSION_CATEGORY_BY_RESOURCE: Record<
   users: 'administration',
   roles: 'administration',
   settings: 'administration',
+  privacy: 'administration',
 };

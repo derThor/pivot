@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Trash2, Upload, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 
 import { toastCreated, toastEdited } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
@@ -15,10 +15,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DateTimePicker } from "@/components/date-time-picker";
 import { InfoTooltip } from "@/components/info-tooltip";
+import { SegmentedPicker } from "@/components/segmented-picker";
 import {
   BlockEditorField,
   type ModuleInstance,
@@ -29,7 +30,6 @@ import {
   DRAFT_STORAGE_PREFIX,
   notifyLocalDraftsChanged,
 } from "@/lib/local-drafts";
-import { mediaUrl } from "@/lib/media";
 import {
   Form,
   FormControl,
@@ -53,7 +53,7 @@ import type {
   GlobalModule,
   ModuleType,
 } from "@/lib/api-server";
-import { cn, formatName, slugify } from "@/lib/utils";
+import { formatName, slugify } from "@/lib/utils";
 
 const LOCK_HEARTBEAT_INTERVAL_MS = 60_000;
 
@@ -63,12 +63,6 @@ interface LockInfo {
 }
 
 type LockState = "checking" | "held" | "locked-by-other" | "error";
-
-const twitterCardLabel: Record<string, string> = {
-  none: "Nicht gesetzt",
-  summary: "Summary",
-  summary_large_image: "Summary (großes Bild)",
-};
 
 interface SeoValues {
   excerpt: string;
@@ -225,9 +219,6 @@ export function ContentEditorForm({
   const [scheduledForError, setScheduledForError] = useState<string | null>(
     null,
   );
-  const [ogImageFile, setOgImageFile] = useState<File | null>(null);
-  const [isUploadingOgImage, setIsUploadingOgImage] = useState(false);
-  const [ogImageError, setOgImageError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [draftBanner, setDraftBanner] = useState<DraftSnapshot | null>(null);
@@ -265,19 +256,21 @@ export function ContentEditorForm({
     ) ?? [];
 
   // Beim Neuanlegen ist der Tab-Wechsel ein geführter Schritt-für-Schritt-
-  // Ablauf (Einstellungen -> Designer -> SEO, je nachdem ob der Content-Type
-  // ein "modules"-Feld hat): spätere Tabs sind erst klickbar, sobald der
+  // Ablauf (Einstellungen & SEO -> Designer, nur falls der Content-Type ein
+  // "modules"-Feld hat): spätere Tabs sind erst klickbar, sobald der
   // vorherige Schritt erfolgreich validiert wurde (siehe `maxWizardStepIndex`).
   // Beim Bearbeiten eines bestehenden Inhalts bleiben alle Tabs wie bisher
-  // frei wählbar.
+  // frei wählbar. Nur noch zwei Tabs (Nutzervorgabe, 2026-08-18: "Seite
+  // anlegen, bearbeiten: nur noch 2 Tabs. Einstellungen und SEO
+  // zusammenlegen") – Einstellungen & SEO sind ein gemeinsamer Schritt.
   const isWizard = !isEditing;
   const wizardSteps =
     moduleFields.length > 0
-      ? (["settings", "design", "seo"] as const)
-      : (["settings", "seo"] as const);
+      ? (["settingsSeo", "design"] as const)
+      : (["settingsSeo"] as const);
 
   const [activeTab, setActiveTab] = useState(() =>
-    !isEditing || moduleFields.length === 0 ? "settings" : "design",
+    !isEditing || moduleFields.length === 0 ? "settingsSeo" : "design",
   );
   const [maxWizardStepIndex, setMaxWizardStepIndex] = useState(0);
 
@@ -294,7 +287,7 @@ export function ContentEditorForm({
   // Content-Type-Wechsel wegfällt (kein "modules"-Feld mehr vorhanden).
   useEffect(() => {
     if (moduleFields.length === 0) {
-      setActiveTab((prev) => (prev === "design" ? "settings" : prev));
+      setActiveTab((prev) => (prev === "design" ? "settingsSeo" : prev));
     }
   }, [moduleFields.length]);
 
@@ -510,30 +503,6 @@ export function ContentEditorForm({
     }
   }
 
-  async function handleOgImageUpload() {
-    if (!ogImageFile) return;
-    setOgImageError(null);
-    setIsUploadingOgImage(true);
-    try {
-      const formData = new FormData();
-      formData.set("file", ogImageFile);
-      const res = await fetch("/api/media", { method: "POST", body: formData });
-      const uploaded = await res.json().catch(() => null);
-      if (!res.ok) {
-        setOgImageError(uploaded?.message ?? "Upload fehlgeschlagen.");
-        return;
-      }
-      setSeoValues((prev) => ({ ...prev, ogImageUrl: uploaded.url }));
-      setOgImageFile(null);
-    } catch {
-      setOgImageError(
-        "Server nicht erreichbar. Bitte später erneut versuchen.",
-      );
-    } finally {
-      setIsUploadingOgImage(false);
-    }
-  }
-
   const isLockedByOther = isEditing && lockState === "locked-by-other";
   const lockBlocksEditing =
     isEditing && (lockState === "checking" || lockState === "locked-by-other");
@@ -594,7 +563,7 @@ export function ContentEditorForm({
   }
 
   async function handleWizardNext() {
-    if (activeTab === "settings") {
+    if (activeTab === "settingsSeo") {
       if (!(await validateSettingsStep())) return;
     } else if (activeTab === "design") {
       if (!validateDesignStep()) return;
@@ -833,11 +802,13 @@ export function ContentEditorForm({
             />
           )}
 
-          <PageContent>
+          <PageContent plain>
             <fieldset disabled={lockBlocksEditing} className="contents">
               <Tabs value={activeTab} onValueChange={goToTab}>
                 <TabsList>
-                  <TabsTrigger value="settings">Einstellungen</TabsTrigger>
+                  <TabsTrigger value="settingsSeo">
+                    Einstellungen & SEO
+                  </TabsTrigger>
                   {moduleFields.length > 0 && (
                     <TabsTrigger
                       value="design"
@@ -849,14 +820,6 @@ export function ContentEditorForm({
                       Designer
                     </TabsTrigger>
                   )}
-                  <TabsTrigger
-                    value="seo"
-                    disabled={
-                      isWizard && wizardStepIndex("seo") > maxWizardStepIndex
-                    }
-                  >
-                    SEO
-                  </TabsTrigger>
                 </TabsList>
 
                 {moduleFields.length > 0 && (
@@ -886,19 +849,10 @@ export function ContentEditorForm({
                   </TabsContent>
                 )}
 
-                <TabsContent value="settings">
-                  <div
-                    className={cn(
-                      "grid grid-cols-1 gap-6",
-                      // Max-Breite 550px (Nutzervorgabe) nur im einspaltigen
-                      // Standardfall – hat ein Content-Type zusätzliche eigene
-                      // Felder, braucht die zweispaltige Grid mehr Platz.
-                      editorFields.length > 0
-                        ? "lg:grid-cols-[360px_1fr]"
-                        : "max-w-[550px]",
-                    )}
-                  >
-                    <Card>
+                <TabsContent value="settingsSeo">
+                  <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+                  <div className="flex flex-col gap-6">
+                    <Card className="shadow-sm">
                       <CardContent className="flex flex-col gap-10">
                         <FormField
                           control={form.control}
@@ -1002,26 +956,18 @@ export function ContentEditorForm({
                                   }
                                 />
                               </div>
-                              <Select
+                              <SegmentedPicker
                                 value={field.value}
-                                onValueChange={field.onChange}
-                                items={statusLabel}
-                              >
-                                <FormControl>
-                                  <SelectTrigger className="w-full">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {Object.entries(statusLabel).map(
-                                    ([value, label]) => (
-                                      <SelectItem key={value} value={value}>
-                                        {label}
-                                      </SelectItem>
-                                    ),
-                                  )}
-                                </SelectContent>
-                              </Select>
+                                onChange={field.onChange}
+                                options={(
+                                  isEditing
+                                    ? (Object.keys(statusLabel) as ContentStatus[])
+                                    : (["DRAFT", "PUBLISHED", "SCHEDULED"] as const)
+                                ).map((value) => ({
+                                  label: statusLabel[value],
+                                  value,
+                                }))}
+                              />
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1176,7 +1122,7 @@ export function ContentEditorForm({
                     </Card>
 
                     {editorFields.length > 0 && (
-                      <Card className="flex h-full flex-col">
+                      <Card className="flex h-full flex-col shadow-sm">
                         <CardContent className="flex flex-1 flex-col gap-10">
                           {editorFields.map((field) => (
                             <div
@@ -1211,10 +1157,15 @@ export function ContentEditorForm({
                       </Card>
                     )}
                   </div>
-                </TabsContent>
 
-                <TabsContent value="seo" className="max-w-[550px]">
-                  <Card>
+                  <div className="flex flex-col gap-6">
+                  <Card className="shadow-sm">
+                    <CardHeader className="flex flex-row items-center gap-3 border-b">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/25 text-[#132033]">
+                        <Search className="size-4" />
+                      </span>
+                      <CardTitle>SEO & Sichtbarkeit</CardTitle>
+                    </CardHeader>
                     <CardContent className="flex flex-col gap-10">
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-1.5">
@@ -1343,156 +1294,8 @@ export function ContentEditorForm({
                     </CardContent>
                   </Card>
 
-                  <Card className="mt-6">
-                    <CardContent className="flex flex-col gap-10">
-                      <p className="text-sm font-medium">
-                        OpenGraph & Twitter-Card
-                      </p>
-
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-1.5">
-                          <Label htmlFor="seo-og-title">OG-Titel</Label>
-                          <InfoTooltip text="Titel, der beim Teilen in sozialen Netzwerken angezeigt wird. Fällt auf den SEO-Titel zurück, wenn leer." />
-                        </div>
-                        <Input
-                          id="seo-og-title"
-                          placeholder={
-                            seoValues.seoTitle || "Fällt auf SEO-Titel zurück"
-                          }
-                          value={seoValues.ogTitle}
-                          onChange={(e) =>
-                            setSeoValues((prev) => ({
-                              ...prev,
-                              ogTitle: e.target.value,
-                            }))
-                          }
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-1.5">
-                          <Label htmlFor="seo-og-description">
-                            OG-Beschreibung
-                          </Label>
-                          <InfoTooltip text="Beschreibungstext beim Teilen in sozialen Netzwerken. Fällt auf die Meta-Description zurück, wenn leer." />
-                        </div>
-                        <Textarea
-                          id="seo-og-description"
-                          rows={3}
-                          placeholder={
-                            seoValues.seoDescription ||
-                            "Fällt auf Meta-Description zurück"
-                          }
-                          value={seoValues.ogDescription}
-                          onChange={(e) =>
-                            setSeoValues((prev) => ({
-                              ...prev,
-                              ogDescription: e.target.value,
-                            }))
-                          }
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-1.5">
-                          <Label>OG-Bild</Label>
-                          <InfoTooltip text="Vorschaubild, das beim Teilen in sozialen Netzwerken angezeigt wird." />
-                        </div>
-                        <div className="flex flex-wrap items-center gap-3">
-                          <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-muted/40">
-                            {seoValues.ogImageUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={mediaUrl({ url: seoValues.ogImageUrl })}
-                                alt="OG-Bild"
-                                className="size-full object-contain"
-                              />
-                            ) : (
-                              <span className="text-xs text-muted-foreground">
-                                Kein Bild
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex min-w-0 flex-wrap items-center gap-2">
-                            <Input
-                              type="file"
-                              accept="image/jpeg,image/png,image/webp,image/svg+xml"
-                              onChange={(e) =>
-                                setOgImageFile(e.target.files?.[0] ?? null)
-                              }
-                              className="w-full max-w-xs"
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              disabled={!ogImageFile || isUploadingOgImage}
-                              onClick={handleOgImageUpload}
-                            >
-                              <Upload />
-                              {isUploadingOgImage ? "Lädt hoch…" : "Hochladen"}
-                            </Button>
-                            {seoValues.ogImageUrl && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label="OG-Bild entfernen"
-                                onClick={() =>
-                                  setSeoValues((prev) => ({
-                                    ...prev,
-                                    ogImageUrl: "",
-                                  }))
-                                }
-                              >
-                                <Trash2 />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                        {ogImageError && (
-                          <p className="text-sm text-destructive">
-                            {ogImageError}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-1.5">
-                          <Label htmlFor="seo-twitter-card">
-                            Twitter-Card-Typ
-                          </Label>
-                          <InfoTooltip text="Bestimmt, wie der Link bei Twitter/X dargestellt wird – „Summary“ zeigt ein kleines Vorschaubild, „Summary (großes Bild)“ ein großes." />
-                        </div>
-                        <Select
-                          value={seoValues.twitterCard}
-                          onValueChange={(value) =>
-                            setSeoValues((prev) => ({
-                              ...prev,
-                              twitterCard: value ?? "none",
-                            }))
-                          }
-                          items={twitterCardLabel}
-                        >
-                          <SelectTrigger
-                            id="seo-twitter-card"
-                            className="w-full"
-                          >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(twitterCardLabel).map(
-                              ([value, label]) => (
-                                <SelectItem key={value} value={value}>
-                                  {label}
-                                </SelectItem>
-                              ),
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  </div>
+                  </div>
                 </TabsContent>
               </Tabs>
             </fieldset>

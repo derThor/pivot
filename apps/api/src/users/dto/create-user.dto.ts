@@ -1,23 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsArray,
-  IsEmail,
-  IsOptional,
-  IsString,
-  MinLength,
-} from 'class-validator';
+import { IsArray, IsEmail, IsOptional, IsString } from 'class-validator';
 
 export class CreateUserDto {
   @ApiProperty()
   @IsEmail()
   email!: string;
-
-  @ApiProperty({
-    description: 'Wird gegen die aktuelle Passwort-Policy geprüft.',
-  })
-  @IsString()
-  @MinLength(1)
-  password!: string;
 
   @ApiPropertyOptional()
   @IsOptional()

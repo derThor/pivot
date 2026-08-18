@@ -15,7 +15,7 @@ Legende: ✅ umgesetzt (Grundgerüst) · 🚧 vorbereitet, aber unvollständig �
 | Passwort ändern (Self-Service) | ✅ | `/dashboard/account`, widerruft alle Sessions |
 | Passwort-Reset per E-Mail | ✅ (Dev-Stub) | Link wird geloggt/in Response zurückgegeben statt versendet; abschaltbar per Einstellung |
 | E-Mail-Verifikation | ✅ (Dev-Stub) | Blockiert Login nicht, nur Dashboard-Hinweisbanner |
-| 2FA/TOTP | ⏳ | |
+| 2FA/TOTP | ✅ | Self-Service-Einrichtung + Recovery-Codes, optionale Erzwingung für Admins, siehe [two-factor-authentication.md](../knowledge-base/auth/two-factor-authentication.md) |
 | OAuth/Social Login (Google, GitHub, …) | ⏳ | |
 | SSO/SAML | ⏳ | Für Enterprise-Ausbaustufe |
 
@@ -61,19 +61,22 @@ Legende: ✅ umgesetzt (Grundgerüst) · 🚧 vorbereitet, aber unvollständig �
 | Feature | Status | Hinweis |
 |---|---|---|
 | Sidebar-Navigation (shadcn `Sidebar`) | ✅ | Angelehnt an gängige Dashboard-Layouts; Verwaltungs-Bereiche ohne Berechtigung werden ausgeblendet; "Verwaltung" selbst liegt im Header-Dropdown, nicht mehr in der Sidebar |
-| Header: Verwaltung-Dropdown, Suchfeld, Benachrichtigungs-Glocke | ✅ | "Verwaltung"-Pille öffnet ein Dropdown mit Benutzer/Rollen & Rechte/Websites/Webhooks/Systemnachrichten; direkt eintippbares Suchfeld mit Live-Ergebnissen (Strg K öffnet separat die Befehlspalette); Glocke verlinkt `/dashboard/system-messages`, roter Badge zeigt Anzahl aktiver Systemmeldungen |
+| Header: Verwaltung-Dropdown, Suchfeld, Benachrichtigungs-Glocke | ✅ | "Verwaltung"-Pille öffnet ein Dropdown mit Benutzer/Rollen & Rechte/Webhooks/Systemnachrichten/Firma/Datenschutz; direkt eintippbares Suchfeld mit Live-Ergebnissen (Strg K öffnet separat die Befehlspalette); Glocke verlinkt `/dashboard/system-messages`, roter Badge zeigt Anzahl aktiver Systemmeldungen |
 | Login-Formular mit Validierung | ✅ | react-hook-form + zod, echte Anbindung an `POST /auth/login` inkl. httpOnly-Session-Cookies |
-| Content-Übersicht (Tabelle) | ✅ | Live-Daten über `GET /content` |
+| Content-Übersicht (Tabelle) | ✅ | Stat-Kacheln (gesamt/veröffentlicht/Entwürfe/geplant), Spalten Titel/Pfad/Abschnitte/Status/Zuletzt bearbeitet/Aktionen, keine Massenauswahl (Nutzervorgabe, bewusste Ausnahme) |
 | Dashboard-Statistiken | ✅ | Live-Zahlen (Content-Status-Counts, Nutzerzahl) |
 | Auth-Gate für `/dashboard` | ✅ | Middleware-Redirect + stiller Token-Refresh, siehe [frontend-auth-flow.md](../knowledge-base/auth/frontend-auth-flow.md) |
-| Content-Editor (Formular je ContentType) | ✅ | Anlegen und Bearbeiten, dynamisch aus `ContentType.schema`; Löschen mit Bestätigung |
+| Content-Editor (Formular je ContentType) | ✅ | Anlegen und Bearbeiten, dynamisch aus `ContentType.schema`; zwei Tabs (Einstellungen & SEO zusammengelegt, Designer), Status als Segmented-Picker; Löschen mit Bestätigung |
 | Autosave & Entwurfs-Wiederherstellung | ✅ | Lokaler Autosave im Browser (`localStorage`, debounced), Wiederherstellungs-Banner beim erneuten Öffnen; admin-abschaltbar in den Einstellungen |
 | Content Locking | ✅ | Weiche Bearbeitungssperre pro Inhalt (2-Minuten-TTL, Heartbeat), schreibgeschütztes Formular + Banner bei Fremdsperre, Admin-Override; keine Konfliktauflösung/Merge (separates offenes Roadmap-Item) |
 | Medien-Bibliothek (Masonry-Grid, Upload) | ✅ | Masonry-Grid mit Hover-Vorschau (Dateiname/Tags/Download); Klick öffnet Detailansicht in einer Seitenleiste (Format/Maße/Größe/Verwendet-in-N-Seiten/Tags); gebündeltes Bearbeiten-Popup (Alt-Text, Zuschneiden, Fokuspunkt, Verschieben), Duplizieren/Löschen über Menü; verschachtelte Ordner (anlegen/umbenennen/verschieben/löschen); Fokuspunkt (steuert das quadratische Thumbnail), Tags (gemeinsamer Pool mit Content, farbcodiert), Filter nach Dateityp/Tags, Erkennung ungenutzter Medien; automatische EXIF-Entfernung/Kompression/WebP-AVIF-Varianten + quadratisches 400px-Thumbnail beim Upload; Seiten-Designer-Baustein „Kacheln" (4 feste Bild-Slots im 2×2-Raster) |
 | Benutzerverwaltung-UI | ✅ | Liste, Anlegen, vollständig bearbeiten (Name/E-Mail/Status/Rolle), Löschen mit Bestätigung + Selbstlöschschutz |
 | Rollen-/Rechteverwaltung-UI | ✅ | `/dashboard/roles`, Split-View (Rollen-Liste + Detail-Panel mit Umfang-Anzeige, Kategorie-Tabs, Rechte-Karten pro Ressource), Rolle duplizieren, Rechte-Export als JSON |
-| Einstellungen-UI | ✅ | Passwort-Policy, Feature-Schalter (inkl. Wartungsmodus, Medien-Speicherkontingent), Darstellung, Firma (Impressum-/Datenschutz-Angaben + einzelnes Firmenlogo-Upload-Feld; Sidebar-Logo und Auth-Bild sind fest hinterlegt, nicht mehr konfigurierbar) |
+| Einstellungen-UI | ✅ | 7-Bereiche-Sidebar (Zugriff & Funktionen, Sicherheit, Darstellung, Integrationen*, Datenschutz*, Benachrichtigungen*, Protokoll* – *noch Platzhalter): Passwort-Policy inkl. Leak-Prüfung/Wiederverwendungs-Sperre, Feature-Schalter (Wartungsmodus, Medien-Speicherkontingent, maximale Upload-Dateigröße), dreistufige 2FA-Pflicht, Sitzungs-Inaktivitäts-Timeout, Darstellung (Akzentfarbe, Tabellendichte, Logo); Sidebar-Logo und Auth-Bild sind fest hinterlegt, nicht mehr konfigurierbar |
+| Firma-Seite (`/dashboard/company`) | ✅ | Eigene Seite unter Verwaltung (nicht mehr Teil der Einstellungen): Stammdaten (Impressum-/Datenschutz-Angaben), Vollständigkeits-Anzeige + Änderungsverlauf, mehrere Standorte |
+| Datenschutz-Seite (`/dashboard/privacy`) | ✅ | Eigene Seite unter Verwaltung: Rechtstexte aus den Firmen-Stammdaten generiert (inkl. Verknüpfung zu einer echten Content-Seite), Aufbewahrungsfristen als Richtwerte + manuelle Löschen-Review-Listen (kein Auto-Löschen), Papierkorb für Inhalte/Medien/Kategorien/Tags, Löschanfragen/Verarbeitungsverzeichnis/Auftragsverarbeiter/Vorfälle (einfache CRUD-Listen), Datenschutzbeauftragter-Kontakt (inkl. Erwähnung in Rechtstexten, Vorfall-Benachrichtigung, monatlicher Bericht per Mail), CSV-Compliance-Bericht |
 | Toaster/Benachrichtigungen | ✅ | `sonner`, drei Varianten (Erstellt/Bearbeitet/Gelöscht) global bei allen CRUD-Aktionen; zusätzlich `SystemMessage`-Komponente für dauerhafte Inline-Hinweise (Wartungsmodus, Speicher fast voll, Webhook-Fehlschläge, Sperren, ungespeicherte Änderungen) |
+| Papierkorb (`/dashboard/trash`) | ✅ | Vereinheitlichte Papierkorb-Seite für Seiten/Medien/Kategorien/Tags/Galerien/FAQs (Formulare/Bausteine bewusst ausgenommen), eigener Sidebar-Eintrag unter Webseite: Löschen verschiebt jetzt app-weit nur noch in den Papierkorb, Stat-Kacheln, Ablauf-Warnbanner mit Sammel-Wiederherstellung, Filter mit Zählern/Suche, Massenauswahl, farbige Typ-Icons/Badges + Detail-Zeile pro Eintrag; nach Ablauf der Aufbewahrungsfrist nur Sperrung der Wiederherstellung, kein automatisches Löschen |
 | Massenauswahl + Sammel-Löschen | ✅ | Checkbox pro Zeile/Karte + "Alle auswählen", Aktionsleiste mit Bestätigung – Konvention für alle Listen-Ansichten (Inhalte, Medien, Kategorien, Tags, Benutzer, Rollen, Versionshistorie) |
 | Pagination | ✅ | URL-getriebene `?page=`-Navigation (Zurück/Weiter) auf allen Listen-Ansichten (Inhalte, Medien, Kategorien, Tags, Benutzer, Rollen, Versionshistorie); Seitengröße einstellbar unter Einstellungen → Darstellung |
 

@@ -63,7 +63,10 @@ export function AdminMenu({ permissions }: { permissions: string[] }) {
         <span className="hidden sm:inline">{ADMIN_GROUP.label}</span>
         <ChevronDown className="size-4 transition-transform duration-150 group-data-popup-open:rotate-180" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-[380px] p-4 sm:w-[460px]">
+      <DropdownMenuContent
+        align="start"
+        className="w-[380px] max-w-[calc(100vw-2rem)] p-4 sm:w-[520px]"
+      >
         <p className="px-1 pb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           {ADMIN_GROUP.label}
         </p>

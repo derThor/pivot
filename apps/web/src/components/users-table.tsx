@@ -1,8 +1,8 @@
 "use client";
 
-import { ShieldOff } from "lucide-react";
+import { ShieldCheck, ShieldOff } from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -12,24 +12,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { HighlightText } from "@/components/highlight-text";
 import { UserRowActions } from "@/components/user-row-actions";
 import { useHighlightParam } from "@/hooks/use-highlight-param";
 import { formatName, formatRelativeTime, initials } from "@/lib/utils";
+import { mediaUrl } from "@/lib/media";
 import { roleBadgeColor } from "@/lib/role-colors";
 import type { CurrentUser } from "@/lib/api-server";
 
 export function UsersTable({
   users,
   currentUserId,
+  allowTwoFactor,
 }: {
   users: CurrentUser[];
   currentUserId: string | undefined;
+  allowTwoFactor: boolean;
 }) {
   const { activeId, query: highlightQuery } = useHighlightParam("user-row");
 
@@ -63,6 +61,9 @@ export function UsersTable({
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
                       <Avatar size="lg">
+                        {user.avatarUrl && (
+                          <AvatarImage src={mediaUrl({ url: user.avatarUrl })} />
+                        )}
                         <AvatarFallback>{initials(user)}</AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col items-start gap-1.5">
@@ -89,22 +90,23 @@ export function UsersTable({
                     </div>
                   </TableCell>
                   <TableCell>
-                    {/* Zwei-Faktor-Authentifizierung ist noch nicht gebaut
-                        (Nutzervorgabe: Spalte schon mal anlegen, Funktion
-                        kommt als eigene Aufgabe danach) – ehrlicher
-                        Platzhalter statt erfundenem "aktiviert"-Status. */}
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <span className="inline-flex text-muted-foreground/60" />
-                        }
-                      >
-                        <ShieldOff className="size-4" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        Zwei-Faktor-Authentifizierung noch nicht verfügbar
-                      </TooltipContent>
-                    </Tooltip>
+                    <Badge
+                      variant="secondary"
+                      className={
+                        allowTwoFactor && user.twoFactorEnabled
+                          ? "gap-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
+                          : "gap-1 bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
+                      }
+                    >
+                      {allowTwoFactor && user.twoFactorEnabled ? (
+                        <ShieldCheck className="size-3" />
+                      ) : (
+                        <ShieldOff className="size-3" />
+                      )}
+                      {allowTwoFactor && user.twoFactorEnabled
+                        ? "Aktiv"
+                        : "Inaktiv"}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -112,7 +114,7 @@ export function UsersTable({
                       className={
                         user.isActive
                           ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
-                          : "bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300"
+                          : "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
                       }
                     >
                       {user.isActive ? "Aktiv" : "Deaktiviert"}

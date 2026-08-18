@@ -574,6 +574,28 @@ Listen-Aktionen:
   `move-to-folder-dialog.tsx` (alle um `hideTrigger`/kontrollierten
   `open`-Modus erweitert)
 
+> **Update 2026-08-17 (Augen-Icon in `PasswordInput` nicht vertikal
+> zentriert):** "das auge bei passwort und grundsätzlich dargestellte
+> icons in inputs müssen mittig" – `ui/password-input.tsx`s Toggle-Button
+> nutzte `absolute inset-y-0 right-0 h-8 w-8`. `inset-y-0` setzt sowohl
+> `top:0` als auch `bottom:0`; ist zusätzlich eine feste Höhe (`h-8`)
+> gesetzt, wird `bottom` bei einem absolut positionierten Element mit
+> widersprüchlichen Constraints ignoriert – der Button dockt oben an
+> statt zentriert zu sein (sichtbar bei hohen Inputs, z.B. im
+> "Zwei-Faktor-Authentifizierung deaktivieren"-Dialog). Fix: `top-1/2
+> -translate-y-1/2` statt `inset-y-0` – die Standard-Pattern für ein
+> absolut positioniertes, vertikal zentriertes Element, bereits korrekt
+> so verwendet beim Such-Icon in `block-editor-field.tsx` (Zeile mit
+> `top-1/2 left-2.5 ... -translate-y-1/2`). Per Playwright-Bounding-Box
+> verifiziert: Mittelpunkt von Input und Icon-Button exakt identisch
+> (Differenz 0px). Codebase-weit war das die einzige Stelle mit diesem
+> Muster – alle anderen Input-Icons (Such-Icons in Header/Command-Palette)
+> sitzen als Flex-Kind in einem `items-center`-Container, kein eigenes
+> `absolute`-Problem. **Regel für künftige Icon-in-Input-Fälle:** niemals
+> `inset-y-0` mit einer festen Höhe kombinieren – entweder
+> `top-1/2 -translate-y-1/2` (bei `absolute`) oder ein Flex-Container mit
+> `items-center` verwenden.
+
 ## Offene Punkte
 
 - Dashboard-Startseite zeigt weiterhin nur die einfachen Statistik-

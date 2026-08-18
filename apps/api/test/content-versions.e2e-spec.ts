@@ -35,7 +35,7 @@ describe('Content-Versionierung & Rollback (e2e)', () => {
     await cleanup();
 
     const adminRole = await prisma.role.findFirstOrThrow({
-      where: { name: 'Admin' },
+      where: { name: 'Administrator' },
     });
     await prisma.user.create({
       data: {

@@ -36,6 +36,7 @@ export function CommandPalette({
   defaultPageSize,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
+  shortcutsEnabled = true,
 }: {
   user: CurrentUser;
   defaultPageSize: number;
@@ -44,6 +45,10 @@ export function CommandPalette({
    * außen, damit der "Strg K"-Badge im Suchfeld sie öffnen kann. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** AppSettings.keyboardShortcutsEnabled (Darstellung-Tab, 2026-08-17) –
+   * deaktiviert nur den Strg/Cmd+K-Tastendruck, der klickbare "Strg K"-
+   * Badge im Suchfeld bleibt unabhängig davon nutzbar. */
+  shortcutsEnabled?: boolean;
 }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -61,6 +66,7 @@ export function CommandPalette({
   // Dashboard aus – unabhängig davon, wo der Fokus gerade liegt (siehe
   // sidebar.tsx für dasselbe Muster bei Strg+B).
   useEffect(() => {
+    if (!shortcutsEnabled) return;
     function handleKeyDown(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
@@ -69,7 +75,7 @@ export function CommandPalette({
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, setOpen]);
+  }, [open, setOpen, shortcutsEnabled]);
 
   // Eingabe/Auswahl beim Öffnen zurücksetzen – als Render-Zeit-Anpassung
   // statt setState im Effekt (gleiches Muster wie `syncedPathname` in

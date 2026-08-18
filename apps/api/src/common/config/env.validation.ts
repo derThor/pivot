@@ -15,6 +15,12 @@ export const envSchema = z.object({
   JWT_ACCESS_TTL: z.string().default('15m'),
   JWT_REFRESH_TTL: z.string().default('30d'),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
+  TOTP_ENCRYPTION_KEY: z
+    .string()
+    .regex(
+      /^[0-9a-f]{64}$/i,
+      'TOTP_ENCRYPTION_KEY muss ein 64-stelliger Hex-String sein (32 Byte, für AES-256-GCM)',
+    ),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
