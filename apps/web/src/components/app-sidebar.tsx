@@ -9,11 +9,12 @@ import {
   Image as ImageIcon,
   Users,
   ShieldCheck,
+  ShieldKeyhole,
   Settings,
+  FolderCog,
   FolderTree,
   Tags,
   Building2,
-  Lock,
   Link2,
   Compass,
   Layers,
@@ -127,7 +128,7 @@ export const navGroups = [
   },
   {
     label: "Verwaltung",
-    icon: ShieldCheck,
+    icon: FolderCog,
     items: [
       {
         title: "Firma",
@@ -140,7 +141,7 @@ export const navGroups = [
         title: "Datenschutz",
         subtitle: "Rechtstexte & Aufbewahrung",
         url: "/dashboard/privacy",
-        icon: Lock,
+        icon: ShieldKeyhole,
         permission: "privacy:read",
       },
       {

@@ -20,6 +20,14 @@ function csvEscape(v: unknown): string {
 // dupliziert statt geteilt, da PrivacyService es nicht exportiert.
 const CSV_BOM = '﻿';
 
+// Für Protokoll-Einträge ohne `metadata.field` (reine Aktionen statt
+// Feldänderungen) – CSV-Pendant zum gleichnamigen Frontend-Mapping in
+// settings-protocol-card.tsx. Bisher nur "Alle löschen" bei den
+// Job-Läufen unter Einstellungen → Jobs (Nutzervorgabe, 2026-08-22).
+const ACTION_LABELS: Record<string, string> = {
+  'settings.job_runs_deleted': 'Job-Lauf-Historie gelöscht',
+};
+
 // Firma-Stammdaten-Felder (Verwaltung → Firma, "Letzte Änderungen"-Karte,
 // 2026-08-17) – deutsche Labels leben zusätzlich im Frontend
 // (company-view.tsx), hier nur als Schlüssel-Liste für die Diff-Prüfung
@@ -51,8 +59,8 @@ const COMPANY_ENTITY_ID = 'company';
 // ihre eigene, unveränderte Historie auf der Firma-Seite; Datenschutz-
 // Feldänderungen werden aktuell bewusst noch nirgends protokolliert
 // (kein Datenschutz-Protokoll angefragt).
-const SETTINGS_ENTITY_TYPE = 'Settings';
-const SETTINGS_ENTITY_ID = 'settings';
+export const SETTINGS_ENTITY_TYPE = 'Settings';
+export const SETTINGS_ENTITY_ID = 'settings';
 
 // Datenschutz-relevante Felder (DSB-Kontakt, Aufbewahrung, Formulare,
 // SCC-Vorlage) – siehe UpdatePrivacyDto. Eigenes Recht `privacy:*` statt
@@ -380,7 +388,11 @@ export class SettingsService {
         : '';
       return [
         row.createdAt.toISOString(),
-        metadata?.field ?? '',
+        // Für Aktionen ohne echtes Feld (z.B. "Alle löschen" bei den
+        // Job-Läufen, siehe ACTION_LABELS in settings-protocol-card.tsx
+        // fürs Frontend-Pendant) sonst leere Spalte statt einer
+        // aussagekräftigen Beschreibung.
+        metadata?.field ?? ACTION_LABELS[row.action] ?? row.action,
         metadata?.before ?? '',
         metadata?.after ?? '',
         user,

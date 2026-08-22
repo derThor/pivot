@@ -10,5 +10,6 @@ import { PrivacyModule } from '../privacy/privacy.module';
   imports: [SettingsModule, MailerModule, PrivacyModule],
   controllers: [DeletionRequestsController],
   providers: [DeletionRequestsService, DeletionRequestReminderSchedulerService],
+  exports: [DeletionRequestReminderSchedulerService],
 })
 export class DeletionRequestsModule {}

@@ -742,6 +742,7 @@ export interface AppSettings {
   notifyDeletionRequests: boolean;
   notifyTrashExpiring: boolean;
   notificationRecipientEmail: string | null;
+  jobsGloballyPaused: boolean;
   sccTemplateMediaId: string | null;
   /** Nur bei `getPublicSettings()` (GET /settings/public) vorhanden, nicht bei `getSettings()`. */
   sccTemplateMedia?: { id: string; filename: string; url: string } | null;
@@ -821,6 +822,55 @@ export interface SmtpSettings {
 
 export function getSmtpSettings() {
   return apiFetch<SmtpSettings>("/settings/smtp");
+}
+
+// Einstellungen → "Jobs"-Reiter (Nutzervorgabe, 2026-08-22, 1:1 nach
+// Bildvorlage "Geplante Aufgaben"/"Letzte Läufe"). Nur die drei real
+// vorhandenen Cron-Jobs (siehe JobsService.definitions im Backend).
+export interface ScheduledJob {
+  id: string;
+  title: string;
+  description: string;
+  cronExpression: string;
+  isPaused: boolean;
+  isCritical: boolean;
+  notifyOnFailure: boolean;
+  effectivelyPaused: boolean;
+  lastRunAt: string | null;
+  lastRunDurationMs: number | null;
+  lastRunStatus: string | null;
+  lastRunMessage: string | null;
+  totalRuns: number;
+  totalErrors: number;
+  nextRunAt: string | null;
+}
+
+export interface ScheduledJobsResponse {
+  items: ScheduledJob[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
+export function getJobs(params?: { page?: number; pageSize?: number }) {
+  return apiFetch<ScheduledJobsResponse>(`/jobs${taxonomyQuery(params)}`);
+}
+
+export interface JobRunEntry {
+  id: string;
+  jobId: string;
+  jobTitle: string;
+  startedAt: string;
+  durationMs: number;
+  status: string;
+  message: string | null;
+}
+
+export interface JobRunsResponse {
+  items: JobRunEntry[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
+export function getJobRuns(params?: { page?: number; pageSize?: number }) {
+  return apiFetch<JobRunsResponse>(`/jobs/runs${taxonomyQuery(params)}`);
 }
 
 // Eigener, engerer Endpoint für `company:read` (Nutzervorgabe, 2026-08-21:

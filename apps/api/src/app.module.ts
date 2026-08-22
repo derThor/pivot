@@ -33,6 +33,7 @@ import { PrivacyIncidentsModule } from './privacy-incidents/privacy-incidents.mo
 import { PrivacyModule } from './privacy/privacy.module';
 import { TrashModule } from './trash/trash.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { JobsModule } from './jobs/jobs.module';
 import { validateEnv } from './common/config/env.validation';
 
 @Module({
@@ -74,6 +75,7 @@ import { validateEnv } from './common/config/env.validation';
     PrivacyModule,
     TrashModule,
     NotificationsModule,
+    JobsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

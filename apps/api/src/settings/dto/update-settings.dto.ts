@@ -458,4 +458,11 @@ export class UpdateSettingsDto {
   @ValidateIf((_, value) => value !== null)
   @IsEmail()
   notificationRecipientEmail?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Pausiert alle nicht-kritischen geplanten Jobs.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  jobsGloballyPaused?: boolean;
 }

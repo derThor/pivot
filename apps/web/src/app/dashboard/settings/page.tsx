@@ -1,6 +1,8 @@
 import { SettingsForm } from "@/components/settings-form";
 import { PageContent } from "@/components/page-content";
 import {
+  getJobRuns,
+  getJobs,
   getMediaFolders,
   getSettings,
   getSettingsChanges,
@@ -11,21 +13,32 @@ import {
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ webhooksPage?: string; protocolPage?: string }>;
+  searchParams: Promise<{
+    webhooksPage?: string;
+    protocolPage?: string;
+    jobsPage?: string;
+    jobsRunsPage?: string;
+  }>;
 }) {
-  const { webhooksPage: webhooksPageParam, protocolPage: protocolPageParam } =
-    await searchParams;
+  const {
+    webhooksPage: webhooksPageParam,
+    protocolPage: protocolPageParam,
+    jobsPage: jobsPageParam,
+    jobsRunsPage: jobsRunsPageParam,
+  } = await searchParams;
   const webhooksPage = Number(webhooksPageParam) || 1;
   const protocolPage = Number(protocolPageParam) || 1;
+  const jobsPage = Number(jobsPageParam) || 1;
+  const jobsRunsPage = Number(jobsRunsPageParam) || 1;
 
   const [settings, folders] = await Promise.all([
     getSettings(),
     getMediaFolders(),
   ]);
-  // Eigener Query-Param `webhooksPage`/`protocolPage` statt `page`, damit
-  // sich die Paginierungen der einzelnen Einstellungen-Abschnitte nicht
-  // gegenseitig überschreiben.
-  const [webhooks, settingsChanges, smtp] = await Promise.all([
+  // Eigener Query-Param `webhooksPage`/`protocolPage`/`jobsRunsPage` statt
+  // `page`, damit sich die Paginierungen der einzelnen
+  // Einstellungen-Abschnitte nicht gegenseitig überschreiben.
+  const [webhooks, settingsChanges, smtp, jobs, jobRuns] = await Promise.all([
     getWebhooks({
       page: webhooksPage,
       pageSize: settings?.defaultPageSize ?? 10,
@@ -35,6 +48,11 @@ export default async function SettingsPage({
       pageSize: settings?.defaultPageSize ?? 10,
     }),
     getSmtpSettings(),
+    getJobs({ page: jobsPage, pageSize: settings?.defaultPageSize ?? 10 }),
+    getJobRuns({
+      page: jobsRunsPage,
+      pageSize: settings?.defaultPageSize ?? 10,
+    }),
   ]);
   // Nach Namen filtern statt nur `isSystem`: seit dem "Avatare"-Systemordner
   // (Profilfoto-Upload, 2026-08-17) gibt es mehr als einen isSystem-Ordner.
@@ -76,6 +94,18 @@ export default async function SettingsPage({
           secure: "starttls",
           verifiedAt: null,
           configured: false,
+        }
+      }
+      jobs={
+        jobs ?? {
+          items: [],
+          meta: { page: 1, pageSize: 10, total: 0, pageCount: 1 },
+        }
+      }
+      jobRuns={
+        jobRuns ?? {
+          items: [],
+          meta: { page: 1, pageSize: 10, total: 0, pageCount: 1 },
         }
       }
     />

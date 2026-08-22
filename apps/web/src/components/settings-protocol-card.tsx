@@ -85,6 +85,16 @@ const FIELD_LABELS: Record<string, string> = {
   emailSmtp: "E-Mail-Versand (SMTP)",
 };
 
+// Für Protokoll-Einträge, die kein Feld ändern, sondern eine Aktion sind
+// (kein `metadata.field`, siehe `title`-Fallback unten) – ohne diese
+// Zuordnung würde der rohe Action-String stehen (z.B.
+// "settings.job_runs_deleted"). Bisher nur "Alle löschen" bei den
+// Job-Läufen unter Einstellungen → Jobs (Nutzervorgabe, 2026-08-22:
+// "letzte läufe alle löschen muss mit in das protokoll").
+const ACTION_LABELS: Record<string, string> = {
+  "settings.job_runs_deleted": "Job-Lauf-Historie gelöscht",
+};
+
 function humanizeField(field: string) {
   return FIELD_LABELS[field] ?? field.replace(/([a-z])([A-Z])/g, "$1 $2");
 }
@@ -173,7 +183,7 @@ export function SettingsProtocolCard({
               const field = change.metadata?.field ?? "";
               const title = field
                 ? describeSettingsChange(field, change.metadata?.after)
-                : change.action;
+                : (ACTION_LABELS[change.action] ?? change.action);
               const isLast = index === items.length - 1;
               return (
                 <li key={change.id} className="flex gap-3">

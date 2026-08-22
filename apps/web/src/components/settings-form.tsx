@@ -13,6 +13,7 @@ import {
   Palette,
   Plug,
   Shield,
+  Timer,
   Webhook,
   type LucideIcon,
 } from "lucide-react";
@@ -36,10 +37,14 @@ import { WebhookDialog } from "@/components/webhook-dialog";
 import { WebhookFailureBanner } from "@/components/webhook-failure-banner";
 import { WebhooksManager } from "@/components/webhooks-manager";
 import { SettingsServicesCard } from "@/components/settings-services-card";
+import { ScheduledJobsCard } from "@/components/scheduled-jobs-card";
+import { RecentJobRunsCard } from "@/components/recent-job-runs-card";
 import { PaginationControls } from "@/components/pagination-controls";
 import { cn } from "@/lib/utils";
 import type {
   AppSettings,
+  JobRunsResponse,
+  ScheduledJobsResponse,
   SettingsChangesResponse,
   SmtpSettings,
   WebhookListResponse,
@@ -96,6 +101,7 @@ type SectionId =
   | "integrations"
   | "webhooks"
   | "notifications"
+  | "jobs"
   | "protocol";
 
 const SECTIONS: {
@@ -117,6 +123,12 @@ const SECTIONS: {
     icon: Shield,
   },
   {
+    id: "notifications",
+    title: "Benachrichtigungen",
+    subtitle: "Systembenachrichtigungen",
+    icon: Bell,
+  },
+  {
     id: "display",
     title: "Darstellung",
     subtitle: "Logo, Akzentfarbe, Dichte",
@@ -135,10 +147,10 @@ const SECTIONS: {
     icon: Webhook,
   },
   {
-    id: "notifications",
-    title: "Benachrichtigungen",
-    subtitle: "Systembenachrichtigungen",
-    icon: Bell,
+    id: "jobs",
+    title: "Jobs",
+    subtitle: "Geplante Aufgaben",
+    icon: Timer,
   },
   {
     id: "protocol",
@@ -170,12 +182,16 @@ export function SettingsForm({
   webhooks,
   settingsChanges,
   smtp,
+  jobs,
+  jobRuns,
 }: {
   settings: AppSettings;
   logoFolderId: string | null;
   webhooks: WebhookListResponse | null;
   settingsChanges: SettingsChangesResponse | null;
   smtp: SmtpSettings;
+  jobs: ScheduledJobsResponse;
+  jobRuns: JobRunsResponse;
 }) {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<SectionId>("access");
@@ -1118,6 +1134,16 @@ export function SettingsForm({
 
             {activeSection === "notifications" && (
               <NotificationSettingsCard settings={settings} />
+            )}
+
+            {activeSection === "jobs" && (
+              <div className="flex flex-col gap-4">
+                <ScheduledJobsCard jobs={jobs} />
+                <RecentJobRunsCard
+                  runs={jobRuns}
+                  jobsGloballyPaused={settings.jobsGloballyPaused}
+                />
+              </div>
             )}
 
             {activeSection === "protocol" && (

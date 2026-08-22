@@ -600,69 +600,81 @@ platzierten "2FA"-Spalte in der Benutzer-Tabelle.
 
 ### 3.1 – Echter E-Mail-Versand (SMTP)
 
-Jede System-Mail in der App läuft aktuell über einen reinen Dev-Stub
-(`apps/api/src/mailer/mailer.service.ts`) – loggt nur, kein SMTP
-angebunden. Über mehrere Sessions sind bereits **11 verschiedene,
-bereits verdrahtete Mail-Auslöser** entstanden, die alle nur auf
-echten Versand warten, **plus 2 UI-Platzhalter**, die noch nicht
-einmal einen Backend-Aufruf haben. Je länger das aufgeschoben wird,
-desto mehr Stellen muss der spätere Umbau anfassen. Daher als eigener,
-priorisierter Punkt vorgemerkt statt weiter nebenbei mitzuschleppen.
-Vollständig durchsucht (2026-08-19, zuletzt aktualisiert nach der
-Betroffenenanfragen-Neugestaltung noch am selben Tag).
+**Update 2026-08-22: größtenteils umgesetzt.** Nutzervorgabe "lass uns
+jetzt email versand bauen unter einstellungen und integration die
+settings dafür als dienst". Details siehe
+[settings-page-redesign.md](../knowledge-base/frontend/settings-page-redesign.md)
+(Integrationen/Dienste-Karte) und
+[toast-and-system-messages.md](../knowledge-base/frontend/toast-and-system-messages.md)
+(Benachrichtigungsempfänger). Ursprünglicher Bestand (2026-08-19): 11
+bereits verdrahtete Mail-Auslöser + 2 UI-Platzhalter ohne Backend-Aufruf.
 
-- [ ] Provider-Entscheidung (SMTP-Relay wie Postmark/SendGrid/Amazon SES
-      vs. reines SMTP gegen einen vom Kunden vorgegebenen Mailserver) +
-      Konfiguration (Host/Port/User/Passwort/Absenderadresse/TLS) über
-      `AppSettings` (Dashboard, analog zu anderen Integrationen) statt
-      nur `.env`
-- [ ] `MailerService` von Logger-Stub auf echten Versand umstellen
-      (z.B. `nodemailer`), inkl. Fehlerbehandlung – ein Zustellfehler
-      darf nicht nur im Server-Log verschwinden, muss im Dashboard
-      sichtbar sein (z.B. `SystemMessage`-Hinweis, analog zu Webhook-
-      Fehlschlägen)
-- [ ] Test-Versand-Button in den Einstellungen, um eine Konfiguration zu
-      prüfen, bevor sie scharfgeschaltet wird
-- [ ] Echte HTML-Vorlagen (+ Text-Fallback) für jeden bereits
-      verdrahteten Auslöser, aktuell nur reine Log-Zeilen ohne Layout:
-  - [ ] Konto-Verifikation nach Registrierung
-        (`sendVerificationEmail`, `auth.service.ts`, siehe Phase 2a)
-  - [ ] Passwort-Reset, öffentliches Self-Service-Formular
-        (`sendPasswordResetEmail` über `requestPasswordReset()`,
-        `auth.service.ts:542`, siehe Phase 2a)
-  - [ ] Passwort-Reset, Admin-ausgelöst – Button "Passwort
-        zurücksetzen" auf der Benutzer-Seite
-        (`user-edit-view.tsx:284` → `adminRequestPasswordReset()` →
-        `sendPasswordResetEmail`, `auth.service.ts:762`; gleiche
-        Mail-Art wie oben, aber eigener Auslöser/Kontext)
-  - [ ] Benutzer einladen – Button "Benutzer einladen"
-        (`create-user-dialog.tsx:99`, läuft über denselben
+- [x] Konfiguration (Host/Port/User/Passwort/Absenderadresse/
+      Verschlüsselung) über `AppSettings`, UI unter Einstellungen →
+      Integrationen → Dienste (nicht wie ursprünglich geplant unter
+      Benachrichtigungen – dortiger Platzhalter wurde stattdessen
+      entfernt). Provider-Entscheidung fiel auf reines SMTP gegen einen
+      vom Kunden vorgegebenen Mailserver (z.B. web.de) statt einen
+      Relay-Dienst wie Postmark/SendGrid anzubinden – passend zu einem
+      einzelnen, vom Kunden selbst betriebenen Postausgang.
+- [x] `MailerService` von Logger-Stub auf echten Versand umgestellt
+      (`nodemailer`), inkl. Fehlerbehandlung (Try/Catch + Server-Log).
+      **Nicht umgesetzt:** ein Zustellfehler ist weiterhin nur im
+      Server-Log sichtbar, nicht als `SystemMessage`-Hinweis im
+      Dashboard (ursprünglich mitgeplant) – einzige Ausnahme: der neue
+      "Jobs"-Reiter kann bei einem fehlgeschlagenen Job-Lauf an den
+      Benachrichtigungsempfänger mailen, siehe
+      [scheduled-jobs-tab.md](../knowledge-base/tooling/scheduled-jobs-tab.md),
+      das deckt aber nicht alle 11 Mail-Auslöser ab.
+- [x] Test-Versand-Button ("Testmail senden" im SMTP-Einrichten-Dialog,
+      Zieladresse frei wählbar – nach einem Bugreport korrigiert, ging
+      anfangs fälschlich immer an die Konto-Adresse des Pivot-Nutzers
+      statt an eine echte, vom Nutzer kontrollierte Adresse).
+- [ ] Echte HTML-Vorlagen (+ Text-Fallback) für jeden Auslöser – **alle
+      11 Auslöser verschicken jetzt echte Mails**, aber weiterhin als
+      reiner Text (gleicher Wortlaut wie vorher im Dev-Stub-Log, nur mit
+      zusätzlichem Betreff; CSV-Berichte gehen als Anhang statt nur als
+      Zeilenzahl im Text) – kein HTML-Layout:
+  - [x] Konto-Verifikation nach Registrierung (`sendVerificationEmail`)
+  - [x] Passwort-Reset, öffentliches Self-Service-Formular
+        (`sendPasswordResetEmail` über `requestPasswordReset()`)
+  - [x] Passwort-Reset, Admin-ausgelöst (`adminRequestPasswordReset()`
+        → `sendPasswordResetEmail`)
+  - [x] Benutzer einladen (läuft über denselben
         Admin-Passwort-Reset-Mechanismus wie oben)
-  - [ ] DSB-Vorfall-Benachrichtigung (`sendDpoIncidentNotification`,
-        Datenschutz-Seite → Datenschutzbeauftragter-Tab, automatisch
-        bei neuem Vorfall, kein eigener Button)
-  - [ ] DSB-Monatsbericht (`sendDpoMonthlyReport`, monatlicher Cron,
-        `PrivacyReportSchedulerService`, kein eigener Button)
-  - [ ] Auskunft nach Art. 15 DSGVO – Button "Auskunft senden"
-        (`subject-access-request-dialog.tsx` → `sendSubjectAccessReport`,
-        Betroffenenrechte-Karte, siehe
-        [privacy-page.md](../knowledge-base/auth/privacy-page.md))
-  - [ ] Betroffenenanfragen-Log: Eingangsbestätigung
-        (`sendDeletionRequestAcknowledgement`, automatisch beim
-        Anlegen, Automatik-Schalter)
-  - [ ] Betroffenenanfragen-Log: Rückfrage an Absender – Button
-        "Rückfrage an Absender" öffnet ein Popup mit Freitext-Feld,
-        der Admin formuliert die Nachricht selbst
-        (`sendDeletionRequestFollowUp`, siehe
-        [data-subject-requests.md](../knowledge-base/auth/data-subject-requests.md))
-  - [ ] Betroffenenanfragen-Log: Fristerinnerung an den DSB
-        (`sendDeletionRequestDeadlineReminder`, täglicher Cron,
-        `DeletionRequestReminderSchedulerService`, Automatik-Schalter)
-  - [ ] Auftragsverarbeiter-Tab: "AV-Vertrag anfordern" – Karte "Offene
-        Punkte" (`sendDataProcessorContractRequest`, siehe
-        [privacy-page.md](../knowledge-base/auth/privacy-page.md))
-- [ ] Bounce-/Zustellfehler zumindest protokollieren (kein Anspruch auf
-      vollständiges Bounce-Handling in der ersten Ausbaustufe)
+  - [x] DSB-Vorfall-Benachrichtigung (`sendDpoIncidentNotification`)
+  - [x] DSB-Monatsbericht (`sendDpoMonthlyReport`, jetzt über den
+        "Jobs"-Reiter editierbar statt festem Cron, siehe
+        [scheduled-jobs-tab.md](../knowledge-base/tooling/scheduled-jobs-tab.md))
+  - [x] Auskunft nach Art. 15 DSGVO – Button "Auskunft senden"
+        (`sendSubjectAccessReport`; Bugfix am selben Tag: Button zeigte
+        immer "Erfolg" an, auch wenn der Versand fehlschlug)
+  - [x] Betroffenenanfragen-Log: Eingangsbestätigung
+        (`sendDeletionRequestAcknowledgement`)
+  - [x] Betroffenenanfragen-Log: Rückfrage an Absender
+        (`sendDeletionRequestFollowUp`; gleicher Bugfix wie bei
+        "Auskunft senden" – zeigte ebenfalls immer "Erfolg")
+  - [x] Betroffenenanfragen-Log: Fristerinnerung an den DSB
+        (`sendDeletionRequestDeadlineReminder`, jetzt über den
+        "Jobs"-Reiter editierbar statt festem Cron)
+  - [x] Auftragsverarbeiter-Tab: "AV-Vertrag anfordern"
+        (`sendDataProcessorContractRequest`)
+- [ ] Bounce-/Zustellfehler zumindest protokollieren (weiterhin nicht
+      umgesetzt)
+
+**Zusätzlich, selbiger Tag: Systembenachrichtigungen können jetzt
+ebenfalls mailen** (war ursprünglich nicht Teil dieses Punkts) – neues
+Feld `notificationRecipientEmail`, eine gemeinsame Adresse für alle
+`notify*`-Kategorien (Wartungsmodus, Speicherplatz, Webhooks, ...),
+Versand sofort bei jedem neuen Vorfall. Siehe
+[toast-and-system-messages.md](../knowledge-base/frontend/toast-and-system-messages.md).
+
+**Weiterhin offen, nicht Teil dieser Runde:** "Mein Konto" → Tab
+"Benachrichtigungen" (pro Nutzer, Opt-in/-out pro Ereignistyp) – das
+oben gebaute `notificationRecipientEmail` ist eine EINZELNE, geteilte
+Admin-Adresse für Systembenachrichtigungen, kein Ersatz für ein
+per-Nutzer-Präferenzmodell. Der Platzhaltertext in `my-account-view.tsx`
+(~Z. 334-341) besteht unverändert fort.
 
 **Zusätzlich: zwei UI-Bereiche, die E-Mail-Funktionen ankündigen, aber
 noch nicht einmal einen Backend-Aufruf haben** (brauchen also nicht nur

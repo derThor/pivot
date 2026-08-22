@@ -352,13 +352,17 @@ export function NavigationItemDialog({
               />
             </div>
           )}
-          <label className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-2.5">
             <Checkbox
+              id="nav-item-new-tab"
+              className="size-5 rounded-md"
               checked={openInNewTab}
               onCheckedChange={(checked) => setOpenInNewTab(checked === true)}
             />
-            In neuem Tab öffnen
-          </label>
+            <Label htmlFor="nav-item-new-tab" className="text-sm font-normal">
+              In neuem Tab öffnen
+            </Label>
+          </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button

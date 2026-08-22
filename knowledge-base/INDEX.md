@@ -20,6 +20,7 @@ Themenbereiche/Umgruppierungen: siehe [PROCESS.md](./PROCESS.md)).
 | [frontend-auth-flow.md](./auth/frontend-auth-flow.md) | httpOnly-Cookie-Session via BFF-Route-Handler + Middleware-Gate/Silent-Refresh (Frontend) | 2026-08-02 |
 | [rbac-rework.md](./auth/rbac-rework.md) | Von 4 festen Rollen zu granularem, admin-verwaltbarem RBAC (Role/Permission-Tabellen) | 2026-08-03 |
 | [settings-and-password-policy.md](./auth/settings-and-password-policy.md) | Admin-Einstellungen (Singleton), konfigurierbare Passwort-Policy, Firmenangaben, Wartungsmodus, Medien-Speicherkontingent | 2026-08-15 |
+| [security-tab-hardening.md](./auth/security-tab-hardening.md) | Sicherheit-Tab: Passwort-Historie/HIBP-Leak-Check, granulare 2FA-Pflichtstufen, globale Admin-Aktionen (Alle Sitzungen beenden, Passwort-Reset erzwingen); Bugfixes: eigene Sitzung nach "Alle Sitzungen beenden" nicht mit-abgemeldet, 2FA-Zwang griff erst nach bis zu 15 Min. | 2026-08-22 |
 | [self-service-auth-flows.md](./auth/self-service-auth-flows.md) | Registrierung, E-Mail-Verifikation (Dev-Stub), Passwort ändern/vergessen, Self-Service-Profil | 2026-08-03 |
 | [admin-activation-and-permission-nav.md](./auth/admin-activation-and-permission-nav.md) | Admin-Freischaltung für Registrierungen (Einstellung), rollenabhängige Navigation | 2026-08-03 |
 | [read-permissions-and-dashboard-access.md](./auth/read-permissions-and-dashboard-access.md) | Lese-Rechte pro Ressource (`content:read` etc.) + `Role.canAccessDashboard`, neue Default-Rolle "Nutzer" | 2026-08-03 |
@@ -70,7 +71,8 @@ Themenbereiche/Umgruppierungen: siehe [PROCESS.md](./PROCESS.md)).
 | [bulk-selection-and-delete.md](./frontend/bulk-selection-and-delete.md) | Massenauswahl + Sammel-Löschen für alle Listen-Ansichten (`useSelection`, `SelectionToolbar`) | 2026-08-04 |
 | [pagination.md](./frontend/pagination.md) | URL-getriebene Pagination (`?page=`) für alle Listen-Seiten (`PaginationControls`) | 2026-08-05 |
 | [design-refresh.md](./frontend/design-refresh.md) | Koralle/Orange-Theme, Sidebar/Header-Neugestaltung, Kebab-Menüs in allen Listen, feste Logos, responsive Auth-Shell, globaler `destructive`-Button-Stil, Breadcrumb-Farben | 2026-08-15 |
-| [toast-and-system-messages.md](./frontend/toast-and-system-messages.md) | Toast-Benachrichtigungen (`app-toast.tsx`) + Inline-Systemmeldungen (`SystemMessage`), 11 Kategorien (Wartungsmodus...Papierkorb läuft ab) einzeln ab-/anschaltbar; Standing Rule: jede neue Seiten-Warnung braucht auch eine Kategorie hier | 2026-08-19 |
+| [toast-and-system-messages.md](./frontend/toast-and-system-messages.md) | Toast-Benachrichtigungen (`app-toast.tsx`) + Inline-Systemmeldungen (`SystemMessage`), 11 Kategorien (Wartungsmodus...Papierkorb läuft ab) einzeln ab-/anschaltbar; Standing Rule: jede neue Seiten-Warnung braucht auch eine Kategorie hier; seit 2026-08-22 optionale E-Mail-Zustellung an einen gemeinsamen Benachrichtigungsempfänger | 2026-08-22 |
+| [settings-page-redesign.md](./frontend/settings-page-redesign.md) | Einstellungsseite: linke Sidebar-Navigation (7→8 Bereiche) statt Tabs-Leiste; Protokoll-Tab (echte Änderungshistorie + CSV/JSON-Export), Integrationen/Dienste (echter SMTP-Mailversand), Mail-Absender-Platzhalter bei Benachrichtigungen wieder entfernt | 2026-08-22 |
 | [header-admin-menu-and-search.md](./frontend/header-admin-menu-and-search.md) | Header-Umbau: "Verwaltung" von Sidebar in Header-Dropdown, echtes Suchfeld + separater Strg-K-Befehlspalette-Trigger, Glocke verlinkt `/dashboard/system-messages` mit rotem Zähler-Badge | 2026-08-16 |
 | [row-action-icon-buttons.md](./frontend/row-action-icon-buttons.md) | Tags-Seite neu (Übersichtsleiste + Tabelle, `Tag.createdAt`/`mediaCount`), globale Umstellung Kebab-Menü → immer sichtbare Bearbeiten-/Löschen-Icon-Buttons (`RowActionButtons`) | 2026-08-16 |
 | [required-field-markers.md](./frontend/required-field-markers.md) | `Label`/`FormLabel` bekamen ein `required`-Prop (roter `*`), app-weit auf ~20 echte Pflichtfelder angewendet, anhand echter Validierung geprüft statt Label-Text geraten | 2026-08-19 |
@@ -87,6 +89,7 @@ Themenbereiche/Umgruppierungen: siehe [PROCESS.md](./PROCESS.md)).
 | [tooling-pnpm-build-approvals.md](./tooling/tooling-pnpm-build-approvals.md) | pnpm-Build-Skript-Freigaben (`allowBuilds`) | 2026-08-02 |
 | [e2e-testing-setup.md](./tooling/e2e-testing-setup.md) | Erste E2E-Tests (Auth-/Content-Flow), eigene Testdatenbank | 2026-08-02 |
 | [backend-caching.md](./tooling/backend-caching.md) | App-weiter, wiederverwendbarer In-Memory-`CacheService` (`getOrSet`/`clear`), "Cache leeren" unter Einstellungen | 2026-08-16 |
+| [scheduled-jobs-tab.md](./tooling/scheduled-jobs-tab.md) | "Jobs"-Reiter unter Einstellungen: die 3 echten Cron-Jobs von statischen `@Cron()`-Dekoratoren auf dynamische, zur Laufzeit editierbare `SchedulerRegistry`-Jobs umgebaut, Lauf-Historie, kritisch/pausiert-Semantik, Fehler-Mail | 2026-08-22 |
 
 ## Offene Wissenslücken (bewusst vermerkt)
 

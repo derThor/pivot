@@ -1,5 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Injectable } from '@nestjs/common';
 import { SettingsService } from '../settings/settings.service';
 import { MailerService } from '../mailer/mailer.service';
 import { PrivacyService } from './privacy.service';
@@ -7,26 +6,31 @@ import { PrivacyService } from './privacy.service';
 /**
  * Datenschutzbeauftragter-Tab, Schalter "Monatsbericht per E-Mail"
  * (Nutzervorgabe, 2026-08-18) – nutzt denselben CSV-Generator wie der
- * manuelle "Bericht erzeugen"-Button, läuft am Monatsersten früh morgens.
- * Gleiches Cron-Muster wie `ContentSchedulerService`.
+ * manuelle "Bericht erzeugen"-Button. Läuft seit dem "Jobs"-Reiter
+ * (Nutzervorgabe, 2026-08-22) nicht mehr über einen eigenen
+ * `@Cron()`-Dekorator, sondern wird von `JobsService` dynamisch über
+ * `SchedulerRegistry` getriggert (editierbarer Zeitplan) – die
+ * Rückgabe ist ein kurzer Klartext-Status für den zugehörigen Job-Lauf.
  */
 @Injectable()
 export class PrivacyReportSchedulerService {
-  private readonly logger = new Logger(PrivacyReportSchedulerService.name);
-
   constructor(
     private readonly settings: SettingsService,
     private readonly mailer: MailerService,
     private readonly privacyService: PrivacyService,
   ) {}
 
-  @Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_MIDNIGHT)
-  async sendMonthlyReport() {
+  async sendMonthlyReport(): Promise<string> {
     const settings = await this.settings.get();
-    if (!settings.dpoMonthlyReportEnabled || !settings.dpoEmail) return;
+    if (!settings.dpoMonthlyReportEnabled) {
+      return 'Übersprungen: Automatik deaktiviert.';
+    }
+    if (!settings.dpoEmail) {
+      return 'Übersprungen: kein DSB-Kontakt hinterlegt.';
+    }
 
     const csv = await this.privacyService.generateReportCsv();
     await this.mailer.sendDpoMonthlyReport(settings.dpoEmail, csv);
-    this.logger.log(`Monatsbericht an DSB ${settings.dpoEmail} gesendet.`);
+    return `Monatsbericht an ${settings.dpoEmail} gesendet.`;
   }
 }

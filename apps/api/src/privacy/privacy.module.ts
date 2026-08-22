@@ -27,6 +27,6 @@ import { MailerModule } from '../mailer/mailer.module';
   // Von DeletionRequestsModule genutzt: "Datenauszug erstellen" generiert
   // bei einem verknüpften Konto den echten Art.-15-Bericht statt eine
   // zweite CSV-Erzeugung zu pflegen.
-  exports: [PrivacyService],
+  exports: [PrivacyService, PrivacyReportSchedulerService],
 })
 export class PrivacyModule {}

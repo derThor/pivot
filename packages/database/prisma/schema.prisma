@@ -188,6 +188,12 @@ model AppSettings {
   // DSB-Kontakt). null = keine E-Mail-Zustellung, nur die bestehenden
   // In-App-Banner/Glocke (siehe NotificationsService.sync()).
   notificationRecipientEmail String?
+  // "Alle Jobs pausieren" auf dem neuen "Jobs"-Reiter (Nutzervorgabe,
+  // 2026-08-22) – bewusst EIGENSTÄNDIG vom bestehenden
+  // maintenanceModeEnabled (Nutzerentscheidung: kein gemeinsamer Schalter,
+  // obwohl die Bildvorlage "Wartungsmodus" nennt). Kritische Jobs
+  // (ScheduledJob.isCritical) ignorieren diesen Schalter.
+  jobsGloballyPaused Boolean @default(false)
   // Auftragsverarbeiter-Tab, Karte "Drittlandtransfer" (Nutzervorgabe,
   // 2026-08-20): admin-hochgeladene SCC-Vorlage (Standardvertragsklauseln)
   // zum Download – kein erfundenes Rechtsmuster im Repo, echte Datei nötig.
@@ -643,6 +649,64 @@ model NotificationEmailLog {
   sentAt    DateTime @default(now())
 
   @@map("notification_email_log")
+}
+
+// Einstellungen → "Jobs"-Reiter (Nutzervorgabe, 2026-08-22, 1:1 nach
+// Bildvorlage "Geplante Aufgaben"/"Letzte Läufe"). `id` ist ein stabiler,
+// im Code vergebener Schlüssel (z.B. "content-publish"), keine generierte
+// ID – JobsService.onModuleInit() sorgt per Upsert dafür, dass für jeden
+// tatsächlich im Code registrierten Job (siehe JobsService.definitions)
+// genau eine Zeile existiert. NUR die drei bereits real vorhandenen
+// Cron-Jobs (vorher `@Cron()`-Dekoratoren in ContentSchedulerService/
+// DeletionRequestReminderSchedulerService/PrivacyReportSchedulerService,
+// jetzt hier dynamisch über `SchedulerRegistry` verwaltet, damit
+// `cronExpression` zur Laufzeit editierbar ist) – bewusst KEINE
+// Bildvorlage-Jobs ohne echte Grundlage (Papierkorb-Auto-Löschung,
+// Sitemap/Suchindex, Link-Check, Backup gibt es in dieser App nicht).
+model ScheduledJob {
+  id                String    @id
+  cronExpression    String
+  isPaused          Boolean   @default(false)
+  // Kritische Jobs lassen sich nicht (auch nicht einzeln) pausieren und
+  // ignorieren den globalen "Alle Jobs pausieren"-Schalter (siehe
+  // AppSettings.jobsGloballyPaused) – Admin legt das selbst fest, kein
+  // Job ist im Code fest als kritisch vorgegeben.
+  isCritical        Boolean   @default(false)
+  // Mailt bei einem fehlgeschlagenen Lauf an AppSettings.
+  // notificationRecipientEmail (Nutzerentscheidung, 2026-08-22: denselben
+  // Empfänger wiederverwenden statt ein eigenes Feld nur für Job-Fehler).
+  notifyOnFailure   Boolean   @default(false)
+  lastRunAt         DateTime?
+  lastRunDurationMs Int?
+  // "success" | "error"
+  lastRunStatus     String?
+  lastRunMessage    String?
+  totalRuns         Int       @default(0)
+  totalErrors       Int       @default(0)
+  updatedAt         DateTime  @updatedAt
+
+  runs JobRun[]
+
+  @@map("scheduled_jobs")
+}
+
+// Einzelner Lauf eines ScheduledJob – Grundlage für die "Letzte Läufe"-
+// Karte (app-weit über alle Jobs, mit Pagination) und den "Letztes
+// Protokoll"-Dialog (auf einen Job gefiltert). Ein pausierter Job erzeugt
+// bewusst KEINE Zeile hier ("wird übersprungen, nicht nachgeholt" laut
+// Bildvorlage) – nur tatsächlich ausgeführte Läufe.
+model JobRun {
+  id         String       @id @default(cuid())
+  jobId      String
+  job        ScheduledJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  startedAt  DateTime     @default(now())
+  durationMs Int
+  status     String
+  message    String?
+
+  @@index([jobId, startedAt])
+  @@index([startedAt])
+  @@map("job_runs")
 }
 
 model RefreshToken {
