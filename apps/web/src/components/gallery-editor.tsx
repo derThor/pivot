@@ -466,6 +466,18 @@ export function GalleryEditor({
               onCheckedChange={(checked) => setSetting("showCaptions", checked)}
             />
           )}
+          <SettingsSwitchRow
+            id="gallery-editor-scrollbar"
+            label="Scrollbar anzeigen"
+            checked={settings.scrollbar}
+            onCheckedChange={(checked) => setSetting("scrollbar", checked)}
+          />
+          <SettingsSwitchRow
+            id="gallery-editor-thumbnails"
+            label="Vorschaubilder anzeigen"
+            checked={settings.thumbnails}
+            onCheckedChange={(checked) => setSetting("thumbnails", checked)}
+          />
         </div>
       </div>
 

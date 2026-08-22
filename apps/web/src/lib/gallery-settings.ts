@@ -10,6 +10,8 @@ export const GALLERY_EFFECTS = [
   "cube",
   "coverflow",
   "cards",
+  "flip",
+  "creative",
 ] as const;
 
 export type GalleryEffect = (typeof GALLERY_EFFECTS)[number];
@@ -20,14 +22,22 @@ export const GALLERY_EFFECT_LABELS: Record<GalleryEffect, string> = {
   cube: "Würfel",
   coverflow: "Coverflow",
   cards: "Karten",
+  flip: "Umblättern",
+  creative: "Kreativ",
 };
 
 // Effekte, bei denen Swiper technisch nur eine Slide gleichzeitig zeigen
-// kann – `slidesPerView` wird für diese in der Ausgabe ignoriert.
+// kann – `slidesPerView` wird für diese in der Ausgabe ignoriert. Geprüft
+// per `overwriteParams()` in den jeweiligen Swiper-Effekt-Modulen
+// (node_modules/swiper/modules/effect-*.mjs): "flip" erzwingt
+// `slidesPerView: 1` genau wie fade/cube/cards, "creative" NICHT (echtes
+// Mehrfach-Slide-Layout möglich, siehe eigene Konfiguration in
+// gallery-swiper.tsx).
 export const SINGLE_SLIDE_EFFECTS: readonly GalleryEffect[] = [
   "fade",
   "cube",
   "cards",
+  "flip",
 ];
 
 // Effekte, bei denen Swipers `loop`-Option nachweislich kaputte
@@ -55,6 +65,21 @@ export interface GallerySettings {
   // Bildergalerie) in der Ausgabe ein/aus – unabhängig davon, ob pro Bild
   // eine Beschreibung hinterlegt ist (siehe gallery-editor.tsx).
   showCaptions: boolean;
+  // Draggable Fortschrittsleiste unter dem Slider (Swiper-Scrollbar-Modul).
+  // Anders als `loop` gibt es hier keine bekannte Effekt-Einschränkung –
+  // geprüft: `scrollbar.mjs` ruft nur `swiper.setTranslate()` auf, das
+  // greift unabhängig vom aktiven Effekt-Modul (jedes Effekt-Modul
+  // (fade/cube/flip/cards/creative) berechnet seine Slide-Transforms aus
+  // genau diesem Wert, auch im `virtualTranslate`-Modus). Deshalb KEIN
+  // `SCROLLBAR_INCOMPATIBLE_EFFECTS`-Array wie bei `loop` – für alle
+  // Effekte verfügbar, bis ein echter Fehlerfall das widerlegt.
+  scrollbar: boolean;
+  // Kleine Vorschaubilder-Leiste unter dem Slider (Swiper-Thumbs-Modul),
+  // eigene zweite Swiper-Instanz, per Klick + Sync mit der Hauptgalerie.
+  // Gleicher Befund wie bei `scrollbar`: `thumbs.mjs` ruft nur
+  // `swiper.slideTo()` auf, effekt-unabhängig – kein Inkompatibilitäts-
+  // Array nötig.
+  thumbnails: boolean;
 }
 
 export const DEFAULT_GALLERY_SETTINGS: GallerySettings = {
@@ -67,6 +92,8 @@ export const DEFAULT_GALLERY_SETTINGS: GallerySettings = {
   navigation: true,
   pagination: true,
   showCaptions: true,
+  scrollbar: false,
+  thumbnails: false,
 };
 
 function isGalleryEffect(value: unknown): value is GalleryEffect {
@@ -104,5 +131,13 @@ export function toGallerySettings(raw: unknown): GallerySettings {
       typeof obj.showCaptions === "boolean"
         ? obj.showCaptions
         : DEFAULT_GALLERY_SETTINGS.showCaptions,
+    scrollbar:
+      typeof obj.scrollbar === "boolean"
+        ? obj.scrollbar
+        : DEFAULT_GALLERY_SETTINGS.scrollbar,
+    thumbnails:
+      typeof obj.thumbnails === "boolean"
+        ? obj.thumbnails
+        : DEFAULT_GALLERY_SETTINGS.thumbnails,
   };
 }

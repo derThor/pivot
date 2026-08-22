@@ -243,6 +243,22 @@ export function GallerySettingsEditor({
             />
             <Label htmlFor="gallery-show-captions">Beschreibung anzeigen</Label>
           </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="gallery-scrollbar"
+              checked={settings.scrollbar}
+              onCheckedChange={(checked) => set("scrollbar", checked)}
+            />
+            <Label htmlFor="gallery-scrollbar">Scrollbar anzeigen</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="gallery-thumbnails"
+              checked={settings.thumbnails}
+              onCheckedChange={(checked) => set("thumbnails", checked)}
+            />
+            <Label htmlFor="gallery-thumbnails">Vorschaubilder anzeigen</Label>
+          </div>
         </div>
 
         {showPreview &&

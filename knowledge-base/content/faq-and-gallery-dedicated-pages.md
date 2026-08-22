@@ -110,3 +110,64 @@ keine hartkodierten Modul-Slugs.
 - `global-modules-manager.tsx` und der Dialog-Teil von
   `global-module-form-dialog.tsx` sind totes Gewicht (keine Importstelle
   mehr) – dem Nutzer zur Löschung vorgeschlagen, aber noch nicht bestätigt.
+
+## Update 2026-08-22: Effekte "Umblättern"/"Kreativ", Scrollbar, Vorschaubilder
+
+Nutzervorgabe: "bau den effect flip und creative in galerie zum
+auswählen ein ... außerdem als setting punkt scrollbar ... zusätzlich
+thumnails einbauen".
+
+- Zwei neue Swiper-Effekte in `GALLERY_EFFECTS` (`gallery-settings.ts`):
+  `flip` ("Umblättern") und `creative` ("Kreativ"). `flip` erzwingt wie
+  fade/cube/cards `slidesPerView: 1` (`overwriteParams()` in
+  `node_modules/swiper/modules/effect-flip.mjs`) – zu
+  `SINGLE_SLIDE_EFFECTS` ergänzt. `creative` erzwingt das NICHT (echtes
+  Mehrfach-Slide-Layout bleibt möglich).
+- `creative` hat ohne eigene Konfiguration keinen sichtbaren Übergang
+  (Swiper-Default in `effect-creative.mjs` ist ein Identitäts-Transform,
+  `translate/rotate: [0,0,0], opacity/scale: 1`) – in `gallery-swiper.tsx`
+  daher ein `creativeEffect`-Preset hinterlegt (voriges Bild nach links/
+  hinten mit Schatten, nächstes von rechts), eines von Swipers eigenen
+  offiziellen Demo-Presets, keine erfundene Konfiguration.
+- **Kein `LOOP_INCOMPATIBLE_EFFECTS`-Eintrag für flip/creative ergänzt** –
+  die bestehende Liste (`cube`/`cards`) basiert auf echter
+  Nutzerbestätigung eines konkreten Navigations-Bugs (2026-08-15), nicht
+  auf einer Effekt-Eigenschaft wie "nur eine Slide sichtbar" (sonst wäre
+  auch `fade` betroffen, ist es aber nicht). Ohne eigene Bestätigung für
+  flip/creative bleibt `loop` dort aktivierbar; sollte sich ein
+  Navigations-Bug zeigen, einfach zur Liste ergänzen.
+- **"Scrollbar"/"Vorschaubilder" bekamen bewusst KEIN
+  Inkompatibilitäts-Array** wie `LOOP_INCOMPATIBLE_EFFECTS` (Nutzervorgabe
+  wollte eigentlich "wenn nicht möglich, deaktiviert lassen wie bei
+  cards") – Recherche direkt im installierten `swiper`-Paket
+  (`node_modules/swiper/modules/scrollbar.mjs`/`thumbs.mjs`) ergab: beide
+  Module rufen nur effekt-unabhängige Kern-Methoden auf
+  (`swiper.setTranslate()` bzw. `swiper.slideTo()`), die jedes
+  Effekt-Modul (auch im `virtualTranslate`-Modus von fade/cube/flip/
+  cards/creative) für seine eigene Slide-Transform-Berechnung
+  konsumiert. Kein Quelltext-Hinweis auf eine echte Einschränkung
+  gefunden (anders als beim damaligen Loop-Bug) – deshalb für alle
+  Effekte aktivierbar gelassen, statt eine nicht belegte Einschränkung zu
+  erfinden. Falls sich in der Praxis doch ein kaputter Effekt zeigt: genau
+  das gleiche Muster wie `LOOP_INCOMPATIBLE_EFFECTS` nachrüsten.
+- `GallerySettings.scrollbar`/`.thumbnails` (beide `boolean`, Default
+  `false`) – neue Schalter "Scrollbar anzeigen"/"Vorschaubilder anzeigen"
+  in beiden Editier-Oberflächen (`gallery-editor.tsx` UND
+  `GallerySettingsEditor` in `global-module-form-dialog.tsx`, von dort
+  auch `gallery-dialog.tsx` – siehe "Relevante Dateien").
+- `gallery-swiper.tsx`: `Scrollbar`-Modul rendert (wie Navigation/
+  Pagination) automatisch über die React-Swiper-Props, keine manuelle
+  DOM-Struktur nötig. "Vorschaubilder" ist technisch eine ZWEITE,
+  kleinere Swiper-Instanz (`Thumbs`-Modul, `onSwiper`/`thumbs={{ swiper
+  }}`-Kopplung) mit quadratischen Thumbnails, aktives Thumbnail per
+  `.swiper-slide-thumb-active`-Klasse hervorgehoben (Akzentfarbe über
+  `--swiper-theme-color`, bereits bestehende CSS-Variable). Neue
+  CSS-Imports: `swiper/css/scrollbar`, `swiper/css/thumbs`,
+  `swiper/css/effect-flip`, `swiper/css/effect-creative` (alle über
+  Swipers Package-Exports-Map aufgelöst, geprüft in
+  `node_modules/swiper/package.json`).
+
+Nicht per Browser getestet (kein Headless-Browser in dieser Session
+verfügbar) – nur Typecheck/Lint sauber. Die Scrollbar-/Thumbnails-
+Kompatibilitätsaussage stützt sich auf Quelltext-Analyse, nicht auf
+gemeldetes Nutzer-Feedback wie bei `LOOP_INCOMPATIBLE_EFFECTS`.

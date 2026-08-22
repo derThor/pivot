@@ -1,23 +1,33 @@
 "use client";
 
+import { useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
+import type { Swiper as SwiperInstance } from "swiper/types";
 import {
   Autoplay,
   EffectCards,
   EffectCoverflow,
+  EffectCreative,
   EffectCube,
   EffectFade,
+  EffectFlip,
   Navigation,
   Pagination,
+  Scrollbar,
+  Thumbs,
 } from "swiper/modules";
 
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
+import "swiper/css/scrollbar";
+import "swiper/css/thumbs";
 import "swiper/css/effect-fade";
 import "swiper/css/effect-cube";
 import "swiper/css/effect-coverflow";
 import "swiper/css/effect-cards";
+import "swiper/css/effect-flip";
+import "swiper/css/effect-creative";
 
 import { resolveImageSrc } from "@/lib/media";
 import {
@@ -62,21 +72,51 @@ export function GallerySwiper({
   allowTouchMove?: boolean;
   maxHeight?: number;
 }) {
+  const [thumbsSwiper, setThumbsSwiper] = useState<SwiperInstance | null>(null);
+
   if (images.length === 0) return null;
 
   const isSingleSlideEffect = SINGLE_SLIDE_EFFECTS.includes(settings.effect);
+  const showThumbnails = settings.thumbnails && images.length > 1;
 
   return (
     <div className={cn("gallery-swiper-wrapper w-full", className)}>
       <Swiper
         // Swiper initialisiert sein Effekt-Modul (Fade/Cube/Coverflow/
-        // Cards) nur beim ersten Mount – ein späteres Ändern der `effect`-
-        // Prop allein aktualisiert die zugehörigen Transform-/Perspektive-
-        // Styles nicht sauber (kaputtes Layout bis Neuladen). `key` erzwingt
-        // bei jedem Effekt-Wechsel einen echten Remount der Swiper-Instanz.
+        // Cards/Flip/Creative) nur beim ersten Mount – ein späteres Ändern
+        // der `effect`-Prop allein aktualisiert die zugehörigen Transform-/
+        // Perspektive-Styles nicht sauber (kaputtes Layout bis Neuladen).
+        // `key` erzwingt bei jedem Effekt-Wechsel einen echten Remount der
+        // Swiper-Instanz.
         key={settings.effect}
-        modules={[Navigation, Pagination, Autoplay, EffectFade, EffectCube, EffectCoverflow, EffectCards]}
+        modules={[
+          Navigation,
+          Pagination,
+          Autoplay,
+          Scrollbar,
+          Thumbs,
+          EffectFade,
+          EffectCube,
+          EffectCoverflow,
+          EffectCards,
+          EffectFlip,
+          EffectCreative,
+        ]}
         effect={settings.effect}
+        // Ohne eigene Konfiguration hat der "creative"-Effekt keinen
+        // sichtbaren Übergang (Swiper-Default ist ein Identitäts-Transform,
+        // siehe effect-creative.mjs) – dieses Preset (vorheriges Bild nach
+        // links/hinten mit Schatten, nächstes von rechts) ist eines von
+        // Swipers eigenen offiziellen Demo-Presets, keine erfundene
+        // Konfiguration.
+        creativeEffect={
+          settings.effect === "creative" ?
+            {
+              prev: { shadow: true, translate: ["-20%", 0, -1] },
+              next: { translate: ["100%", 0, 0] },
+            }
+          : undefined
+        }
         slidesPerView={isSingleSlideEffect ? 1 : settings.slidesPerView}
         spaceBetween={isSingleSlideEffect ? 0 : settings.spaceBetween}
         // Für manche Effekte bricht `loop` die Pfeil-/Punkt-Navigation
@@ -89,6 +129,8 @@ export function GallerySwiper({
         }
         navigation={settings.navigation}
         pagination={settings.pagination ? { clickable: true } : false}
+        scrollbar={settings.scrollbar ? { draggable: true } : false}
+        thumbs={showThumbnails ? { swiper: thumbsSwiper } : undefined}
         autoplay={
           settings.autoplay
             ? { delay: settings.autoplayDelay, disableOnInteraction: false }
@@ -128,9 +170,36 @@ export function GallerySwiper({
           </SwiperSlide>
         ))}
       </Swiper>
+      {showThumbnails && (
+        <Swiper
+          onSwiper={setThumbsSwiper}
+          watchSlidesProgress
+          slidesPerView={Math.min(images.length, 6)}
+          spaceBetween={8}
+          className="gallery-swiper-thumbs mt-2 w-full"
+        >
+          {images.map((img, index) => (
+            <SwiperSlide key={`thumb-${img.url}-${index}`}>
+              <div className="aspect-square cursor-pointer overflow-hidden rounded-md bg-muted opacity-60 transition-opacity hover:opacity-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={resolveImageSrc(img.url)}
+                  alt=""
+                  className="size-full object-cover"
+                />
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      )}
       <style jsx global>{`
         .gallery-swiper-wrapper {
           --swiper-theme-color: #f97316;
+        }
+        .gallery-swiper-thumbs .swiper-slide-thumb-active > div {
+          opacity: 1;
+          outline: 2px solid var(--swiper-theme-color);
+          outline-offset: 2px;
         }
       `}</style>
     </div>
