@@ -8,6 +8,7 @@ import { MediaService } from '../media/media.service';
 import { TrashService } from '../trash/trash.service';
 import { UsersService } from '../users/users.service';
 import { LegalDocumentsService } from '../legal-documents/legal-documents.service';
+import { MailerService } from '../mailer/mailer.service';
 import { TRASH_TYPES, type TrashType } from '../trash/trash.types';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 import type { AppSettings } from '@pivot/database';
@@ -74,6 +75,7 @@ export class NotificationsService {
     private readonly trash: TrashService,
     private readonly users: UsersService,
     private readonly legalDocuments: LegalDocumentsService,
+    private readonly mailer: MailerService,
   ) {}
 
   private async buildCandidates(user: JwtPayload): Promise<Candidate[]> {
@@ -306,6 +308,16 @@ export class NotificationsService {
           readAt: new Date(),
         },
       });
+      // Mail-Sperre für diese dedupeKeys aufheben, damit ein erneutes
+      // Auftreten wieder eine Mail auslöst (siehe NotificationEmailLog-
+      // Kommentar im Schema) – sonst bliebe die allererste E-Mail für
+      // immer die einzige, egal wie oft die Bedingung später wiederkehrt.
+      const resolvedDedupeKeys = existing
+        .filter((e) => toResolve.includes(e.id))
+        .map((e) => e.dedupeKey);
+      await this.prisma.notificationEmailLog.deleteMany({
+        where: { dedupeKey: { in: resolvedDedupeKeys } },
+      });
     }
 
     const existingKeys = new Set(existing.map((e) => e.dedupeKey));
@@ -346,6 +358,45 @@ export class NotificationsService {
           createdAt: new Date(),
         },
       });
+    }
+
+    // E-Mail an die gemeinsame Empfänger-Adresse (Nutzervorgabe,
+    // 2026-08-22: "sofort bei jedem neuen Vorfall") – sowohl für ganz neue
+    // Meldungen als auch für wiederbelebte (siehe revivable oben), jeweils
+    // nur, wenn dafür noch keine Mail verschickt wurde (NotificationEmailLog).
+    if (settings.notificationRecipientEmail) {
+      const revived = revivable
+        .map((row) => candidates.find((c) => c.dedupeKey === row.dedupeKey))
+        .filter((c): c is Candidate => c !== undefined);
+      await this.notifyByEmail(
+        [...toCreate, ...revived],
+        settings.notificationRecipientEmail,
+      );
+    }
+  }
+
+  /** Verschickt für jeden Kandidaten höchstens einmal eine Mail, unabhängig
+   * davon, welcher Nutzer den auslösenden sync()-Lauf ausführt (siehe
+   * NotificationEmailLog-Kommentar im Schema) – dafür zuerst prüfen, für
+   * welche dedupeKeys schon geloggt wurde, dann nur die übrigen loggen
+   * und verschicken. */
+  private async notifyByEmail(candidates: Candidate[], recipientEmail: string) {
+    if (candidates.length === 0) return;
+    const dedupeKeys = candidates.map((c) => c.dedupeKey);
+    const alreadyLogged = await this.prisma.notificationEmailLog.findMany({
+      where: { dedupeKey: { in: dedupeKeys } },
+      select: { dedupeKey: true },
+    });
+    const loggedKeys = new Set(alreadyLogged.map((l) => l.dedupeKey));
+    const toEmail = candidates.filter((c) => !loggedKeys.has(c.dedupeKey));
+    if (toEmail.length === 0) return;
+
+    await this.prisma.notificationEmailLog.createMany({
+      data: toEmail.map((c) => ({ dedupeKey: c.dedupeKey })),
+      skipDuplicates: true,
+    });
+    for (const candidate of toEmail) {
+      await this.mailer.sendSystemNotificationEmail(recipientEmail, candidate);
     }
   }
 

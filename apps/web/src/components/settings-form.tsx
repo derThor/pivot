@@ -137,7 +137,7 @@ const SECTIONS: {
   {
     id: "notifications",
     title: "Benachrichtigungen",
-    subtitle: "Absender & Systemmails",
+    subtitle: "Systembenachrichtigungen",
     icon: Bell,
   },
   {
@@ -216,9 +216,18 @@ export function SettingsForm({
         method: "POST",
       });
       const data = await res.json().catch(() => null);
+      // "Alle Sitzungen beenden" widerruft auch den eigenen Refresh-Token
+      // (die Abfrage kennt keine Ausnahme für die aktuelle Sitzung) – ohne
+      // eigenen Logout blieb man dank des noch gültigen Access-Tokens bis
+      // zu 15 Minuten weiter angemeldet (Nutzer-Bugreport, 2026-08-22:
+      // "alle sitzungen beenden funktioniert nicht. ich bin immer noch
+      // angemeldet"). Gleiches Muster wie change-password-form.tsx.
+      await fetch("/api/auth/logout", { method: "POST" });
       toastEdited(
-        `Alle Sitzungen wurden beendet${data?.count != null ? ` (${data.count})` : ""}.`,
+        `Alle Sitzungen wurden beendet${data?.count != null ? ` (${data.count})` : ""}. Du wirst abgemeldet.`,
       );
+      router.push("/login");
+      router.refresh();
     } finally {
       setIsRevokingAllSessions(false);
     }
@@ -1108,13 +1117,7 @@ export function SettingsForm({
             )}
 
             {activeSection === "notifications" && (
-              <div className="flex flex-col gap-4">
-                <NotificationSettingsCard settings={settings} />
-                <PlaceholderCard
-                  title="Mail-Absender"
-                  note="Ein eigener Mail-Absender und der Versand von Systemmails sind in Vorbereitung und folgen in einem späteren Ausbauschritt."
-                />
-              </div>
+              <NotificationSettingsCard settings={settings} />
             )}
 
             {activeSection === "protocol" && (

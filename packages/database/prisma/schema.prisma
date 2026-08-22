@@ -181,6 +181,13 @@ model AppSettings {
   dsrDeadlineReminderEnabled   Boolean @default(true)
   notifyDeletionRequests       Boolean @default(true)
   notifyTrashExpiring          Boolean @default(true)
+  // Gemeinsame Empfänger-Adresse für alle Systembenachrichtigungen
+  // (Nutzervorgabe, 2026-08-22: "wie stelle ich ein, das die
+  // benachrichtigungen an eine bestimmte email gesendet werden" – eine
+  // Adresse für alle Kategorien statt pro Kategorie einzeln, analog zum
+  // DSB-Kontakt). null = keine E-Mail-Zustellung, nur die bestehenden
+  // In-App-Banner/Glocke (siehe NotificationsService.sync()).
+  notificationRecipientEmail String?
   // Auftragsverarbeiter-Tab, Karte "Drittlandtransfer" (Nutzervorgabe,
   // 2026-08-20): admin-hochgeladene SCC-Vorlage (Standardvertragsklauseln)
   // zum Download – kein erfundenes Rechtsmuster im Repo, echte Datei nötig.
@@ -582,8 +589,11 @@ model User {
 // nicht (Nutzerentscheidung, 2026-08-21: "weglassen"); ebenso keine
 // "Formulare"-Kategorie (kein Formular-Modul vorhanden), kein Konten-ohne-
 // 2FA-/Geo-Anomalie-Check (existieren nicht als berechnete Bedingung) und
-// keine E-Mail-Zustellung/Ruhezeiten (es gibt keinen echten Mail-Versand
-// für diese Kategorien, siehe MailerService-Dev-Stub-Kommentare).
+// keine Ruhezeiten (Digest/Zeitfenster) – Nutzerentscheidung, 2026-08-22:
+// "sofort bei jedem neuen Vorfall" statt gesammelt. E-Mail-Zustellung an
+// AppSettings.notificationRecipientEmail gibt es seit demselben Tag (siehe
+// NotificationEmailLog unten) – vorher gab es dafür keinen echten
+// Mail-Versand, nur die In-App-Banner/Glocke.
 model Notification {
   id     String @id @default(cuid())
   userId String
@@ -616,6 +626,23 @@ model Notification {
   @@unique([userId, dedupeKey])
   @@index([userId, createdAt])
   @@map("notifications")
+}
+
+// Verhindert Mail-Duplikate bei der gemeinsamen Empfänger-Adresse
+// (Nutzervorgabe, 2026-08-22): `Notification`-Zeilen existieren pro
+// Nutzer (`[userId, dedupeKey]`), `sync()` läuft aber unabhängig für
+// jeden Nutzer, der die Benachrichtigungen öffnet – ohne diese separate,
+// rein nach `dedupeKey` (nutzerunabhängig) geführte Tabelle würde jeder
+// Admin, der als Erster nach einem neuen Vorfall die Seite lädt, eine
+// eigene Mail auslösen. Ein Eintrag hier = für diesen `dedupeKey` wurde
+// bereits gemailt; wird gelöscht, sobald die Bedingung wieder auflöst
+// (siehe NotificationsService.sync()), damit ein erneutes Auftreten
+// wieder eine Mail auslöst.
+model NotificationEmailLog {
+  dedupeKey String   @id
+  sentAt    DateTime @default(now())
+
+  @@map("notification_email_log")
 }
 
 model RefreshToken {

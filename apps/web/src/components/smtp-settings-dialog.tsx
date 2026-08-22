@@ -72,6 +72,7 @@ export function SmtpSettingsDialog({
   const [error, setError] = useState<string | null>(null);
   const [testError, setTestError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [testEmailTo, setTestEmailTo] = useState("");
   const [isSendingTestMail, setIsSendingTestMail] = useState(false);
   const [testMailResult, setTestMailResult] = useState<
     { ok: boolean; error?: string } | null
@@ -83,6 +84,7 @@ export function SmtpSettingsDialog({
       setError(null);
       setTestError(null);
       setTestMailResult(null);
+      setTestEmailTo("");
     }
   }, [open, settings]);
 
@@ -130,14 +132,27 @@ export function SmtpSettingsDialog({
   }
 
   async function handleSendTestEmail() {
+    if (!testEmailTo.trim()) {
+      setTestMailResult({ ok: false, error: "Bitte eine Zieladresse angeben." });
+      return;
+    }
     setIsSendingTestMail(true);
     setTestMailResult(null);
     try {
       const res = await fetch("/api/settings/smtp/test-email", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: testEmailTo }),
       });
       const data = await res.json().catch(() => null);
-      setTestMailResult(data ?? { ok: false, error: "Unbekannter Fehler." });
+      if (!res.ok) {
+        const message = Array.isArray(data?.message) ?
+          data.message.join(" ")
+        : (data?.message ?? data?.error ?? "Unbekannter Fehler.");
+        setTestMailResult({ ok: false, error: message });
+      } else {
+        setTestMailResult(data ?? { ok: false, error: "Unbekannter Fehler." });
+      }
     } catch {
       setTestMailResult({ ok: false, error: "Server nicht erreichbar." });
     } finally {
@@ -249,41 +264,60 @@ export function SmtpSettingsDialog({
               description={testError}
             />
           )}
-          {testMailResult && (
-            <SystemMessage
-              variant={testMailResult.ok ? "success" : "error"}
-              title={testMailResult.ok ? "Testmail wurde versendet" : "Testmail fehlgeschlagen"}
-              description={testMailResult.error}
-            />
+
+          {settings.configured && (
+            <div className="flex flex-col gap-2 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-3">
+              <Label htmlFor="smtp-test-email">
+                Testmail senden an
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="smtp-test-email"
+                  type="email"
+                  placeholder="z.B. deine.adresse@web.de"
+                  value={testEmailTo}
+                  onChange={(e) => setTestEmailTo(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="shrink-0 border-[#D4D4D4]"
+                  disabled={isSendingTestMail}
+                  onClick={handleSendTestEmail}
+                >
+                  {isSendingTestMail ? "Sendet…" : "Senden"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Eine echte, eigene Adresse eingeben – nicht die Konto-Adresse
+                dieses Pivot-Nutzers.
+              </p>
+              {testMailResult && (
+                <SystemMessage
+                  variant={testMailResult.ok ? "success" : "error"}
+                  title={
+                    testMailResult.ok ?
+                      "Testmail wurde versendet"
+                    : "Testmail fehlgeschlagen"
+                  }
+                  description={testMailResult.error}
+                />
+              )}
+            </div>
           )}
 
-          <DialogFooter className="sm:justify-between">
-            {settings.configured ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="border-[#D4D4D4]"
-                disabled={isSendingTestMail}
-                onClick={handleSendTestEmail}
-              >
-                {isSendingTestMail ? "Sendet…" : "Testmail senden"}
-              </Button>
-            ) : (
-              <span />
-            )}
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="border-[#D4D4D4]"
-                onClick={() => onOpenChange(false)}
-              >
-                Abbrechen
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Speichert…" : "Speichern"}
-              </Button>
-            </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-[#D4D4D4]"
+              onClick={() => onOpenChange(false)}
+            >
+              Abbrechen
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Speichert…" : "Speichern"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

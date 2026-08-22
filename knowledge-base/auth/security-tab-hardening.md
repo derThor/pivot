@@ -162,13 +162,71 @@ einfache, symmetrische `updateMany()`-Aufrufe sind.
 - `apps/web/src/lib/api-server.ts` (`AppSettings`-Interface)
 - `apps/web/src/app/api/settings/{revoke-all-sessions,force-password-reset-all}/route.ts` (neu)
 
+## Update 2026-08-22: Bugfix "Alle Sitzungen beenden"
+
+Nutzer-Bugreport: "alle sitzungen beenden funktioniert nicht. ich bin
+immer noch angemeldet". Root Cause: `revokeAllSessionsGlobally()` widerruft
+zwar sofort alle `RefreshToken`-Zeilen (inkl. der eigenen), aber der kurz
+lebende Access-Token (JWT, `JWT_ACCESS_TTL`, Standard 15 Minuten) wird rein
+stateless per `JwtStrategy.validate()` geprüft – keine DB-Abfrage, also
+keine Möglichkeit, ihn vor Ablauf zu invalidieren. Das Frontend hat nach
+dem Klick außerdem gar nichts mit der eigenen Sitzung gemacht (nur ein
+Toast), die Browser-Cookies blieben unangetastet. Ergebnis: der Nutzer,
+der selbst auf den Button klickt, blieb bis zu 15 Minuten eingeloggt –
+exakt das gemeldete Symptom.
+
+Fix (nur `settings-form.tsx`, `handleRevokeAllSessions`): nach dem
+Revoke-Call zusätzlich `POST /api/auth/logout` (räumt Cookies weg, widerruft
+den – ohnehin schon serverseitig revoked – eigenen Refresh-Token explizit)
+und `router.push("/login")`, gleiches Muster wie in
+`change-password-form.tsx` nach einer Passwortänderung.
+
+**Bewusst nicht behoben:** Andere Geräte/Sitzungen bleiben bis zum
+natürlichen Ablauf ihres Access-Tokens (≤ 15 Min.) weiter funktionsfähig,
+selbst nach "Alle Sitzungen beenden" – üblicher Trade-off bei zustandslosen
+JWTs, keine serverseitige Sofort-Invalidierung ohne zusätzlichen
+DB-Check auf jedem Request (z.B. `tokenVersion`/Session-Epoch). Nicht
+angefragt, daher nicht gebaut – falls "sofort auf allen Geräten" wirklich
+nötig ist, wäre das ein eigenes, größeres Ticket.
+
+## Update 2026-08-22: Bugfix "Zwei-Faktor für alle Konten erzwingen"
+
+Nutzer-Bugreport: "funktioniert nicht" (Konto ohne 2FA blieb nach dem
+Aktivieren des Schalters ohne erneute An-/Abmeldung unbeeinflusst
+eingeloggt). Gleiche Ursachen-Familie wie oben: `twoFactorSetupRequired`
+wird nur in `AuthService.issueTokens()` neu berechnet (Login/Refresh),
+eine schon offene Sitzung trägt bis zu 15 Minuten weiter ein Token ohne
+diese Pflicht. Live per Skript nachgestellt: Berechnung für einen Nutzer
+ohne 2FA lieferte korrekt `true`, sobald `requireTwoFactorForAll` aktiv
+war – die Formel selbst war nie falsch, nur die Verzögerung.
+
+Fix (Nutzerentscheidung: "automatisch alle Sitzungen beenden beim
+Umschalten"): `SettingsService.update()` prüft nach jedem Speichern, ob
+eine der drei 2FA-Pflicht-Stufen (`requireTwoFactorForAll`,
+`requireTwoFactorForAdmins`, `requireTwoFactorForPublishers`) gerade von
+`false` auf `true` gewechselt ist (`TWO_FACTOR_ENFORCEMENT_KEYS`), und
+ruft in diesem Fall `AuthService.revokeAllSessionsGlobally()` auf –
+identischer Effekt wie ein manueller Klick auf "Alle Sitzungen beenden".
+Nur bei Aktivierung, nicht bei Deaktivierung (ein Weicherstellen zwingt
+niemanden zu etwas). `SettingsService` injiziert `AuthService` jetzt
+zusätzlich per `forwardRef()` (gleiches Muster wie schon in
+`SettingsController`, da `AuthModule` bereits `SettingsModule` importiert
+und umgekehrt). Live verifiziert: `PATCH /settings` mit
+`requireTwoFactorForAll: false→true` widerruft eine zuvor aktive
+Test-Session sofort (`revokedAt` gesetzt), Nest startet ohne
+DI-Zirkularitätsfehler.
+
 ## Offene Punkte
 
 - Kein e2e-Test für Passwort-Historie/-Wiederverwendung (nur per
   Code-Review abgesichert, nicht live gegen die API getestet).
-- Die beiden globalen Admin-Aktionen wurden aus Vorsicht nicht live
-  ausgelöst (siehe oben) – funktional ungetestet über die tatsächliche
-  UI-Bestätigung hinaus.
+- Die globale Admin-Aktion "Passwort-Reset für alle erzwingen" wurde aus
+  Vorsicht weiterhin nicht live ausgelöst – funktional ungetestet über die
+  tatsächliche UI-Bestätigung hinaus. Der Bugfix bei "Alle Sitzungen
+  beenden" wiederverwendet lediglich den bereits produktiv laufenden
+  Logout-Aufruf aus `change-password-form.tsx` (Backend-Verhalten bei
+  bereits widerrufenem Refresh-Token per Code-Review + `updateMany`-Logik
+  geprüft), aber nicht per echtem Browser-Klick nachgestellt.
 - `sessionIdleTimeoutMinutes` als einfacher Ein/Aus-Schalter (fix 8 Std.)
   statt konfigurierbarer Dauer – Bildvorlage zeigt für dieses Feld keine
   Zahlenauswahl, anders als bei Mindestlänge/Ablauf/Sperre.

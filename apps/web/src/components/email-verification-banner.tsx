@@ -5,15 +5,19 @@ import { MailWarning } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function EmailVerificationBanner() {
-  const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
+    "idle",
+  );
 
   async function handleResend() {
     setStatus("sending");
     try {
-      await fetch("/api/auth/resend-verification", { method: "POST" });
-      setStatus("sent");
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+      });
+      setStatus(res.ok ? "sent" : "error");
     } catch {
-      setStatus("idle");
+      setStatus("error");
     }
   }
 
@@ -27,13 +31,15 @@ export function EmailVerificationBanner() {
         variant="outline"
         size="sm"
         onClick={handleResend}
-        disabled={status !== "idle"}
+        disabled={status === "sending" || status === "sent"}
       >
         {status === "sent"
           ? "Gesendet"
           : status === "sending"
             ? "Sendet…"
-            : "Erneut senden"}
+            : status === "error"
+              ? "Fehlgeschlagen – erneut versuchen"
+              : "Erneut senden"}
       </Button>
     </div>
   );

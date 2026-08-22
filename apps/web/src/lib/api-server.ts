@@ -741,6 +741,7 @@ export interface AppSettings {
   dsrDeadlineReminderEnabled: boolean;
   notifyDeletionRequests: boolean;
   notifyTrashExpiring: boolean;
+  notificationRecipientEmail: string | null;
   sccTemplateMediaId: string | null;
   /** Nur bei `getPublicSettings()` (GET /settings/public) vorhanden, nicht bei `getSettings()`. */
   sccTemplateMedia?: { id: string; filename: string; url: string } | null;

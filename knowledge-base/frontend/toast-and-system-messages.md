@@ -525,3 +525,53 @@ das Postfach ist jetzt wie die Glocke selbst für jeden eingeloggten
 Nutzer erreichbar, auch wenn es für die meisten Rollen aktuell leer
 bleibt (alle vier Kategorien setzen mindestens eine Admin-Berechtigung
 voraus).
+
+## Update 2026-08-22: E-Mail-Zustellung an einen Benachrichtigungsempfänger
+
+Nutzerfrage nach dem SMTP-Feature: "wie stelle ich ein, dass die
+benachrichtigungen auch an eine bestimmte email gesendet werden?" –
+bis dahin gab es dafür gar keine Option, die `notify*`-Schalter steuerten
+ausschließlich die In-App-Banner/Glocke (siehe Beschreibungstexte in
+`notification-settings-card.tsx`, alle "Zeigt/Warnt im Dashboard").
+Nutzerentscheidungen: eine gemeinsame Empfänger-Adresse für alle
+Kategorien (nicht pro Kategorie einzeln) und Versand sofort bei jedem
+neuen Vorfall (kein täglicher Digest).
+
+- Neues Feld `AppSettings.notificationRecipientEmail` (leer = keine
+  E-Mail-Zustellung, nur In-App wie bisher), neues Feld in
+  `UpdateSettingsDto` – läuft über den bestehenden generischen
+  `settings.field_updated`-Audit-Pfad, taucht also automatisch im
+  "Protokoll"-Tab auf (`FIELD_LABELS.notificationRecipientEmail`).
+  Eingabefeld + eigener "Speichern"-Button oben in
+  `notification-settings-card.tsx` (Instant-Save-Karte, kein Teil des
+  großen Formulars).
+- **Kernproblem beim Versand:** `NotificationsService.sync()` läuft pro
+  Nutzer, lazy bei jedem `findAll()`-Aufruf (Bell-Poll/Postfach-Seite),
+  nicht global per Cron. Bei einer gemeinsamen Empfänger-Adresse würde
+  ohne Gegenmaßnahme jeder Admin, der nach einem neuen Vorfall zuerst die
+  Seite lädt, eine eigene Mail auslösen (unterschiedliche `Notification`-
+  Zeilen pro `[userId, dedupeKey]`). Gelöst über ein neues, bewusst NICHT
+  nutzerbezogenes Modell `NotificationEmailLog` (Primärschlüssel:
+  `dedupeKey` allein) – ein Eintrag heißt "für dieses Ereignis wurde
+  bereits gemailt", unabhängig davon, welcher Nutzer den Sync-Lauf
+  ausgelöst hat.
+- In `sync()`: neu erzeugte (`toCreate`) und wiederbelebte (`revivable`)
+  Kandidaten gehen gemeinsam durch `notifyByEmail()` – prüft zuerst per
+  `findMany`, welche `dedupeKey`s schon geloggt sind, mailt nur die
+  übrigen und loggt sie danach (`createMany` mit `skipDuplicates: true`
+  als Sicherheitsnetz gegen Nebenläufigkeit). Löst sich die Bedingung auf
+  (`toResolve`), wird der zugehörige `NotificationEmailLog`-Eintrag
+  gelöscht – sonst würde ein späteres Wiederauftreten (z.B. Wartungsmodus
+  aus/wieder an) für immer stumm bleiben, exakt das gleiche
+  Revival-Prinzip wie bei `createdAt` in der Notification-Zeile selbst
+  (siehe Bugfix vom Vortag).
+- `MailerService.sendSystemNotificationEmail()`: baut aus
+  `actionUrl` (relativer Pfad wie `/dashboard/media`) über `CORS_ORIGIN`
+  einen vollständigen Link (gleiches Muster wie `frontendOrigin()` in
+  `AuthService` für Verifikations-/Reset-Links).
+- Live end-to-end mit echtem Ethereal-Testkonto verifiziert: erstes
+  Auftreten löst genau eine Mail aus, ein zweiter `sync()`-Lauf (simuliert
+  einen weiteren Nutzer/Poll) verschickt keine zweite, Auflösen löscht den
+  Log-Eintrag, erneutes Auftreten mailt wieder frisch. Testdaten
+  (Notification-/EmailLog-Zeilen, SMTP-Testkonfiguration, Audit-Log)
+  danach vollständig zurückgesetzt.

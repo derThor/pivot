@@ -262,4 +262,36 @@ export class MailerService {
       `Wir bitten um Zusendung des Auftragsverarbeitungsvertrags für "${processorName}".`,
     );
   }
+
+  /** Systembenachrichtigungen (Wartungsmodus, Speicherplatz, Webhooks
+   * usw.) an die gemeinsame Empfänger-Adresse (Nutzervorgabe, 2026-08-22:
+   * "wie stelle ich ein, dass die benachrichtigungen an eine bestimmte
+   * email gesendet werden" – "sofort bei jedem neuen Vorfall"). Aufrufer
+   * ist NotificationsService.sync(), das per NotificationEmailLog dafür
+   * sorgt, dass pro `dedupeKey` nur einmal gemailt wird, unabhängig davon,
+   * welcher Nutzer den auslösenden Sync-Lauf ausführt. */
+  async sendSystemNotificationEmail(
+    to: string,
+    notification: {
+      title: string;
+      description: string;
+      actionLabel: string | null;
+      actionUrl: string | null;
+    },
+  ): Promise<void> {
+    const link = notification.actionUrl
+      ? `${this.frontendOrigin()}${notification.actionUrl}`
+      : null;
+    const text = [
+      notification.description,
+      link ? `${notification.actionLabel ?? 'Öffnen'}: ${link}` : null,
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+    await this.deliver(to, notification.title, text);
+  }
+
+  private frontendOrigin(): string {
+    return this.config.get<string>('CORS_ORIGIN', 'http://localhost:3000');
+  }
 }

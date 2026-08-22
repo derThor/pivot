@@ -1,5 +1,6 @@
 import { proxyToApi } from "@/lib/bff-proxy";
 
-export async function POST() {
-  return proxyToApi("POST", "/settings/smtp/test-email");
+export async function POST(request: Request) {
+  const body = await request.json();
+  return proxyToApi("POST", "/settings/smtp/test-email", body);
 }

@@ -6,6 +6,7 @@ import { MediaModule } from '../media/media.module';
 import { TrashModule } from '../trash/trash.module';
 import { UsersModule } from '../users/users.module';
 import { LegalDocumentsModule } from '../legal-documents/legal-documents.module';
+import { MailerModule } from '../mailer/mailer.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { LegalDocumentsModule } from '../legal-documents/legal-documents.module'
     TrashModule,
     UsersModule,
     LegalDocumentsModule,
+    MailerModule,
   ],
   controllers: [NotificationsController],
   providers: [NotificationsService],

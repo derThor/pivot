@@ -20,6 +20,7 @@ import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdatePrivacyDto } from './dto/update-privacy.dto';
 import { QuerySettingsChangesDto } from './dto/query-settings-changes.dto';
 import { UpdateSmtpSettingsDto } from './dto/update-smtp-settings.dto';
+import { SendSmtpTestEmailDto } from './dto/send-smtp-test-email.dto';
 import { MailerService } from '../mailer/mailer.service';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
 import { Public } from '../auth/decorators/public.decorator';
@@ -188,15 +189,18 @@ export class SettingsController {
     return this.settingsService.updateSmtpSettings(dto, user.sub);
   }
 
-  // "Einrichten"-Dialog, Button "Testmail senden" – schickt eine echte
-  // Mail an die eigene Konto-Adresse des Pivot-Nutzers, unabhängig vom
-  // automatischen Verbindungstest beim Speichern.
+  // "Einrichten"-Dialog, Button "Testmail senden" – Zieladresse kommt aus
+  // dem Dialog (Nutzer-Bugreport, 2026-08-22: "ich habe die testmail
+  // versendet, bekomme sie nicht" – die Konto-Adresse des Pivot-Nutzers
+  // ist nicht zwingend eine echte, vom Nutzer kontrollierte Adresse,
+  // siehe knowledge-base). Unabhängig vom automatischen Verbindungstest
+  // beim Speichern.
   @ApiBearerAuth()
   @RequirePermission('settings:update')
   @HttpCode(HttpStatus.OK)
   @Post('smtp/test-email')
-  sendSmtpTestEmail(@CurrentUser() user: JwtPayload) {
-    return this.mailer.sendTestEmail(user.email);
+  sendSmtpTestEmail(@Body() dto: SendSmtpTestEmailDto) {
+    return this.mailer.sendTestEmail(dto.to);
   }
 
   // "Cache leeren" unter Einstellungen (Nutzervorgabe, 2026-08-16) – leert

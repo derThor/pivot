@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { MailerService } from '../mailer/mailer.service';
+import { AuthService } from '../auth/auth.service';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdatePrivacyDto } from './dto/update-privacy.dto';
@@ -80,6 +81,15 @@ export const PRIVACY_FIELD_KEYS = [
   'sccTemplateMediaId',
 ] as const;
 
+// Alle drei unabhängigen 2FA-Pflicht-Stufen (siehe AuthService.
+// issueTokens()) – bei Aktivierung einer davon werden alle Sitzungen
+// beendet, siehe update() unten.
+const TWO_FACTOR_ENFORCEMENT_KEYS = [
+  'requireTwoFactorForAll',
+  'requireTwoFactorForAdmins',
+  'requireTwoFactorForPublishers',
+] as const;
+
 @Injectable()
 export class SettingsService {
   constructor(
@@ -87,6 +97,8 @@ export class SettingsService {
     private readonly auditLog: AuditLogService,
     private readonly mailer: MailerService,
     private readonly config: ConfigService,
+    @Inject(forwardRef(() => AuthService))
+    private readonly authService: AuthService,
   ) {}
 
   private get encryptionKey(): string {
@@ -270,6 +282,22 @@ export class SettingsService {
           userId: actingUserId,
           metadata: { field: key, before, after },
         });
+      }
+
+      // Sofortige Durchsetzung bei Aktivierung einer 2FA-Zwangsstufe
+      // (Nutzer-Bugreport, 2026-08-22: "zwei-faktor für alle konten
+      // erzwingen funktioniert nicht" – die Prüfung wird nur beim Login
+      // bzw. beim ~15-minütigen Token-Refresh neu berechnet, siehe
+      // AuthService.issueTokens(); eine schon offene Sitzung bekommt eine
+      // frisch aktivierte Pflicht sonst erst mit Verzögerung mit).
+      // Nutzerentscheidung: "automatisch alle sitzungen beenden beim
+      // umschalten" – nur bei false→true, ein Deaktivieren zwingt niemanden
+      // zu irgendetwas und braucht daher keinen Zwangs-Logout.
+      const newlyEnforcedTwoFactor = TWO_FACTOR_ENFORCEMENT_KEYS.some(
+        (key) => key in dto && !existing[key] && updated[key],
+      );
+      if (newlyEnforcedTwoFactor) {
+        await this.authService.revokeAllSessionsGlobally(actingUserId);
       }
     }
 

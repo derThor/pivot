@@ -286,6 +286,28 @@ konfiguriert.
   `FIELD_LABELS.emailSmtp`) – bewusst ohne `before`/`after`-Werte in den
   Metadaten (Host/Port sind nicht sensibel, aber ein eigener Diff lohnt
   sich für ein einzelnes Dienst-Objekt nicht wie bei Einzelfeldern).
+- **Bugfix, gleicher Tag:** "Testmail senden" schickte ursprünglich immer
+  an `user.email` aus dem JWT – also die im Pivot-Konto hinterlegte
+  Adresse des eingeloggten Nutzers. Nutzer-Bugreport: "ich habe die
+  testmail versendet, bekomme sie nicht, obwohl erfolgreich meldung
+  kommt" – der Versand war tatsächlich erfolgreich, ging aber an
+  `admin@pivot.dev` (Seed-Account dieser Installation), nicht an die
+  echte, vom Nutzer kontrollierte Adresse. Jetzt eigenes Eingabefeld
+  "Testmail senden an" im Dialog, Zieladresse geht explizit im
+  Request-Body mit (`SendSmtpTestEmailDto`), keine Kontoadresse mehr
+  automatisch verwendet.
+
+## Update 2026-08-22: Platzhalter "Mail-Absender" entfernt
+
+Rückfrage "mailabsender bei benachrichtigungen, brauchen wir das noch?"
+→ Nutzerentscheidung: nein, entfernen. Die Platzhalter-Karte
+"Mail-Absender" im "Benachrichtigungen"-Tab (Absenderadresse/-name,
+"in Vorbereitung") ist mit der SMTP-Karte unter Integrationen → Dienste
+(siehe oben) jetzt tatsächlich gebaut und redundant geworden. Entfernt
+aus `settings-form.tsx`, Sidebar-Untertitel bei "Benachrichtigungen" von
+"Absender & Systemmails" auf "Systembenachrichtigungen" geändert – der
+Tab enthält jetzt nur noch die echten Ein/Aus-Schalter
+(`NotificationSettingsCard`).
 
 ## Offene Punkte
 

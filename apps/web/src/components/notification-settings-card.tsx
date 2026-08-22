@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { toastEdited } from "@/components/app-toast";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { SwitchRow } from "@/components/switch-row";
 import type { AppSettings } from "@/lib/api-server";
 
@@ -93,11 +97,16 @@ const ROWS: { key: NotifyKey; label: string; description: string }[] = [
 export function NotificationSettingsCard({
   settings,
 }: {
-  settings: Pick<AppSettings, NotifyKey>;
+  settings: Pick<AppSettings, NotifyKey | "notificationRecipientEmail">;
 }) {
   const router = useRouter();
   const [values, setValues] = useState(settings);
   const [pendingKey, setPendingKey] = useState<NotifyKey | null>(null);
+  const [recipientEmail, setRecipientEmail] = useState(
+    settings.notificationRecipientEmail ?? "",
+  );
+  const [isSavingRecipient, setIsSavingRecipient] = useState(false);
+  const savedRecipientEmail = settings.notificationRecipientEmail ?? "";
 
   async function handleToggle(key: NotifyKey, next: boolean) {
     setValues((prev) => ({ ...prev, [key]: next }));
@@ -114,15 +123,64 @@ export function NotificationSettingsCard({
     }
   }
 
+  async function handleSaveRecipient() {
+    setIsSavingRecipient(true);
+    try {
+      await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          notificationRecipientEmail: recipientEmail.trim() || null,
+        }),
+      });
+      toastEdited("Benachrichtigungsempfänger wurde gespeichert.");
+      router.refresh();
+    } finally {
+      setIsSavingRecipient(false);
+    }
+  }
+
   return (
     <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
       <CardHeader>
         <CardTitle>Benachrichtigungen</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Steuert, welche Systembenachrichtigungen im Dashboard erscheinen.
+          Steuert, welche Systembenachrichtigungen im Dashboard erscheinen und
+          zusätzlich per E-Mail gehen.
         </p>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+      <CardContent className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2 border-b border-[#F0F0F0] pb-4">
+          <Label htmlFor="notification-recipient">
+            Benachrichtigungsempfänger
+          </Label>
+          <div className="flex gap-2">
+            <Input
+              id="notification-recipient"
+              type="email"
+              placeholder="z.B. admin@example.de"
+              value={recipientEmail}
+              onChange={(e) => setRecipientEmail(e.target.value)}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="shrink-0 border-[#D4D4D4]"
+              disabled={
+                isSavingRecipient || recipientEmail === savedRecipientEmail
+              }
+              onClick={handleSaveRecipient}
+            >
+              {isSavingRecipient ? "Speichert…" : "Speichern"}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Aktivierte Kategorien unten werden zusätzlich sofort bei jedem
+            neuen Vorfall an diese Adresse gemailt (setzt einen eingerichteten
+            Dienst unter Integrationen → Dienste voraus). Leer lassen für
+            keine E-Mail-Zustellung.
+          </p>
+        </div>
         {ROWS.map((row) => (
           <SwitchRow
             key={row.key}

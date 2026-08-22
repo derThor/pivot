@@ -181,6 +181,7 @@ export function DataSubjectRequestsPanel({
   );
   const [followUpMessage, setFollowUpMessage] = useState("");
   const [isSendingFollowUp, setIsSendingFollowUp] = useState(false);
+  const [followUpError, setFollowUpError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeletionRequest | null>(
     null,
   );
@@ -208,15 +209,28 @@ export function DataSubjectRequestsPanel({
   async function handleSendFollowUp() {
     if (!followUpTarget || !followUpMessage.trim()) return;
     setIsSendingFollowUp(true);
+    setFollowUpError(null);
     try {
-      await fetch(`/api/deletion-requests/${followUpTarget.id}/follow-up`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: followUpMessage }),
-      });
+      const res = await fetch(
+        `/api/deletion-requests/${followUpTarget.id}/follow-up`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: followUpMessage }),
+        },
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setFollowUpError(
+          data?.message ?? "Rückfrage konnte nicht gesendet werden.",
+        );
+        return;
+      }
       toastEdited(`Rückfrage wurde an ${followUpTarget.requesterEmail} gesendet.`);
       setFollowUpTarget(null);
       setFollowUpMessage("");
+    } catch {
+      setFollowUpError("Server nicht erreichbar. Bitte später erneut versuchen.");
     } finally {
       setIsSendingFollowUp(false);
     }
@@ -511,6 +525,7 @@ export function DataSubjectRequestsPanel({
           if (!open) {
             setFollowUpTarget(null);
             setFollowUpMessage("");
+            setFollowUpError(null);
           }
         }}
       >
@@ -533,6 +548,9 @@ export function DataSubjectRequestsPanel({
             <p className="text-xs text-muted-foreground">
               Wird an {followUpTarget?.requesterEmail} gesendet.
             </p>
+            {followUpError && (
+              <p className="text-sm text-destructive">{followUpError}</p>
+            )}
           </div>
           <DialogFooter>
             <Button
@@ -542,6 +560,7 @@ export function DataSubjectRequestsPanel({
               onClick={() => {
                 setFollowUpTarget(null);
                 setFollowUpMessage("");
+                setFollowUpError(null);
               }}
             >
               Abbrechen

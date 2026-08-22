@@ -39,6 +39,7 @@ export function SubjectAccessRequestDialog({
 }) {
   const [userId, setUserId] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   // Anonymisierte (gelöschte) Konten haben keine personenbezogenen Daten
   // mehr, zu denen sich eine Auskunft erstellen ließe – aus der Auswahl
   // entfernen (Nutzervorgabe, 2026-08-19).
@@ -48,29 +49,42 @@ export function SubjectAccessRequestDialog({
   const selectedUser = sortedUsers.find((u) => u.id === userId);
 
   // Versendet an die im Konto hinterlegte Adresse – kein eigenes
-  // Empfänger-Feld (Nutzervorgabe, 2026-08-19). Echter Mail-Versand folgt
-  // in einem späteren Schritt, aktuell Dev-Stub wie alle System-Mails
-  // (siehe MailerService).
+  // Empfänger-Feld (Nutzervorgabe, 2026-08-19). Echter Mail-Versand über
+  // den unter Integrationen konfigurierten SMTP-Dienst (siehe MailerService).
   async function handleSend() {
     if (!userId) return;
     setIsSending(true);
+    setSendError(null);
     try {
-      await fetch(`/api/privacy/subject-access-report/${userId}/send`, {
-        method: "POST",
-      });
+      const res = await fetch(
+        `/api/privacy/subject-access-report/${userId}/send`,
+        { method: "POST" },
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setSendError(body?.message ?? "Auskunft konnte nicht versendet werden.");
+        return;
+      }
       toastEdited(
         selectedUser
           ? `Auskunft wurde an ${selectedUser.email} versendet.`
           : "Auskunft wurde versendet.",
       );
       onOpenChange(false);
+    } catch {
+      setSendError("Server nicht erreichbar. Bitte später erneut versuchen.");
     } finally {
       setIsSending(false);
     }
   }
 
+  function handleOpenChange(next: boolean) {
+    if (next) setSendError(null);
+    onOpenChange(next);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Auskunft erstellen</DialogTitle>
@@ -102,6 +116,7 @@ export function SubjectAccessRequestDialog({
               </SelectContent>
             </Select>
           </div>
+          {sendError && <p className="text-sm text-destructive">{sendError}</p>}
         </div>
         {/* 3 Buttons passten nicht in die Standardbreite (`sm:max-w-md`)
          * der DialogFooter-Zeile – "Abbrechen" wurde dabei abgeschnitten

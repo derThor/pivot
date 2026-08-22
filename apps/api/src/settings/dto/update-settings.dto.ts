@@ -448,4 +448,14 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsString()
   sccTemplateMediaId?: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Gemeinsame Empfänger-Adresse für alle Systembenachrichtigungen, leer = keine E-Mail-Zustellung.',
+  })
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsEmail()
+  notificationRecipientEmail?: string | null;
 }

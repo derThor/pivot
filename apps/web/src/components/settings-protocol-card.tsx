@@ -78,6 +78,7 @@ const FIELD_LABELS: Record<string, string> = {
   notifyLegalDocuments: "Benachrichtigung „Veraltete/fehlende Rechtstexte“",
   notifyDeletionRequests: "Benachrichtigung „Offene Betroffenenanfragen“",
   notifyTrashExpiring: "Benachrichtigung „Papierkorb-Einträge laufen ab“",
+  notificationRecipientEmail: "Benachrichtigungsempfänger",
   // Einstellungen → Integrationen, Karte "Dienste" (Nutzervorgabe,
   // 2026-08-22) – eigener Endpoint statt UpdateSettingsDto, daher kein
   // echtes before/after (siehe SettingsService.updateSmtpSettings()).
