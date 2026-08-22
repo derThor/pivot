@@ -12,7 +12,7 @@ import { FaqQuestionDialog } from "@/components/faq-question-dialog";
 import { RichTextDisplay } from "@/components/rich-text-display";
 import { RowActionButtons } from "@/components/row-action-buttons";
 import { toRepeaterItems, type RepeaterItem } from "@/components/block-field-output";
-import { cn } from "@/lib/utils";
+import { cn, truncateMiddle } from "@/lib/utils";
 import type { GlobalModule, ModuleType } from "@/lib/api-server";
 
 // Exakte Werte aus der Figma-Referenz übernommen (nicht die generischen
@@ -385,8 +385,8 @@ export function FaqGroupsManager({
       <ConfirmDeleteDialog
         open={deleteGroup !== null}
         onOpenChange={(open) => !open && setDeleteGroup(null)}
-        title={`„${deleteGroup?.name}“ löschen?`}
-        description="Die Gruppe und alle enthaltenen Fragen werden entfernt. Diese Aktion kann nicht rückgängig gemacht werden."
+        title={`„${truncateMiddle(deleteGroup?.name ?? "")}“ löschen?`}
+        description="Die Gruppe mit allen enthaltenen Fragen wird in den Papierkorb verschoben und kann von dort wiederhergestellt werden."
         onConfirm={handleDeleteGroup}
       />
 

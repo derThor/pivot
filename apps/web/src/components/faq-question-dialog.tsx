@@ -148,7 +148,7 @@ export function FaqQuestionDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="faq-question-text">Frage</Label>
+            <Label htmlFor="faq-question-text" required>Frage</Label>
             <Input
               id="faq-question-text"
               value={questionText}
@@ -163,7 +163,7 @@ export function FaqQuestionDialog({
             )}
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="faq-question-answer">Antwort</Label>
+            <Label htmlFor="faq-question-answer" required>Antwort</Label>
             <RichTextEditor
               id="faq-question-answer"
               value={answer}

@@ -24,7 +24,11 @@ export function SwitchRow({
   return (
     <div className="flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
       <div className="flex flex-col gap-0.5">
-        <Label className={disabled ? "text-muted-foreground" : undefined}>
+        <Label
+          className={
+            disabled ? "text-sm text-muted-foreground" : "text-sm"
+          }
+        >
           {label}
         </Label>
         {description && (

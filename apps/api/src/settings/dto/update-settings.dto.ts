@@ -32,6 +32,11 @@ export class UpdateSettingsDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()
+  allowAdminEmailChange?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
   requireAdminActivation?: boolean;
 
   @ApiPropertyOptional()
@@ -241,6 +246,16 @@ export class UpdateSettingsDto {
   @IsBoolean()
   notifyPendingPasswordChanges?: boolean;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  notifyCompanyIncomplete?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  notifyLegalDocuments?: boolean;
+
   @ApiPropertyOptional({ nullable: true })
   @IsOptional()
   @IsString()
@@ -308,6 +323,11 @@ export class UpdateSettingsDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsString()
+  companyDisputeResolution?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsBoolean()
   dpoIsExternal?: boolean;
 
@@ -368,7 +388,8 @@ export class UpdateSettingsDto {
 
   @ApiPropertyOptional({
     nullable: true,
-    description: 'Aufbewahrung Formular-Einsendungen in Tagen, leer = unbegrenzt.',
+    description:
+      'Aufbewahrung Formular-Einsendungen in Tagen, leer = unbegrenzt.',
   })
   @IsOptional()
   @IsInt()
@@ -392,4 +413,39 @@ export class UpdateSettingsDto {
   @IsInt()
   @Min(1)
   retentionTrashDays?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  dsbFormSelfServiceDisclosure?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  dsbFormStoreSubmissionIp?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  dsrAutoAcknowledgeReceipt?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  dsrDeadlineReminderEnabled?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  notifyDeletionRequests?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  notifyTrashExpiring?: boolean;
+
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @IsString()
+  sccTemplateMediaId?: string | null;
 }

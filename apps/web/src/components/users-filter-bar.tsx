@@ -16,17 +16,23 @@ import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/api-server";
 
 /** Filter-Leiste über der Benutzer-Tabelle (Nutzervorgabe, 1:1 nach
- * Bildvorlage): Status-Pills (Alle/Aktiv/Deaktiviert) sind reine Links
- * (serverseitig gefiltert), Rollen-Dropdown und Suche navigieren per
- * `router.push` mit debounce bei der Suche. Nur die Status-Werte, die es
- * im Datenmodell wirklich gibt (`isActive`) – "Eingeladen"/"Gesperrt" aus
- * der Vorlage gibt es im Backend nicht. */
+ * Bildvorlage): Status-Pills (Alle/Aktiv/Deaktiviert/Anonymisiert) sind
+ * reine Links (serverseitig gefiltert), Rollen-Dropdown und Suche
+ * navigieren per `router.push` mit debounce bei der Suche. "Anonymisiert"
+ * ergänzt 2026-08-21 (Nutzervorgabe) – sonst wären anonymisierte Konten
+ * nirgends mehr einsehbar, seit `findAll()` sie standardmäßig ausblendet. */
 export function UsersFilterBar({
   roles,
   counts,
 }: {
   roles: Role[];
-  counts: { all: number; active: number; inactive: number };
+  counts: {
+    all: number;
+    active: number;
+    inactive: number;
+    anonymized: number;
+    deleted: number;
+  };
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -55,6 +61,8 @@ export function UsersFilterBar({
     { value: "all", label: "Alle", count: counts.all },
     { value: "active", label: "Aktiv", count: counts.active },
     { value: "inactive", label: "Deaktiviert", count: counts.inactive },
+    { value: "deleted", label: "Gelöscht", count: counts.deleted },
+    { value: "anonymized", label: "Anonymisiert", count: counts.anonymized },
   ];
 
   return (

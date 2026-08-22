@@ -36,11 +36,17 @@ export function HeaderSearch({
   onOpenPalette,
   mobileOpen,
   onMobileOpenChange,
+  shortcutsEnabled = true,
 }: {
   defaultPageSize: number;
   onOpenPalette: () => void;
   mobileOpen: boolean;
   onMobileOpenChange: (open: boolean) => void;
+  /** Steuert nicht nur das Tastenkürzel selbst (siehe `command-palette.tsx`),
+   * sondern auch dieses "Strg K"-Badge – bei deaktiviertem Kürzel wäre ein
+   * weiterhin sichtbarer, klickbarer Badge irreführend (Nutzervorgabe,
+   * 2026-08-21: "nur einblenden und funktional, wenn aktiv"). */
+  shortcutsEnabled?: boolean;
 }) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -220,13 +226,15 @@ export function HeaderSearch({
               <X className="size-4" />
             </button>
           ) : (
-            <button
-              type="button"
-              onClick={onOpenPalette}
-              className="hidden shrink-0 rounded-md bg-muted px-2 py-1 font-sans text-xs text-muted-foreground hover:text-foreground sm:inline-block"
-            >
-              Strg K
-            </button>
+            shortcutsEnabled && (
+              <button
+                type="button"
+                onClick={onOpenPalette}
+                className="hidden shrink-0 rounded-md bg-muted px-2 py-1 font-sans text-xs text-muted-foreground hover:text-foreground sm:inline-block"
+              >
+                Strg K
+              </button>
+            )
           )}
         </div>
         {resultsDropdown}

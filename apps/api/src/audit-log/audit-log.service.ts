@@ -75,6 +75,63 @@ export class AuditLogService {
     });
   }
 
+  /** Echte paginierte Liste zu einer Entität (im Gegensatz zu
+   * `findRecentForEntity`s festem Limit) – "Protokoll"-Tab unter
+   * Einstellungen (SettingsService.getSettingsChanges()). */
+  async findPaginated(
+    entityTypes: string[],
+    entityId: string,
+    page: number,
+    pageSize: number,
+  ) {
+    const where: Prisma.AuditLogWhereInput = {
+      entityType: { in: entityTypes },
+      entityId,
+    };
+    const [items, total] = await Promise.all([
+      this.prisma.auditLog.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          user: { select: { id: true, firstName: true, lastName: true } },
+        },
+      }),
+      this.prisma.auditLog.count({ where }),
+    ]);
+    return {
+      items,
+      meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
+    };
+  }
+
+  /** Unpaginiert, für den CSV-Export (SettingsService.exportChangesCsv()) –
+   * bewusst kein Limit, ein Export soll die komplette Historie enthalten. */
+  async findAllForEntity(entityTypes: string[], entityId: string) {
+    return this.prisma.auditLog.findMany({
+      where: { entityType: { in: entityTypes }, entityId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+  }
+
+  /** Einzelnen Eintrag löschen (Nutzervorgabe, 2026-08-22: "das soll man
+   * löschen können" – anders als bei Firma bewusst NICHT revisionssicher). */
+  async deleteOne(id: string) {
+    await this.prisma.auditLog.delete({ where: { id } });
+  }
+
+  /** "Alle löschen" für eine Entität (Nutzervorgabe, 2026-08-22: "mache
+   * bei letzte änderung ... rechts alle löschen dazu"). */
+  async deleteAllForEntity(entityTypes: string[], entityId: string) {
+    await this.prisma.auditLog.deleteMany({
+      where: { entityType: { in: entityTypes }, entityId },
+    });
+  }
+
   /** Datenschutz-Aufbewahrung "Zugriffsprotokoll": Einträge älter als
    * `cutoff` – für die manuelle Review-Liste, kein automatisches Löschen. */
   async findOlderThan(cutoff: Date) {

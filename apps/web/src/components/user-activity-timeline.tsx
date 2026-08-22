@@ -38,6 +38,7 @@ const COMPANY_FIELD_LABELS: Record<string, string> = {
   companyRegisterNumber: "Handelsregisternummer",
   companyVatId: "USt-IdNr.",
   companySupervisoryAuthority: "Aufsichtsbehörde",
+  companyDisputeResolution: "Streitschlichtung",
 };
 
 /** Übersetzt einen rohen AuditLog-Eintrag in Titel + Kategorie-/Akteur-Zeile

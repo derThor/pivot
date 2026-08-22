@@ -3,12 +3,12 @@ import { PageContent } from "@/components/page-content";
 import {
   getCompanyChanges,
   getCompanyLocations,
-  getSettings,
+  getCompanySettings,
 } from "@/lib/api-server";
 
 export default async function CompanyPage() {
   const [settings, locations, changes] = await Promise.all([
-    getSettings(),
+    getCompanySettings(),
     getCompanyLocations(),
     getCompanyChanges(),
   ]);

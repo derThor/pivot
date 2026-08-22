@@ -7,14 +7,7 @@ import { AccountLockBanner } from "@/components/account-lock-banner";
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { NoDashboardAccess } from "@/components/no-dashboard-access";
-import { STORAGE_WARNING_THRESHOLD_PERCENT } from "@/components/storage-quota-banner";
-import {
-  getCurrentUser,
-  getMediaStorageUsage,
-  getPublicSettings,
-  getUserNotificationCounts,
-  getWebhooks,
-} from "@/lib/api-server";
+import { getCurrentUser, getNotifications, getPublicSettings } from "@/lib/api-server";
 import { formatName } from "@/lib/utils";
 import { buildAccentColorCss } from "@/lib/accent-color";
 
@@ -35,67 +28,16 @@ export default async function DashboardLayout({
     return <NoDashboardAccess user={user} />;
   }
 
-  // Glocken-Badge im Header zeigt die Anzahl aktiver Systemmeldungen
-  // (siehe /dashboard/system-messages) – nur für Nutzer mit Zugriff auf
-  // diese Seite abgefragt, um unnötige Requests für alle anderen Rollen zu
-  // vermeiden. Jede Kategorie ist einzeln über `AppSettings.notify*`
-  // ab-/anschaltbar (Nutzervorgabe, 2026-08-16, siehe
-  // NotificationSettingsCard) – ausgeschaltete Kategorien fließen weder in
-  // den Zähler noch als Banner auf /dashboard/system-messages ein.
-  const canViewSystemMessages =
-    (user.permissions ?? []).includes("settings:read");
-  const canViewUserNotifications = (user.permissions ?? []).includes(
-    "users:read",
-  );
-  // Kein "nur ausblenden": eine per Schalter deaktivierte Kategorie wird
-  // gar nicht erst abgefragt (Nutzervorgabe, 2026-08-16, "das Erfassen
-  // dieser Nachrichten beenden, wenn nicht aktiv") – spart die jeweilige
-  // Anfrage bei jeder Dashboard-Navigation komplett statt sie nur zu
-  // ignorieren.
-  const [storageUsage, webhooks, userNotificationCounts] = await Promise.all([
-    canViewSystemMessages && settings?.notifyStorageQuota !== false ?
-      getMediaStorageUsage()
-    : null,
-    canViewSystemMessages && settings?.notifyWebhookFailures !== false ?
-      getWebhooks({ pageSize: 1 })
-    : null,
-    canViewUserNotifications &&
-    (settings?.notifyPendingActivations !== false ||
-      settings?.notifyFailedLogins !== false ||
-      settings?.notifyPendingPasswordChanges !== false) ?
-      getUserNotificationCounts()
-    : null,
-  ]);
-  const systemMessageCount =
-    (canViewSystemMessages ?
-      Number(
-        settings?.notifyMaintenanceMode !== false &&
-          Boolean(settings?.maintenanceModeEnabled),
-      ) +
-      Number(
-        settings?.notifyStorageQuota !== false &&
-          (storageUsage?.percentUsed ?? 0) >=
-            STORAGE_WARNING_THRESHOLD_PERCENT,
-      ) +
-      Number(
-        settings?.notifyWebhookFailures !== false &&
-          (webhooks?.meta.failingCount ?? 0) > 0,
-      )
-    : 0) +
-    (canViewUserNotifications ?
-      Number(
-        settings?.notifyPendingActivations !== false &&
-          (userNotificationCounts?.pendingActivation ?? 0) > 0,
-      ) +
-      Number(
-        settings?.notifyFailedLogins !== false &&
-          (userNotificationCounts?.failedLogins ?? 0) > 0,
-      ) +
-      Number(
-        settings?.notifyPendingPasswordChanges !== false &&
-          (userNotificationCounts?.pendingPasswordChange ?? 0) > 0,
-      )
-    : 0);
+  // Glocken-Badge im Header zeigt die Anzahl ungelesener Einträge im
+  // echten Benachrichtigungs-Postfach (Nutzervorgabe, 2026-08-21, Umbau
+  // von /dashboard/system-messages auf ein persistentes Postfach) –
+  // `getNotifications()` synct dabei serverseitig die aktuell
+  // zutreffenden Bedingungen (siehe NotificationsService.sync()), bevor
+  // der Ungelesen-Zähler gebildet wird.
+  const notifications = await getNotifications();
+  const systemMessageCount = (notifications ?? []).filter(
+    (n) => !n.isRead,
+  ).length;
 
   // Cookie-Name muss mit SIDEBAR_COOKIE_NAME in ui/sidebar.tsx übereinstimmen.
   // Kann nicht importiert werden: sidebar.tsx ist "use client", einfache
@@ -141,7 +83,6 @@ export default async function DashboardLayout({
             user={user}
             defaultPageSize={settings?.defaultPageSize ?? 10}
             systemMessageCount={systemMessageCount}
-            notifyLocalDrafts={settings?.notifyLocalDrafts !== false}
             allowTwoFactor={settings?.allowTwoFactor ?? false}
             keyboardShortcutsEnabled={settings?.keyboardShortcutsEnabled !== false}
           />

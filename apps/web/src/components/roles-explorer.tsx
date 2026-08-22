@@ -29,7 +29,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
+import { cn, truncateMiddle } from "@/lib/utils";
 import {
   actionLabels,
   categoryLabels,
@@ -71,10 +71,12 @@ export function RolesExplorer({
   roles,
   selectedRoleId,
   permissionsCatalog,
+  viewerIsPivot,
 }: {
   roles: Role[];
   selectedRoleId: string | null;
   permissionsCatalog: PermissionDescriptor[];
+  viewerIsPivot: boolean;
 }) {
   const router = useRouter();
   const selectedRole = roles.find((r) => r.id === selectedRoleId) ?? null;
@@ -131,7 +133,11 @@ export function RolesExplorer({
     setPermissions(new Set(selectedRole?.permissions ?? []));
   }
 
-  const isAdministrator = selectedRole?.name === "Administrator";
+  // Pivot ist die neue, höchste Rolle (Nutzervorgabe, 2026-08-21: "kann
+  // alles") und genauso schreibgeschützt wie Administrator zuvor – gleicher
+  // Grund, gleiche Behandlung.
+  const isAdministrator =
+    selectedRole?.name === "Administrator" || selectedRole?.name === "Pivot";
   const isDirty =
     selectedRole !== null &&
     (description !== (selectedRole.description ?? "") ||
@@ -232,6 +238,7 @@ export function RolesExplorer({
     extensions: permissionsCatalog.filter((p) => p.category === "extensions").length,
     administration: permissionsCatalog.filter((p) => p.category === "administration")
       .length,
+    system: permissionsCatalog.filter((p) => p.category === "system").length,
   };
 
   return (
@@ -243,7 +250,8 @@ export function RolesExplorer({
         <div className="flex flex-col divide-y divide-[#F0F0F0]">
           {roles.map((role) => {
             const active = role.id === selectedRoleId;
-            const isAdmin = role.name === "Administrator";
+            const isPivotRole = role.name === "Pivot";
+            const isAdmin = role.name === "Administrator" || isPivotRole;
             const rightsLabel =
               role.permissions.length === totalCatalog
                 ? "alle Rechte"
@@ -260,7 +268,18 @@ export function RolesExplorer({
                 )}
               >
                 <span className="flex items-center gap-1.5 font-medium">
-                  {isAdmin && <Lock className="size-3.5 text-muted-foreground" />}
+                  {isPivotRole ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src="/brand/logo-collapsed.png"
+                      alt=""
+                      className="size-3.5 shrink-0 object-contain"
+                    />
+                  ) : (
+                    isAdmin && (
+                      <Lock className="size-3.5 text-muted-foreground" />
+                    )
+                  )}
                   {role.name}
                 </span>
                 <span className="text-xs text-muted-foreground">
@@ -303,6 +322,14 @@ export function RolesExplorer({
           <div className="flex flex-col gap-5 rounded-[10px] bg-card p-6 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex items-center gap-2">
+                {selectedRole.name === "Pivot" && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src="/brand/logo-collapsed.png"
+                    alt=""
+                    className="size-5 shrink-0 object-contain"
+                  />
+                )}
                 <h2 className="text-xl font-semibold">{selectedRole.name}</h2>
                 {isAdministrator ? (
                   <Badge variant="secondary" className="gap-1">
@@ -470,6 +497,15 @@ export function RolesExplorer({
                             .map((p) => p.key)
                             .filter((key) => permissions.has(key));
                           const allSelected = assignedKeys.length === perms.length;
+                          // Nur Pivot darf `settings:*` vergeben
+                          // (Nutzervorgabe, 2026-08-21) – bei jeder Rolle
+                          // sichtbar, aber für alle außer Pivot deaktiviert,
+                          // unabhängig davon, welche Rolle gerade bearbeitet
+                          // wird (spiegelt RolesService.
+                          // assertMaySetSettingsPermissions serverseitig).
+                          const resourceLocked =
+                            isAdministrator ||
+                            (resource === "settings" && !viewerIsPivot);
                           return (
                             <div
                               key={resource}
@@ -493,7 +529,7 @@ export function RolesExplorer({
                                 </div>
                                 <button
                                   type="button"
-                                  disabled={isAdministrator}
+                                  disabled={resourceLocked}
                                   onClick={() =>
                                     toggleResourceAll(
                                       perms.map((p) => p.key),
@@ -513,7 +549,7 @@ export function RolesExplorer({
                                       id={key}
                                       className="size-5 rounded-md"
                                       checked={permissions.has(key)}
-                                      disabled={isAdministrator}
+                                      disabled={resourceLocked}
                                       onCheckedChange={(checked) =>
                                         togglePermission(key, checked === true)
                                       }
@@ -540,7 +576,7 @@ export function RolesExplorer({
         <ConfirmDeleteDialog
           open={deleteOpen}
           onOpenChange={setDeleteOpen}
-          title={`„${selectedRole.name}“ löschen?`}
+          title={`„${truncateMiddle(selectedRole.name)}“ löschen?`}
           description="Diese Aktion kann nicht rückgängig gemacht werden."
           onConfirm={handleDelete}
         />

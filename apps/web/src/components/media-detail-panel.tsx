@@ -33,7 +33,7 @@ import {
   mediaTypeStyle,
 } from "@/lib/media-type";
 import { tagDotColor } from "@/lib/tag-colors";
-import { cn, formatBytes } from "@/lib/utils";
+import { cn, formatBytes, truncateMiddle } from "@/lib/utils";
 import type { MediaFolder, MediaItem, TaxonomyItem } from "@/lib/api-server";
 
 const dateFormatter = new Intl.DateTimeFormat("de-DE", {
@@ -260,8 +260,8 @@ export function MediaDetailPanel({
       <ConfirmDeleteDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title={`„${item.filename}“ löschen?`}
-        description="Diese Aktion kann nicht rückgängig gemacht werden."
+        title={`„${truncateMiddle(item.filename)}“ löschen?`}
+        description="Wird in den Papierkorb verschoben und kann von dort wiederhergestellt werden."
         onConfirm={handleDelete}
       />
     </div>

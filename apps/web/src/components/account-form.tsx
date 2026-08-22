@@ -31,6 +31,9 @@ const profileSchema = z.object({
   email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben."),
   department: z.string().optional(),
   phone: z.string().optional(),
+  street: z.string().optional(),
+  postalCode: z.string().optional(),
+  city: z.string().optional(),
 });
 
 type ProfileValues = z.infer<typeof profileSchema>;
@@ -62,6 +65,9 @@ export function AccountForm({
       email: user.email,
       department: user.department ?? "",
       phone: user.phone ?? "",
+      street: user.street ?? "",
+      postalCode: user.postalCode ?? "",
+      city: user.city ?? "",
     },
   });
 
@@ -79,6 +85,9 @@ export function AccountForm({
           email: values.email,
           department: values.department || undefined,
           phone: values.phone || undefined,
+          street: values.street || undefined,
+          postalCode: values.postalCode || undefined,
+          city: values.city || undefined,
         }),
       });
 
@@ -181,6 +190,47 @@ export function AccountForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Telefon</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="street"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Straße und Hausnummer</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-1 gap-x-10 gap-y-10 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="postalCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>PLZ</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ort</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>

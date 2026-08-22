@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -31,20 +31,17 @@ import {
 import type { CurrentUser } from "@/lib/api-server";
 import { mediaUrl } from "@/lib/media";
 import { cn, formatName, formatRelativeTime, initials } from "@/lib/utils";
-import { listLocalDrafts, onLocalDraftsChanged } from "@/lib/local-drafts";
 
 export function DashboardHeader({
   user,
   defaultPageSize,
   systemMessageCount = 0,
-  notifyLocalDrafts = true,
   allowTwoFactor = false,
   keyboardShortcutsEnabled = true,
 }: {
   user: CurrentUser;
   defaultPageSize: number;
   systemMessageCount?: number;
-  notifyLocalDrafts?: boolean;
   allowTwoFactor?: boolean;
   keyboardShortcutsEnabled?: boolean;
 }) {
@@ -57,22 +54,6 @@ export function DashboardHeader({
   // Geschwister-Elemente im Header nicht.
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
-  // Lokale (nur in diesem Browser gespeicherte) Entwürfe fließen zusätzlich
-  // zu den echten Server-weiten Systemmeldungen in den Glocken-Badge ein
-  // (Nutzervorgabe, 2026-08-16: "es gibt nicht gespeicherte Entwürfe, wird
-  // aber nicht bei der Glocke angezeigt") – lässt sich nicht serverseitig
-  // in `dashboard/layout.tsx` berechnen, da `localStorage` nie den Browser
-  // verlässt. `onLocalDraftsChanged` hält den Zähler live synchron mit dem
-  // Content-Editor im selben Tab (siehe lib/local-drafts.ts).
-  const [localDraftCount, setLocalDraftCount] = useState(0);
-  useEffect(() => {
-    function sync() {
-      setLocalDraftCount(listLocalDrafts().length);
-    }
-    sync();
-    return onLocalDraftsChanged(sync);
-  }, []);
-
   async function handleLogout() {
     setIsLoggingOut(true);
     try {
@@ -84,15 +65,13 @@ export function DashboardHeader({
   }
 
   const permissions = user.permissions ?? [];
-  // Anders als die restlichen Verwaltung-Einträge ist die Glocke nicht
-  // hinter `settings:manage` versteckt: der lokale Entwurfs-Hinweis
-  // betrifft jeden Nutzer, der Inhalte bearbeitet, nicht nur Admins.
-  //
-  // Zählt 1:1 dieselben Karten, die auch auf /dashboard/system-messages
-  // sichtbar sind (jeder lokale Entwurf einzeln) – nicht nur "Kategorien"
-  // (Nutzer-Feedback: "ich habe 3 Nachrichten, Badge zeigt nur 1").
-  const totalMessageCount =
-    systemMessageCount + (notifyLocalDrafts ? localDraftCount : 0);
+  // Zählt exakt die ungelesenen Einträge im echten Benachrichtigungs-
+  // Postfach (Nutzervorgabe, 2026-08-21: Badge zeigte vorher mehr an, als
+  // auf der Seite selbst sichtbar war, weil lokale Entwürfe zusätzlich
+  // mitgezählt wurden – die aber, weil rein browserlokal, nie als Zeile
+  // im serverseitigen Postfach auftauchen konnten. Badge und Seite zeigen
+  // jetzt dieselbe Zahl).
+  const totalMessageCount = systemMessageCount;
   const canViewSettings = permissions.includes("settings:read");
 
   return (
@@ -116,6 +95,7 @@ export function DashboardHeader({
           onOpenPalette={() => setPaletteOpen(true)}
           mobileOpen={mobileSearchOpen}
           onMobileOpenChange={setMobileSearchOpen}
+          shortcutsEnabled={keyboardShortcutsEnabled}
         />
         <CommandPalette
           user={user}
@@ -132,7 +112,7 @@ export function DashboardHeader({
                 size="icon"
                 className="size-11 rounded-full bg-card"
                 render={<Link href="/dashboard/system-messages" />}
-                aria-label="Systemnachrichten"
+                aria-label="Benachrichtigungen"
               >
                 <Bell />
               </Button>

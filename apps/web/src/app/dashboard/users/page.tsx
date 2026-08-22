@@ -9,8 +9,8 @@ import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 import {
   getCurrentUser,
+  getPublicSettings,
   getRoles,
-  getSettings,
   getUsers,
 } from "@/lib/api-server";
 
@@ -29,22 +29,40 @@ export default async function UsersPage({
   const roleId = role && role !== "all" ? role : undefined;
   const isActive =
     status === "active" ? true : status === "inactive" ? false : undefined;
+  const anonymized = status === "anonymized" ? true : undefined;
+  const deleted = status === "deleted" ? true : undefined;
 
-  const settings = await getSettings();
+  // `getPublicSettings()` statt `getSettings()`: diese Seite braucht nur
+  // `defaultPageSize`/`allowTwoFactor` (App-weites Verhalten, keine
+  // sensiblen Daten) – `getSettings()` verlangt `settings:read`, das
+  // Administrator seit der Pivot-Rolle nicht mehr hat und wäre sonst
+  // still auf den `?? true`/`?? 10`-Fallback zurückgefallen, obwohl der
+  // echte Wert etwas anderes sein könnte (Nutzer-Bugreport, 2026-08-22).
+  const settings = await getPublicSettings();
   const pageSize = settings?.defaultPageSize ?? 10;
 
-  const [users, currentUser, roles, allCount, activeCount, inactiveCount] =
-    await Promise.all([
-      getUsers({ page, pageSize, roleId, isActive, q }),
-      getCurrentUser(),
-      // Volle Rollenliste für Auswahl-Dropdown/Filter – bewusst unpaginiert
-      // mit großer fester pageSize statt der echten Pagination der
-      // Rollen-Seite, siehe knowledge-base/frontend/pagination.md.
-      getRoles({ pageSize: 100 }),
-      getUsers({ page: 1, pageSize: 1, roleId, q }),
-      getUsers({ page: 1, pageSize: 1, roleId, q, isActive: true }),
-      getUsers({ page: 1, pageSize: 1, roleId, q, isActive: false }),
-    ]);
+  const [
+    users,
+    currentUser,
+    roles,
+    allCount,
+    activeCount,
+    inactiveCount,
+    anonymizedCount,
+    deletedCount,
+  ] = await Promise.all([
+    getUsers({ page, pageSize, roleId, isActive, anonymized, deleted, q }),
+    getCurrentUser(),
+    // Volle Rollenliste für Auswahl-Dropdown/Filter – bewusst unpaginiert
+    // mit großer fester pageSize statt der echten Pagination der
+    // Rollen-Seite, siehe knowledge-base/frontend/pagination.md.
+    getRoles({ pageSize: 100 }),
+    getUsers({ page: 1, pageSize: 1, roleId, q }),
+    getUsers({ page: 1, pageSize: 1, roleId, q, isActive: true }),
+    getUsers({ page: 1, pageSize: 1, roleId, q, isActive: false }),
+    getUsers({ page: 1, pageSize: 1, roleId, q, anonymized: true }),
+    getUsers({ page: 1, pageSize: 1, roleId, q, deleted: true }),
+  ]);
 
   return (
     <div className="flex flex-col gap-10">
@@ -80,6 +98,8 @@ export default async function UsersPage({
                 all: allCount?.meta.total ?? 0,
                 active: activeCount?.meta.total ?? 0,
                 inactive: inactiveCount?.meta.total ?? 0,
+                anonymized: anonymizedCount?.meta.total ?? 0,
+                deleted: deletedCount?.meta.total ?? 0,
               }}
             />
             <div className="rounded-[10px] bg-card shadow-sm">

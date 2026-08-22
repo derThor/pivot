@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { HighlightText } from "@/components/highlight-text";
 import { UserRowActions } from "@/components/user-row-actions";
+import { UserRestoreButton } from "@/components/user-restore-button";
 import { useHighlightParam } from "@/hooks/use-highlight-param";
 import { formatName, formatRelativeTime, initials } from "@/lib/utils";
 import { mediaUrl } from "@/lib/media";
@@ -109,16 +110,28 @@ export function UsersTable({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant="secondary"
-                      className={
-                        user.isActive
-                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
-                          : "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
-                      }
-                    >
-                      {user.isActive ? "Aktiv" : "Deaktiviert"}
-                    </Badge>
+                    {user.anonymizedAt ?
+                      <Badge
+                        variant="secondary"
+                        className="bg-muted text-muted-foreground"
+                      >
+                        Anonymisiert
+                      </Badge>
+                    : user.deletedAt ?
+                      <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                        Gelöscht
+                      </Badge>
+                    : <Badge
+                        variant="secondary"
+                        className={
+                          user.isActive
+                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
+                            : "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
+                        }
+                      >
+                        {user.isActive ? "Aktiv" : "Deaktiviert"}
+                      </Badge>
+                    }
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {user.lastLoginAt
@@ -126,7 +139,19 @@ export function UsersTable({
                       : "–"}
                   </TableCell>
                   <TableCell>
-                    <UserRowActions user={user} isSelf={isSelf} />
+                    {/* Anonymisierte Konten sind ein Endzustand – nichts
+                        mehr zu bearbeiten. Gelöschte (noch nicht
+                        anonymisierte) Konten lassen sich nur noch
+                        wiederherstellen. */}
+                    {user.anonymizedAt ? null
+                    : user.deletedAt ?
+                      <div className="flex justify-center">
+                        <UserRestoreButton
+                          userId={user.id}
+                          name={formatName(user)}
+                        />
+                      </div>
+                    : <UserRowActions user={user} isSelf={isSelf} />}
                   </TableCell>
                 </TableRow>
               );

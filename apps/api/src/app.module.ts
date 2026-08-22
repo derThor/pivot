@@ -32,6 +32,7 @@ import { DataProcessorsModule } from './data-processors/data-processors.module';
 import { PrivacyIncidentsModule } from './privacy-incidents/privacy-incidents.module';
 import { PrivacyModule } from './privacy/privacy.module';
 import { TrashModule } from './trash/trash.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { validateEnv } from './common/config/env.validation';
 
 @Module({
@@ -72,6 +73,7 @@ import { validateEnv } from './common/config/env.validation';
     PrivacyIncidentsModule,
     PrivacyModule,
     TrashModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

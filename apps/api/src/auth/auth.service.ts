@@ -491,7 +491,11 @@ export class AuthService {
     }
     await this.assertPasswordNotLeaked(settings, dto.newPassword);
     if (settings.passwordPreventReuseEnabled) {
-      await this.assertPasswordNotReused(userId, user.passwordHash, dto.newPassword);
+      await this.assertPasswordNotReused(
+        userId,
+        user.passwordHash,
+        dto.newPassword,
+      );
     }
 
     const passwordHash = await argon2.hash(dto.newPassword);
@@ -804,9 +808,12 @@ export class AuthService {
       );
     }
     const roles = target.userRoles.map((ur) => ur.role);
-    if (roles.some((role) => role.name === 'Administrator')) {
+    // Pivot ebenfalls gesperrt (Nutzervorgabe, 2026-08-21): sonst könnte
+    // ein Administrator per Impersonation doch an Pivot-exklusive
+    // Einstellungen kommen, obwohl "keine admins" für Einstellungen gilt.
+    if (roles.some((role) => ['Administrator', 'Pivot'].includes(role.name))) {
       throw new ForbiddenException(
-        'Administrator-Konten können nicht angesehen werden.',
+        'Administrator- und Pivot-Konten können nicht angesehen werden.',
       );
     }
 
@@ -960,7 +967,9 @@ export class AuthService {
       !user.twoFactorEnabled &&
       (settings.requireTwoFactorForAll ||
         (settings.requireTwoFactorForAdmins &&
-          roles.some((role) => role.name === 'Administrator')) ||
+          roles.some((role) =>
+            ['Administrator', 'Pivot'].includes(role.name),
+          )) ||
         (settings.requireTwoFactorForPublishers &&
           permissions.includes('content:publish')));
 

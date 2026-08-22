@@ -1,11 +1,38 @@
 import { SettingsForm } from "@/components/settings-form";
 import { PageContent } from "@/components/page-content";
-import { getMediaFolders, getSettings } from "@/lib/api-server";
+import {
+  getMediaFolders,
+  getSettings,
+  getSettingsChanges,
+  getWebhooks,
+} from "@/lib/api-server";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ webhooksPage?: string; protocolPage?: string }>;
+}) {
+  const { webhooksPage: webhooksPageParam, protocolPage: protocolPageParam } =
+    await searchParams;
+  const webhooksPage = Number(webhooksPageParam) || 1;
+  const protocolPage = Number(protocolPageParam) || 1;
+
   const [settings, folders] = await Promise.all([
     getSettings(),
     getMediaFolders(),
+  ]);
+  // Eigener Query-Param `webhooksPage`/`protocolPage` statt `page`, damit
+  // sich die Paginierungen der einzelnen Einstellungen-Abschnitte nicht
+  // gegenseitig überschreiben.
+  const [webhooks, settingsChanges] = await Promise.all([
+    getWebhooks({
+      page: webhooksPage,
+      pageSize: settings?.defaultPageSize ?? 10,
+    }),
+    getSettingsChanges({
+      page: protocolPage,
+      pageSize: settings?.defaultPageSize ?? 10,
+    }),
   ]);
   // Nach Namen filtern statt nur `isSystem`: seit dem "Avatare"-Systemordner
   // (Profilfoto-Upload, 2026-08-17) gibt es mehr als einen isSystem-Ordner.
@@ -30,5 +57,12 @@ export default async function SettingsPage() {
     );
   }
 
-  return <SettingsForm settings={settings} logoFolderId={logoFolderId} />;
+  return (
+    <SettingsForm
+      settings={settings}
+      logoFolderId={logoFolderId}
+      webhooks={webhooks}
+      settingsChanges={settingsChanges}
+    />
+  );
 }

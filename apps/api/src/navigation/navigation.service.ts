@@ -16,6 +16,7 @@ const itemSelect = {
   id: true,
   label: true,
   externalUrl: true,
+  openInNewTab: true,
   sortOrder: true,
   parentId: true,
   contentId: true,
@@ -144,6 +145,7 @@ export class NavigationService {
         contentId: dto.contentId ?? null,
         externalUrl: dto.externalUrl ?? null,
         parentId: dto.parentId ?? null,
+        openInNewTab: dto.openInNewTab ?? false,
         sortOrder: (maxSortOrder._max.sortOrder ?? -1) + 1,
       },
       select: itemSelect,
@@ -187,6 +189,9 @@ export class NavigationService {
           contentId: null,
         }),
         ...(dto.parentId !== undefined && { parentId: dto.parentId }),
+        ...(dto.openInNewTab !== undefined && {
+          openInNewTab: dto.openInNewTab,
+        }),
       },
       select: itemSelect,
     });

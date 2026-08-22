@@ -36,14 +36,29 @@ export async function proxyToApi(
 
   const contentType = backendRes.headers.get("content-type") ?? "";
   if (contentType.includes("text/csv")) {
-    const text = await backendRes.text();
-    return new NextResponse(text, {
+    // arrayBuffer() statt text(): Response.text() dekodiert laut WHATWG-Spec
+    // als UTF-8 und entfernt dabei ein führendes BOM automatisch – die Datei
+    // kam dadurch beim Download ohne BOM an (Nutzer-Bugreport, 2026-08-19).
+    const buffer = await backendRes.arrayBuffer();
+    return new NextResponse(buffer, {
       status: backendRes.status,
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition":
           backendRes.headers.get("content-disposition") ??
           'attachment; filename="bericht.csv"',
+      },
+    });
+  }
+  if (contentType.includes("application/zip")) {
+    const buffer = await backendRes.arrayBuffer();
+    return new NextResponse(buffer, {
+      status: backendRes.status,
+      headers: {
+        "Content-Type": "application/zip",
+        "Content-Disposition":
+          backendRes.headers.get("content-disposition") ??
+          'attachment; filename="download.zip"',
       },
     });
   }

@@ -19,6 +19,7 @@ const EMPTY_FORM = {
   purpose: "",
   legalBasis: "",
   dataCategories: "",
+  retentionPeriod: "",
   recipients: "",
 };
 
@@ -27,6 +28,7 @@ function toForm(row: ProcessingActivity) {
     purpose: row.purpose,
     legalBasis: row.legalBasis ?? "",
     dataCategories: row.dataCategories ?? "",
+    retentionPeriod: row.retentionPeriod ?? "",
     recipients: row.recipients ?? "",
   };
 }
@@ -65,6 +67,7 @@ export function ProcessingActivityDialog({
         purpose: form.purpose,
         legalBasis: form.legalBasis || undefined,
         dataCategories: form.dataCategories || undefined,
+        retentionPeriod: form.retentionPeriod || undefined,
         recipients: form.recipients || undefined,
       };
       const res = await fetch(
@@ -103,7 +106,7 @@ export function ProcessingActivityDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
-            <Label htmlFor="pa-purpose">Zweck</Label>
+            <Label htmlFor="pa-purpose" required>Zweck</Label>
             <Input
               id="pa-purpose"
               autoFocus
@@ -132,6 +135,17 @@ export function ProcessingActivityDialog({
                 setForm((p) => ({ ...p, dataCategories: e.target.value }))
               }
               placeholder="z.B. Name, E-Mail-Adresse"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="pa-retention">Löschfrist</Label>
+            <Input
+              id="pa-retention"
+              value={form.retentionPeriod}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, retentionPeriod: e.target.value }))
+              }
+              placeholder="z.B. 90 Tage, bis Widerruf, 10 Jahre"
             />
           </div>
           <div className="flex flex-col gap-1">

@@ -125,7 +125,7 @@ export function FaqGroupDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="faq-group-name">Name</Label>
+            <Label htmlFor="faq-group-name" required>Name</Label>
             <Input
               id="faq-group-name"
               value={name}

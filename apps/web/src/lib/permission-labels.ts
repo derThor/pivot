@@ -7,11 +7,11 @@ import {
   Images,
   Layers,
   Link2,
+  Lock,
   ShieldCheck,
   Settings,
   Tags,
   Users,
-  Webhook,
   type LucideIcon,
 } from "lucide-react";
 
@@ -30,10 +30,10 @@ export const resourceLabels: Record<string, string> = {
   gallery: "Galerien",
   faq: "FAQs",
   "preview-links": "Vorschau-Links",
-  webhooks: "Webhooks",
   users: "Benutzer",
   roles: "Rollen & Rechte",
   settings: "Einstellungen",
+  privacy: "Datenschutz",
 };
 
 export const resourceIcons: Record<string, LucideIcon> = {
@@ -46,10 +46,10 @@ export const resourceIcons: Record<string, LucideIcon> = {
   gallery: Images,
   faq: HelpCircle,
   "preview-links": Link2,
-  webhooks: Webhook,
   users: Users,
   roles: ShieldCheck,
   settings: Settings,
+  privacy: Lock,
 };
 
 export const actionLabels: Record<string, string> = {
@@ -69,6 +69,7 @@ export const categoryLabels: Record<PermissionDescriptor["category"], string> = 
   core: "Kern",
   extensions: "Erweiterungen",
   administration: "Verwaltung",
+  system: "System",
 };
 
 // Abschnitts-Überschriften über den Rechte-Karten-Gruppen im Detail-Panel –
@@ -78,14 +79,17 @@ export const categorySectionLabels: Record<PermissionDescriptor["category"], str
   core: "Kern-Module",
   extensions: "Erweiterungen",
   administration: "Verwaltung",
+  system: "System",
 };
 
 // Reihenfolge der Kategorie-Tabs (fix, nicht von der Katalog-Reihenfolge
-// abhängig).
+// abhängig). `system` (nur `settings`, Nutzervorgabe 2026-08-21) ganz
+// hinten – die exklusivste Gruppe, analog zur Pivot-Rolle als höchste Stufe.
 export const categoryOrder: PermissionDescriptor["category"][] = [
   "core",
   "extensions",
   "administration",
+  "system",
 ];
 
 export function groupByResource(

@@ -32,6 +32,23 @@
   Der Fehlerfall wird bewusst verschluckt (`.catch(() => {})`), nicht an
   den Client durchgereicht.
 
+## Nachtrag 2026-08-20: Papierkorb-Dateien blieben unter alter URL herunterladbar
+
+Nutzer-Bugreport (über die Drittlandtransfer-SCC-Vorlage in der
+Datenschutz-Seite): eine in den Medien-Papierkorb verschobene Datei war
+über ihre alte `/uploads/...`-URL weiterhin unauthentifiziert abrufbar,
+weil `remove()` bisher nur `deletedAt` setzte, die physische Datei aber
+unverändert in `UPLOAD_DIR` liegen ließ (per `useStaticAssets` komplett
+ungeschützt servierbar). Fix: neues Geschwister-Verzeichnis `TRASH_DIR`
+(`apps/api/uploads-trash/`, außerhalb des Static-Serving-Prefixes) –
+`remove()` verschiebt Hauptdatei+Varianten+Thumbnail dorthin,
+`restore()` zurück, `permanentDelete()` löscht von dort. Zusätzlich
+filtert `SettingsService.getPublic()` die SCC-Vorlagen-Referenz jetzt
+nach `deletedAt: null`, damit der Download-Button bei einer Papierkorb-
+Datei sauber verschwindet statt auf einen toten Link zu zeigen. Details:
+[ui-convention-crud-and-delete-confirmation.md](../frontend/ui-convention-crud-and-delete-confirmation.md)
+(Namenskürzung im selben Bugreport-Kontext).
+
 ## Stolpersteine / Besonderheiten
 
 - Keine – deckungsgleiches Muster wie bei Content bearbeiten/löschen und
@@ -40,6 +57,8 @@
 ## Relevante Dateien
 
 - `apps/api/src/media/media.service.ts` (`update`, `remove`)
+- `apps/api/src/media/media.config.ts` (`TRASH_DIR`, siehe Nachtrag 2026-08-20)
+- `apps/api/src/settings/settings.service.ts` (`getPublic()`, SCC-Vorlagen-Filter)
 - `apps/api/src/media/media.controller.ts`
 - `apps/api/src/media/dto/update-media.dto.ts`
 - `apps/web/src/components/media-card-actions.tsx`

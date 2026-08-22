@@ -51,10 +51,7 @@ export function ModuleFieldInput({
     const img = toImageValue(value);
     return (
       <div className="flex flex-col gap-1.5">
-        <Label>
-          {field.name}
-          {field.required && <span className="text-destructive"> *</span>}
-        </Label>
+        <Label required={field.required}>{field.name}</Label>
         <button
           type="button"
           onClick={() => setPickerOpen(true)}
@@ -118,10 +115,7 @@ export function ModuleFieldInput({
     const embedSrc = video.url ? videoEmbedSrc(video.url) : null;
     return (
       <div className="flex flex-col gap-1.5">
-        <Label>
-          {field.name}
-          {field.required && <span className="text-destructive"> *</span>}
-        </Label>
+        <Label required={field.required}>{field.name}</Label>
         {video.url ? (
           <div className="flex flex-col gap-2">
             {embedSrc ? (
@@ -214,10 +208,7 @@ export function ModuleFieldInput({
 
     return (
       <div className="flex flex-col gap-2">
-        <Label>
-          {field.name}
-          {field.required && <span className="text-destructive"> *</span>}
-        </Label>
+        <Label required={field.required}>{field.name}</Label>
         {/* Container-Query statt Viewport-Breakpoint (`@sm`/`@xl` statt
             `sm`/`xl`): dieselbe Komponente läuft sowohl im schmalen
             Schnell-anlegen-Popup im Designer (siehe
@@ -292,9 +283,11 @@ export function ModuleFieldInput({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <Label htmlFor={`module-field-${field.name}`}>
+      <Label
+        htmlFor={`module-field-${field.name}`}
+        required={field.required}
+      >
         {field.name}
-        {field.required && <span className="text-destructive"> *</span>}
       </Label>
       {field.type === "richtext" ? (
         <RichTextEditor

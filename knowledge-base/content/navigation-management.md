@@ -287,9 +287,93 @@ kompletten Durchgang).
 
 - Kein Deep-Link/Highlight für Menü-Einträge aus der globalen Suche
   (Navigation ist aktuell kein eigener Suchbereich).
-- Content-Picker im "Eintrag hinzufügen"-Dialog ist eine flache Liste
-  ohne Live-Suche/Filterung – bei vielen Inhalten unhandlich, siehe
-  Stolpersteine.
+
+## Update 2026-08-21: Live-Suche im Content-Picker
+
+Auf die Frage "was sollten wir bei dem menü noch hinzufügen?" →
+"mach es": der Content-Picker im "Eintrag hinzufügen"/"bearbeiten"-Dialog
+(`navigation-item-dialog.tsx`) war eine flache, serverseitig auf 100
+Einträge begrenzte `<Select>`-Liste (`getContentList({ pageSize: 100 })`)
+ohne Filterung – bei vielen Seiten unhandlich, und Inhalte jenseits der
+ersten 100 waren gar nicht auswählbar.
+
+Ersetzt durch eine neue `ContentPicker`-Komponente (Such-als-du-tippst,
+gleiches Muster wie `header-search.tsx`: 300ms Debounce, Mindestlänge 3
+Zeichen, Klick-außerhalb schließt und verwirft ungespeicherte Eingaben).
+Nutzt den bereits vorhandenen, bis dahin ungenutzten Endpoint
+`GET /content/search` (Postgres-Volltextsuche, siehe
+`ContentService.search()`) über die ebenfalls bereits vorhandene, bis
+dahin ungenutzte BFF-Route `/api/content/search` – kein Backend-Codeänderung
+nötig, beides existierte schon für einen anderen (nie gebauten) Zweck.
+
+**Stolperstein**: der erste Entwurf hielt die aktuell ausgewählte
+`contentId` über ein `useEffect`, das bei Divergenz zwischen Eingabetext
+und Auswahl `onChange("", "")` an die Elternkomponente meldete – das löste
+bei jedem Tastendruck einen Eltern-Re-Render mit neuem `key` aus (siehe
+unten) und setzte damit das gerade getippte Zeichen sofort wieder zurück,
+unmöglich zu tippen. Fix: die Elternkomponente hält den zuletzt
+bestätigten Titel (`contentTitle`) und reicht ihn über `key={contentTitle}`
+an `ContentPicker` durch – ein Remount passiert dadurch **nur** nach einer
+echten Auswahl (`select()`) oder einem Formular-Reset, nie während des
+Tippens. Unbestätigter Text wird stattdessen beim Weg-Klicken
+(`handleClickOutside`) lokal auf den letzten bestätigten Titel
+zurückgesetzt, ganz ohne Zustandsänderung in der Elternkomponente.
+
+`contentItems` (weiterhin `getContentList({ pageSize: 100 })`) wird nur
+noch für die Anfangsbefüllung des Titels beim Bearbeiten bestehender
+Einträge gebraucht (`contentTitleById[item.contentId]`) – verweist der
+Eintrag auf einen Inhalt jenseits der ersten 100, bleibt das Feld beim
+Öffnen leer (bekannte, unveränderte Einschränkung wie zuvor).
+
+**Nachbesserung, gleicher Tag ("so muss ich ja genau wissen, wonach ich
+suchen will. blöd")**: eine reine Server-Suche ohne Browse-Möglichkeit war
+eine echte Verschlechterung gegenüber der alten `<Select>`-Liste – man
+musste den Titel vorher kennen, statt einfach durch die vorhandenen
+Inhalte zu blättern. Fix: `ContentPicker` bekommt zusätzlich `browseItems`
+(dieselbe `contentItems`-Liste). Ohne Eingabe bzw. unterhalb
+`MIN_QUERY_LENGTH` (3 Zeichen) zeigt das Dropdown diese Liste
+client-seitig gefiltert (leerer Suchtext = komplette Liste, wie die alte
+`<Select>`); ab 3 Zeichen übernimmt weiterhin die echte Server-Suche
+(deckt auch Inhalte jenseits der 100er-Grenze ab). Browsen und Suchen
+schließen sich damit nicht mehr aus.
+
+**Nachbesserung, gleicher Tag ("das ist nicht gut", Screenshot eines
+aufgeblähten Dialogs mit innerem Scrollbalken, Buttons aus dem
+sichtbaren Bereich geschoben)**: das Dropdown war ein selbstgebautes
+`absolute`-Div *innerhalb* des Dialog-Inhalts – da der Dialog eine
+begrenzte Höhe mit eigenem Scroll hat, wuchs der Dialog-Inhalt beim
+Öffnen des Dropdowns mit, statt frei darüber zu schweben. Alle anderen
+Dropdowns/Selects der App sind dafür portaliert (rendern in
+`document.body`, siehe [[feedback_portal_scoped_css]] und
+`select.tsx`/`dropdown-menu.tsx`).
+
+Fix: neue, wiederverwendbare `components/ui/combobox.tsx` als Wrapper um
+Base UIs `@base-ui/react/combobox`-Primitive (bislang ungenutzt in
+diesem Projekt, aber bereits in der `@base-ui/react`-Abhängigkeit
+enthalten) – analog zu `select.tsx`, aber mit echtem Eingabefeld statt
+nur Trigger-Button. `ContentPicker` nutzt jetzt `Combobox`/
+`ComboboxInput`/`ComboboxContent`/`ComboboxList`/`ComboboxItem`/
+`ComboboxEmpty`/`ComboboxStatus` statt des `absolute`-Divs; die
+Browse-/Live-Suche-Logik von der vorherigen Nachbesserung bleibt
+unverändert, nur `items={visibleResults}` + `filter={null}` (deaktiviert
+Base UIs eigene interne Filterung, da schon extern vorgefiltert wird)
+werden jetzt an die Combobox-Root durchgereicht statt manuell gerendert.
+
+**Stolperstein**: `onValueChange` (Auswahl bestätigen) und `onOpenChange`
+(Popup schließen) feuern bei einem Klick auf einen Eintrag im selben
+React-Batch, Reihenfolge nicht garantiert. Das bisherige "Getipptes ohne
+Auswahl verwerfen"-Zurücksetzen (`setQuery(initialTitle)` in
+`onOpenChange`) konnte dadurch die gerade in `onValueChange` gesetzte
+neue Auswahl wieder überschreiben, mit dem alten (noch nicht per
+Re-Render aktualisierten) `initialTitle`-Wert. Fix: ein `justSelectedRef`
+(kein State, kein zusätzlicher Render) markiert eine echte Auswahl, das
+Zurücksetzen in `onOpenChange` prüft und überspringt sich dann selbst.
+
+**Noch nicht im Browser verifiziert** (kein Browser-Zugriff in dieser
+Session) – Tastatur-Navigation und exakte Popup-Positionierung sollten
+vor dem nächsten Rollen-/Rechte- oder ähnlichen Picker-Einsatz einmal
+real getestet werden, auch wenn Typecheck/Lint/Server-Kompilierung
+sauber sind.
 
 ## Update 2026-08-17: Menü-Sidebar an "Rollen & Rechte"-Look angeglichen
 

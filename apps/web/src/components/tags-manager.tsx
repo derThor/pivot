@@ -18,7 +18,7 @@ import {
 import { TaxonomyItemDialog } from "@/components/taxonomy-item-dialog";
 import { useHighlightParam } from "@/hooks/use-highlight-param";
 import { tagDotColor } from "@/lib/tag-colors";
-import { cn } from "@/lib/utils";
+import { cn, truncateMiddle } from "@/lib/utils";
 import type { Tag } from "@/lib/api-server";
 
 const dateFormatter = new Intl.DateTimeFormat("de-DE", {
@@ -144,8 +144,8 @@ export function TagsManager({
       <ConfirmDeleteDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
-        title={`„${deleteTarget?.name}“ löschen?`}
-        description="Diese Aktion kann nicht rückgängig gemacht werden."
+        title={`„${truncateMiddle(deleteTarget?.name ?? "")}“ löschen?`}
+        description="Wird in den Papierkorb verschoben und kann von dort wiederhergestellt werden."
         onConfirm={handleDelete}
       />
     </div>

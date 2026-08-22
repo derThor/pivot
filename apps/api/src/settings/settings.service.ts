@@ -2,12 +2,24 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
+import { UpdateCompanyDto } from './dto/update-company.dto';
+import { UpdatePrivacyDto } from './dto/update-privacy.dto';
+
+function csvEscape(v: unknown): string {
+  return `"${String(v).replace(/"/g, '""')}"`;
+}
+
+// Ohne BOM interpretieren Excel/Windows-Editoren die UTF-8-Datei als
+// Windows-1252 und zeigen Umlaute als Mojibake – gleiches Muster wie
+// PrivacyService.CSV_BOM (dort ausführlicher kommentiert), hier separat
+// dupliziert statt geteilt, da PrivacyService es nicht exportiert.
+const CSV_BOM = '﻿';
 
 // Firma-Stammdaten-Felder (Verwaltung → Firma, "Letzte Änderungen"-Karte,
 // 2026-08-17) – deutsche Labels leben zusätzlich im Frontend
 // (company-view.tsx), hier nur als Schlüssel-Liste für die Diff-Prüfung
 // in update() unten.
-const COMPANY_FIELD_KEYS = [
+export const COMPANY_FIELD_KEYS = [
   'companyName',
   'companyStreet',
   'companyPostalCode',
@@ -20,10 +32,49 @@ const COMPANY_FIELD_KEYS = [
   'companyRegisterNumber',
   'companyVatId',
   'companySupervisoryAuthority',
+  'companyDisputeResolution',
 ] as const;
 
 const COMPANY_ENTITY_TYPE = 'Company';
 const COMPANY_ENTITY_ID = 'company';
+
+// Alle übrigen (echten) System-Einstellungen – "Protokoll"-Tab unter
+// Einstellungen (Nutzervorgabe, 2026-08-22: "baue protokolierung", 1:1
+// nach Bildvorlage "Letzte Änderungen an den Einstellungen"). Bewusst
+// ausdrücklich NICHT Firma-/Datenschutz-Felder (siehe COMPANY_FIELD_KEYS/
+// PRIVACY_FIELD_KEYS oben) – die haben mit company.field_updated bereits
+// ihre eigene, unveränderte Historie auf der Firma-Seite; Datenschutz-
+// Feldänderungen werden aktuell bewusst noch nirgends protokolliert
+// (kein Datenschutz-Protokoll angefragt).
+const SETTINGS_ENTITY_TYPE = 'Settings';
+const SETTINGS_ENTITY_ID = 'settings';
+
+// Datenschutz-relevante Felder (DSB-Kontakt, Aufbewahrung, Formulare,
+// SCC-Vorlage) – siehe UpdatePrivacyDto. Eigenes Recht `privacy:*` statt
+// `settings:*` (Nutzer-Bugreport, 2026-08-21).
+export const PRIVACY_FIELD_KEYS = [
+  'dpoIsExternal',
+  'dpoName',
+  'dpoCompany',
+  'dpoEmail',
+  'dpoPhone',
+  'dpoAppointedAt',
+  'dpoReportedAt',
+  'dpoSupervisoryAuthority',
+  'dpoLastContactAt',
+  'dpoListInLegalTexts',
+  'dpoNotifyOnIncident',
+  'dpoMonthlyReportEnabled',
+  'retentionFormSubmissionsDays',
+  'retentionAccessLogMonths',
+  'retentionDeactivatedAccountsMonths',
+  'retentionTrashDays',
+  'dsbFormSelfServiceDisclosure',
+  'dsbFormStoreSubmissionIp',
+  'dsrAutoAcknowledgeReceipt',
+  'dsrDeadlineReminderEnabled',
+  'sccTemplateMediaId',
+] as const;
 
 @Injectable()
 export class SettingsService {
@@ -40,12 +91,55 @@ export class SettingsService {
     });
   }
 
+  // Eigener, engerer Lesezugriff für `company:read` (siehe
+  // UpdateCompanyDto) – gibt bewusst nur die Firma-Felder zurück, nicht
+  // die komplette `AppSettings`-Zeile. Sonst könnte jemand mit
+  // ausschließlich `company:read` (z.B. Administrator ohne `settings:*`)
+  // über diesen Umweg trotzdem alle globalen Einstellungen mitlesen.
+  async getCompany() {
+    const settings = await this.get();
+    return Object.fromEntries(
+      COMPANY_FIELD_KEYS.map((key) => [key, settings[key]]),
+    ) as Record<(typeof COMPANY_FIELD_KEYS)[number], string>;
+  }
+
+  async updateCompany(dto: UpdateCompanyDto, actingUserId: string) {
+    await this.update(dto, actingUserId);
+    // Nur die Firma-Felder zurückgeben, nicht die komplette Zeile (siehe
+    // getCompany() oben – gleicher Grund).
+    return this.getCompany();
+  }
+
+  // Gleiches Muster wie getCompany()/updateCompany() für `privacy:*`.
+  async getPrivacy() {
+    const settings = await this.get();
+    return Object.fromEntries(
+      PRIVACY_FIELD_KEYS.map((key) => [key, settings[key]]),
+    ) as Record<(typeof PRIVACY_FIELD_KEYS)[number], unknown>;
+  }
+
+  async updatePrivacy(dto: UpdatePrivacyDto, actingUserId: string) {
+    await this.update(dto, actingUserId);
+    return this.getPrivacy();
+  }
+
   async getPublic() {
     const settings = await this.get();
+    // `deletedAt: null`: die zugehörige Datei ist im Papierkorb nicht mehr
+    // unter der alten URL erreichbar (siehe MediaService.remove()) – ohne
+    // diesen Filter würde der "Vorlage herunterladen"-Button auf einen
+    // toten Link zeigen, statt sauber zu verschwinden.
+    const sccTemplateMedia = settings.sccTemplateMediaId
+      ? await this.prisma.media.findFirst({
+          where: { id: settings.sccTemplateMediaId, deletedAt: null },
+          select: { id: true, filename: true, url: true },
+        })
+      : null;
     return {
       allowRegistration: settings.allowRegistration,
       allowPasswordReset: settings.allowPasswordReset,
       allowEmailChange: settings.allowEmailChange,
+      allowAdminEmailChange: settings.allowAdminEmailChange,
       requireAdminActivation: settings.requireAdminActivation,
       autosaveEnabled: settings.autosaveEnabled,
       mediaResponsiveVariantsEnabled: settings.mediaResponsiveVariantsEnabled,
@@ -74,6 +168,8 @@ export class SettingsService {
       notifyPendingActivations: settings.notifyPendingActivations,
       notifyFailedLogins: settings.notifyFailedLogins,
       notifyPendingPasswordChanges: settings.notifyPendingPasswordChanges,
+      notifyCompanyIncomplete: settings.notifyCompanyIncomplete,
+      notifyLegalDocuments: settings.notifyLegalDocuments,
       companyLogoUrl: settings.companyLogoUrl,
       companyName: settings.companyName,
       companyStreet: settings.companyStreet,
@@ -87,6 +183,7 @@ export class SettingsService {
       companyRegisterNumber: settings.companyRegisterNumber,
       companyVatId: settings.companyVatId,
       companySupervisoryAuthority: settings.companySupervisoryAuthority,
+      companyDisputeResolution: settings.companyDisputeResolution,
       dpoIsExternal: settings.dpoIsExternal,
       dpoName: settings.dpoName,
       dpoCompany: settings.dpoCompany,
@@ -104,6 +201,14 @@ export class SettingsService {
       retentionDeactivatedAccountsMonths:
         settings.retentionDeactivatedAccountsMonths,
       retentionTrashDays: settings.retentionTrashDays,
+      dsbFormSelfServiceDisclosure: settings.dsbFormSelfServiceDisclosure,
+      dsbFormStoreSubmissionIp: settings.dsbFormStoreSubmissionIp,
+      dsrAutoAcknowledgeReceipt: settings.dsrAutoAcknowledgeReceipt,
+      dsrDeadlineReminderEnabled: settings.dsrDeadlineReminderEnabled,
+      notifyDeletionRequests: settings.notifyDeletionRequests,
+      notifyTrashExpiring: settings.notifyTrashExpiring,
+      sccTemplateMediaId: settings.sccTemplateMediaId,
+      sccTemplateMedia,
     };
   }
 
@@ -132,6 +237,30 @@ export class SettingsService {
           metadata: { field: key, wasEmpty: !before },
         });
       }
+
+      // "Protokoll"-Tab unter Einstellungen: alle übrigen Felder (siehe
+      // SETTINGS_ENTITY_TYPE oben) – anders als bei Firma reicht hier
+      // "wasEmpty" nicht, weil Beschreibungen wie "Passwort-Mindestlänge
+      // auf 12 erhöht" den tatsächlichen neuen Wert brauchen, nicht nur
+      // ob vorher leer war.
+      for (const key of Object.keys(dto)) {
+        if (
+          (COMPANY_FIELD_KEYS as readonly string[]).includes(key) ||
+          (PRIVACY_FIELD_KEYS as readonly string[]).includes(key)
+        ) {
+          continue;
+        }
+        const before = existing[key as keyof typeof existing];
+        const after = updated[key as keyof typeof updated];
+        if (before === after) continue;
+        await this.auditLog.record({
+          action: 'settings.field_updated',
+          entityType: SETTINGS_ENTITY_TYPE,
+          entityId: SETTINGS_ENTITY_ID,
+          userId: actingUserId,
+          metadata: { field: key, before, after },
+        });
+      }
     }
 
     return updated;
@@ -143,5 +272,80 @@ export class SettingsService {
       COMPANY_ENTITY_ID,
       limit,
     );
+  }
+
+  // "Protokoll"-Tab unter Einstellungen (Nutzervorgabe, 2026-08-22) – echte
+  // Pagination statt eines festen Limits wie bei getCompanyChanges(), da
+  // hier über die Zeit deutlich mehr Einträge als bei den überschaubaren
+  // 13 Firma-Feldern zusammenkommen können.
+  getSettingsChanges(page: number, pageSize: number) {
+    return this.auditLog.findPaginated(
+      [SETTINGS_ENTITY_TYPE],
+      SETTINGS_ENTITY_ID,
+      page,
+      pageSize,
+    );
+  }
+
+  // Einzelnen Protokoll-Eintrag löschen (Nutzervorgabe, 2026-08-22: "das
+  // soll man löschen können") – bewusst NICHT revisionssicher, anders als
+  // die Firma-Änderungshistorie.
+  deleteSettingsChange(id: string) {
+    return this.auditLog.deleteOne(id);
+  }
+
+  // "Alle löschen" (Nutzervorgabe, 2026-08-22: "mache bei letzte änderung
+  // ... rechts alle löschen dazu").
+  deleteAllSettingsChanges() {
+    return this.auditLog.deleteAllForEntity(
+      [SETTINGS_ENTITY_TYPE],
+      SETTINGS_ENTITY_ID,
+    );
+  }
+
+  // "Einstellungen als JSON" (Nutzervorgabe, 2026-08-22, "Export &
+  // Sicherung"-Karte, "Zum Übertragen auf eine zweite Instanz") – die
+  // komplette `AppSettings`-Zeile inkl. Firma-/Datenschutz-Feldern, ohne
+  // `id` (immer `1`, kein portabler Wert). JSON hat kein BOM-Problem wie
+  // CSV, keine Excel-Interpretation involviert.
+  async exportSettingsJson() {
+    const settings = await this.get();
+    const { id, ...rest } = settings;
+    void id;
+    return rest;
+  }
+
+  // CSV-Export der kompletten Protokoll-Historie (Nutzervorgabe,
+  // 2026-08-22: "füge export hinzu") – gleiches BOM-/Escaping-Muster wie
+  // PrivacyService.generateReportCsv() (siehe dortiger Kommentar zu
+  // Excel/Windows-Mojibake ohne BOM).
+  async exportSettingsChangesCsv(): Promise<string> {
+    const rows = await this.auditLog.findAllForEntity(
+      [SETTINGS_ENTITY_TYPE],
+      SETTINGS_ENTITY_ID,
+    );
+    const header = ['Datum', 'Feld', 'Vorher', 'Nachher', 'Bearbeiter'].join(
+      ',',
+    );
+    const lines = rows.map((row) => {
+      const metadata = row.metadata as {
+        field?: string;
+        before?: unknown;
+        after?: unknown;
+      } | null;
+      const user = row.user
+        ? `${row.user.firstName ?? ''} ${row.user.lastName}`.trim()
+        : '';
+      return [
+        row.createdAt.toISOString(),
+        metadata?.field ?? '',
+        metadata?.before ?? '',
+        metadata?.after ?? '',
+        user,
+      ]
+        .map(csvEscape)
+        .join(',');
+    });
+    return CSV_BOM + [header, ...lines].join('\n');
   }
 }

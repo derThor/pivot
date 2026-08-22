@@ -27,6 +27,7 @@ import { SelectionToolbar } from "@/components/selection-toolbar";
 import { useSelection } from "@/hooks/use-selection";
 import { useHighlightParam } from "@/hooks/use-highlight-param";
 import type { GlobalModule, ModuleType } from "@/lib/api-server";
+import { truncateMiddle } from "@/lib/utils";
 
 export function GlobalModulesManager({
   items,
@@ -77,6 +78,7 @@ export function GlobalModulesManager({
         entityLabelPlural={entityLabelPlural}
         onDelete={handleBulkDelete}
         onClear={clear}
+        confirmDescription="Wird in den Papierkorb verschoben und kann von dort wiederhergestellt werden."
       />
       <div className="overflow-hidden">
         <Table>
@@ -177,8 +179,8 @@ export function GlobalModulesManager({
       <ConfirmDeleteDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
-        title={`„${deleteTarget?.name}“ löschen?`}
-        description="Wird aus allen Seiten entfernt, die es einbinden. Diese Aktion kann nicht rückgängig gemacht werden."
+        title={`„${truncateMiddle(deleteTarget?.name ?? "")}“ löschen?`}
+        description="Wird aus allen Seiten entfernt, die es einbinden, und in den Papierkorb verschoben, von wo es wiederhergestellt werden kann."
         onConfirm={handleDelete}
       />
     </div>

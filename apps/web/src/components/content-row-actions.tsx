@@ -9,6 +9,7 @@ import { toastDeleted } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { RowActionButtons } from "@/components/row-action-buttons";
+import { truncateMiddle } from "@/lib/utils";
 
 export function ContentRowActions({
   id,
@@ -50,8 +51,8 @@ export function ContentRowActions({
       <ConfirmDeleteDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title={`„${title}“ löschen?`}
-        description="Diese Aktion kann nicht rückgängig gemacht werden."
+        title={`„${truncateMiddle(title)}“ löschen?`}
+        description="Wird in den Papierkorb verschoben und kann von dort wiederhergestellt werden."
         onConfirm={handleDelete}
       />
     </div>

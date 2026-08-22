@@ -17,7 +17,7 @@ import {
 import { NavigationDialog } from "@/components/navigation-dialog";
 import { NavigationItemDialog } from "@/components/navigation-item-dialog";
 import { RowActionButtons } from "@/components/row-action-buttons";
-import { cn } from "@/lib/utils";
+import { cn, truncateMiddle } from "@/lib/utils";
 import type {
   ContentListItem,
   NavigationDetail,
@@ -203,7 +203,7 @@ export function NavigationExplorer({
             else void handleDropOnSibling(node, position);
           }}
           className={cn(
-            "flex items-center gap-3 rounded-xl border border-border/60 bg-muted/60 px-4 py-3 transition-colors",
+            "flex items-center gap-3 rounded-xl border border-[#F0F0F0] bg-[#FAFAFA] px-4 py-3 transition-colors",
             isDragOver &&
               dragOverPosition === "before" &&
               "border-t-2 border-t-primary",
@@ -432,7 +432,7 @@ export function NavigationExplorer({
             <ConfirmDeleteDialog
               open={deleteMenuOpen}
               onOpenChange={setDeleteMenuOpen}
-              title={`Menü „${navigation.name}“ löschen?`}
+              title={`Menü „${truncateMiddle(navigation.name)}“ löschen?`}
               description="Alle Einträge dieses Menüs werden mitgelöscht. Diese Aktion kann nicht rückgängig gemacht werden."
               onConfirm={handleDeleteMenu}
             />
@@ -465,7 +465,7 @@ export function NavigationExplorer({
       <ConfirmDeleteDialog
         open={deleteItem !== null}
         onOpenChange={(open) => !open && setDeleteItem(null)}
-        title={`Menüpunkt „${deleteItem?.label}“ löschen?`}
+        title={`Menüpunkt „${truncateMiddle(deleteItem?.label ?? "")}“ löschen?`}
         description="Untereinträge dieses Punkts werden dabei nicht gelöscht, sondern rücken auf die oberste Ebene."
         onConfirm={handleDeleteItem}
       />

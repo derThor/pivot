@@ -60,12 +60,17 @@ type RoleValues = z.infer<typeof roleSchema>;
 export function RoleFormDialog({
   role,
   permissionsCatalog,
+  viewerIsPivot,
   hideTrigger,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
 }: {
   role?: Role;
   permissionsCatalog: PermissionDescriptor[];
+  /** Nur Pivot darf `settings:*` vergeben (Nutzervorgabe, 2026-08-21) –
+   * Checkboxen der Kategorie "settings" bleiben sichtbar, aber für alle
+   * anderen Rollen deaktiviert. */
+  viewerIsPivot: boolean;
   hideTrigger?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -83,7 +88,10 @@ export function RoleFormDialog({
     defaultValues: {
       name: role?.name ?? "",
       description: role?.description ?? "",
-      canAccessDashboard: role?.canAccessDashboard ?? true,
+      // Neue Rollen starten ohne Dashboard-Zugriff – muss aktiv gesetzt
+      // werden (Nutzervorgabe, 2026-08-19), statt versehentlich sofort
+      // Zugriff zu gewähren.
+      canAccessDashboard: role?.canAccessDashboard ?? false,
       permissions: role?.permissions ?? [],
     },
   });
@@ -180,7 +188,7 @@ export function RoleFormDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel required>Name</FormLabel>
                   <FormControl>
                     <Input {...field} disabled={role?.isSystem} />
                   </FormControl>
@@ -234,20 +242,24 @@ export function RoleFormDialog({
                         <p className="text-xs font-medium text-muted-foreground">
                           {resourceLabels[resource] ?? resource}
                         </p>
-                        {permissions.map(({ key, action }) => (
-                          <div key={key} className="flex items-center gap-2">
-                            <Checkbox
-                              id={key}
-                              checked={formPermissions.includes(key)}
-                              onCheckedChange={(checked) =>
-                                togglePermission(key, checked === true)
-                              }
-                            />
-                            <Label htmlFor={key} className="font-normal">
-                              {actionLabels[action] ?? action}
-                            </Label>
-                          </div>
-                        ))}
+                        {permissions.map(({ key, action }) => {
+                          const locked = resource === "settings" && !viewerIsPivot;
+                          return (
+                            <div key={key} className="flex items-center gap-2">
+                              <Checkbox
+                                id={key}
+                                checked={formPermissions.includes(key)}
+                                disabled={locked}
+                                onCheckedChange={(checked) =>
+                                  togglePermission(key, checked === true)
+                                }
+                              />
+                              <Label htmlFor={key} className="font-normal">
+                                {actionLabels[action] ?? action}
+                              </Label>
+                            </div>
+                          );
+                        })}
                       </div>
                     ))}
                   </div>

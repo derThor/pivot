@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { toastEdited } from "@/components/app-toast";
+import { toastDeleted } from "@/components/app-toast";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { RowActionButtons } from "@/components/row-action-buttons";
 import type { CurrentUser } from "@/lib/api-server";
-import { formatName } from "@/lib/utils";
+import { formatName, truncateMiddle } from "@/lib/utils";
 
 export function UserRowActions({
   user,
@@ -20,12 +20,15 @@ export function UserRowActions({
   const name = formatName(user);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  // Deaktiviert den Zugriff (Soft-Delete, siehe UsersService.remove) statt
-  // den Account wirklich zu löschen – über die Bearbeiten-Seite jederzeit
-  // wieder reaktivierbar.
-  async function handleDeactivate() {
-    await fetch(`/api/users/${user.id}`, { method: "DELETE" });
-    toastEdited(`„${name}“ wurde deaktiviert.`);
+  // Löscht den Nutzer (setzt User.deletedAt, siehe UsersService.delete) –
+  // verschwindet aus dieser Liste, taucht unter Datenschutz → "Nutzer" zur
+  // endgültigen Anonymisierung auf. Sperren (reversibel, bleibt in der
+  // Liste) ist bewusst ein eigener Button auf der Bearbeiten-Seite, nicht
+  // dieses Papierkorb-Symbol (Nutzer-Bugreport, 2026-08-21: "ich rede von
+  // dem mülleimer symbol in der auflistung" – zeigte vorher "deaktiviert").
+  async function handleDelete() {
+    await fetch(`/api/users/${user.id}/delete`, { method: "POST" });
+    toastDeleted(`„${name}“ wurde gelöscht.`);
     router.refresh();
   }
 
@@ -35,16 +38,16 @@ export function UserRowActions({
         onEdit={() => router.push(`/dashboard/users/${user.id}/edit`)}
         onDelete={!isSelf ? () => setDeleteOpen(true) : undefined}
         editLabel={`„${name}“ bearbeiten`}
-        deleteLabel={`„${name}“ deaktivieren`}
+        deleteLabel={`„${name}“ löschen`}
       />
 
       {!isSelf && (
         <ConfirmDeleteDialog
           open={deleteOpen}
           onOpenChange={setDeleteOpen}
-          title={`„${name}“ deaktivieren?`}
-          description="Der Zugriff wird sofort entzogen. Über „Bearbeiten“ lässt sich das Konto jederzeit wieder aktivieren."
-          onConfirm={handleDeactivate}
+          title={`„${truncateMiddle(name)}“ löschen?`}
+          description="Wird aus der Benutzerliste entfernt und steht unter Datenschutz → „Benutzer“ zur endgültigen Anonymisierung bereit."
+          onConfirm={handleDelete}
         />
       )}
     </div>

@@ -2,20 +2,23 @@ import { redirect } from "next/navigation";
 import { MyAccountView } from "@/components/my-account-view";
 import {
   getCurrentUser,
+  getMyDeletionRequests,
   getMySessions,
   getMyWeeklyStats,
   getPublicSettings,
   getRoles,
 } from "@/lib/api-server";
+import { canChangeEmail } from "@/lib/utils";
 
 export default async function AccountPage() {
-  const [user, publicSettings, roles, weeklyStats, sessions] =
+  const [user, publicSettings, roles, weeklyStats, sessions, myRequests] =
     await Promise.all([
       getCurrentUser(),
       getPublicSettings(),
       getRoles({ pageSize: 100 }),
       getMyWeeklyStats(),
       getMySessions(),
+      getMyDeletionRequests(),
     ]);
 
   if (!user) {
@@ -36,12 +39,19 @@ export default async function AccountPage() {
   return (
     <MyAccountView
       user={user}
-      allowEmailChange={publicSettings?.allowEmailChange ?? true}
+      allowEmailChange={canChangeEmail(
+        user.roles.map((role) => role.name),
+        {
+          allowEmailChange: publicSettings?.allowEmailChange ?? true,
+          allowAdminEmailChange: publicSettings?.allowAdminEmailChange ?? true,
+        },
+      )}
       allowTwoFactor={publicSettings?.allowTwoFactor ?? true}
       passwordPolicy={passwordPolicy}
       primaryRole={primaryRole}
       weeklyStats={weeklyStats ?? { contentCount: 0, mediaCount: 0 }}
       sessions={sessions ?? []}
+      myDeletionRequests={myRequests ?? []}
     />
   );
 }

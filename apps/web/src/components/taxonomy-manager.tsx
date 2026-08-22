@@ -21,6 +21,7 @@ import { TaxonomyItemDialog } from "@/components/taxonomy-item-dialog";
 import { useSelection } from "@/hooks/use-selection";
 import { useHighlightParam } from "@/hooks/use-highlight-param";
 import type { TaxonomyItem } from "@/lib/api-server";
+import { truncateMiddle } from "@/lib/utils";
 
 function TaxonomyRowActions({
   apiPath,
@@ -63,8 +64,8 @@ function TaxonomyRowActions({
       <ConfirmDeleteDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title={`„${item.name}“ löschen?`}
-        description="Diese Aktion kann nicht rückgängig gemacht werden."
+        title={`„${truncateMiddle(item.name)}“ löschen?`}
+        description="Wird in den Papierkorb verschoben und kann von dort wiederhergestellt werden."
         onConfirm={onDelete}
       />
     </div>
@@ -117,6 +118,7 @@ export function TaxonomyManager({
         entityLabelPlural={entityLabelPlural}
         onDelete={handleBulkDelete}
         onClear={clear}
+        confirmDescription="Wird in den Papierkorb verschoben und kann von dort wiederhergestellt werden."
       />
       <div className="overflow-hidden">
         <Table>

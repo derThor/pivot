@@ -131,6 +131,262 @@ diese Lösung" unten).
   siehe `rbac-rework.md`). Nur Administrator bekommt sie automatisch
   (volle `PERMISSIONS`-Liste).
 
+## Nachtrag 2026-08-20 (4): "Bericht erzeugen" deckt jetzt alle sechs Tabs ab
+
+Nutzervorgabe: "bericht bei datenschutz mmuss alles enthalten. alle tabs
+in datenschutz" – `PrivacyService.generateReportCsv()` war bisher nur
+eine Kennzahlen-Tabelle (Anzahl offen/veraltet/etc. je Tab). Jetzt echte
+Datensatz-Zeilen für jedes Element aus Rechtstexten, Anfragen,
+Verarbeitungen, Auftragsverarbeitern, Vorfällen und dem
+Datenschutzbeauftragten (Bereich/Feld/Wert-Format, eine Zeile pro Feld
+pro Datensatz – gleiches Muster wie der SAR-Export), Aufbewahrung bleibt
+als Kennzahl (Listen wären hier nur IDs ohne Mehrwert). Neu ergänzt bei
+dieser Gelegenheit: `ProcessingActivity.retentionPeriod` (Löschfrist,
+Freitext wegen gemischter Formate "90 Tage"/"bis Widerruf"/"10 Jahre") –
+fehlte bisher komplett im Modell, jetzt auch im Verarbeitungen-Tab
+(als Tabelle statt Kartenliste, 1:1 nach Bildvorlage) und im Bericht.
+
+## Nachtrag 2026-08-20 (3): Vorfälle-Tab als Liste+Detail, Pflichtangaben-Check, Standorte-Feld-Swap
+
+Drei Nachträge derselben Session, gebündelt dokumentiert (Nutzervorgabe
+zwischendurch: "und nutze immer knowledge base" – wurde bisher zwar
+befolgt, aber zu kleinteilig; ab jetzt gesammelt statt pro Einzelschritt).
+
+- **Vorfälle-Tab** (Nutzervorgabe: "baue jetzt vorfälle korrekt nach
+  screen"): einfache Kartenliste durch Liste+Detail ersetzt, gleiches
+  Muster wie [Betroffenenanfragen](./data-subject-requests.md), neue
+  Komponente `privacy-incidents-panel.tsx`. `PrivacyIncident` bekommt vier
+  neue Felder: `affectedCount` (Betroffene, manuelle Zahl),
+  `authorityNotifiedAt`/`subjectsNotifiedAt` (Art. 33/34 DSGVO-Meldungen,
+  gesetzt über neue Attestierungs-Endpunkte `POST .../report` und
+  `POST .../notify-subjects` – **keine** echte Behörden-/Massen-Mail,
+  gleiches "Attestierung statt Live-Aktion"-Prinzip wie bei den
+  Betroffenenanfragen, da es keine feste Empfängerliste gibt) und
+  `measuresDocumented` (Freitext, Teil des normalen Bearbeiten-Dialogs).
+  Das bestehende `status`-Feld (open/resolved) bleibt unverändert als
+  grobe Dashboard-Ampel (`PrivacyService`) – die neue "Ablauf"-Karte mit
+  5 Schritten (Erfassen/Bewerten/Melden/Informieren/Dokumentieren) wird
+  stattdessen rein aus `severity` +
+  den drei neuen Zeitstempel-/Textfeldern berechnet, kein weiteres
+  gespeichertes Status-Feld (gleiches Prinzip wie "Veraltet" bei
+  `LegalDocument`). **`severity="low"` macht alle drei Melde-Schritte
+  gegenstandslos** (Badge "kein Risiko", keine Buttons) – Art. 33/34
+  verlangen dann keine Meldung. "Meldung ansehen" ist ein neuer,
+  auto-generierter Protokoll-CSV-Report (`generateReportCsv`, gleiches
+  Feld/Wert-Muster wie der DSR-Datenauszug), kein manuell verfasster
+  Meldetext.
+- **Pflichtangaben-Check** (Rechtstexte-Tab, rechte Spalte, als erste
+  Karte vor "Aufbewahrung", Nutzervorgabe per Screenshot): gruppiert die
+  Firmen-Stammdaten (`company-fields.ts`) nach §5 TMG-Positionen
+  ("Anschrift"/"Register & Nummer" fassen je mehrere Einzelfelder
+  zusammen). Neues Feld `companyDisputeResolution` (Streitschlichtung,
+  §36 VSBG) ergänzt – überall dort, wo companySupervisoryAuthority schon
+  auftauchte (Schema, DTO, Stammdaten-Formular, Impressum-Generator,
+  Aktivitätsprotokoll-Label). **Bewusst NICHT ergänzt**:
+  "Berufsrechtliche Regelung" – ursprünglich mitgebaut, dann per
+  Nutzervorgabe ("komplett weg") wieder vollständig entfernt, da nur für
+  reglementierte Berufe relevant und auf diese Firma nicht zutreffend.
+- **Standorte-Formular** (Firma-Seite, Nutzervorgabe: "bei standorte
+  email adresse mit aufnehmen, öffnungszeiten da raus"): `openingHours`
+  komplett aus Schema/DTO/Formular/Detailanzeige entfernt (nicht nur
+  ausgeblendet – "setzen wir anders später um", kommt in anderer Form
+  zurück), an derselben Stelle durch neues Feld `email` ersetzt.
+
+## Nachtrag 2026-08-20 (2): Popup-Breitenbug + echte Löschung von AV-Vertrag/SCC-Vorlage
+
+Drei kleine Nutzer-Bugreports (Screenshots) direkt im Anschluss an den
+Auftragsverarbeiter-Umbau oben:
+
+- **Globaler Dialog-Breitenbug** ("global dieses problem mit popup
+  beheben"): ein langer, leerzeichenfreier Name/Dateiname (z.B.
+  "Merkzettel_Vorstellungsgespraech_KDO_Wessels.docx") sprengte trotz
+  des bereits vorhandenen `truncateMiddle()`-Helpers (`lib/utils.ts`,
+  kappt auf 40 Zeichen) bei ungünstiger Zeichenbreite/Viewport die
+  feste Dialogbreite (`max-w-xs`/`sm:max-w-sm`). Ursache: Grid-/Flex-
+  Kinder haben ohne `min-w-0` einen `min-width: auto` (inhaltsbasiert),
+  und ohne `break-words`/`truncate` kann ein Wort ohne Leerzeichen
+  nicht umbrechen. Fix in `ui/alert-dialog.tsx` (`AlertDialogHeader` +
+  `AlertDialogTitle`) und `ui/dialog.tsx` (`DialogTitle`, `DialogHeader`
+  hatte `min-w-0` schon von einem früheren Fix,
+  [[feedback_dialog_scroll_flex_squish]]): beide Titel bekommen jetzt
+  `min-w-0 break-words`. Nutzer akzeptierte Umbruch statt Kürzung als
+  Lösung ("dann zur Not mit … arbeiten"), Umbruch behält den vollen
+  Namen sichtbar (wichtig bei einer Lösch-Bestätigung) statt ihn
+  wegzukürzen – bewusst *nicht* `truncate` gewählt, obwohl das die
+  ursprünglich vorgeschlagene Rückfalllösung war.
+- **Vertrags-PDF (AV) wirklich löschbar**: der "entfernen"-Chip in
+  `data-processor-dialog.tsx` hat vorher nur lokalen Formular-State
+  geleert, ohne die zugrundeliegende `Media`-Datei zu löschen (Datei
+  blieb verwaist liegen). `handleRemoveContract()` ruft jetzt echtes
+  `DELETE /api/media/:id` auf (Soft-Delete in den Papierkorb, gleiches
+  Muster wie `logo-upload-field.tsx`s `handleRemove()`), erst danach
+  wird der Formular-State geleert.
+- **SCC-Vorlage wirklich löschbar**: die Drittlandtransfer-Karte in
+  `privacy-view.tsx` hatte nach dem Upload nur einen Download-Button,
+  keinen Weg zum Entfernen. Neues `handleRemoveSccTemplate()`: setzt
+  erst `AppSettings.sccTemplateMediaId` per `PATCH /api/settings` auf
+  `null`, löscht dann die `Media`-Datei per `DELETE /api/media/:id`
+  (Soft-Delete) – Reihenfolge wichtig, sonst zeigt die Seite kurz auf
+  eine schon gelöschte Datei.
+- **Datei-Upload-Feld volle Breite**: das Vertrags-PDF-`<Input type="file">`
+  hatte fälschlich `max-w-xs` (Nutzer: "hier die input volle breite") –
+  jetzt schlicht `w-full`.
+
+Alle vier Punkte mit echtem Playwright-Durchlauf verifiziert (Login,
+Datei-Upload/-Löschung, Netzwerk-Requests mitgeloggt, Testdaten danach
+über die App-eigenen Lösch-Endpunkte wieder entfernt).
+
+## Nachtrag 2026-08-20: Auftragsverarbeiter-Tab 1:1 nach Bildvorlage
+
+Kompletter Umbau des bisherigen einfachen Karten-Tabs "Auftragsverarbeiter"
+(Nutzervorgabe: "setze auftragsverarbeiter genau nach screener um") in
+eine Liste+Detail-Ansicht (Muster: Betroffenenanfragen-Tab).
+
+- **Neue `DataProcessor`-Felder**: `location` (Ort, freier Text, z.B.
+  "Hamburg, DE"), `complianceNote` (Zusatzhinweis in der Listenzeile,
+  z.B. "ISO 27001"/"Angemessenheitsbeschluss"/"eigener Server"/"SCC
+  ausstehend" – bewusst freier Text statt Ableitung aus dem Ort, keine
+  EU-Länder-Logik), `outsideEu` (manuelles Drittlandtransfer-Häkchen,
+  keine automatische Länder-Erkennung), `contactEmail` (für "AV-Vertrag
+  anfordern").
+- **Listenzeile**: Name + "seit {Vertragsdatum} · {Zusatzhinweis}",
+  Zweck, Ort mit Pin-Icon, Badge "AV-Vertrag" (grün)/"AV fehlt" (amber)
+  – ersetzt die bisherigen Labels "mit/ohne AV-Vertrag". "+ Auftrags-
+  verarbeiter ergänzen" ist jetzt eine Zeile am Listenende statt eines
+  Header-Buttons (Muster: Betroffenenanfragen-/Papierkorb-Listen).
+- **"Offene Punkte"-Karte** (rechte Spalte): pro Auftragsverarbeiter
+  ohne `hasContract` ein Eintrag ("X — AV-Vertrag [und
+  Standardvertragsklauseln, falls `outsideEu`] fehlen") + eigener
+  "AV-Vertrag anfordern"-Button. Button ruft `POST /data-processors/
+  :id/request-contract` auf (`DataProcessorsService.requestContract()`,
+  Dev-Stub-Mail wie überall in dieser App) – wirft `BadRequestException`
+  ohne hinterlegte `contactEmail`, da ein generischer Empfänger keine
+  echte Anfrage wäre.
+- **"Drittlandtransfer"-Karte**: Text nennt die betroffenen Dienstleister
+  namentlich (nicht generisch), "Vorlage herunterladen"/"Vorlage
+  hochladen" – neues `AppSettings.sccTemplateMediaId` (+ `sccTemplateMedia`-
+  Relation zu `Media`), admin-hochgeladene SCC-Datei. **Kein erfundenes
+  Rechtsmuster im Repo** (Nutzer-Antwort auf Rückfrage: "Admin kann eine
+  Datei hochladen") – Upload direkt in dieser Karte, kein Umweg über
+  eine Einstellungsseite.
+- **Datenfluss-Stolperstein**: `app/dashboard/privacy/page.tsx` nutzt
+  `getSettings()` (roh, kein `Media`-Include im Backend), `sccTemplateMedia`
+  kommt aber nur über `getPublic()`/`getPublicSettings()` mit – Seite
+  ruft jetzt zusätzlich `getPublicSettings()` parallel auf, nur für
+  dieses eine Feld, statt den globalen `get()`/`getSettings()`-Rückgabewert
+  für alle Aufrufer aufzubohren.
+- Drei Rückfragen vor dem Bauen geklärt (AskUserQuestion): "AV-Vertrag
+  anfordern" = echte Dev-Stub-Mail (nicht Platzhalter), SCC-Vorlage =
+  echter Admin-Upload (nicht erfunden/nicht Platzhalter), Drittland-
+  Erkennung = manuelles Häkchen (keine Länder-Logik).
+
+## Nachtrag 2026-08-19: Betroffenenrechte-Karte + CSV-Bericht auf Deutsch
+
+Neue Karte "Betroffenenrechte" im Rechtstexte-Tab, per Bildvorlage
+unterhalb der Rechtstexte-Karte in der **linken** Spalte platziert
+(rechte Spalte bleibt die Aufbewahrung-Karte).
+
+- Zwei Schalter (`dsbFormSelfServiceDisclosure`,
+  `dsbFormStoreSubmissionIp`, beide auf `AppSettings`) sind **bewusst
+  vorgehalten, nicht funktional** – es gibt in dieser App kein
+  Formular-Modul, an das sie andocken könnten. Hinweistext macht das
+  im UI transparent.
+- **"Auskunft erstellen"** (Art. 15 DSGVO, `SubjectAccessRequestDialog`):
+  Personenauswahl (anonymisierte/gelöschte Konten werden aus der Liste
+  gefiltert – für sie gibt es keine personenbezogenen Daten mehr, zu
+  denen sich eine Auskunft erstellen ließe), dann `GET
+  /privacy/subject-access-report/:userId` (`PrivacyService
+  .generateSubjectAccessReportCsv()`) – sammelt Konto, Aktivitätsprotokoll,
+  verfasste Inhalte, hochgeladene Medien über bereits bestehende Services,
+  kein separates Datenmodell nur für den Bericht.
+  - **"Auskunft senden"** (Nutzer-Nachtrag): zusätzlicher Button, nutzt
+    dieselbe CSV-Erzeugung, verschickt sie aber per Mail an die im Konto
+    hinterlegte Adresse (`POST
+    /privacy/subject-access-report/:userId/send` →
+    `MailerService.sendSubjectAccessReport`, Dev-Stub wie jede Mail in
+    dieser App). Kein eigenes Empfänger-Feld, absichtlich.
+- **"AV-Vertrag herunterladen"**: neuer geschützter System-Ordner "AVs"
+  (`MediaFolder.isSystem: true`, in `seed.ts` wie "Logo"/"Avatare"
+  angelegt – Ordner selbst nicht löschbar, Inhalt schon).
+  `DataProcessorDialog` bekommt ein Datei-Upload-Feld ("Vertrags-PDF"),
+  das direkt in diesen Ordner hochlädt (`DataProcessor.contractMediaId`
+  → `Media`-Relation). Der Button lädt `GET
+  /data-processors/contracts.zip` (`streamContractsZip()`, `archiver`)
+  – zippt alle Dateien im "AVs"-Ordner zusammen, kein Auswahl-Dialog nötig.
+  - **`archiver`-Versionsfalle**: `pnpm add archiver` zog zunächst v8
+    (reines ESM, keine Factory-Funktion mehr, `archiver('zip', opts)`
+    existiert nicht) – inkompatibel mit diesem CJS/ts-node-Setup. Fix:
+    Downgrade auf `archiver@^7` + `@types/archiver@^6` für die
+    klassische Factory-API.
+- **CSV-Bericht auf Deutsch** (Nutzer-Bugreport per Screenshot: Mojibake
+  "AktivitÃ¤tsprotokoll" + roher Aktionscode "user.impersonate" in der
+  Auskunft-CSV):
+  - `describeAuditAction()` in `privacy.service.ts` – schlanke,
+    text-only Kopie von `describeActivity()`
+    (`user-activity-timeline.tsx`), übersetzt Audit-Log-Aktionscodes in
+    deutsche Kurztexte, unbekannte Codes fallen wie im Frontend auf den
+    rohen Code zurück.
+  - **UTF-8-BOM fehlte im Download, obwohl der Service-Code ihn korrekt
+    voranstellt** (`CSV_BOM = '﻿'`) – der eigentliche Bug lag nicht
+    im Backend, sondern in `bff-proxy.ts`: die `text/csv`-Weiche nutzte
+    `backendRes.text()`, und `Response.text()` dekodiert laut
+    WHATWG-Encoding-Standard als UTF-8 **und entfernt dabei automatisch
+    ein führendes BOM**. Fix: wie die `application/zip`-Weiche daneben
+    auf `arrayBuffer()` umgestellt, um die Bytes unverändert
+    durchzureichen. Byte-genau via `curl`/`xxd` verifiziert (`ef bb bf`
+    jetzt im ausgelieferten Download vorhanden). Betraf beide
+    CSV-Downloads dieser Seite (`/privacy/report` und
+    `/privacy/subject-access-report/:userId`), nicht nur die Auskunft.
+
+## Nachtrag 2026-08-19: Umlaute in Original-Dateinamen (Media-Upload)
+
+Nutzer-Nachtrag ("und umlaute bei dokumenten download beachten") deckte
+einen zweiten, verwandten Bug auf: Der Original-Dateiname eines
+Uploads (z.B. für den AV-Vertrag) kam bereits **beim Hochladen**
+verstümmelt an ("Vertrag_Müller.pdf" → "Vertrag_MÃ¼ller.pdf"), lange
+bevor der ZIP-Download überhaupt ins Spiel kam – per Playwright/Node-
+Testskript verifiziert, das die rohe Upload-Antwort inspizierte.
+Ursache: Busboy/Multer dekodieren den `filename`-Header aus
+`multipart/form-data` laut Spec als Latin-1, obwohl Browser die Bytes
+als UTF-8 senden – ein bekannter, plattformübergreifender Multer-
+Stolperstein, nicht spezifisch für dieses Repo. Fix: `MediaService
+.create()` re-dekodiert `file.originalname` einmal am Eintrittspunkt
+(`Buffer.from(file.originalname, 'latin1').toString('utf8')`), bevor
+der Name in der DB landet oder ins Audit-Log geschrieben wird – betrifft
+jeden Upload-Weg (Medien-Bibliothek, Avatare, AV-Verträge), nicht nur
+diese eine Stelle. `archiver` selbst setzt das UTF-8-Flag für ZIP-
+Einträge bereits korrekt (per PowerShell `Expand-Archive` verifiziert),
+war also nicht die Fehlerquelle.
+
+## Nachtrag 2026-08-19: Löschanfrage-Dialog – Person wählbar, Mobil-Fix
+
+- **`DeletionRequestDialog`**: neues optionales Select "Bestehende Person
+  wählen" oberhalb von Name/E-Mail (Nutzervorgabe: "Löschanfrage muss
+  ein Nutzer auch auswählbar sein"). Übernimmt bei Auswahl nur Name/
+  E-Mail als Vorbelegung in die bestehenden freien Textfelder – beide
+  bleiben danach editierbar, für externe Anfragen (Post/Telefon, kein
+  Konto) bleibt reine Freitext-Eingabe weiterhin möglich. Gleiches
+  Filter-/Sortier-Muster wie `SubjectAccessRequestDialog`
+  (anonymisierte Konten raus, `formatName`-Sortierung).
+- **`SubjectAccessRequestDialog`-Footer bei jeder Breite ≥640px
+  abgeschnitten** (Nutzer-Bugreport per Screenshot, zwei Runden): drei
+  Buttons passten nicht in die Standard-Dialogbreite `sm:max-w-md`
+  (448px) – "Abbrechen" wurde rechts abgeschnitten statt umzubrechen.
+  **Erster Fix-Versuch war unzureichend**: nur den Zeilen-Umbruchpunkt
+  der `DialogFooter` auf `md` verschoben, ohne die eigentliche Ursache
+  (zu schmaler Dialog) zu beheben – sobald die Zeilen-Ansicht ab `md`
+  wieder aktiv wurde, war der Dialog immer noch zu schmal für drei
+  Buttons nebeneinander (Nutzer: "popup ist immer noch zerschossen").
+  **Eigentlicher Fix**: `DialogContent` von `sm:max-w-md` auf
+  `sm:max-w-xl` verbreitert + `flex-wrap` auf der `DialogFooter` als
+  Sicherheitsnetz (bricht um statt zu clippen, falls die Zeile durch
+  Zoom/längere Übersetzungen doch mal eng wird). Bei vier Breiten
+  (375/700/950/1440px) per Playwright-`boundingBox()`-Prüfung
+  verifiziert, dass alle drei Buttons vollständig innerhalb des
+  Viewports liegen – **Lehre**: bei zu breitem Inhalt in einem
+  `max-w-md`/`max-w-lg`-Dialog zuerst die Dialogbreite selbst prüfen,
+  nicht nur den Flex-Umbruchpunkt der Footer-Zeile.
+
 ## Warum diese Lösung
 
 Nutzer-Anfrage war ursprünglich 1:1 nach einer sehr umfangreichen
@@ -245,6 +501,10 @@ Frage "wo legst du die Dokumente an" hin) und der Link-Button dorthin.
   `src/components/privacy-view.tsx` (neu, groß)
 - `apps/web/src/components/{deletion-request,processing-activity,
   data-processor,privacy-incident}-dialog.tsx` (neu)
+- `apps/web/src/components/privacy-incidents-panel.tsx` (neu, 2026-08-20,
+  Liste+Detail statt Kartenliste)
+- `apps/api/src/company-locations/*`, `apps/web/src/components/
+  company-location-dialog.tsx` (2026-08-20: `email` statt `openingHours`)
 - `apps/web/src/components/segmented-picker.tsx` (neu, aus
   `settings-form.tsx` extrahiert)
 - `apps/web/src/lib/bff-proxy.ts` (neu, gemeinsamer Kern für die ~20 BFF-
@@ -254,13 +514,21 @@ Frage "wo legst du die Dokumente an" hin) und der Link-Button dorthin.
   gegen Überlaufen, "Websites"-Platzhaltereintrag entfernt)
 - `apps/web/src/components/settings-form.tsx` (alter "Datenschutz"-Tab
   entfernt, da durch diese Seite ersetzt)
+- `apps/api/src/data-processors/*` (`contractMediaId`,
+  `streamContractsZip()`), `apps/api/src/privacy/privacy.service.ts`
+  (`describeAuditAction()`, `CSV_BOM`, `generateSubjectAccessReportCsv`,
+  `sendSubjectAccessReport`) – Nachtrag 2026-08-19
+- `apps/web/src/components/{subject-access-request-dialog,
+  data-processor-dialog}.tsx`, `apps/web/src/lib/bff-proxy.ts`
+  (CSV-Weiche auf `arrayBuffer()` umgestellt) – Nachtrag 2026-08-19
+- `packages/database/prisma/seed.ts` (System-Ordner "AVs")
 
 ## Offene Punkte
 
 - Manuelle Ergänzung (`manualAddendum`) hat einen Backend-Endpoint, aber
   keine Frontend-UI zum Bearbeiten – aktuell nur über die API setzbar.
-- Kein Papierkorb-Browsing (Filter/Tab) direkt in den Listen-Seiten für
-  Content/Medien/Kategorien/Tags – nur die aggregierte Review-Liste hier.
+- ~~Kein Papierkorb-Browsing...~~ – inzwischen durch die eigenständige
+  Seite `/dashboard/trash` gelöst, siehe [trash-page.md](../content/trash-page.md).
 - Die 5 einfachen CRUD-Tabs sind funktional, aber ohne Bildvorlage
   entstanden – falls später eine Bildvorlage dafür kommt, eher als
   Neubau denken statt als Fein-Anpassung.

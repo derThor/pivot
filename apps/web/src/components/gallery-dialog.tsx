@@ -121,7 +121,7 @@ export function GalleryDialog({
               `overflow-y-auto` bekommt wieder etwas zum Scrollen. */}
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-1">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="gallery-dialog-name">Name</Label>
+              <Label htmlFor="gallery-dialog-name" required>Name</Label>
               <Input
                 id="gallery-dialog-name"
                 value={name}

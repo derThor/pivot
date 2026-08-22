@@ -17,6 +17,7 @@ import {
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { RowActionButtons } from "@/components/row-action-buttons";
 import type { Webhook } from "@/lib/api-server";
+import { truncateMiddle } from "@/lib/utils";
 
 const eventLabel: Record<string, string> = {
   "content.published": "Veröffentlicht",
@@ -125,7 +126,7 @@ export function WebhooksManager({ items }: { items: Webhook[] }) {
       <ConfirmDeleteDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
-        title={`Webhook „${deleteTarget?.url}“ löschen?`}
+        title={`Webhook „${truncateMiddle(deleteTarget?.url ?? "")}“ löschen?`}
         description="Diese Aktion kann nicht rückgängig gemacht werden."
         onConfirm={handleDelete}
       />

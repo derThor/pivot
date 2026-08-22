@@ -17,11 +17,12 @@ import { SystemMessage } from "@/components/ui/system-message";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CompanyLocationDialog } from "@/components/company-location-dialog";
 import { RowActionButtons } from "@/components/row-action-buttons";
-import { formatName } from "@/lib/utils";
+import { companyFields, type CompanyFieldKey } from "@/lib/company-fields";
+import { formatName, truncateMiddle } from "@/lib/utils";
 import type {
-  AppSettings,
   CompanyChange,
   CompanyLocation,
+  CompanySettings,
 } from "@/lib/api-server";
 
 function formatDate(iso: string) {
@@ -32,29 +33,12 @@ function formatDate(iso: string) {
   });
 }
 
-const companyFields = [
-  { key: "companyName", label: "Firmenname" },
-  { key: "companyStreet", label: "Straße und Hausnummer" },
-  { key: "companyPostalCode", label: "PLZ" },
-  { key: "companyCity", label: "Ort" },
-  { key: "companyCountry", label: "Land" },
-  { key: "companyRepresentative", label: "Vertretungsberechtigte Person" },
-  { key: "companyEmail", label: "E-Mail" },
-  { key: "companyPhone", label: "Telefon" },
-  { key: "companyRegisterCourt", label: "Registergericht" },
-  { key: "companyRegisterNumber", label: "Handelsregisternummer" },
-  { key: "companyVatId", label: "USt-IdNr." },
-  { key: "companySupervisoryAuthority", label: "Aufsichtsbehörde" },
-] as const;
-
-type CompanyFieldKey = (typeof companyFields)[number]["key"];
-
 export function CompanyView({
   settings,
   locations: initialLocations,
   changes,
 }: {
-  settings: AppSettings;
+  settings: CompanySettings;
   locations: CompanyLocation[];
   changes: CompanyChange[];
 }) {
@@ -96,7 +80,7 @@ export function CompanyView({
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/settings", {
+      const res = await fetch("/api/settings/company", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
@@ -433,14 +417,17 @@ export function CompanyView({
               <div className="px-4">
                 <Separator />
               </div>
-              <button
-                type="button"
-                onClick={() => setDialogTarget("new")}
-                className="flex w-full items-center gap-2 border-l-4 border-l-transparent px-4 py-4 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-              >
-                <Plus className="size-4" />
-                Standort hinzufügen
-              </button>
+              <div className="p-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-[#D4D4D4]"
+                  onClick={() => setDialogTarget("new")}
+                >
+                  <Plus className="size-4" />
+                  Standort hinzufügen
+                </Button>
+              </div>
             </div>
 
             <div className="flex flex-col gap-4">
@@ -476,12 +463,10 @@ export function CompanyView({
                           <span>{selectedLocation.phone}</span>
                         </div>
                       )}
-                      {selectedLocation.openingHours && (
+                      {selectedLocation.email && (
                         <div className="flex items-center justify-between py-2">
-                          <span className="text-muted-foreground">
-                            Öffnungszeiten
-                          </span>
-                          <span>{selectedLocation.openingHours}</span>
+                          <span className="text-muted-foreground">E-Mail</span>
+                          <span>{selectedLocation.email}</span>
                         </div>
                       )}
                       {selectedLocation.employeeCount != null && (
@@ -521,7 +506,7 @@ export function CompanyView({
       <ConfirmDeleteDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
-        title={`„${deleteTarget?.name}“ löschen?`}
+        title={`„${truncateMiddle(deleteTarget?.name ?? "")}“ löschen?`}
         description="Diese Aktion kann nicht rückgängig gemacht werden."
         onConfirm={handleDeleteLocation}
       />

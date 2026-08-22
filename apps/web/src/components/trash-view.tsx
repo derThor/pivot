@@ -35,7 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useSelection } from "@/hooks/use-selection";
-import { cn, formatBytes } from "@/lib/utils";
+import { cn, formatBytes, truncateMiddle } from "@/lib/utils";
 import type { TrashItem, TrashStats, TrashType } from "@/lib/api-server";
 
 const TYPE_FILTERS: { value: TrashType | null; label: string }[] = [
@@ -403,7 +403,7 @@ export function TrashView({
                                 <Trash2 />
                               </Button>
                             }
-                            title={`„${item.title}“ endgültig löschen?`}
+                            title={`„${truncateMiddle(item.title)}“ endgültig löschen?`}
                             description="Diese Aktion kann nicht rückgängig gemacht werden."
                             onConfirm={() => handlePermanentDelete(item)}
                           />

@@ -68,12 +68,60 @@ Speicherkontingent, Cache leeren).
 - Passwort-Richtlinie + 2FA → unverändert unter **Sicherheit**.
 - "Einträge pro Seite" → unverändert unter **Darstellung**.
 
-**Vier Bereiche sind reine, ehrliche Platzhalter-Karten** (gleiche
-Konvention wie die Darstellung-/Benachrichtigungen-Tabs auf "Mein
-Konto" – kein erfundener Inhalt, nur eine Notiz):
-- **Integrationen** ("API-Schlüssel, Dienste") – kein API-Key-Management
-  vorhanden; Hinweis, dass bestehende Webhooks weiterhin über die eigene
-  Webhooks-Seite verwaltet werden.
+**Nachtrag 2026-08-21: Webhooks von eigener Seite nach Einstellungen
+verschoben** (Nutzervorgabe: "setze webhooks unter einstellungen") –
+`/dashboard/webhooks` gibt es nicht mehr, der Sidebar-Eintrag unter
+Verwaltung ebenfalls nicht. `WebhooksManager`/`WebhookDialog`/
+`WebhookFailureBanner` + Pagination leben jetzt in einem **eigenen**
+Abschnitt "Webhooks" von `settings-form.tsx` (zunächst versehentlich in
+"Integrationen" verschachtelt, auf Nutzer-Feedback ["mach es als
+einzelnen punkt"] wieder in einen eigenen, siebten `SectionId`-Eintrag
+aufgeteilt – "Integrationen" zeigt jetzt wieder nur die
+API-Schlüssel-Platzhalterkarte). Daten kommen serverseitig über einen
+eigenen Query-Param `?webhooksPage=` (statt `?page=`, um nicht mit einer
+künftigen Pagination in einem anderen Abschnitt zu kollidieren).
+
+**Eigenes `webhooks`-Rechte-Bündel komplett entfernt** (Nutzervorgabe,
+gleicher Tag: "webhooks brauchen keine eigenen rechte mehr, soll komplett
+über einstellungen gehen") – ursprünglich beim RBAC-Neubau (2026-08-16)
+bewusst als eigenes Bündel angelegt (siehe rbac-rework.md), jetzt auf
+`settings:read`/`settings:update` konsolidiert:
+`WebhooksController` nutzt diese beiden Permissions statt
+`webhooks:{read,create,update,delete}`, die vier `webhooks:*`-Einträge
+sind aus `permissions.catalog.ts`/`seed.ts` (`PERMISSIONS`) entfernt und
+in `seed.ts`s `OBSOLETE_PERMISSIONS` überführt (räumt die alten
+`RolePermission`-Zeilen automatisch weg, gleiches Muster wie beim
+RBAC-Neubau). Die Rolle "Manager" schloss Webhooks bereits vorher explizit
+aus (`description`: "…außer … und Webhooks") – das ergibt sich jetzt
+automatisch daraus, dass Manager schon `settings:update` nicht hat,
+der extra `p.resource !== "webhooks"`-Filter in ihrer
+Permission-Zusammenstellung wurde entfernt. `apps/web/src/lib/
+permission-labels.ts` (`resourceLabels`/`resourceIcons`) ebenfalls um den
+toten `webhooks`-Eintrag bereinigt. **Seed wurde ausgeführt**
+(`npm run seed` in `packages/database`), Änderung ist in der Dev-DB
+bereits wirksam.
+
+**Nachtrag 2026-08-21 (2): Benachrichtigungs-Kategorien von
+Systemnachrichten hierher verschoben, mit Erklärungen** (Nutzervorgabe:
+"verschiebe die benachrichtigungs einstellungen von systembenachrichtigung
+unter einstellung benachrichtigung", direkt gefolgt von "und hier soll es
+dann so aussehen [Screenshot der 'Zugriff & Funktionen'-Karte] mit
+erklärungen") – `NotificationSettingsCard` (die 11
+`notify*`-Kategorie-Schalter) lebt jetzt im "Benachrichtigungen"-Abschnitt
+von `settings-form.tsx` statt in einer eigenen rechten Spalte auf
+`/dashboard/system-messages` (der Grid dort wurde entsprechend auf eine
+Spalte zurückgebaut). Visuell auf `SwitchRow` (Label + Beschreibung, siehe
+"Zugriff & Funktionen") umgestellt statt bloßem Label+Switch – jede der
+11 Kategorien hat jetzt eine erklärende Zeile. Instant-Save je Zeile
+bewusst beibehalten (kein Teil des großen Speichern/Verwerfen-Formulars),
+das war schon vorher so und ändert sich durch den Umzug nicht. Die
+Systemnachrichten-Seite bekam stattdessen eine schlichte Hinweiszeile
+("Welche Kategorien hier erscheinen, lässt sich unter Einstellungen →
+Benachrichtigungen steuern.").
+
+**Drei Bereiche sind weiterhin reine, ehrliche Platzhalter-Karten**
+(gleiche Konvention wie die Darstellung-/Benachrichtigungen-Tabs auf
+"Mein Konto" – kein erfundener Inhalt, nur eine Notiz):
 - **Akzentfarbe & Dichte** (innerhalb Darstellung) – kein Farbschema/keine
   kompakte Listendarstellung vorhanden.
 - **Datenschutz-Zusatz** ("Aufbewahrung, Cookies, AV") – keine
@@ -83,25 +131,110 @@ Konto" – kein erfundener Inhalt, nur eine Notiz):
   bestehenden `notify*`-Kategorie-Schalter weiterhin auf der Seite
   "Systemnachrichten" liegen (`NotificationSettingsCard`, nicht hierher
   verschoben, um den bestehenden Ort nicht ohne Absprache zu ändern).
-- **Protokoll** ("Änderungen & Export") – kein übergreifender,
-  exportierbarer Audit-Log über alle Benutzer; Hinweis auf den bereits
-  gebauten Aktivität-Tab pro Benutzer (siehe
-  [user-activity-log.md](../auth/user-activity-log.md)), der als
-  natürliche Grundlage für eine spätere globale Protokoll-Ansicht dienen
-  könnte.
+- **Protokoll** ("Änderungen & Export") – die Änderungshistorie ist seit
+  2026-08-22 real (siehe Update unten), "Export & Sicherung" (JSON-Export,
+  Zugriffsprotokoll-CSV) bleibt Platzhalter.
 
 ## Relevante Dateien
 
-- `apps/web/src/components/settings-form.tsx` (komplett neu strukturiert)
+- `apps/web/src/components/settings-form.tsx` (komplett neu strukturiert;
+  2026-08-21: Webhooks-UI im Integrationen-Abschnitt ergänzt)
 - `apps/web/src/app/dashboard/settings/page.tsx` (kein `PageHeader` mehr,
-  Header lebt jetzt in `SettingsForm`)
+  Header lebt jetzt in `SettingsForm`; 2026-08-21: lädt zusätzlich
+  `getWebhooks()`)
+- `apps/web/src/components/app-sidebar.tsx` (2026-08-21: Webhooks-Eintrag
+  unter Verwaltung entfernt)
+- `apps/web/src/components/settings-protocol-card.tsx` (neu, 2026-08-22)
+- `apps/api/src/settings/settings.service.ts` (`SETTINGS_ENTITY_TYPE`,
+  `getSettingsChanges()`, generische Feld-Protokollierung in `update()`)
+- `apps/api/src/settings/dto/query-settings-changes.dto.ts` (neu)
+- `apps/api/src/audit-log/audit-log.service.ts` (`findPaginated()`, neu)
+
+## Update 2026-08-22: Protokoll – echte Änderungshistorie
+
+Auf "baue protokolierung" (1:1 nach Bildvorlage "Letzte Änderungen an
+den Einstellungen") umgesetzt, analog zur bestehenden "Letzte
+Änderungen"-Karte der Firma-Seite (`company-view.tsx`), aber mit echter
+Server-Pagination statt festem `limit=5` (Nutzervorgabe: "pagination bei
+dem protokoll") – über die Zeit können hier deutlich mehr Einträge als
+bei den 13 Firma-Feldern zusammenkommen.
+
+- Neue Komponente `settings-protocol-card.tsx`: Zeitleiste (Punkt +
+  Verbindungslinie, gleiches Muster wie Firma) + `PaginationControls`
+  über den eigenen Query-Param `?protocolPage=` (analog zu
+  `?webhooksPage=` bei Webhooks, damit sich die Paginierungen der
+  einzelnen Abschnitte nicht überschreiben).
+- `SettingsService.update()` protokolliert jetzt jedes tatsächlich
+  geänderte Feld aus `UpdateSettingsDto` als eigenen `settings.
+  field_updated`-AuditLog-Eintrag (`entityType: 'Settings'`) – **bewusst
+  ausgenommen**: Firma-Felder (`COMPANY_FIELD_KEYS`, haben mit
+  `company.field_updated` bereits ihre eigene, unveränderte Historie auf
+  der Firma-Seite) und Datenschutz-Felder (`PRIVACY_FIELD_KEYS`, dafür
+  gibt es aktuell noch gar kein Protokoll – nicht angefragt).
+- Anders als bei Firma (`{field, wasEmpty}`) speichert die neue
+  Protokollierung `{field, before, after}` – Beschreibungen wie
+  "Passwort-Mindestlänge auf 12 geändert" brauchen den tatsächlichen
+  neuen Wert, nicht nur ob das Feld vorher leer war. Deutsche
+  Feld-Labels leben rein im Frontend (`FIELD_LABELS` in
+  `settings-protocol-card.tsx`, 1:1 dieselben Texte wie die
+  zugehörigen Formularfelder in `settings-form.tsx`/
+  `notification-settings-card.tsx`), gleiches Prinzip wie
+  `describeActivity()`/`COMPANY_FIELD_LABELS` im Aktivität-Tab.
+- Neuer Endpunkt `GET /settings/changes` (paginiert,
+  `AuditLogService.findPaginated()`), Recht `settings:read` – also wie
+  der Rest der allgemeinen Einstellungen exklusiv Pivot vorbehalten
+  (siehe [[project_pivot_role_and_scoped_permissions]] in der
+  Memory-Datei).
+- **Bewusst nicht gebaut** (Mockup zeigte es, aber ohne reale
+  Grundlage): "API-Schlüssel ... erneuert" (kein API-Schlüssel-Feature,
+  Integrationen-Tab ist weiterhin Platzhalter) und "Vollständiger
+  Inhaltsexport … Formulare" (Formular-Einsendungen sind kein reales
+  Feature dieser App, siehe bereits bestehende Ausschlussliste bei den
+  Systembenachrichtigungen).
+
+## Update 2026-08-22: Löschfunktion, Export & Sicherung, AV-Verträge
+
+- Protokoll-Einträge sind einzeln und komplett löschbar (Nutzervorgabe:
+  "das soll man löschen können" – ursprüngliches Mockup-Label
+  "Revisionssicher, nicht löschbar" wurde entfernt, da falsch).
+  `AuditLogService.deleteOne()`/`deleteAllForEntity()`, Endpunkte
+  `DELETE /settings/changes/:id` und `DELETE /settings/changes`, Recht
+  `settings:update`. Einzellöschung als Icon-Button (`ConfirmDeleteDialog`,
+  `size="icon-sm"` **mit explizitem `rounded-lg`** – der Button-Default
+  für `icon-sm` ist `rounded-full`, ohne den Override wird der Button
+  fälschlich rund statt eckig). "Alle löschen" sitzt oben rechts im
+  Karten-Header über die `CardAction`-Komponente aus `ui/card.tsx` (nicht
+  über `className="flex-row justify-between"` auf `CardHeader` – der ist
+  standardmäßig `display: grid`, `flex-row` ohne `flex` hat dort keine
+  Wirkung).
+- Eigene Karte `settings-export-card.tsx` ("Export & Sicherung", 1:1 nach
+  Bildvorlage) mit drei Zeilen: Zugriffsprotokoll (CSV,
+  `GET /settings/changes/export`, `text/csv` mit UTF-8-BOM wie beim
+  DSGVO-Bericht), Einstellungen als JSON (`GET /settings/export`, gibt
+  das komplette `AppSettings`-Objekt ohne `id` zurück) – beide echt. Der
+  CSV-Export saß ursprünglich im Protokoll-Karten-Header, wurde aber auf
+  Nutzerkorrektur in diese eigene Karte verschoben. "Vollständiger
+  Inhaltsexport" bleibt deaktiviert, da Formular-Einsendungen kein
+  reales Feature dieser App sind.
+- AV-Vertrag-Dateien: `DataProcessorsService` löscht/ersetzt jetzt die
+  verknüpfte `Media`-Datei mit (`MediaService.remove()`, Soft-Delete in
+  den Papierkorb) statt sie verwaist liegen zu lassen. Der Button "AV-
+  Verträge herunterladen" (Auftragsverarbeiter-Tab, Fußzeile rechts
+  neben "Auftragsverarbeiter ergänzen") verschwindet automatisch, sobald
+  kein Auftragsverarbeiter mehr eine Vertragsdatei hat – dafür geben
+  `create()`/`update()` jetzt (wie schon `findAll()`) die
+  `contractMedia`-Relation zurück, sonst blieb der Button nach
+  Live-Änderungen ohne Neuladen fälschlich sichtbar/unsichtbar.
 
 ## Offene Punkte
 
-- Inhalte für Integrationen, Datenschutz-Zusatz, Benachrichtigungen und
-  Protokoll folgen als eigene, spätere Ausbauschritte (jeweils eigene
-  Rückfrage nötig, da diese Bereiche echte neue Backend-Features
-  bräuchten, nicht nur UI).
+- Datenschutz-Feldänderungen (DPO-Kontakt, Aufbewahrungsfristen) haben
+  weiterhin keine eigene Änderungshistorie.
+- Inhalte für Datenschutz-Zusatz und Benachrichtigungen (SMTP-Absender)
+  folgen als eigene, spätere Ausbauschritte (jeweils eigene Rückfrage
+  nötig, da diese Bereiche echte neue Backend-Features bräuchten, nicht
+  nur UI). Integrationen hat seit 2026-08-21 mit Webhooks einen ersten
+  echten Inhalt, API-Schlüssel bleiben offen.
 - Kein Playwright-Test für den "Verwerfen"-Button auf die
   Firmenfelder/Speicherkontingent (nur der Switch-Reset wurde end-to-end
   verifiziert; die lokalen String-States nutzen dieselbe

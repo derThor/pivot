@@ -35,6 +35,7 @@ packages/database/generated/
 
 # lokale Medien-Uploads
 apps/api/uploads/
+apps/api/uploads-trash/
 
 # misc
 coverage/

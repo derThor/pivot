@@ -19,5 +19,6 @@ import { GlobalModulesModule } from '../global-modules/global-modules.module';
   ],
   controllers: [TrashController],
   providers: [TrashService],
+  exports: [TrashService],
 })
 export class TrashModule {}

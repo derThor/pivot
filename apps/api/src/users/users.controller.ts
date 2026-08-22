@@ -106,14 +106,34 @@ export class UsersController {
     return this.usersService.remove(id, user.sub);
   }
 
+  // "Nutzer löschen" (Bearbeiten-Seite): verschwindet aus der Benutzer-
+  // liste, taucht unter Datenschutz → "Nutzer" auf. Eigenes, restriktiveres
+  // Recht wie `anonymize` – beides sind Schritte derselben Löschpipeline.
+  @RequirePermission('users:delete')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post(':id/delete')
+  delete(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.usersService.delete(id, user.sub);
+  }
+
   // Bewusst eigenes, restriktiveres Recht statt `users:deactivate` – siehe
   // knowledge-base/auth/rbac-rework.md, Update 2026-08-16: Anonymisierung
-  // ist nicht reversibel.
+  // ist nicht reversibel. Nur noch von Datenschutz → "Nutzer" aus
+  // auslösbar (Nutzervorgabe 2026-08-21), nicht mehr direkt von der
+  // Benutzer-Bearbeiten-Seite.
   @RequirePermission('users:delete')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post(':id/anonymize')
   anonymize(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.usersService.anonymize(id, user.sub);
+  }
+
+  // Macht delete() rückgängig – gleiches Recht wie delete/anonymize, da
+  // Teil derselben Löschpipeline.
+  @RequirePermission('users:delete')
+  @Post(':id/restore')
+  restore(@Param('id') id: string) {
+    return this.usersService.restore(id);
   }
 
   @RequirePermission('users:impersonate')

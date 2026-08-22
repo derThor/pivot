@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Post,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PrivacyService } from './privacy.service';
@@ -54,5 +55,20 @@ export class PrivacyController {
   @Get('report')
   async generateReport() {
     return this.privacyService.generateReportCsv();
+  }
+
+  @RequirePermission('privacy:read')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="auskunft.csv"')
+  @Get('subject-access-report/:userId')
+  async generateSubjectAccessReport(@Param('userId') userId: string) {
+    return this.privacyService.generateSubjectAccessReportCsv(userId);
+  }
+
+  @RequirePermission('privacy:read')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('subject-access-report/:userId/send')
+  async sendSubjectAccessReport(@Param('userId') userId: string) {
+    await this.privacyService.sendSubjectAccessReport(userId);
   }
 }

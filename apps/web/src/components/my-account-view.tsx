@@ -10,17 +10,25 @@ import { ChangePasswordForm } from "@/components/change-password-form";
 import { ExportProfileButton } from "@/components/export-profile-button";
 import { TwoFactorSetupCard } from "@/components/two-factor-setup-card";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
+import { PaginationControls } from "@/components/pagination-controls";
+import { SelfServiceRequestCard } from "@/components/self-service-request-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mediaUrl } from "@/lib/media";
 import { formatName, formatRelativeTime, initials } from "@/lib/utils";
-import type { CurrentUser, Role, UserSession } from "@/lib/api-server";
+import type {
+  CurrentUser,
+  DeletionRequest,
+  Role,
+  UserSession,
+} from "@/lib/api-server";
 import type { PasswordPolicy } from "@/lib/password-policy";
 
 const PROFILE_FORM_ID = "my-account-profile-form";
 const PASSWORD_FORM_ID = "my-account-password-form";
+const SESSIONS_PAGE_SIZE = 5;
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("de-DE", {
@@ -38,6 +46,7 @@ export function MyAccountView({
   primaryRole,
   weeklyStats,
   sessions,
+  myDeletionRequests,
 }: {
   user: CurrentUser;
   allowEmailChange: boolean;
@@ -46,6 +55,7 @@ export function MyAccountView({
   primaryRole: Role | null;
   weeklyStats: { contentCount: number; mediaCount: number };
   sessions: UserSession[];
+  myDeletionRequests: DeletionRequest[];
 }) {
   const name = formatName(user);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -68,6 +78,15 @@ export function MyAccountView({
   >(initialTab);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sessionsState, setSessionsState] = useState(sessions);
+  const [sessionsPage, setSessionsPage] = useState(1);
+  const sessionsPageCount = Math.max(
+    1,
+    Math.ceil(sessionsState.length / SESSIONS_PAGE_SIZE),
+  );
+  const visibleSessions = sessionsState.slice(
+    (sessionsPage - 1) * SESSIONS_PAGE_SIZE,
+    sessionsPage * SESSIONS_PAGE_SIZE,
+  );
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarCropOpen, setAvatarCropOpen] = useState(false);
 
@@ -81,7 +100,12 @@ export function MyAccountView({
 
   async function handleRevokeSession(sessionId: string) {
     await fetch(`/api/auth/me/sessions/${sessionId}`, { method: "DELETE" });
-    setSessionsState((prev) => prev.filter((s) => s.id !== sessionId));
+    setSessionsState((prev) => {
+      const next = prev.filter((s) => s.id !== sessionId);
+      const maxPage = Math.max(1, Math.ceil(next.length / SESSIONS_PAGE_SIZE));
+      setSessionsPage((page) => Math.min(page, maxPage));
+      return next;
+    });
   }
 
   async function handleRevokeOtherSessions() {
@@ -242,6 +266,7 @@ export function MyAccountView({
                     </div>
                   </div>
                 </div>
+                <SelfServiceRequestCard requests={myDeletionRequests} />
               </div>
             </div>
           </TabsContent>
@@ -270,7 +295,7 @@ export function MyAccountView({
                   </p>
                 ) : (
                   <div className="mt-3 flex flex-col gap-2">
-                    {sessionsState.map((session) => (
+                    {visibleSessions.map((session) => (
                       <div
                         key={session.id}
                         className="flex items-center justify-between gap-3 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-3"
@@ -308,6 +333,11 @@ export function MyAccountView({
                     ))}
                   </div>
                 )}
+                <PaginationControls
+                  page={sessionsPage}
+                  pageCount={sessionsPageCount}
+                  onPageChange={setSessionsPage}
+                />
                 {sessionsState.some((s) => !s.isCurrent) && (
                   <button
                     type="button"

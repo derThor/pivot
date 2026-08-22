@@ -8,12 +8,16 @@ import {
   Param,
   Patch,
   Post,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { DataProcessorsService } from './data-processors.service';
 import { CreateDataProcessorDto } from './dto/create-data-processor.dto';
 import { UpdateDataProcessorDto } from './dto/update-data-processor.dto';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @ApiTags('data-processors')
 @ApiBearerAuth()
@@ -27,6 +31,14 @@ export class DataProcessorsController {
     return this.dataProcessorsService.findAll();
   }
 
+  // Muss vor `:id`-Routen stehen, sonst würde Nest "contracts.zip" als
+  // `:id` interpretieren.
+  @RequirePermission('privacy:read')
+  @Get('contracts.zip')
+  async downloadContracts(@Res() res: Response) {
+    await this.dataProcessorsService.streamContractsZip(res);
+  }
+
   @RequirePermission('privacy:create')
   @Post()
   create(@Body() dto: CreateDataProcessorDto) {
@@ -35,14 +47,25 @@ export class DataProcessorsController {
 
   @RequirePermission('privacy:update')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateDataProcessorDto) {
-    return this.dataProcessorsService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateDataProcessorDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.dataProcessorsService.update(id, dto, user.sub);
   }
 
   @RequirePermission('privacy:delete')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.dataProcessorsService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.dataProcessorsService.remove(id, user.sub);
+  }
+
+  @RequirePermission('privacy:update')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post(':id/request-contract')
+  requestContract(@Param('id') id: string) {
+    return this.dataProcessorsService.requestContract(id);
   }
 }

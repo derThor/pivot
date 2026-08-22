@@ -136,7 +136,10 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn(
-        "font-heading text-base leading-none font-medium",
+        // `break-words`: analog zu AlertDialogTitle – ein langer, leerzeichen-
+        // freier Titel (z.B. ein Dateiname) darf die feste Dialogbreite nicht
+        // sprengen, sondern soll bei Bedarf mitten im Wort umbrechen.
+        "min-w-0 font-heading text-base leading-none font-medium break-words",
         className,
       )}
       {...props}

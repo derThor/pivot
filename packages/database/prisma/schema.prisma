@@ -16,7 +16,7 @@ model Role {
   description        String?
   isSystem           Boolean  @default(false)
   isDefault          Boolean  @default(false)
-  canAccessDashboard Boolean  @default(true)
+  canAccessDashboard Boolean  @default(false)
   // Feste Anzeige-Reihenfolge in der Rollen-Liste (Nutzervorgabe,
   // 2026-08-16: Administrator, Manager, Redakteur, Gast statt
   // alphabetisch) – gleiches Muster wie `NavigationItem.sortOrder`.
@@ -73,7 +73,16 @@ model AppSettings {
   id                         Int      @id @default(1)
   allowRegistration          Boolean  @default(true)
   allowPasswordReset         Boolean  @default(true)
+  // Getrennt nach Rolle (Nutzervorgabe, 2026-08-21): `allowEmailChange` gilt
+  // für alle Nutzer außer Manager/Administrator/Pivot ("Benutzer können
+  // E-Mail-Adresse anpassen"), `allowAdminEmailChange` eigens für
+  // Administrator ("als Option in den Einstellungen"). Manager haben
+  // bewusst KEINEN eigenen Schalter – sie dürfen ihre E-Mail-Adresse nie
+  // selbst ändern ("manager nicht"). Pivot ist von beidem ausgenommen und
+  // darf immer ändern (siehe UsersService.assertEmailChangeAllowed –
+  // Pivot "kann alles").
   allowEmailChange           Boolean  @default(true)
+  allowAdminEmailChange      Boolean  @default(true)
   requireAdminActivation     Boolean  @default(false)
   autosaveEnabled            Boolean  @default(true)
   mediaResponsiveVariantsEnabled Boolean @default(true)
@@ -160,6 +169,23 @@ model AppSettings {
   notifyPendingActivations     Boolean @default(true)
   notifyFailedLogins           Boolean @default(true)
   notifyPendingPasswordChanges Boolean @default(true)
+  // Nutzervorgabe, 2026-08-19: bestehende Inline-Warnhinweise (Firma-
+  // Vollständigkeit, Datenschutz-Rechtstexte) müssen zusätzlich als
+  // Systembenachrichtigung erscheinen, nicht nur lokal auf ihrer Seite.
+  notifyCompanyIncomplete      Boolean @default(true)
+  notifyLegalDocuments         Boolean @default(true)
+  // Betroffenenanfragen-Automatik (Nutzervorgabe, 2026-08-19, Löschanfragen-
+  // Neugestaltung): "Eingang automatisch bestätigen" (Mail an Absender bei
+  // Anlage), "Erinnerung 7 Tage vor Fristende" (Mail an DSB, täglicher Cron).
+  dsrAutoAcknowledgeReceipt    Boolean @default(true)
+  dsrDeadlineReminderEnabled   Boolean @default(true)
+  notifyDeletionRequests       Boolean @default(true)
+  notifyTrashExpiring          Boolean @default(true)
+  // Auftragsverarbeiter-Tab, Karte "Drittlandtransfer" (Nutzervorgabe,
+  // 2026-08-20): admin-hochgeladene SCC-Vorlage (Standardvertragsklauseln)
+  // zum Download – kein erfundenes Rechtsmuster im Repo, echte Datei nötig.
+  sccTemplateMediaId String?
+  sccTemplateMedia   Media?  @relation(fields: [sccTemplateMediaId], references: [id])
   companyLogoUrl             String?
   companyName                String?
   companyStreet              String?
@@ -177,6 +203,13 @@ model AppSettings {
   // Bildvorlage gezeigte Feld "Aufsichtsbehörde" (z.B. Kammer bei
   // reglementierten Berufen).
   companySupervisoryAuthority String?
+  // Pflichtangaben-Check (Datenschutz → Rechtstexte, Nutzervorgabe
+  // 2026-08-20, 1:1 nach Bildvorlage) – nach §36 VSBG vorgeschriebene
+  // Streitschlichtungs-Angabe (Teilnahme an bzw. Verweis auf eine
+  // Verbraucherschlichtungsstelle). "Berufsrechtliche Regelung" bewusst
+  // NICHT ergänzt (Nutzervorgabe, gleicher Tag: "komplett weg") – nur für
+  // reglementierte Berufe relevant, trifft auf diese Firma nicht zu.
+  companyDisputeResolution String?
   // Datenschutz-Seite (Nutzervorgabe, 2026-08-18, "Verwaltung → Datenschutz"
   // 1:1 nach Bildvorlage). Datenschutzbeauftragter: entweder eine externe
   // Person/Kanzlei (dpoIsExternal=true) oder intern benannt – reine
@@ -215,6 +248,12 @@ model AppSettings {
   retentionAccessLogMonths           Int     @default(12)
   retentionDeactivatedAccountsMonths Int     @default(6)
   retentionTrashDays                 Int     @default(30)
+  // Betroffenenrechte-Kachel (Datenschutz → Rechtstexte, Art. 15/17 DSGVO,
+  // Nutzervorgabe 2026-08-19). Wie retentionFormSubmissionsDays: kein
+  // Formular-Modul vorhanden, Werte werden nur vorgehalten (kein
+  // tatsächlicher Formular-Footer, der sie auswerten könnte).
+  dsbFormSelfServiceDisclosure Boolean @default(false)
+  dsbFormStoreSubmissionIp     Boolean @default(false)
   updatedAt                  DateTime @updatedAt
 
   @@map("app_settings")
@@ -250,14 +289,39 @@ model LegalDocument {
 // echte Listen ohne Bildvorlage ("einfache echte Listen jetzt"), bewusst
 // schlank gehalten (nur die Felder, die für Titel/Status/Zähler auf der
 // Übersichtsseite gebraucht werden), kein Pixel-Mockup zum Nachbauen.
+/// Betroffenenanfragen-Log (Nutzervorgabe, 2026-08-19: Neugestaltung nach
+/// Bildvorlage) – trotz Modellnamens nicht mehr nur Löschanfragen, deckt
+/// alle drei DSGVO-Anfragearten ab (`type`). Bewusst dauerhaft aufbewahrt,
+/// auch wenn der anfragende Nutzer später gelöscht/anonymisiert wird –
+/// Rechenschaftspflicht (Art. 5(2) DSGVO): Name/E-Mail bleiben als freier
+/// Text erhalten, unabhängig vom optionalen `linkedUser`.
 model DeletionRequest {
   id             String    @id @default(cuid())
+  // "DSR-2026-014" – pro Kalenderjahr fortlaufend, siehe generateDsrId()
+  // in DeletionRequestsService. Als String statt reiner Zahl gespeichert,
+  // damit der Wert nach dem Anlegen stabil bleibt (kein Neuberechnen).
+  dsrId          String    @unique
+  type           String    @default("deletion") // deletion | access | rectification
   requesterName  String
   requesterEmail String
   reason         String?
+  // Woher die Anfrage kam (Formular, Telefon, Post, ...) – freier Text,
+  // da es kein Formular-Modul mit fester Quellen-Liste gibt.
+  source         String?
+  affectedRecordsCount Int?
+  // Nachträgliche Verknüpfung mit einem echten Konto (Nutzervorgabe:
+  // "wenn ein echtes Konto vorhanden ist, dann verknüpfen") – gesetzt,
+  // sobald "Datenauszug erstellen" per E-Mail-Abgleich einen Treffer
+  // findet. Absichtlich nullable/lose: die Anfrage bleibt auch bestehen,
+  // wenn das verknüpfte Konto später anonymisiert wird.
+  linkedUserId   String?
+  linkedUser     User?     @relation(fields: [linkedUserId], references: [id], onDelete: SetNull)
   status         String    @default("open") // open | in_progress | completed | rejected
   dueAt          DateTime?
   completedAt    DateTime?
+  // "Erinnerung 7 Tage vor Fristende" – verhindert doppelten Versand
+  // durch den täglichen Cron.
+  reminderSentAt DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -265,13 +329,17 @@ model DeletionRequest {
 }
 
 model ProcessingActivity {
-  id             String   @id @default(cuid())
-  purpose        String
-  legalBasis     String?
-  dataCategories String?
-  recipients     String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @default(cuid())
+  purpose         String
+  legalBasis      String?
+  dataCategories  String?
+  // Löschfrist/Aufbewahrungsdauer für diesen Verarbeitungszweck (Art. 30(1)f
+  // DSGVO) – Freitext statt Zahl+Einheit, da die Bildvorlage gemischte
+  // Formate zeigt ("90 Tage", "bis Widerruf", "10 Jahre").
+  retentionPeriod String?
+  recipients      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@map("processing_activities")
 }
@@ -282,12 +350,43 @@ model DataProcessor {
   purpose      String?
   hasContract  Boolean   @default(false)
   contractDate DateTime?
+  // Nutzervorgabe, 2026-08-20 ("setze auftragsverarbeiter genau nach
+  // screener um"): Ort (z.B. "Hamburg, DE"), Zusatzhinweis in der
+  // Listenzeile (z.B. "ISO 27001", "Angemessenheitsbeschluss", "eigener
+  // Server", "SCC ausstehend" – freier Text, keine Ableitung aus dem Ort),
+  // manuelles Häkchen für Drittlandtransfer (keine automatische EU-Länder-
+  // Erkennung aus Freitext) und eine Kontaktadresse für "AV-Vertrag
+  // anfordern".
+  location       String?
+  complianceNote String?
+  outsideEu      Boolean @default(false)
+  contactEmail   String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+
+  // Hochgeladene Vertrags-PDF (Ordner "AVs", siehe seed.ts) – getrennt von
+  // `hasContract` (bleibt der manuelle Ja/Nein-Haken für "AV-Vertrag
+  // vorhanden", auch ohne hochgeladene Datei, z.B. bei Papierverträgen).
+  // "AV-Vertrag herunterladen" auf der Datenschutz-Seite zippt den ganzen
+  // "AVs"-Ordner, nicht gezielt diese Relation – die Relation ist für die
+  // Anzeige/Verlinkung je Auftragsverarbeiter (Nutzervorgabe, 2026-08-19).
+  contractMediaId String?
+  contractMedia    Media?  @relation(fields: [contractMediaId], references: [id])
 
   @@map("data_processors")
 }
 
+// Datenschutz-Seite → Tab "Vorfälle" (Nutzervorgabe, 2026-08-20, 1:1 nach
+// Bildvorlage): Art. 33/34 DSGVO-Meldeworkflow. `occurredAt` = "Bekannt
+// geworden" (der Art.-33-Fristbeginn ist der Zeitpunkt der Kenntnisnahme,
+// nicht des eigentlichen Vorfalls). `status` bleibt unverändert die grobe
+// Offen/Behoben-Ampel fürs Dashboard (`PrivacyService`) – die neue,
+// granularere Ablauf-Anzeige im Tab selbst wird rein aus severity +
+// authorityNotifiedAt/subjectsNotifiedAt/measuresDocumented berechnet,
+// nicht aus einem weiteren gespeicherten Status (gleiches Prinzip wie
+// "Veraltet" bei LegalDocument: dynamisch geprüft statt eigenes Feld).
+// severity="low" ("kein Risiko" bewertet) macht alle drei Meldeschritte
+// gegenstandslos – Art. 33/34 verlangen dann keine Meldung/Information.
 model PrivacyIncident {
   id          String    @id @default(cuid())
   title       String
@@ -295,6 +394,10 @@ model PrivacyIncident {
   severity    String    @default("low") // low | medium | high
   status      String    @default("open") // open | resolved
   occurredAt  DateTime?
+  affectedCount       Int?
+  authorityNotifiedAt DateTime?
+  subjectsNotifiedAt  DateTime?
+  measuresDocumented  String?   @db.Text
   resolvedAt  DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -307,7 +410,11 @@ model PrivacyIncident {
 // ("es soll nur eine Firma unter Verwaltung geben"), nur eine Liste
 // zusätzlicher Adressen. `employeeCount` ist ein manuell vom Admin
 // gepflegtes Zahlenfeld (keine echte Mitarbeiterverwaltung in dieser App)
-// – kein erfundener, automatisch berechneter Wert.
+// – kein erfundener, automatisch berechneter Wert. `openingHours` gab es
+// hier zwischenzeitlich, wurde aber komplett entfernt statt nur
+// ausgeblendet (Nutzervorgabe, 2026-08-20: "setzen wir anders später um")
+// – soll später in anderer Form wiederkommen, kein Platzhalterfeld
+// bis dahin.
 model CompanyLocation {
   id            String   @id @default(cuid())
   name          String
@@ -316,7 +423,7 @@ model CompanyLocation {
   postalCode    String?
   city          String?
   phone         String?
-  openingHours  String?
+  email         String?
   employeeCount Int?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -333,6 +440,13 @@ model User {
   avatarUrl           String?
   department          String?
   phone               String?
+  // Nutzervorgabe, 2026-08-19: "bei mein profil und benutzer detail
+  // strasse, plz ort mit aufnehmen. berücksichtige das bei allem
+  // datenschutzauskünften" – fließt in den Art.-15-Datenauszug
+  // (PrivacyService.generateSubjectAccessReportCsv) mit ein.
+  street              String?
+  postalCode          String?
+  city                String?
   isActive            Boolean   @default(true)
   // Zeitpunkt, seit dem `isActive` zuletzt auf false steht – Grundlage für
   // die Datenschutz-Aufbewahrungsfrist "Deaktivierte Konten" (siehe
@@ -367,6 +481,19 @@ model User {
   // unterscheidet den Zustand von einer normalen Deaktivierung
   // (`isActive: false`, reversibel). Siehe UsersService.anonymize().
   anonymizedAt        DateTime?
+  // Drei getrennte Zustände (Nutzervorgabe, 2026-08-21: "unterscheide
+  // zwischen löschen und sperren, das sind 2 unterschiedliche zustände" –
+  // vorher teilten sich "Sperren" (Benutzerliste) und "Löschen"
+  // (Bearbeiten-Seite) dieselbe `remove()`/isActive:false-Aktion, was
+  // niemand nachvollziehen konnte):
+  // 1. Gesperrt (`isActive: false` + `deactivatedAt`) – reversibel, bleibt
+  //    in der Benutzerliste, kann jederzeit entsperrt werden.
+  // 2. Gelöscht (`deletedAt`) – verschwindet aus der Benutzerliste,
+  //    taucht stattdessen unter Datenschutz → "Nutzer" auf. Noch nicht
+  //    anonymisiert, `email`/Name etc. bleiben vorerst erhalten.
+  // 3. Anonymisiert (`anonymizedAt`) – nur noch von dort aus auslösbar,
+  //    endgültig, personenbezogene Daten entfernt.
+  deletedAt           DateTime?
   // TOTP-2FA (Nutzervorgabe, 2026-08-17). `twoFactorSecret` liegt
   // AES-256-GCM-verschlüsselt vor (siehe totp-encryption.ts) – anders als
   // Passwort-/Token-Hashes muss das Secret bei jeder Login-Prüfung wieder
@@ -405,6 +532,11 @@ model User {
   passwordHistory         PasswordHistory[]
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens     PasswordResetToken[]
+  // Betroffenenanfragen-Log (Nutzervorgabe, 2026-08-19): "Datenauszug
+  // erstellen" verknüpft eine Anfrage nachträglich mit einem echten Konto,
+  // wenn die E-Mail-Adresse übereinstimmt.
+  linkedDeletionRequests  DeletionRequest[]
+  notifications           Notification[]
 
   // Für UsersService.getNotificationCounts() (2b.14): die App ist nicht
   // auf eine kleine, feste Admin-Zahl beschränkt – Kundenkonten (z.B.
@@ -416,6 +548,56 @@ model User {
   @@index([isActive, anonymizedAt, failedLoginAttempts])
   @@index([mustChangePassword, isActive, anonymizedAt])
   @@map("users")
+}
+
+// Benachrichtigungs-Postfach (Nutzervorgabe, 2026-08-21, 1:1 nach
+// Bildvorlage: "setze systembenachrichtigungen genau wie auf dem screener
+// um"). Ersetzt die bisherigen zustandslosen, live berechneten
+// SystemMessage-Banner (Wartungsmodus/Speicherplatz/Webhooks/etc.) NICHT –
+// `NotificationsService.sync()` prüft dieselben Bedingungen wie zuvor
+// `system-messages/page.tsx` und legt für jede zutreffende, noch nicht
+// vorhandene Bedingung genau einmal eine Zeile an (Dedupe über
+// `[userId, dedupeKey]`), damit "gelesen"/"erledigt" echt und dauerhaft
+// pro Nutzer gespeichert werden kann, statt bei jedem Seitenaufruf neu
+// berechnet zu werden. Bewusst NICHT umgesetzt (kein erfundenes Feature):
+// "Freigaben" (Freigabe-Workflow) und "Kommentare" gibt es in dieser App
+// nicht (Nutzerentscheidung, 2026-08-21: "weglassen"); ebenso keine
+// "Formulare"-Kategorie (kein Formular-Modul vorhanden), kein Konten-ohne-
+// 2FA-/Geo-Anomalie-Check (existieren nicht als berechnete Bedingung) und
+// keine E-Mail-Zustellung/Ruhezeiten (es gibt keinen echten Mail-Versand
+// für diese Kategorien, siehe MailerService-Dev-Stub-Kommentare).
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // system | security | privacy | accounts – bewusst nur die vier
+  // Kategorien mit echter Datengrundlage, siehe Kommentar oben.
+  category    String
+  // Stabiler Schlüssel für die Dedupe-Prüfung in sync(), z.B.
+  // "webhook-failure:<webhookId>" oder "storage-quota" – verhindert
+  // Doppeleinträge bei jedem erneuten Sync, solange die Bedingung anhält.
+  dedupeKey   String
+  title       String
+  description String
+  // null = "System" als Akteur (siehe UI) statt eines erfundenen Namens.
+  actorName   String?
+  isUrgent    Boolean   @default(false)
+  actionLabel String?
+  actionUrl   String?
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  // "Erledigt" wird ausschließlich durch Klick auf den Aktions-Button
+  // gesetzt (NotificationsService.markResolved()), nicht automatisch,
+  // wenn die zugrunde liegende Bedingung nicht mehr zutrifft – der Log
+  // bleibt dadurch ein echter Verlauf statt sich selbst zu leeren.
+  isResolved  Boolean   @default(false)
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }
 
 model RefreshToken {
@@ -700,6 +882,11 @@ model NavigationItem {
   id          String   @id @default(cuid())
   label       String
   externalUrl String?
+  // Gilt für Inhalts- UND externe Ziele gleichermaßen (Nutzervorgabe,
+  // 2026-08-21: "bei jedem menüpunkt") – nicht nur für externe Links, da
+  // auch ein interner Inhalt in einem neuen Tab geöffnet werden können
+  // soll.
+  openInNewTab Boolean @default(false)
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -766,6 +953,9 @@ model Media {
 
   variants MediaVariant[]
   tags     MediaTag[]
+
+  dataProcessorContracts DataProcessor[]
+  sccTemplateForSettings AppSettings[]
 
   @@map("media")
 }

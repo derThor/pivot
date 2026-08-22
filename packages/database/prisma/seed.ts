@@ -40,10 +40,6 @@ const PERMISSIONS: { resource: string; action: string }[] = [
   { resource: "preview-links", action: "read" },
   { resource: "preview-links", action: "create" },
   { resource: "preview-links", action: "revoke" },
-  { resource: "webhooks", action: "read" },
-  { resource: "webhooks", action: "create" },
-  { resource: "webhooks", action: "update" },
-  { resource: "webhooks", action: "delete" },
   { resource: "users", action: "read" },
   { resource: "users", action: "invite" },
   { resource: "users", action: "update" },
@@ -55,6 +51,10 @@ const PERMISSIONS: { resource: string; action: string }[] = [
   { resource: "roles", action: "update" },
   { resource: "settings", action: "read" },
   { resource: "settings", action: "update" },
+  // Firma-Stammdaten getrennt von `settings` (Nutzervorgabe, 2026-08-21:
+  // "admin soll aber firma sehen können", siehe permissions.catalog.ts).
+  { resource: "company", action: "read" },
+  { resource: "company", action: "update" },
   { resource: "privacy", action: "read" },
   { resource: "privacy", action: "create" },
   { resource: "privacy", action: "update" },
@@ -69,6 +69,14 @@ const OBSOLETE_PERMISSIONS: { resource: string; action: string }[] = [
   { resource: "users", action: "manage" },
   { resource: "roles", action: "manage" },
   { resource: "settings", action: "manage" },
+  // Webhooks leben seit 2026-08-21 unter Einstellungen und brauchen daher
+  // kein eigenes Rechte-Bündel mehr (Nutzervorgabe: "webhooks brauchen
+  // keine eigenen rechte mehr, soll komplett über einstellungen gehen") –
+  // ersetzt durch `settings:read`/`settings:update`.
+  { resource: "webhooks", action: "read" },
+  { resource: "webhooks", action: "create" },
+  { resource: "webhooks", action: "update" },
+  { resource: "webhooks", action: "delete" },
 ];
 
 // Namens-Migration (Nutzervorgabe, 2026-08-16): die bisherigen 4
@@ -92,42 +100,61 @@ const ROLES: {
   sortOrder: number;
   permissions: { resource: string; action: string }[];
 }[] = [
+  // Über Administrator angesiedelt (Nutzervorgabe, 2026-08-21: "die kann
+  // alles. einstellungen können nur pivot machen. keine admins") – hat als
+  // einzige Rolle uneingeschränkt PERMISSIONS inkl. `settings:*`.
+  // Administrator verliert dafür unten `settings:read`/`settings:update`
+  // komplett, nicht nur `settings:update` wie zuvor bei Manager. Zusätzlich
+  // besonders geschützt (siehe UsersService.assertMayAssignRole,
+  // AuthService.impersonate/requireTwoFactorForAdmins): nur Pivot selbst
+  // darf die Rolle vergeben, Pivot-Konten sind nicht impersonierbar und
+  // fallen unter dieselbe 2FA-Pflicht wie Administrator.
   {
-    name: "Administrator",
-    description: "Voller Zugriff auf alle Bereiche.",
+    name: "Pivot",
+    description:
+      "Uneingeschränkter Zugriff auf alle Bereiche, inklusive der globalen Einstellungen – die einzige Rolle mit Einstellungs-Zugriff.",
     canAccessDashboard: true,
     sortOrder: 0,
     permissions: PERMISSIONS,
   },
+  {
+    name: "Administrator",
+    description:
+      "Voller Zugriff auf alle Bereiche außer den globalen Einstellungen (vorbehalten der Rolle Pivot).",
+    canAccessDashboard: true,
+    sortOrder: 1,
+    permissions: PERMISSIONS.filter((p) => p.resource !== "settings"),
+  },
   // Direkt unter Administrator (Nutzervorgabe, 2026-08-16): operative
   // Vollmacht für praktisch alles Tagesgeschäft, aber bewusst OHNE die
   // beiden Rechte, die die Rechte-/Rollen-Architektur selbst verändern
-  // könnten (`roles:create`/`roles:update`) und ohne `settings:update`
-  // (globale System-Konfiguration) – das bleibt Administrator vorbehalten.
-  // Lesend darf Manager beides trotzdem einsehen (`roles:read`,
-  // `settings:read` sind Teil von `PERMISSIONS` und damit inbegriffen).
+  // könnten (`roles:create`/`roles:update`). `roles:read` bleibt Teil von
+  // `PERMISSIONS` und damit inbegriffen. `settings` (auch lesend) komplett
+  // ausgenommen (Nutzervorgabe, 2026-08-21: "manager darf keine
+  // einstellungen lesen. recht entfernen" – vorher durfte Manager lesend
+  // zugreifen, jetzt darf ausschließlich Pivot `settings:*`). Firma-
+  // Stammdaten (`company:*`) bleiben davon unberührt, da eigenes Recht.
   // Ebenfalls ausgenommen (2026-08-16): `users:delete` (Anonymisierung,
   // nicht reversibel) und `users:impersonate` (Admin-Impersonation) –
   // beide bleiben Administrator vorbehalten.
   {
     name: "Manager",
     description:
-      "Operative Leitung: verwaltet Inhalte, Medien, Benutzer und alle Erweiterungen – außer Rollen/Rechte, globale Einstellungen und Webhooks.",
+      "Operative Leitung: verwaltet Inhalte, Medien, Benutzer, Firmendaten und alle Erweiterungen – außer Rollen/Rechte und globale Einstellungen. Webhooks leben seit 2026-08-21 unter Einstellungen (settings:update) und sind damit ebenfalls ausgenommen.",
     canAccessDashboard: true,
-    sortOrder: 1,
+    sortOrder: 2,
     permissions: PERMISSIONS.filter(
       (p) =>
         !(p.resource === "roles" && p.action !== "read") &&
-        !(p.resource === "settings" && p.action !== "read") &&
-        !(p.resource === "users" && ["delete", "impersonate"].includes(p.action)) &&
-        p.resource !== "webhooks",
+        p.resource !== "settings" &&
+        !(p.resource === "users" && ["delete", "impersonate"].includes(p.action)),
     ),
   },
   {
     name: "Redakteur",
     description: "Pflegt Inhalte, veröffentlicht aber nicht selbst.",
     canAccessDashboard: true,
-    sortOrder: 2,
+    sortOrder: 3,
     permissions: PERMISSIONS.filter(
       (p) =>
         (p.resource === "content" &&
@@ -144,7 +171,7 @@ const ROLES: {
       "Registrierter Benutzer ohne Zugriff auf das Verwaltungs-Dashboard.",
     isDefault: true,
     canAccessDashboard: false,
-    sortOrder: 3,
+    sortOrder: 4,
     permissions: [],
   },
 ];
@@ -260,6 +287,25 @@ async function main() {
   } else if (!existingAvatarFolder.isSystem) {
     await prisma.mediaFolder.update({
       where: { id: existingAvatarFolder.id },
+      data: { isSystem: true },
+    });
+  }
+
+  // Systemordner für AV-Vertrag-Uploads (Datenschutz → Rechtstexte →
+  // Betroffenenrechte) – gleiches Muster wie "Logo"/"Avatare": Ordner
+  // selbst nicht löschbar (isSystem), damit "AV-Vertrag herunterladen"
+  // (zippt den ganzen Ordnerinhalt) immer einen festen, verlässlichen Ort
+  // hat (Nutzervorgabe, 2026-08-19).
+  const existingAvsFolder = await prisma.mediaFolder.findFirst({
+    where: { name: 'AVs', parentId: null },
+  });
+  if (!existingAvsFolder) {
+    await prisma.mediaFolder.create({
+      data: { name: 'AVs', parentId: null, isSystem: true },
+    });
+  } else if (!existingAvsFolder.isSystem) {
+    await prisma.mediaFolder.update({
+      where: { id: existingAvsFolder.id },
       data: { isSystem: true },
     });
   }

@@ -1,5 +1,11 @@
 import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUrl, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MinLength,
+} from 'class-validator';
 
 export class CreateNavigationItemDto {
   @ApiProperty()
@@ -30,4 +36,12 @@ export class CreateNavigationItemDto {
   @IsOptional()
   @IsString()
   parentId?: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Öffnet das Ziel in einem neuen Tab (target="_blank"). Gilt für Inhalte und externe URLs gleichermaßen.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  openInNewTab?: boolean;
 }

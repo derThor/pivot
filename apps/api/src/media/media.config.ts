@@ -6,6 +6,15 @@ import type { Request } from 'express';
 
 export const UPLOAD_DIR = join(process.cwd(), 'uploads');
 
+// Bewusst ein Geschwister-Verzeichnis von UPLOAD_DIR, nicht ein
+// Unterordner davon: `useStaticAssets(UPLOAD_DIR, ...)` (main.ts) serviert
+// UPLOAD_DIR komplett unauthentifiziert – ein Papierkorb-Unterordner
+// darin wäre über die bekannte UUID im alten `media.url` weiterhin direkt
+// abrufbar. So ist eine in den Papierkorb verschobene Datei über ihre
+// alte URL nicht mehr erreichbar (Nutzer-Bugreport, 2026-08-20: "kann sie
+// dennoch herunterladen, obwohl im papierkorb").
+export const TRASH_DIR = join(process.cwd(), 'uploads-trash');
+
 export const ALLOWED_MIME_TYPES = new Set([
   // Bilder
   'image/jpeg',

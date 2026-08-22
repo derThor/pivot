@@ -146,7 +146,7 @@ export function InsertSharedBlockDialog({
                 className="flex flex-col gap-4 overflow-y-auto"
               >
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="insert-shared-block-name">Name</Label>
+                  <Label htmlFor="insert-shared-block-name" required>Name</Label>
                   <Input
                     id="insert-shared-block-name"
                     value={name}

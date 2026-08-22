@@ -26,6 +26,9 @@ const publicSelect = {
   avatarUrl: true,
   department: true,
   phone: true,
+  street: true,
+  postalCode: true,
+  city: true,
   isActive: true,
   emailVerifiedAt: true,
   lastLoginAt: true,
@@ -33,6 +36,7 @@ const publicSelect = {
   twoFactorEnabled: true,
   twoFactorEnabledAt: true,
   failedLoginAttempts: true,
+  deletedAt: true,
   anonymizedAt: true,
   createdAt: true,
   updatedAt: true,
@@ -62,8 +66,24 @@ export class UsersService {
   ) {}
 
   async findAll(query: QueryUserDto) {
-    const { page, pageSize, roleId, isActive, q } = query;
+    const { page, pageSize, roleId, isActive, anonymized, deleted, q } = query;
+    // Gelöschte (siehe delete()) und anonymisierte Konten sind standardmäßig
+    // ausgeblendet – über `deleted`/`anonymized` gezielt abrufbar (Tabs
+    // "Gelöscht"/"Anonymisiert", Nutzervorgabe 2026-08-21). Bewusst sich
+    // gegenseitig ausschließende Zweige statt zweier unabhängiger
+    // `deletedAt`/`anonymizedAt`-Filter: ein anonymisierter Nutzer hat immer
+    // auch `deletedAt` gesetzt (anonymize() räumt es nicht ab), ein simples
+    // `deletedAt: deleted ? {not:null} : null` kombiniert mit
+    // `anonymizedAt: {not:null}` hätte die Anonymisiert-Liste sonst immer
+    // leer gelassen (Nutzer-Bugreport, 2026-08-21). Gesperrte
+    // (isActive:false) bleiben bewusst immer in der Standardliste sichtbar.
+    const stateFilter = anonymized
+      ? { anonymizedAt: { not: null } }
+      : deleted
+        ? { deletedAt: { not: null }, anonymizedAt: null }
+        : { deletedAt: null, anonymizedAt: null };
     const where = {
+      ...stateFilter,
       ...(roleId && { userRoles: { some: { roleId } } }),
       ...(isActive !== undefined && { isActive }),
       ...(q && {
@@ -110,25 +130,33 @@ export class UsersService {
     return toPublicUser(user);
   }
 
-  // Nur Administratoren dürfen die Administrator-Rolle vergeben
-  // (Nutzervorgabe, 2026-08-16) – `users:update`/`users:invite` allein
-  // hätten sonst z.B. Manager erlaubt, sich oder andere zum Admin zu
-  // machen (`roles:read` reicht, um die Rollen-ID zu ermitteln).
-  // Namensbasiert wie `isAdministrator`-Checks im Frontend, da
-  // Administrator die einzige Rolle ist, die diese Sonderbehandlung
-  // braucht.
+  // Nur Administratoren (und Pivot) dürfen die Administrator-Rolle
+  // vergeben (Nutzervorgabe, 2026-08-16) – `users:update`/`users:invite`
+  // allein hätten sonst z.B. Manager erlaubt, sich oder andere zum Admin
+  // zu machen (`roles:read` reicht, um die Rollen-ID zu ermitteln). Die
+  // Pivot-Rolle selbst ist noch enger geschützt: nur wer bereits Pivot
+  // ist, darf sie vergeben (Nutzervorgabe, 2026-08-21: "die kann alles" –
+  // sonst könnte ein Administrator sich über die Rollenvergabe selbst zu
+  // Pivot befördern, obwohl Einstellungen bewusst "nur pivot" vorbehalten
+  // sein sollen). Namensbasiert wie `isAdministrator`-Checks im Frontend.
   private async assertMayAssignRole(
     actingUser: JwtPayload,
     roleIds: string[] | undefined,
   ) {
-    if (!roleIds?.length || actingUser.roleNames.includes('Administrator')) {
-      return;
-    }
+    if (!roleIds?.length) return;
+    const isPivot = actingUser.roleNames.includes('Pivot');
     const roles = await this.prisma.role.findMany({
       where: { id: { in: roleIds } },
       select: { name: true },
     });
-    if (roles.some((role) => role.name === 'Administrator')) {
+    if (roles.some((role) => role.name === 'Pivot') && !isPivot) {
+      throw new ForbiddenException('Nur Pivot kann die Pivot-Rolle vergeben.');
+    }
+    if (
+      roles.some((role) => role.name === 'Administrator') &&
+      !isPivot &&
+      !actingUser.roleNames.includes('Administrator')
+    ) {
       throw new ForbiddenException(
         'Nur Administratoren können die Administrator-Rolle vergeben.',
       );
@@ -190,7 +218,7 @@ export class UsersService {
     }
 
     if (dto.email && dto.email !== existing.email) {
-      await this.assertEmailChangeAllowed(dto.email);
+      await this.assertEmailChangeAllowed(dto.email, actingUser);
     }
     let newRoleNames: string[] | undefined;
     if (dto.roleIds) {
@@ -229,12 +257,11 @@ export class UsersService {
         // den Nutzer aktiviert (siehe Schema-Kommentar zu `User.pendingActivation`).
         // `deactivatedAt` folgt demselben Muster für die Datenschutz-
         // Aufbewahrungsfrist "Deaktivierte Konten".
-        data:
-          rest.isActive ?
-            { ...rest, pendingActivation: false, deactivatedAt: null }
-          : rest.isActive === false ?
-            { ...rest, deactivatedAt: new Date() }
-          : rest,
+        data: rest.isActive
+          ? { ...rest, pendingActivation: false, deactivatedAt: null }
+          : rest.isActive === false
+            ? { ...rest, deactivatedAt: new Date() }
+            : rest,
       }),
       ...(roleIds
         ? [
@@ -261,11 +288,15 @@ export class UsersService {
     return toPublicUser(user);
   }
 
-  async updateProfile(id: string, dto: UpdateProfileDto) {
+  async updateProfile(
+    id: string,
+    dto: UpdateProfileDto,
+    actingUser: JwtPayload,
+  ) {
     const existing = await this.findOneRaw(id);
 
     if (dto.email && dto.email !== existing.email) {
-      await this.assertEmailChangeAllowed(dto.email);
+      await this.assertEmailChangeAllowed(dto.email, actingUser);
     }
 
     const user = await this.prisma.user.update({
@@ -333,11 +364,61 @@ export class UsersService {
     ]);
   }
 
-  // "Benutzer löschen" / "Konto entfernen" (2b.14, Nutzerentscheidung
-  // 2026-08-16): beide Stellen der Bildvorlage nutzen dieselbe Aktion.
-  // Anders als `remove()` oben NICHT reversibel – entfernt alle
-  // personenbezogenen Daten, behält aber Zeile/`id`, damit
-  // `contents_authorId_fkey` & Co. gültig bleiben (siehe
+  // "Nutzer löschen" (Bearbeiten-Seite, Nutzervorgabe 2026-08-21): eigener,
+  // dritter Zustand neben Sperren (`remove()`) und Anonymisieren
+  // (`anonymize()`) – noch reversibel (kein Datenverlust), verschwindet
+  // aber aus der normalen Benutzerliste (siehe `findAll()`) und taucht
+  // stattdessen unter Datenschutz → "Nutzer" auf. Erst von dort aus wird
+  // endgültig anonymisiert.
+  async delete(id: string, currentUserId: string) {
+    if (id === currentUserId) {
+      throw new BadRequestException(
+        'Du kannst dein eigenes Konto nicht löschen.',
+      );
+    }
+    await this.findOne(id);
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id },
+        data: { isActive: false, deletedAt: new Date() },
+      }),
+      this.prisma.refreshToken.updateMany({
+        where: { userId: id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
+  }
+
+  // "Wiederherstellen" (Nutzervorgabe, 2026-08-21: "auf gelöscht gesetzte
+  // nutzer sollen wiederhergestellt werden können, solange sie nicht
+  // anonymisiert wurden") – macht `delete()` rückgängig, sowohl unter
+  // Datenschutz → "Benutzer" als auch auf der Benutzer-Seite (Tab
+  // "Gelöscht") auslösbar. Nach der Anonymisierung nicht mehr möglich,
+  // da keine personenbezogenen Daten mehr übrig sind, die wiederherzustellen
+  // wären.
+  async restore(id: string) {
+    const existing = await this.findOneRaw(id);
+    if (!existing.deletedAt) {
+      throw new BadRequestException('Dieser Nutzer ist nicht gelöscht.');
+    }
+    if (existing.anonymizedAt) {
+      throw new BadRequestException(
+        'Anonymisierte Nutzer können nicht wiederhergestellt werden.',
+      );
+    }
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: { deletedAt: null, isActive: true },
+      select: publicSelect,
+    });
+    return toPublicUser(user);
+  }
+
+  // "Endgültig löschen" (Datenschutz → Tab "Nutzer", Nutzervorgabe
+  // 2026-08-21: nur von dort aus auslösbar, nicht mehr direkt von der
+  // Benutzer-Bearbeiten-Seite). Anders als `delete()`/`remove()` NICHT
+  // reversibel – entfernt alle personenbezogenen Daten, behält aber
+  // Zeile/`id`, damit `contents_authorId_fkey` & Co. gültig bleiben (siehe
   // knowledge-base/auth/rbac-rework.md). `email` bekommt einen eindeutigen
   // Platzhalter (Unique-Constraint), `passwordHash` einen zufälligen,
   // nicht einlösbaren Wert (Login danach unmöglich).
@@ -362,6 +443,9 @@ export class UsersService {
           avatarUrl: null,
           department: null,
           phone: null,
+          street: null,
+          postalCode: null,
+          city: null,
           passwordHash,
           isActive: false,
           anonymizedAt: new Date(),
@@ -447,7 +531,12 @@ export class UsersService {
     const avatarFolder = await this.prisma.mediaFolder.findFirst({
       where: { name: 'Avatare', isSystem: true },
     });
-    const media = await this.media.create(file, id, undefined, avatarFolder?.id);
+    const media = await this.media.create(
+      file,
+      id,
+      undefined,
+      avatarFolder?.id,
+    );
     const user = await this.prisma.user.update({
       where: { id },
       data: { avatarUrl: media.url },
@@ -527,20 +616,24 @@ export class UsersService {
     );
   }
 
-  /** Datenschutz-Aufbewahrung "Deaktivierte Konten": Konten, die schon
-   * länger als `cutoff` deaktiviert sind – für die manuelle Review-Liste,
-   * kein automatisches Löschen. */
-  async findDeactivatedOlderThan(cutoff: Date) {
-    return this.prisma.user.findMany({
-      where: { isActive: false, deactivatedAt: { not: null, lt: cutoff } },
+  /** Datenschutz → Tab "Nutzer": alle gelöschten, noch nicht anonymisierten
+   * Konten (nicht nur die schon überfälligen wie zuvor – "und dann taucht
+   * er nichtmal in datenschutz im reiter gelöschte nutzer auf", Nutzer-
+   * Bugreport 2026-08-21). `cutoff` dient nur noch der `overdue`-Markierung
+   * (Aufbewahrungsfrist überschritten), kein Filter mehr. */
+  async findDeleted(cutoff: Date) {
+    const rows = await this.prisma.user.findMany({
+      where: { deletedAt: { not: null }, anonymizedAt: null },
       select: {
         id: true,
         email: true,
         firstName: true,
         lastName: true,
-        deactivatedAt: true,
+        deletedAt: true,
       },
+      orderBy: { deletedAt: 'asc' },
     });
+    return rows.map((u) => ({ ...u, overdue: u.deletedAt! < cutoff }));
   }
 
   private async findOneRaw(id: string) {
@@ -551,9 +644,26 @@ export class UsersService {
     return user;
   }
 
-  private async assertEmailChangeAllowed(newEmail: string) {
+  // Rollenabhängig statt eines einzelnen globalen Schalters (Nutzervorgabe,
+  // 2026-08-21): Pivot darf immer ändern ("kann alles"), Administrator
+  // über den eigenen Schalter `allowAdminEmailChange` ("als Option in den
+  // Einstellungen"), Manager nie (kein eigener Schalter, "manager nicht"),
+  // alle übrigen Rollen über den bestehenden `allowEmailChange`
+  // ("Benutzer können E-Mail-Adresse anpassen").
+  private async assertEmailChangeAllowed(
+    newEmail: string,
+    actingUser: JwtPayload,
+  ) {
     const settings = await this.settings.get();
-    if (!settings.allowEmailChange) {
+    const roleNames = actingUser.roleNames;
+    const allowed = roleNames.includes('Pivot')
+      ? true
+      : roleNames.includes('Administrator')
+        ? settings.allowAdminEmailChange
+        : roleNames.includes('Manager')
+          ? false
+          : settings.allowEmailChange;
+    if (!allowed) {
       throw new BadRequestException(
         'Ändern der E-Mail-Adresse ist derzeit deaktiviert.',
       );

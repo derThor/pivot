@@ -23,7 +23,7 @@ const EMPTY_FORM = {
   postalCode: "",
   city: "",
   phone: "",
-  openingHours: "",
+  email: "",
   employeeCount: "",
 };
 
@@ -35,7 +35,7 @@ function toForm(location: CompanyLocation) {
     postalCode: location.postalCode ?? "",
     city: location.city ?? "",
     phone: location.phone ?? "",
-    openingHours: location.openingHours ?? "",
+    email: location.email ?? "",
     employeeCount:
       location.employeeCount != null ? String(location.employeeCount) : "",
   };
@@ -81,7 +81,7 @@ export function CompanyLocationDialog({
         postalCode: form.postalCode || undefined,
         city: form.city || undefined,
         phone: form.phone || undefined,
-        openingHours: form.openingHours || undefined,
+        email: form.email || undefined,
         employeeCount:
           form.employeeCount.trim() ? Number(form.employeeCount) : undefined,
       };
@@ -124,7 +124,7 @@ export function CompanyLocationDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
-            <Label htmlFor="location-name">Name</Label>
+            <Label htmlFor="location-name" required>Name</Label>
             <Input
               id="location-name"
               autoFocus
@@ -177,17 +177,14 @@ export function CompanyLocationDialog({
               />
             </div>
             <div className="flex flex-col gap-1">
-              <Label htmlFor="location-opening-hours">Öffnungszeiten</Label>
+              <Label htmlFor="location-email">E-Mail</Label>
               <Input
-                id="location-opening-hours"
-                value={form.openingHours}
+                id="location-email"
+                type="email"
+                value={form.email}
                 onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    openingHours: e.target.value,
-                  }))
+                  setForm((prev) => ({ ...prev, email: e.target.value }))
                 }
-                placeholder="z.B. Mo–Do 8–17, Fr 8–13"
               />
             </div>
             <div className="flex flex-col gap-1">

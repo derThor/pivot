@@ -34,7 +34,7 @@ export class CreateCompanyLocationDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  openingHours?: string;
+  email?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

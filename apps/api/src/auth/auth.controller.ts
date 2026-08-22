@@ -113,7 +113,7 @@ export class AuthController {
   @AllowTwoFactorSetupRequired()
   @Patch('me')
   updateMe(@CurrentUser() user: JwtPayload, @Body() dto: UpdateProfileDto) {
-    return this.usersService.updateProfile(user.sub, dto);
+    return this.usersService.updateProfile(user.sub, dto, user);
   }
 
   @ApiBearerAuth()

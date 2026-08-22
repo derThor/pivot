@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { copyFile, readFile, unlink, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
@@ -15,6 +15,7 @@ import { CropMediaDto } from './dto/crop-media.dto';
 import { QueryMediaDto } from './dto/query-media.dto';
 import { UpdateMediaDto } from './dto/update-media.dto';
 import {
+  TRASH_DIR,
   UPLOAD_DIR,
   maxSizeForMimeType,
   mimeTypesForCategory,
@@ -282,6 +283,17 @@ export class MediaService {
     alt?: string,
     folderId?: string,
   ) {
+    // Busboy/Multer dekodieren den `filename`-Header aus dem
+    // multipart/form-data-Request laut Spec als Latin-1, auch wenn der
+    // Browser die Bytes als UTF-8 sendet – Umlaute im Originaldateinamen
+    // kommen sonst als Mojibake an ("Müller" → "MÃ¼ller"), sichtbar u.a.
+    // im AV-Vertrag-ZIP-Download (Nutzer-Bugreport, 2026-08-19). Einmal
+    // hier am Eintrittspunkt zurück nach UTF-8 re-dekodieren, statt an
+    // jeder Stelle, die `file.originalname` liest.
+    file.originalname = Buffer.from(file.originalname, 'latin1').toString(
+      'utf8',
+    );
+
     // Effektive Obergrenze = Minimum aus technischer Kategorie-Obergrenze
     // und der optionalen Admin-Einstellung (Nutzervorgabe, 2026-08-18) –
     // die Einstellung kann nur verschärfen, nie über die Kategorie-Grenze
@@ -644,12 +656,19 @@ export class MediaService {
     return mapMediaTags(media);
   }
 
-  /** Papierkorb: Soft-Delete – die physische Datei bleibt liegen, damit
-   * `restore()` sie zurückgeben kann. Erst `permanentDelete()` löscht die
+  /** Papierkorb: Soft-Delete – die physische Datei bleibt erhalten, damit
+   * `restore()` sie zurückgeben kann, wandert dabei aber aus `UPLOAD_DIR`
+   * (unauthentifiziert über `/uploads/*` servierbar) nach `TRASH_DIR`
+   * (kein Static-Serving-Prefix zeigt dorthin) – sonst bliebe die alte
+   * `media.url` trotz Papierkorb weiterhin direkt herunterladbar
+   * (Nutzer-Bugreport, 2026-08-20). Erst `permanentDelete()` löscht die
    * Datei wirklich von Disk (Nutzervorgabe, 2026-08-18, "überall da wo man
    * löschen kann"). */
   async remove(id: string, actingUserId: string) {
-    const media = await this.prisma.media.findUnique({ where: { id } });
+    const media = await this.prisma.media.findUnique({
+      where: { id },
+      include: { variants: true },
+    });
     if (!media) {
       throw new NotFoundException(`Medium ${id} nicht gefunden.`);
     }
@@ -657,19 +676,25 @@ export class MediaService {
       where: { id },
       data: { deletedAt: new Date(), deletedById: actingUserId },
     });
+    await this.moveMediaFiles(media, UPLOAD_DIR, TRASH_DIR);
   }
 
   async restore(id: string) {
-    const media = await this.prisma.media.findUnique({ where: { id } });
+    const media = await this.prisma.media.findUnique({
+      where: { id },
+      include: { variants: true },
+    });
     if (!media || !media.deletedAt) {
       throw new NotFoundException(
         `Medium ${id} befindet sich nicht im Papierkorb.`,
       );
     }
-    return this.prisma.media.update({
+    const restored = await this.prisma.media.update({
       where: { id },
       data: { deletedAt: null, deletedById: null },
     });
+    await this.moveMediaFiles(media, TRASH_DIR, UPLOAD_DIR);
+    return restored;
   }
 
   async permanentDelete(id: string) {
@@ -692,10 +717,35 @@ export class MediaService {
     ];
     await Promise.all(
       urls.map((url) =>
-        unlink(join(UPLOAD_DIR, url.replace(/^\/uploads\//, ''))).catch(() => {
+        unlink(join(TRASH_DIR, url.replace(/^\/uploads\//, ''))).catch(() => {
           // Datei bereits weg (z.B. manuell gelöscht) – DB-Zeile ist trotzdem entfernt.
         }),
       ),
+    );
+  }
+
+  /** Verschiebt Hauptdatei + Varianten + Thumbnail zwischen `UPLOAD_DIR`
+   * und `TRASH_DIR` (siehe `remove()`/`restore()`). Einzelne fehlende
+   * Dateien (z.B. manuell entfernt) brechen den Vorgang nicht ab – die
+   * DB bleibt so oder so die Quelle der Wahrheit für den Papierkorb-Status. */
+  private async moveMediaFiles(
+    media: { url: string; thumbnailUrl: string | null; variants: { url: string }[] },
+    fromDir: string,
+    toDir: string,
+  ) {
+    await mkdir(toDir, { recursive: true });
+    const urls = [
+      media.url,
+      ...media.variants.map((variant) => variant.url),
+      ...(media.thumbnailUrl ? [media.thumbnailUrl] : []),
+    ];
+    await Promise.all(
+      urls.map((url) => {
+        const relative = url.replace(/^\/uploads\//, '');
+        return rename(join(fromDir, relative), join(toDir, relative)).catch(() => {
+          // Datei bereits am Zielort oder fehlt.
+        });
+      }),
     );
   }
 

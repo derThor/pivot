@@ -22,6 +22,7 @@ import { HighlightText } from "@/components/highlight-text";
 import { RowActionButtons } from "@/components/row-action-buttons";
 import { useHighlightParam } from "@/hooks/use-highlight-param";
 import type { PreviewLinkWithContent } from "@/lib/api-server";
+import { truncateMiddle } from "@/lib/utils";
 
 const dateFormatter = new Intl.DateTimeFormat("de-DE", {
   day: "2-digit",
@@ -166,7 +167,7 @@ export function PreviewLinksTable({
       <ConfirmDeleteDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
-        title={`Vorschau-Link für „${deleteTarget?.content.title}“ widerrufen?`}
+        title={`Vorschau-Link für „${truncateMiddle(deleteTarget?.content.title ?? "")}“ widerrufen?`}
         description="Der Link funktioniert danach nicht mehr. Diese Aktion kann nicht rückgängig gemacht werden."
         confirmLabel="Widerrufen"
         confirmingLabel="Widerruft…"

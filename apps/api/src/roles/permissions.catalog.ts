@@ -7,9 +7,13 @@ export interface PermissionDescriptor {
 }
 
 // Kategorisierung für die Rollen-&-Rechte-UI (Kern-Module/Erweiterungen/
-// Verwaltung) – rein für die Frontend-Gruppierung, hat keine Auswirkung auf
-// die Rechte-Prüfung selbst.
-export type PermissionCategory = 'core' | 'extensions' | 'administration';
+// Verwaltung/System) – rein für die Frontend-Gruppierung, hat keine
+// Auswirkung auf die Rechte-Prüfung selbst. `system` enthält bewusst nur
+// `settings` (Nutzervorgabe, 2026-08-21: eigene Gruppe, aus Verwaltung
+// herausgelöst) – passt zur Pivot-Sonderrolle, die als einzige Rolle
+// `settings:*` besitzen darf.
+export type PermissionCategory =
+  'core' | 'extensions' | 'administration' | 'system';
 
 export const PERMISSIONS_CATALOG: PermissionDescriptor[] = [
   // Kern-Module
@@ -51,10 +55,6 @@ export const PERMISSIONS_CATALOG: PermissionDescriptor[] = [
   { resource: 'preview-links', action: 'read' },
   { resource: 'preview-links', action: 'create' },
   { resource: 'preview-links', action: 'revoke' },
-  { resource: 'webhooks', action: 'read' },
-  { resource: 'webhooks', action: 'create' },
-  { resource: 'webhooks', action: 'update' },
-  { resource: 'webhooks', action: 'delete' },
 
   // Verwaltung
   { resource: 'users', action: 'read' },
@@ -71,6 +71,15 @@ export const PERMISSIONS_CATALOG: PermissionDescriptor[] = [
   { resource: 'roles', action: 'update' },
   { resource: 'settings', action: 'read' },
   { resource: 'settings', action: 'update' },
+  // Firma-Stammdaten (Verwaltung → Firma) bewusst getrennt von `settings`
+  // (Nutzervorgabe, 2026-08-21: "admin soll aber firma sehen können" –
+  // Administrator hat kein `settings:*` mehr, braucht aber weiterhin
+  // Zugriff auf die Firma-Seite, die technisch auf denselben
+  // `AppSettings`-Zeilen wie die globalen Einstellungen liegt). Eigene
+  // Endpunkte `GET/PATCH /settings/company` statt der allgemeinen
+  // `/settings`-Route (siehe SettingsController).
+  { resource: 'company', action: 'read' },
+  { resource: 'company', action: 'update' },
   { resource: 'privacy', action: 'read' },
   { resource: 'privacy', action: 'create' },
   { resource: 'privacy', action: 'update' },
@@ -90,9 +99,9 @@ export const PERMISSION_CATEGORY_BY_RESOURCE: Record<
   gallery: 'extensions',
   faq: 'extensions',
   'preview-links': 'extensions',
-  webhooks: 'extensions',
   users: 'administration',
   roles: 'administration',
-  settings: 'administration',
   privacy: 'administration',
+  company: 'administration',
+  settings: 'system',
 };

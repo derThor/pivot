@@ -2,7 +2,7 @@ import { RoleFormDialog } from "@/components/role-form-dialog";
 import { RolesExplorer, RolesExplorerExportButton } from "@/components/roles-explorer";
 import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
-import { getPermissionsCatalog, getRoles } from "@/lib/api-server";
+import { getCurrentUser, getPermissionsCatalog, getRoles } from "@/lib/api-server";
 
 export default async function RolesPage({
   searchParams,
@@ -16,13 +16,22 @@ export default async function RolesPage({
   const { role: roleParam, highlight } = await searchParams;
   const requestedId = roleParam ?? highlight;
 
-  const [roles, permissionsCatalog] = await Promise.all([
+  const [roles, permissionsCatalog, currentUser] = await Promise.all([
     // Split-View statt Pagination (Nutzervorgabe, 2026-08-16, siehe
     // docs/ROADMAP.md 2b.13) – alle Rollen auf einmal, analog zu den
     // Menüs in `/dashboard/navigation`.
     getRoles({ pageSize: 100 }),
     getPermissionsCatalog(),
+    getCurrentUser(),
   ]);
+
+  // Nur Pivot darf `settings:*` vergeben (Nutzervorgabe, 2026-08-21: "für
+  // jede rolle, außer pivot, soll einstellung zwar gezeigt werden, aber
+  // es darf kein haken mehr gesetzt werden dürfen") – serverseitig bereits
+  // über RolesService.assertMaySetSettingsPermissions erzwungen, hier nur
+  // die passende UI-Sperre dazu (Checkbox sichtbar, aber deaktiviert).
+  const viewerIsPivot =
+    currentUser?.roles.some((role) => role.name === "Pivot") ?? false;
 
   const roleItems = roles?.items ?? [];
   const selectedRoleId =
@@ -37,7 +46,10 @@ export default async function RolesPage({
         {permissionsCatalog && (
           <div className="flex items-center gap-2">
             <RolesExplorerExportButton roles={roleItems} />
-            <RoleFormDialog permissionsCatalog={permissionsCatalog} />
+            <RoleFormDialog
+              permissionsCatalog={permissionsCatalog}
+              viewerIsPivot={viewerIsPivot}
+            />
           </div>
         )}
       </div>
@@ -52,6 +64,7 @@ export default async function RolesPage({
             roles={roleItems}
             selectedRoleId={selectedRoleId}
             permissionsCatalog={permissionsCatalog}
+            viewerIsPivot={viewerIsPivot}
           />
         )}
       </PageContent>

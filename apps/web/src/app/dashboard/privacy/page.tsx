@@ -1,19 +1,25 @@
 import { PrivacyView } from "@/components/privacy-view";
 import {
+  getCompanySettings,
   getDataProcessors,
   getDeletionRequests,
   getLegalDocuments,
+  getMediaFolders,
   getPrivacyIncidents,
+  getPrivacySettings,
   getProcessingActivities,
+  getPublicSettings,
   getRetentionAccessLogDue,
   getRetentionDeactivatedAccountsDue,
   getRetentionTrashDue,
-  getSettings,
+  getUsers,
 } from "@/lib/api-server";
 
 export default async function PrivacyPage() {
   const [
-    settings,
+    privacySettings,
+    companySettings,
+    publicSettings,
     legalDocuments,
     deletionRequests,
     processingActivities,
@@ -22,8 +28,21 @@ export default async function PrivacyPage() {
     accessLogDue,
     deactivatedAccountsDue,
     trashDue,
+    users,
+    mediaFolders,
   ] = await Promise.all([
-    getSettings(),
+    // Zwei getrennte, engere Endpunkte statt getSettings() (Recht
+    // `settings:read`, das Administrator seit der Pivot-Einführung nicht
+    // mehr hat) – die Seite braucht nur `privacy:*`/`company:*`, beide
+    // hat Administrator weiterhin (Nutzer-Bugreport, 2026-08-21: "warum
+    // habe ich als admin keine datenschutz zugriffsrechte").
+    getPrivacySettings(),
+    // Für den Pflichtangaben-Check (Firmierung, Anschrift, USt-IdNr. …).
+    getCompanySettings(),
+    // `getPrivacySettings()` hat kein `sccTemplateMedia` (kein Include im
+    // Backend, siehe SettingsService.get() vs. getPublic()) – deshalb
+    // zusätzlich die public-Variante nur für dieses eine Feld.
+    getPublicSettings(),
     getLegalDocuments(),
     getDeletionRequests(),
     getProcessingActivities(),
@@ -32,9 +51,13 @@ export default async function PrivacyPage() {
     getRetentionAccessLogDue(),
     getRetentionDeactivatedAccountsDue(),
     getRetentionTrashDue(),
+    getUsers({ pageSize: 100 }),
+    getMediaFolders(),
   ]);
+  const avsFolderId =
+    mediaFolders?.find((f) => f.name === "AVs" && f.isSystem)?.id ?? null;
 
-  if (settings === null) {
+  if (privacySettings === null || companySettings === null) {
     return (
       <div className="flex flex-col gap-10">
         <div>
@@ -51,7 +74,7 @@ export default async function PrivacyPage() {
 
   return (
     <PrivacyView
-      settings={settings}
+      settings={{ ...companySettings, ...privacySettings }}
       legalDocuments={legalDocuments ?? []}
       deletionRequests={deletionRequests ?? []}
       processingActivities={processingActivities ?? []}
@@ -60,6 +83,9 @@ export default async function PrivacyPage() {
       accessLogDue={accessLogDue ?? []}
       deactivatedAccountsDue={deactivatedAccountsDue ?? []}
       trashDue={trashDue ?? { content: [], media: [], categories: [], tags: [] }}
+      users={users?.items ?? []}
+      avsFolderId={avsFolderId}
+      sccTemplateMedia={publicSettings?.sccTemplateMedia ?? null}
     />
   );
 }

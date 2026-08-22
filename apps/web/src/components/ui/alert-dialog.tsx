@@ -69,7 +69,7 @@ function AlertDialogHeader({
     <div
       data-slot="alert-dialog-header"
       className={cn(
-        "grid grid-rows-[auto_1fr] place-items-center gap-1.5 text-center has-data-[slot=alert-dialog-media]:grid-rows-[auto_auto_1fr] has-data-[slot=alert-dialog-media]:gap-x-4 sm:group-data-[size=default]/alert-dialog-content:place-items-start sm:group-data-[size=default]/alert-dialog-content:text-left sm:group-data-[size=default]/alert-dialog-content:has-data-[slot=alert-dialog-media]:grid-rows-[auto_1fr]",
+        "grid min-w-0 grid-rows-[auto_1fr] place-items-center gap-1.5 text-center has-data-[slot=alert-dialog-media]:grid-rows-[auto_auto_1fr] has-data-[slot=alert-dialog-media]:gap-x-4 sm:group-data-[size=default]/alert-dialog-content:place-items-start sm:group-data-[size=default]/alert-dialog-content:text-left sm:group-data-[size=default]/alert-dialog-content:has-data-[slot=alert-dialog-media]:grid-rows-[auto_1fr]",
         className
       )}
       {...props}
@@ -117,7 +117,15 @@ function AlertDialogTitle({
     <AlertDialogPrimitive.Title
       data-slot="alert-dialog-title"
       className={cn(
-        "font-heading text-base font-medium sm:group-data-[size=default]/alert-dialog-content:group-has-data-[slot=alert-dialog-media]/alert-dialog-content:col-start-2",
+        // `min-w-0` + `break-words`: Sicherheitsnetz gegen gesprengte
+        // Dialogbreite bei sehr langen, leerzeichenfreien Wörtern (Grid-
+        // Kinder haben ohne `min-w-0` sonst `min-width: auto`). Die
+        // eigentliche Längenbegrenzung bei Namen/Dateinamen passiert an der
+        // Quelle über `truncateMiddle()` (Nutzer-Bugreport per Screenshot,
+        // 2026-08-20, am Beispiel eines langen Dateinamens im Löschen-
+        // Dialog) – dieses `break-words` fängt nur ab, was daran vorbei-
+        // rutscht (z.B. Titel ohne truncateMiddle).
+        "min-w-0 font-heading text-base font-medium break-words sm:group-data-[size=default]/alert-dialog-content:group-has-data-[slot=alert-dialog-media]/alert-dialog-content:col-start-2",
         className
       )}
       {...props}

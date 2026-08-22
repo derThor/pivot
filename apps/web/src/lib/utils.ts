@@ -5,6 +5,23 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/** Ob die E-Mail-Adresse geändert werden darf, abhängig von der Rolle
+ * des HANDELNDEN Nutzers (nicht des bearbeiteten Kontos) – Spiegelbild von
+ * `UsersService.assertEmailChangeAllowed` im Backend, das serverseitig
+ * ohnehin durchgesetzt wird; hier nur fürs Ein-/Ausblenden des Felds
+ * (Nutzervorgabe, 2026-08-21: Pivot immer, Administrator über eigenen
+ * Schalter, Manager nie, alle übrigen über den bestehenden Schalter). */
+export function canChangeEmail(
+  actorRoleNames: string[],
+  settings: { allowEmailChange: boolean; allowAdminEmailChange: boolean },
+): boolean {
+  if (actorRoleNames.includes("Pivot")) return true
+  if (actorRoleNames.includes("Administrator"))
+    return settings.allowAdminEmailChange
+  if (actorRoleNames.includes("Manager")) return false
+  return settings.allowEmailChange
+}
+
 export function formatRelativeTime(iso: string) {
   const diffMs = Date.now() - new Date(iso).getTime()
   const minutes = Math.floor(diffMs / 60_000)
@@ -32,6 +49,14 @@ export function slugify(value: string) {
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
+}
+
+export function truncateMiddle(text: string, maxLength = 40) {
+  if (text.length <= maxLength) return text
+  const keep = maxLength - 1
+  const head = Math.ceil(keep / 2)
+  const tail = Math.floor(keep / 2)
+  return `${text.slice(0, head)}…${text.slice(text.length - tail)}`
 }
 
 export function formatBytes(bytes: number) {

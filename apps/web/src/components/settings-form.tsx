@@ -13,6 +13,7 @@ import {
   Palette,
   Plug,
   Shield,
+  Webhook,
   type LucideIcon,
 } from "lucide-react";
 
@@ -28,8 +29,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
 import { LogoUploadField } from "@/components/logo-upload-field";
+import { NotificationSettingsCard } from "@/components/notification-settings-card";
+import { SettingsProtocolCard } from "@/components/settings-protocol-card";
+import { SettingsExportCard } from "@/components/settings-export-card";
+import { WebhookDialog } from "@/components/webhook-dialog";
+import { WebhookFailureBanner } from "@/components/webhook-failure-banner";
+import { WebhooksManager } from "@/components/webhooks-manager";
+import { PaginationControls } from "@/components/pagination-controls";
 import { cn } from "@/lib/utils";
-import type { AppSettings } from "@/lib/api-server";
+import type {
+  AppSettings,
+  SettingsChangesResponse,
+  WebhookListResponse,
+} from "@/lib/api-server";
 
 // Feste Akzentfarben-Auswahl (1:1 nach Bildvorlage) + freier Farbwähler
 // (Nutzervorgabe, 2026-08-17). Lime ist die bestehende Markenfarbe – ein
@@ -46,6 +58,7 @@ const settingsSchema = z.object({
   allowRegistration: z.boolean(),
   allowPasswordReset: z.boolean(),
   allowEmailChange: z.boolean(),
+  allowAdminEmailChange: z.boolean(),
   requireAdminActivation: z.boolean(),
   autosaveEnabled: z.boolean(),
   mediaResponsiveVariantsEnabled: z.boolean(),
@@ -79,6 +92,7 @@ type SectionId =
   | "security"
   | "display"
   | "integrations"
+  | "webhooks"
   | "notifications"
   | "protocol";
 
@@ -113,6 +127,12 @@ const SECTIONS: {
     icon: Plug,
   },
   {
+    id: "webhooks",
+    title: "Webhooks",
+    subtitle: "Automatisierte Events",
+    icon: Webhook,
+  },
+  {
     id: "notifications",
     title: "Benachrichtigungen",
     subtitle: "Absender & Systemmails",
@@ -145,9 +165,13 @@ function PlaceholderCard({ title, note }: { title: string; note: string }) {
 export function SettingsForm({
   settings,
   logoFolderId,
+  webhooks,
+  settingsChanges,
 }: {
   settings: AppSettings;
   logoFolderId: string | null;
+  webhooks: WebhookListResponse | null;
+  settingsChanges: SettingsChangesResponse | null;
 }) {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<SectionId>("access");
@@ -217,6 +241,7 @@ export function SettingsForm({
     allowRegistration: settings.allowRegistration,
     allowPasswordReset: settings.allowPasswordReset,
     allowEmailChange: settings.allowEmailChange,
+    allowAdminEmailChange: settings.allowAdminEmailChange,
     requireAdminActivation: settings.requireAdminActivation,
     autosaveEnabled: settings.autosaveEnabled,
     mediaResponsiveVariantsEnabled: settings.mediaResponsiveVariantsEnabled,
@@ -405,8 +430,22 @@ export function SettingsForm({
                     render={({ field }) => (
                       <FormItem>
                         <SwitchRow
-                          label="E-Mail-Änderung erlauben"
-                          description="Benutzer und Admins können die E-Mail-Adresse eines Kontos ändern."
+                          label="Benutzer können E-Mail-Adresse anpassen"
+                          description="Gilt für alle Rollen außer Administrator, Manager und Pivot. Manager können ihre E-Mail-Adresse nie selbst ändern."
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="allowAdminEmailChange"
+                    render={({ field }) => (
+                      <FormItem>
+                        <SwitchRow
+                          label="Administratoren können E-Mail-Adresse anpassen"
+                          description="Gilt nur für die Rolle Administrator. Pivot kann die E-Mail-Adresse immer ändern, unabhängig von diesem Schalter."
                           checked={field.value}
                           onCheckedChange={field.onChange}
                         />
@@ -736,7 +775,7 @@ export function SettingsForm({
                             <FormItem>
                               <SwitchRow
                                 label="Zwei-Faktor für Administratoren erzwingen"
-                                description="Administrator-Konten ohne eingerichtete 2FA werden nach dem Login zur Einrichtung gezwungen, bevor sie das Dashboard nutzen können."
+                                description="Administrator- und Pivot-Konten ohne eingerichtete 2FA werden nach dem Login zur Einrichtung gezwungen, bevor sie das Dashboard nutzen können."
                                 checked={field.value}
                                 onCheckedChange={field.onChange}
                                 disabled={!form.watch("allowTwoFactor")}
@@ -1030,22 +1069,54 @@ export function SettingsForm({
             {activeSection === "integrations" && (
               <PlaceholderCard
                 title="Integrationen"
-                note="API-Schlüssel und externe Dienste sind in Vorbereitung und folgen in einem späteren Ausbauschritt. Bereits vorhandene Webhooks werden weiterhin über die eigene Webhooks-Seite unter Verwaltung verwaltet."
+                note="Eigene API-Schlüssel für externe Anwendungen sind in Vorbereitung und folgen in einem späteren Ausbauschritt."
               />
+            )}
+
+            {activeSection === "webhooks" && (
+              <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+                <CardHeader className="flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Webhooks</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Automatisierte Events an externe Dienste senden.
+                    </p>
+                  </div>
+                  <WebhookDialog />
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3">
+                  {webhooks && (
+                    <WebhookFailureBanner failingCount={webhooks.meta.failingCount} />
+                  )}
+                  <WebhooksManager items={webhooks?.items ?? []} />
+                  {webhooks && (
+                    <PaginationControls
+                      page={webhooks.meta.page}
+                      pageCount={webhooks.meta.pageCount}
+                      buildHref={(p) => `?webhooksPage=${p}`}
+                    />
+                  )}
+                </CardContent>
+              </Card>
             )}
 
             {activeSection === "notifications" && (
-              <PlaceholderCard
-                title="Benachrichtigungen"
-                note="Ein eigener Mail-Absender und der Versand von Systemmails sind in Vorbereitung und folgen in einem späteren Ausbauschritt. Welche Systembenachrichtigungen im Dashboard erscheinen, lässt sich weiterhin auf der Seite Systemnachrichten einstellen."
-              />
+              <div className="flex flex-col gap-4">
+                <NotificationSettingsCard settings={settings} />
+                <PlaceholderCard
+                  title="Mail-Absender"
+                  note="Ein eigener Mail-Absender und der Versand von Systemmails sind in Vorbereitung und folgen in einem späteren Ausbauschritt."
+                />
+              </div>
             )}
 
             {activeSection === "protocol" && (
-              <PlaceholderCard
-                title="Protokoll"
-                note="Eine übergreifende, exportierbare Änderungshistorie über alle Benutzer hinweg ist in Vorbereitung und folgt in einem späteren Ausbauschritt. Die Aktivität einzelner Benutzer ist bereits über deren Profilseite (Tab „Aktivität“) einsehbar."
-              />
+              <div className="flex flex-col gap-4">
+                <SettingsProtocolCard changes={settingsChanges} />
+                <SettingsExportCard
+                  hasChanges={(settingsChanges?.meta.total ?? 0) > 0}
+                />
+              </div>
             )}
           </div>
         </div>

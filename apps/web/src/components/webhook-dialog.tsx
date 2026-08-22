@@ -91,7 +91,7 @@ export function WebhookDialog() {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="webhook-url">Ziel-URL</Label>
+            <Label htmlFor="webhook-url" required>Ziel-URL</Label>
             <Input
               id="webhook-url"
               type="url"
@@ -102,7 +102,7 @@ export function WebhookDialog() {
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label>Events</Label>
+            <Label required>Events</Label>
             {eventOptions.map((option) => (
               <label
                 key={option.value}

@@ -2,19 +2,20 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
+  Check,
   Download,
   ExternalLink,
-  Lock,
+  MapPin,
   Plus,
   RefreshCw,
-  ShieldAlert,
-  UserCog,
+  Trash2,
+  X,
 } from "lucide-react";
 
-import { toastCreated, toastDeleted, toastEdited } from "@/components/app-toast";
+import { toastDeleted, toastEdited } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,22 +31,29 @@ import { SwitchRow } from "@/components/switch-row";
 import { StatCard } from "@/components/stat-card";
 import { SystemMessage } from "@/components/ui/system-message";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DeletionRequestDialog, DELETION_REQUEST_STATUS_LABELS } from "@/components/deletion-request-dialog";
+import { DataSubjectRequestsPanel } from "@/components/data-subject-requests-panel";
 import { ProcessingActivityDialog } from "@/components/processing-activity-dialog";
 import { DataProcessorDialog } from "@/components/data-processor-dialog";
-import { PrivacyIncidentDialog, PRIVACY_INCIDENT_SEVERITY_LABELS } from "@/components/privacy-incident-dialog";
-import { formatName } from "@/lib/utils";
+import { PrivacyIncidentsPanel } from "@/components/privacy-incidents-panel";
+import { mediaUrl } from "@/lib/media";
+import { formatName, initials, truncateMiddle } from "@/lib/utils";
 import type {
-  AppSettings,
+  CompanySettings,
+  CurrentUser,
   DataProcessor,
   DeletionRequest,
   LegalDocument,
+  PrivacySettings,
   ProcessingActivity,
   PrivacyIncident,
   RetentionAuditLogEntry,
   RetentionDeactivatedAccount,
   RetentionTrashDue,
 } from "@/lib/api-server";
+import { SubjectAccessRequestDialog } from "@/components/subject-access-request-dialog";
+import { UserRestoreButton } from "@/components/user-restore-button";
+
+type PrivacyPageSettings = CompanySettings & PrivacySettings;
 
 function formatDate(iso: string | null) {
   if (!iso) return "–";
@@ -72,6 +80,30 @@ const CONTENT_STATUS_BADGE_CLASSNAMES: Record<string, string> = {
   ARCHIVED: "bg-gray-100 text-gray-600 hover:bg-gray-100",
 };
 
+// Rechtstexte-Tab, Karte "Pflichtangaben-Check" (Nutzervorgabe, 2026-08-20,
+// 1:1 nach Bildvorlage) – gruppiert die Firmen-Stammdaten (siehe
+// company-fields.ts) nach §5 TMG-Pflichtangaben statt der flachen
+// Feldliste dort: "Anschrift" und "Register & Nummer" fassen mehrere
+// Einzelfelder zu einem Check zusammen.
+const PFLICHTANGABEN_CHECK_ITEMS: {
+  label: string;
+  filled: (s: PrivacyPageSettings) => boolean;
+}[] = [
+  { label: "Firmierung", filled: (s) => !!s.companyName },
+  {
+    label: "Anschrift",
+    filled: (s) => !!(s.companyStreet && s.companyPostalCode && s.companyCity),
+  },
+  { label: "Vertretungsberechtigte", filled: (s) => !!s.companyRepresentative },
+  {
+    label: "Register & Nummer",
+    filled: (s) => !!(s.companyRegisterCourt && s.companyRegisterNumber),
+  },
+  { label: "USt-IdNr.", filled: (s) => !!s.companyVatId },
+  { label: "Aufsichtsbehörde", filled: (s) => !!s.companySupervisoryAuthority },
+  { label: "Streitschlichtung", filled: (s) => !!s.companyDisputeResolution },
+];
+
 const LEGAL_DOCUMENT_ORDER = [
   "impressum",
   "datenschutz",
@@ -86,7 +118,8 @@ type TabId =
   | "verarbeitungen"
   | "auftragsverarbeiter"
   | "vorfaelle"
-  | "dsb";
+  | "dsb"
+  | "nutzer";
 
 /** Generische "fällig zur Löschung"-Review-Liste (Nutzervorgabe,
  * 2026-08-18: Werte speichern + Liste mit Einzel-/Alles-löschen statt
@@ -174,8 +207,11 @@ export function PrivacyView({
   accessLogDue: initialAccessLogDue,
   deactivatedAccountsDue: initialDeactivatedAccountsDue,
   trashDue: initialTrashDue,
+  users,
+  avsFolderId,
+  sccTemplateMedia: initialSccTemplateMedia,
 }: {
-  settings: AppSettings;
+  settings: PrivacyPageSettings;
   legalDocuments: LegalDocument[];
   deletionRequests: DeletionRequest[];
   processingActivities: ProcessingActivity[];
@@ -184,9 +220,30 @@ export function PrivacyView({
   accessLogDue: RetentionAuditLogEntry[];
   deactivatedAccountsDue: RetentionDeactivatedAccount[];
   trashDue: RetentionTrashDue;
+  users: CurrentUser[];
+  avsFolderId: string | null;
+  sccTemplateMedia: { id: string; filename: string; url: string } | null;
 }) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<TabId>("rechtstexte");
+  // ?tab=-Deep-Link (z.B. von der Systemnachrichten-Seite aus, Nutzervorgabe
+  // 2026-08-19: "Löschanfragen unter Systembenachrichtigungen aufführen"),
+  // gleiches Muster wie my-account-view.tsx.
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const TAB_IDS: TabId[] = [
+    "rechtstexte",
+    "loeschanfragen",
+    "verarbeitungen",
+    "auftragsverarbeiter",
+    "vorfaelle",
+    "dsb",
+    "nutzer",
+  ];
+  const initialTab =
+    tabParam && (TAB_IDS as string[]).includes(tabParam) ?
+      (tabParam as TabId)
+    : "rechtstexte";
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const tabsRef = useRef<HTMLDivElement>(null);
 
   const [legalDocuments, setLegalDocuments] = useState(initialLegalDocuments);
@@ -194,11 +251,6 @@ export function PrivacyView({
   const [legalDocumentError, setLegalDocumentError] = useState<string | null>(null);
 
   const [deletionRequests, setDeletionRequests] = useState(initialDeletionRequests);
-  const [deletionRequestTarget, setDeletionRequestTarget] = useState<
-    DeletionRequest | null | "new"
-  >(null);
-  const [deletionRequestDeleteTarget, setDeletionRequestDeleteTarget] =
-    useState<DeletionRequest | null>(null);
 
   const [processingActivities, setProcessingActivities] = useState(
     initialProcessingActivities,
@@ -215,18 +267,86 @@ export function PrivacyView({
   >(null);
   const [dataProcessorDeleteTarget, setDataProcessorDeleteTarget] =
     useState<DataProcessor | null>(null);
+  const [requestingContractFor, setRequestingContractFor] = useState<
+    string | null
+  >(null);
+  const [sccTemplateMedia, setSccTemplateMedia] = useState(
+    initialSccTemplateMedia,
+  );
+  const [isUploadingSccTemplate, setIsUploadingSccTemplate] = useState(false);
+  const [isRemovingSccTemplate, setIsRemovingSccTemplate] = useState(false);
+
+  async function handleRequestContract(processor: DataProcessor) {
+    setRequestingContractFor(processor.id);
+    try {
+      const res = await fetch(
+        `/api/data-processors/${processor.id}/request-contract`,
+        { method: "POST" },
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        toastEdited(
+          body?.message ??
+            "Konnte nicht angefragt werden – bitte Kontakt-E-Mail prüfen.",
+        );
+        return;
+      }
+      toastEdited(`Anfrage an „${processor.name}“ wurde gesendet.`);
+    } finally {
+      setRequestingContractFor(null);
+    }
+  }
+
+  async function handleUploadSccTemplate(file: File) {
+    setIsUploadingSccTemplate(true);
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
+      const uploadRes = await fetch("/api/media", {
+        method: "POST",
+        body: formData,
+      });
+      const uploaded = await uploadRes.json().catch(() => null);
+      if (!uploadRes.ok) return;
+      await fetch("/api/settings/privacy", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sccTemplateMediaId: uploaded.id }),
+      });
+      setSccTemplateMedia(uploaded);
+      toastEdited("SCC-Vorlage wurde hochgeladen.");
+      router.refresh();
+    } finally {
+      setIsUploadingSccTemplate(false);
+    }
+  }
+
+  async function handleRemoveSccTemplate() {
+    if (!sccTemplateMedia) return;
+    setIsRemovingSccTemplate(true);
+    try {
+      await fetch("/api/settings/privacy", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sccTemplateMediaId: null }),
+      });
+      await fetch(`/api/media/${sccTemplateMedia.id}`, { method: "DELETE" });
+      setSccTemplateMedia(null);
+      toastDeleted("SCC-Vorlage wurde entfernt.");
+      router.refresh();
+    } finally {
+      setIsRemovingSccTemplate(false);
+    }
+  }
 
   const [incidents, setIncidents] = useState(initialIncidents);
-  const [incidentTarget, setIncidentTarget] = useState<
-    PrivacyIncident | null | "new"
-  >(null);
-  const [incidentDeleteTarget, setIncidentDeleteTarget] =
-    useState<PrivacyIncident | null>(null);
 
   const [accessLogDue, setAccessLogDue] = useState(initialAccessLogDue);
   const [deactivatedAccountsDue, setDeactivatedAccountsDue] = useState(
     initialDeactivatedAccountsDue,
   );
+  const [anonymizeTarget, setAnonymizeTarget] =
+    useState<RetentionDeactivatedAccount | null>(null);
   const [trashDue, setTrashDue] = useState(initialTrashDue);
 
   const [dpo, setDpo] = useState({
@@ -255,6 +375,12 @@ export function PrivacyView({
   const [retentionTrashDays, setRetentionTrashDays] = useState(
     settings.retentionTrashDays,
   );
+  const [dsbFormSelfServiceDisclosure, setDsbFormSelfServiceDisclosure] =
+    useState(settings.dsbFormSelfServiceDisclosure);
+  const [dsbFormStoreSubmissionIp, setDsbFormStoreSubmissionIp] = useState(
+    settings.dsbFormStoreSubmissionIp,
+  );
+  const [subjectAccessRequestOpen, setSubjectAccessRequestOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -267,7 +393,17 @@ export function PrivacyView({
   const dueSoon = openDeletionRequests
     .filter((r) => r.dueAt)
     .sort((a, b) => new Date(a.dueAt!).getTime() - new Date(b.dueAt!).getTime())[0];
+  const incidentsWithRisk = incidents.filter((i) => i.severity !== "low");
   const dataProcessorsWithContract = dataProcessors.filter((p) => p.hasContract).length;
+  const dataProcessorsMissingContract = dataProcessors.filter((p) => !p.hasContract);
+  const dataProcessorsOutsideEu = dataProcessors.filter((p) => p.outsideEu);
+  // "AV-Verträge herunterladen" nur zeigen, wenn tatsächlich eine Datei
+  // zum Herunterladen da ist – getrennt vom manuellen `hasContract`-Haken
+  // (der gilt z.B. auch für Papierverträge ohne Upload, siehe
+  // schema.prisma-Kommentar zu `DataProcessor.hasContract`). Nutzervorgabe,
+  // 2026-08-22: "wenn keine verträge und dateien mehr dazu da sind, soll
+  // der button ... nicht mehr erscheinen".
+  const hasAnyContractFile = dataProcessors.some((p) => p.contractMedia);
   const currentYear = new Date().getFullYear();
   const deletionRequestsThisYear = deletionRequests.filter(
     (r) => new Date(r.createdAt).getFullYear() === currentYear,
@@ -309,8 +445,12 @@ export function PrivacyView({
     try {
       const res = await fetch("/api/privacy/report");
       if (!res.ok) return;
-      const text = await res.text();
-      const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+      // `res.blob()` statt `res.text()`: `text()` dekodiert laut WHATWG-Spec
+      // als UTF-8 und entfernt dabei ein führendes BOM automatisch – die
+      // Datei kam dadurch ohne BOM an und Excel zeigte Umlaute als Mojibake
+      // (Nutzer-Bugreport, 2026-08-20, gleicher Bug-Typ wie in bff-proxy.ts
+      // schon einmal gefixt, hier aber ein zweiter, unabhängiger Ort).
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -325,7 +465,7 @@ export function PrivacyView({
   async function handleSave() {
     setIsSaving(true);
     try {
-      const res = await fetch("/api/settings", {
+      const res = await fetch("/api/settings/privacy", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -351,6 +491,8 @@ export function PrivacyView({
           retentionAccessLogMonths,
           retentionDeactivatedAccountsMonths,
           retentionTrashDays,
+          dsbFormSelfServiceDisclosure,
+          dsbFormStoreSubmissionIp,
         }),
       });
       if (res.ok) {
@@ -398,18 +540,14 @@ export function PrivacyView({
           sublabel="Veraltet oder fehlend"
         />
         <StatCard
-          label="Aufbewahrung"
-          value={
-            retentionFormSubmissionsDays != null ?
-              `${retentionFormSubmissionsDays} Tage`
-            : "Unbegrenzt"
-          }
-          sublabel="Formular-Einsendungen"
+          label="Vorfälle mit Risiko"
+          value={String(incidentsWithRisk.length)}
+          sublabel={`${incidentsWithRisk.filter((i) => !i.authorityNotifiedAt).length} noch nicht gemeldet`}
         />
         <StatCard
-          label="Auftragsverarbeiter"
-          value={String(dataProcessors.length)}
-          sublabel={`${dataProcessorsWithContract} mit AV-Vertrag`}
+          label="Gelöschte Nutzer"
+          value={String(deactivatedAccountsDue.length)}
+          sublabel="Müssen entfernt werden"
         />
       </div>
 
@@ -455,7 +593,7 @@ export function PrivacyView({
           {(
             [
               ["rechtstexte", "Rechtstexte", `${staleCount + missingCount} offen`],
-              ["loeschanfragen", "Löschanfragen", `${openDeletionRequests.length} offen`],
+              ["loeschanfragen", "Anfragen", `${openDeletionRequests.length} offen`],
               ["verarbeitungen", "Verarbeitungen", `${processingActivities.length} Zwecke`],
               [
                 "auftragsverarbeiter",
@@ -464,6 +602,7 @@ export function PrivacyView({
               ],
               ["vorfaelle", "Vorfälle", `${incidents.length} erfasst`],
               ["dsb", "Datenschutzbeauftragter", dpo.dpoIsExternal ? "extern benannt" : "intern benannt"],
+              ["nutzer", "Benutzer", `${deactivatedAccountsDue.length} zu entfernen`],
             ] as const
           ).map(([id, label, subtitle]) => (
             <TabsTrigger
@@ -481,6 +620,7 @@ export function PrivacyView({
 
         <TabsContent value="rechtstexte">
           <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_360px]">
+          <div className="flex flex-col gap-4">
             <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
               <CardHeader>
                 <CardTitle>Rechtstexte</CardTitle>
@@ -555,6 +695,75 @@ export function PrivacyView({
                     </div>
                   </div>
                 ))}
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+              <CardHeader>
+                <CardTitle>Betroffenenrechte</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Auskunft und Löschung nach Art. 15 und 17 DSGVO.
+                </p>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                <SwitchRow
+                  label="Selbstauskunft im Formular-Footer anbieten"
+                  checked={dsbFormSelfServiceDisclosure}
+                  onCheckedChange={setDsbFormSelfServiceDisclosure}
+                />
+                <SwitchRow
+                  label="IP-Adressen bei Einsendungen speichern"
+                  description="Nur für Spam-Abwehr, 7 Tage"
+                  checked={dsbFormStoreSubmissionIp}
+                  onCheckedChange={setDsbFormStoreSubmissionIp}
+                />
+                <p className="-mt-1 text-xs text-muted-foreground">
+                  Kein Formular-Modul vorhanden — beide Schalter werden für
+                  ein späteres Formular-Feature vorgehalten.
+                </p>
+                <Separator className="my-1" />
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-[#D4D4D4]"
+                    onClick={() => setSubjectAccessRequestOpen(true)}
+                  >
+                    Auskunft erstellen
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+              <CardHeader>
+                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  Pflichtangaben-Check
+                </p>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <ul className="flex flex-col gap-2.5 text-sm">
+                  {PFLICHTANGABEN_CHECK_ITEMS.map((item) => {
+                    const ok = item.filled(settings);
+                    return (
+                      <li key={item.label} className="flex items-center gap-2">
+                        {ok ?
+                          <Check className="size-4 shrink-0 text-primary" />
+                        : <X className="size-4 shrink-0 text-muted-foreground" />}
+                        <span className={ok ? undefined : "text-muted-foreground"}>
+                          {item.label}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <Separator />
+                <p className="text-xs text-muted-foreground">
+                  Kein Rechtsrat — die Prüfung deckt nur die Vollständigkeit der
+                  Felder ab.
+                </p>
               </CardContent>
             </Card>
 
@@ -638,32 +847,8 @@ export function PrivacyView({
                 <p className="-mt-2 text-xs text-muted-foreground">
                   Nach Ablauf wird der Eintrag gesperrt und kann nicht mehr
                   wiederhergestellt werden – keine automatische Löschung.
+                  Fällige Konten stehen im Tab „Benutzer“.
                 </p>
-                <RetentionDueList
-                  title="Fällig zur Anonymisierung"
-                  emptyLabel="Nichts fällig."
-                  items={deactivatedAccountsDue.map((u) => ({
-                    id: u.id,
-                    label: formatName(u),
-                    date: formatDate(u.deactivatedAt),
-                  }))}
-                  onDeleteOne={async (id) => {
-                    await fetch(`/api/users/${id}/anonymize`, { method: "POST" });
-                    setDeactivatedAccountsDue((prev) =>
-                      prev.filter((u) => u.id !== id),
-                    );
-                    toastDeleted("Konto wurde anonymisiert.");
-                  }}
-                  onDeleteAll={async () => {
-                    await Promise.all(
-                      deactivatedAccountsDue.map((u) =>
-                        fetch(`/api/users/${u.id}/anonymize`, { method: "POST" }),
-                      ),
-                    );
-                    setDeactivatedAccountsDue([]);
-                    toastDeleted("Konten wurden anonymisiert.");
-                  }}
-                />
 
                 <SegmentedPicker
                   label="Papierkorb (Tage)"
@@ -720,69 +905,51 @@ export function PrivacyView({
               </CardContent>
             </Card>
           </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="loeschanfragen">
-          <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
-            <CardHeader className="flex-row items-center justify-between">
-              <CardTitle>Löschanfragen</CardTitle>
-              <Button type="button" size="sm" onClick={() => setDeletionRequestTarget("new")}>
-                <Plus className="size-4" />
-                Anfrage anlegen
-              </Button>
-            </CardHeader>
-            <CardContent className="flex flex-col divide-y divide-[#F0F0F0] p-0">
-              {deletionRequests.length === 0 ?
-                <p className="px-6 py-6 text-sm text-muted-foreground">
-                  Noch keine Löschanfragen erfasst.
-                </p>
-              : deletionRequests.map((row) => (
-                  <div key={row.id} className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
-                    <div>
-                      <p className="font-medium">{row.requesterName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {row.requesterEmail}
-                        {row.dueAt && ` · Frist ${formatDate(row.dueAt)}`}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-                      <Badge variant="secondary" className="bg-muted text-muted-foreground">
-                        {DELETION_REQUEST_STATUS_LABELS[row.status]}
-                      </Badge>
-                      <RowActionButtons
-                        size="icon-sm"
-                        onEdit={() => setDeletionRequestTarget(row)}
-                        onDelete={() => setDeletionRequestDeleteTarget(row)}
-                      />
-                    </div>
-                  </div>
-                ))
-              }
-            </CardContent>
-          </Card>
+          <DataSubjectRequestsPanel
+            requests={deletionRequests}
+            onRequestsChange={setDeletionRequests}
+            users={users}
+            settings={settings}
+          />
         </TabsContent>
 
         <TabsContent value="verarbeitungen">
-          <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
-            <CardHeader className="flex-row items-center justify-between">
-              <CardTitle>Verarbeitungstätigkeiten</CardTitle>
-              <Button type="button" size="sm" onClick={() => setProcessingActivityTarget("new")}>
-                <Plus className="size-4" />
-                Zweck hinzufügen
-              </Button>
-            </CardHeader>
-            <CardContent className="flex flex-col divide-y divide-[#F0F0F0] p-0">
-              {processingActivities.length === 0 ?
-                <p className="px-6 py-6 text-sm text-muted-foreground">
-                  Noch keine Verarbeitungstätigkeiten erfasst.
-                </p>
-              : processingActivities.map((row) => (
-                  <div key={row.id} className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
-                    <div>
-                      <p className="font-medium">{row.purpose}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {[row.legalBasis, row.dataCategories].filter(Boolean).join(" · ") || "–"}
-                      </p>
+          <div className="overflow-hidden rounded-xl border border-[#E5E5E5] bg-card shadow-sm">
+            <div className="border-b border-[#F0F0F0] px-6 py-3">
+              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                Verzeichnis der Verarbeitungstätigkeiten
+              </p>
+            </div>
+            {processingActivities.length === 0 ?
+              <p className="px-6 py-6 text-sm text-muted-foreground">
+                Noch keine Verarbeitungstätigkeiten erfasst.
+              </p>
+            : <div className="flex flex-col divide-y divide-[#F0F0F0]">
+                {processingActivities.map((row) => (
+                  <div
+                    key={row.id}
+                    className="grid grid-cols-[1fr_110px_1fr_100px_130px_auto] items-center gap-4 px-6 py-4"
+                  >
+                    <p className="truncate font-medium">{row.purpose}</p>
+                    <p className="truncate font-mono text-xs text-blue-700">
+                      {row.legalBasis || "–"}
+                    </p>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {row.dataCategories || "–"}
+                    </p>
+                    <p className="truncate font-mono text-xs text-amber-700">
+                      {row.retentionPeriod || "–"}
+                    </p>
+                    <div className="flex justify-end">
+                      {row.recipients ?
+                        <Badge variant="secondary" className="bg-muted text-muted-foreground">
+                          {row.recipients}
+                        </Badge>
+                      : <span className="text-xs text-muted-foreground">intern</span>}
                     </div>
                     <RowActionButtons
                       size="icon-sm"
@@ -790,42 +957,66 @@ export function PrivacyView({
                       onDelete={() => setProcessingActivityDeleteTarget(row)}
                     />
                   </div>
-                ))
-              }
-            </CardContent>
-          </Card>
+                ))}
+              </div>
+            }
+            <button
+              type="button"
+              onClick={() => setProcessingActivityTarget("new")}
+              className="flex w-full items-center gap-2 border-t border-[#F0F0F0] px-6 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+            >
+              <Plus className="size-4" />
+              Verarbeitung ergänzen
+            </button>
+          </div>
         </TabsContent>
 
         <TabsContent value="auftragsverarbeiter">
-          <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
-            <CardHeader className="flex-row items-center justify-between">
-              <CardTitle>Auftragsverarbeiter</CardTitle>
-              <Button type="button" size="sm" onClick={() => setDataProcessorTarget("new")}>
-                <Plus className="size-4" />
-                Verarbeiter hinzufügen
-              </Button>
-            </CardHeader>
-            <CardContent className="flex flex-col divide-y divide-[#F0F0F0] p-0">
-              {dataProcessors.length === 0 ?
-                <p className="px-6 py-6 text-sm text-muted-foreground">
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_360px]">
+            <div className="overflow-hidden rounded-xl border border-[#E5E5E5] bg-card shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F0F0F0] px-4 py-3">
+                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  Dienstleister mit Datenzugriff · {dataProcessors.length}
+                </p>
+                <span className="text-xs text-muted-foreground">Art. 28 DSGVO</span>
+              </div>
+              {dataProcessors.length === 0 && (
+                <p className="px-4 py-6 text-sm text-muted-foreground">
                   Noch keine Auftragsverarbeiter erfasst.
                 </p>
-              : dataProcessors.map((row) => (
-                  <div key={row.id} className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
-                    <div>
-                      <p className="font-medium">{row.name}</p>
-                      <p className="text-xs text-muted-foreground">{row.purpose || "–"}</p>
+              )}
+              <div className="flex flex-col divide-y divide-[#F0F0F0]">
+                {dataProcessors.map((row) => (
+                  <div
+                    key={row.id}
+                    className="flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="min-w-0 sm:w-48 sm:shrink-0">
+                      <p className="truncate font-semibold">{row.name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {row.contractDate && `seit ${formatDate(row.contractDate)}`}
+                        {row.contractDate && row.complianceNote && " · "}
+                        {row.complianceNote}
+                      </p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                    <p className="text-sm text-muted-foreground sm:w-48 sm:shrink-0">
+                      {row.purpose || "–"}
+                    </p>
+                    <div className="flex shrink-0 items-center gap-3">
+                      {row.location && (
+                        <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <MapPin className="size-3.5 shrink-0" />
+                          {row.location}
+                        </span>
+                      )}
                       <Badge
-                        variant="secondary"
                         className={
                           row.hasContract ?
-                            "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
-                          : "bg-muted text-muted-foreground"
+                            "bg-green-100 text-green-700 hover:bg-green-100"
+                          : "bg-amber-100 text-amber-800 hover:bg-amber-100"
                         }
                       >
-                        {row.hasContract ? "mit AV-Vertrag" : "ohne AV-Vertrag"}
+                        {row.hasContract ? "AV-Vertrag" : "AV fehlt"}
                       </Badge>
                       <RowActionButtons
                         size="icon-sm"
@@ -834,62 +1025,139 @@ export function PrivacyView({
                       />
                     </div>
                   </div>
-                ))
-              }
-            </CardContent>
-          </Card>
+                ))}
+                <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => setDataProcessorTarget("new")}
+                    className="flex items-center gap-2 text-left text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    <Plus className="size-4" />
+                    Auftragsverarbeiter ergänzen
+                  </button>
+                  {hasAnyContractFile && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="border-[#D4D4D4]"
+                      render={<a href="/api/data-processors/contracts.zip" />}
+                    >
+                      AV-Verträge herunterladen
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+                <CardHeader>
+                  <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Offene Punkte
+                  </p>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  {dataProcessorsMissingContract.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Keine offenen Punkte.
+                    </p>
+                  ) : (
+                    dataProcessorsMissingContract.map((processor) => (
+                      <div key={processor.id} className="flex flex-col gap-2">
+                        <p className="text-sm text-amber-700">
+                          <span className="font-semibold">{processor.name}</span> —
+                          {" "}
+                          AV-Vertrag
+                          {processor.outsideEu && " und Standardvertragsklauseln"}
+                          {" "}fehlen
+                        </p>
+                        <Button
+                          type="button"
+                          className="w-full"
+                          disabled={requestingContractFor === processor.id}
+                          onClick={() => handleRequestContract(processor)}
+                        >
+                          {requestingContractFor === processor.id ?
+                            "Sendet…"
+                          : "AV-Vertrag anfordern"}
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+                <CardHeader>
+                  <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Drittlandtransfer
+                  </p>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3">
+                  {dataProcessorsOutsideEu.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Kein Dienstleister verarbeitet Daten außerhalb der EU.
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {dataProcessorsOutsideEu.length === 1 ?
+                        `${dataProcessorsOutsideEu[0].name} verarbeitet`
+                      : `${dataProcessorsOutsideEu.length} Dienstleister verarbeiten`}
+                      {" "}Daten außerhalb der EU. Nötig sind
+                      Standardvertragsklauseln plus Transfer-Folgenabschätzung.
+                    </p>
+                  )}
+                  {sccTemplateMedia ? (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="border-[#D4D4D4]"
+                        render={
+                          <a href={mediaUrl(sccTemplateMedia)} download />
+                        }
+                      >
+                        Vorlage herunterladen
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="SCC-Vorlage entfernen"
+                        disabled={isRemovingSccTemplate}
+                        onClick={handleRemoveSccTemplate}
+                      >
+                        <Trash2 />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-1.5">
+                      <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-[#D4D4D4] px-5 py-3.5 text-sm font-semibold transition-colors hover:bg-muted">
+                        {isUploadingSccTemplate ? "Lädt hoch…" : "Vorlage hochladen"}
+                        <input
+                          type="file"
+                          className="hidden"
+                          disabled={isUploadingSccTemplate}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleUploadSccTemplate(file);
+                          }}
+                        />
+                      </label>
+                      <p className="text-xs text-muted-foreground">
+                        Noch keine SCC-Vorlage hinterlegt.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="vorfaelle">
-          <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
-            <CardHeader className="flex-row items-center justify-between">
-              <CardTitle>Vorfälle</CardTitle>
-              <Button type="button" size="sm" onClick={() => setIncidentTarget("new")}>
-                <Plus className="size-4" />
-                Vorfall erfassen
-              </Button>
-            </CardHeader>
-            <CardContent className="flex flex-col divide-y divide-[#F0F0F0] p-0">
-              {incidents.length === 0 ?
-                <p className="px-6 py-6 text-sm text-muted-foreground">
-                  Noch keine Vorfälle erfasst.
-                </p>
-              : incidents.map((row) => (
-                  <div key={row.id} className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      {row.severity === "high" && (
-                        <ShieldAlert className="size-4 shrink-0 text-destructive" />
-                      )}
-                      <div>
-                        <p className="font-medium">{row.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {PRIVACY_INCIDENT_SEVERITY_LABELS[row.severity]}
-                          {row.occurredAt && ` · ${formatDate(row.occurredAt)}`}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-                      <Badge
-                        variant="secondary"
-                        className={
-                          row.status === "resolved" ?
-                            "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
-                          : "bg-amber-100 text-amber-800 hover:bg-amber-100"
-                        }
-                      >
-                        {row.status === "resolved" ? "Behoben" : "Offen"}
-                      </Badge>
-                      <RowActionButtons
-                        size="icon-sm"
-                        onEdit={() => setIncidentTarget(row)}
-                        onDelete={() => setIncidentDeleteTarget(row)}
-                      />
-                    </div>
-                  </div>
-                ))
-              }
-            </CardContent>
-          </Card>
+          <PrivacyIncidentsPanel incidents={incidents} onIncidentsChange={setIncidents} />
         </TabsContent>
 
         <TabsContent value="dsb">
@@ -1106,35 +1374,93 @@ export function PrivacyView({
             </div>
           </div>
         </TabsContent>
+
+        <TabsContent value="nutzer">
+          <div className="overflow-hidden rounded-xl border border-[#E5E5E5] bg-card shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F0F0F0] px-6 py-3">
+              <div>
+                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  Gelöschte Nutzer · {deactivatedAccountsDue.length}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Gelöschte Konten, die noch nicht anonymisiert wurden.
+                </p>
+              </div>
+              {deactivatedAccountsDue.length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="border-[#D4D4D4]"
+                  onClick={async () => {
+                    await Promise.all(
+                      deactivatedAccountsDue.map((u) =>
+                        fetch(`/api/users/${u.id}/anonymize`, { method: "POST" }),
+                      ),
+                    );
+                    setDeactivatedAccountsDue([]);
+                    toastDeleted("Konten wurden anonymisiert.");
+                  }}
+                >
+                  Alle anonymisieren
+                </Button>
+              )}
+            </div>
+            {deactivatedAccountsDue.length === 0 ?
+              <p className="px-6 py-6 text-sm text-muted-foreground">
+                Keine gelöschten Nutzer.
+              </p>
+            : <div className="flex flex-col divide-y divide-[#F0F0F0]">
+                {deactivatedAccountsDue.map((u) => (
+                  <div
+                    key={u.id}
+                    className="flex flex-wrap items-center justify-between gap-3 px-6 py-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
+                        {initials(u)}
+                      </span>
+                      <div>
+                        <p className="font-medium">{formatName(u)}</p>
+                        <p className="text-xs text-muted-foreground">{u.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      {u.overdue && (
+                        <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                          überfällig
+                        </Badge>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        Gelöscht seit {formatDate(u.deletedAt)}
+                      </span>
+                      <UserRestoreButton
+                        userId={u.id}
+                        name={formatName(u)}
+                        onRestored={() =>
+                          setDeactivatedAccountsDue((prev) =>
+                            prev.filter((p) => p.id !== u.id),
+                          )
+                        }
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="border-[#D4D4D4] text-destructive"
+                        onClick={() => setAnonymizeTarget(u)}
+                      >
+                        Anonymisieren
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            }
+          </div>
+        </TabsContent>
       </Tabs>
 
-      <DeletionRequestDialog
-        target={deletionRequestTarget}
-        onOpenChange={(open) => !open && setDeletionRequestTarget(null)}
-        onSaved={(row) =>
-          setDeletionRequests((prev) => {
-            const exists = prev.some((r) => r.id === row.id);
-            return exists ? prev.map((r) => (r.id === row.id ? row : r)) : [row, ...prev];
-          })
-        }
-      />
-      <ConfirmDeleteDialog
-        open={deletionRequestDeleteTarget !== null}
-        onOpenChange={(open) => !open && setDeletionRequestDeleteTarget(null)}
-        title="Löschanfrage entfernen?"
-        description="Diese Aktion kann nicht rückgängig gemacht werden."
-        onConfirm={async () => {
-          if (!deletionRequestDeleteTarget) return;
-          await fetch(`/api/deletion-requests/${deletionRequestDeleteTarget.id}`, {
-            method: "DELETE",
-          });
-          setDeletionRequests((prev) =>
-            prev.filter((r) => r.id !== deletionRequestDeleteTarget.id),
-          );
-          toastDeleted("Löschanfrage wurde entfernt.");
-          setDeletionRequestDeleteTarget(null);
-        }}
-      />
 
       <ProcessingActivityDialog
         target={processingActivityTarget}
@@ -1166,6 +1492,7 @@ export function PrivacyView({
 
       <DataProcessorDialog
         target={dataProcessorTarget}
+        avsFolderId={avsFolderId}
         onOpenChange={(open) => !open && setDataProcessorTarget(null)}
         onSaved={(row) =>
           setDataProcessors((prev) => {
@@ -1192,29 +1519,27 @@ export function PrivacyView({
         }}
       />
 
-      <PrivacyIncidentDialog
-        target={incidentTarget}
-        onOpenChange={(open) => !open && setIncidentTarget(null)}
-        onSaved={(row) =>
-          setIncidents((prev) => {
-            const exists = prev.some((r) => r.id === row.id);
-            return exists ? prev.map((r) => (r.id === row.id ? row : r)) : [row, ...prev];
-          })
-        }
+      <SubjectAccessRequestDialog
+        open={subjectAccessRequestOpen}
+        onOpenChange={setSubjectAccessRequestOpen}
+        users={users}
       />
+
       <ConfirmDeleteDialog
-        open={incidentDeleteTarget !== null}
-        onOpenChange={(open) => !open && setIncidentDeleteTarget(null)}
-        title="Vorfall entfernen?"
-        description="Diese Aktion kann nicht rückgängig gemacht werden."
+        open={anonymizeTarget !== null}
+        onOpenChange={(open) => !open && setAnonymizeTarget(null)}
+        title={`„${truncateMiddle(formatName(anonymizeTarget ?? { firstName: "", lastName: "" }))}“ anonymisieren?`}
+        description="Alle personenbezogenen Daten werden entfernt. Diese Aktion ist endgültig und kann nicht rückgängig gemacht werden."
+        confirmLabel="Anonymisieren"
+        confirmingLabel="Anonymisiert…"
         onConfirm={async () => {
-          if (!incidentDeleteTarget) return;
-          await fetch(`/api/privacy-incidents/${incidentDeleteTarget.id}`, {
-            method: "DELETE",
-          });
-          setIncidents((prev) => prev.filter((r) => r.id !== incidentDeleteTarget.id));
-          toastDeleted("Vorfall wurde entfernt.");
-          setIncidentDeleteTarget(null);
+          if (!anonymizeTarget) return;
+          await fetch(`/api/users/${anonymizeTarget.id}/anonymize`, { method: "POST" });
+          setDeactivatedAccountsDue((prev) =>
+            prev.filter((p) => p.id !== anonymizeTarget.id),
+          );
+          toastDeleted(`„${formatName(anonymizeTarget)}“ wurde anonymisiert.`);
+          setAnonymizeTarget(null);
         }}
       />
     </div>

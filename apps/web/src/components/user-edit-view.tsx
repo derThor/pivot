@@ -37,7 +37,7 @@ import type {
   UserSession,
 } from "@/lib/api-server";
 import { mediaUrl } from "@/lib/media";
-import { cn, formatName, formatRelativeTime, initials } from "@/lib/utils";
+import { cn, formatName, formatRelativeTime, initials, truncateMiddle } from "@/lib/utils";
 
 const profileSchema = z.object({
   firstName: z.string().optional(),
@@ -45,6 +45,9 @@ const profileSchema = z.object({
   email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben."),
   department: z.string().optional(),
   phone: z.string().optional(),
+  street: z.string().optional(),
+  postalCode: z.string().optional(),
+  city: z.string().optional(),
   roleIds: z.array(z.string()).min(1, "Mindestens eine Rolle wählen."),
   mustChangePassword: z.boolean(),
 });
@@ -64,6 +67,7 @@ export function UserEditView({
   viewerId,
   viewerPermissions,
   viewerIsAdministrator,
+  viewerIsPivot,
   sessions,
   stats,
   activity,
@@ -75,6 +79,10 @@ export function UserEditView({
   viewerId: string;
   viewerPermissions: string[];
   viewerIsAdministrator: boolean;
+  /** Nur Pivot darf die Pivot-Rolle vergeben (Nutzervorgabe, 2026-08-21:
+   * "admin darf sich auch nicht die pivot rolle geben") – strenger als
+   * `viewerIsAdministrator`, das Administrator UND Pivot einschließt. */
+  viewerIsPivot: boolean;
   sessions: UserSession[];
   stats: { contentCount: number; mediaCount: number };
   activity: ActivityLogResponse;
@@ -82,8 +90,8 @@ export function UserEditView({
   const router = useRouter();
   const name = formatName(user);
   const isSelf = user.id === viewerId;
-  const targetIsAdministrator = user.roles.some(
-    (role) => role.name === "Administrator",
+  const targetIsAdministrator = user.roles.some((role) =>
+    ["Administrator", "Pivot"].includes(role.name),
   );
 
   const canDeactivate = viewerPermissions.includes("users:deactivate");
@@ -116,6 +124,9 @@ export function UserEditView({
       email: user.email,
       department: user.department ?? "",
       phone: user.phone ?? "",
+      street: user.street ?? "",
+      postalCode: user.postalCode ?? "",
+      city: user.city ?? "",
       roleIds: user.roles.map((role) => role.id),
       mustChangePassword: user.mustChangePassword,
     },
@@ -134,6 +145,9 @@ export function UserEditView({
           email: values.email,
           department: values.department || undefined,
           phone: values.phone || undefined,
+          street: values.street || undefined,
+          postalCode: values.postalCode || undefined,
+          city: values.city || undefined,
           roleIds: values.roleIds,
           mustChangePassword: values.mustChangePassword,
         }),
@@ -230,8 +244,13 @@ export function UserEditView({
     }
   }
 
-  async function handleAnonymize() {
-    await fetch(`/api/users/${user.id}/anonymize`, { method: "POST" });
+  // "Nutzer löschen" (Nutzervorgabe, 2026-08-21): löst NICHT mehr direkt
+  // die Anonymisierung aus, sondern nur noch den reversiblen Löschen-
+  // Zustand (`deletedAt`) – der Nutzer verschwindet aus dieser Liste und
+  // taucht unter Datenschutz → "Nutzer" auf. Erst von dort aus wird
+  // endgültig anonymisiert.
+  async function handleDelete() {
+    await fetch(`/api/users/${user.id}/delete`, { method: "POST" });
     toastDeleted(`„${name}“ wurde gelöscht.`);
     router.push("/dashboard/users");
   }
@@ -483,6 +502,51 @@ export function UserEditView({
                       )}
                     />
                     <div />
+                    <FormField
+                      control={form.control}
+                      name="street"
+                      render={({ field }) => (
+                        <FormItem className="sm:col-span-2">
+                          <FormLabel className="text-xs text-muted-foreground uppercase">
+                            Straße und Hausnummer
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="postalCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs text-muted-foreground uppercase">
+                            PLZ
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs text-muted-foreground uppercase">
+                            Ort
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
 
                   <Separator />
@@ -498,9 +562,11 @@ export function UserEditView({
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                           {roles.map((role) => {
                             const checked = field.value.includes(role.id);
+                            const isPivotRole = role.name === "Pivot";
                             const isAdminRole = role.name === "Administrator";
                             const disabled =
-                              isAdminRole && !viewerIsAdministrator;
+                              (isPivotRole && !viewerIsPivot) ||
+                              (isAdminRole && !viewerIsAdministrator);
                             return (
                               <label
                                 key={role.id}
@@ -578,9 +644,10 @@ export function UserEditView({
                         Konto entfernen
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        Der Nutzer wird anonymisiert: alle personenbezogenen
-                        Daten werden entfernt. Inhalte bleiben erhalten und
-                        werden „Gelöschter Nutzer“ zugeordnet.
+                        Der Nutzer wird aus der Benutzerliste entfernt und
+                        erscheint stattdessen unter Datenschutz → „Benutzer“.
+                        Die endgültige Anonymisierung erfolgt erst von dort
+                        aus.
                       </p>
                       <ConfirmDeleteDialog
                         trigger={
@@ -591,9 +658,9 @@ export function UserEditView({
                             Benutzer löschen
                           </Button>
                         }
-                        title={`„${name}“ endgültig löschen?`}
-                        description="Alle personenbezogenen Daten werden entfernt. Diese Aktion kann nicht rückgängig gemacht werden."
-                        onConfirm={handleAnonymize}
+                        title={`„${truncateMiddle(name)}“ löschen?`}
+                        description="Wird aus der Benutzerliste entfernt und steht unter Datenschutz → „Benutzer“ zur endgültigen Anonymisierung bereit."
+                        onConfirm={handleDelete}
                       />
                     </div>
                   )}

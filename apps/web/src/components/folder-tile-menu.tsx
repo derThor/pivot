@@ -15,6 +15,7 @@ import {
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { FolderDialog } from "@/components/folder-dialog";
 import type { MediaFolder } from "@/lib/api-server";
+import { truncateMiddle } from "@/lib/utils";
 
 export function FolderTileMenu({ folder }: { folder: MediaFolder }) {
   const router = useRouter();
@@ -71,11 +72,11 @@ export function FolderTileMenu({ folder }: { folder: MediaFolder }) {
       <ConfirmDeleteDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title={`„${folder.name}“ löschen?`}
+        title={`„${truncateMiddle(folder.name)}“ löschen?`}
         description={
           isEmpty
             ? "Diese Aktion kann nicht rückgängig gemacht werden."
-            : "Dieser Ordner enthält Dateien und/oder Unterordner. Alle enthaltenen Unterordner und Medien werden unwiderruflich mitgelöscht – diese Aktion kann nicht rückgängig gemacht werden."
+            : "Dieser Ordner enthält Dateien und/oder Unterordner. Alle enthaltenen Medien werden in den Papierkorb verschoben und können von dort wiederhergestellt werden – die Ordnerstruktur selbst kann nicht wiederhergestellt werden."
         }
         onConfirm={handleDelete}
       />

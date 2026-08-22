@@ -588,14 +588,124 @@ platzierten "2FA"-Spalte in der Benutzer-Tabelle.
 
 - [ ] CI/CD-Pipeline (Lint, Typecheck, Tests, Build, ggf. Turborepo Remote
       Cache)
-- [ ] Echter Mail-Versand für Passwort-Reset/E-Mail-Verifikation (aktuell
-      Dev-Stub, siehe Phase 2a)
+- [ ] Echter E-Mail-Versand – siehe 3.1 unten (eigener Abschnitt, da
+      inzwischen 7 verdrahtete Auslöser + 2 UI-Platzhalter davon
+      abhängen)
 - [x] 2FA/TOTP (2026-08-17) – Self-Service-Einrichtung (QR-Code,
       Recovery-Codes), optionale Erzwingung für Administrator-Konten,
       globaler An/Aus-Schalter unter Einstellungen → Sicherheit. Löst den
       Platzhalter-Switch (siehe 2b.14-Eintrag oben) und die
       Platzhalter-Spalte in der Benutzertabelle ein. Details:
       [two-factor-authentication.md](../knowledge-base/auth/two-factor-authentication.md)
+
+### 3.1 – Echter E-Mail-Versand (SMTP)
+
+Jede System-Mail in der App läuft aktuell über einen reinen Dev-Stub
+(`apps/api/src/mailer/mailer.service.ts`) – loggt nur, kein SMTP
+angebunden. Über mehrere Sessions sind bereits **11 verschiedene,
+bereits verdrahtete Mail-Auslöser** entstanden, die alle nur auf
+echten Versand warten, **plus 2 UI-Platzhalter**, die noch nicht
+einmal einen Backend-Aufruf haben. Je länger das aufgeschoben wird,
+desto mehr Stellen muss der spätere Umbau anfassen. Daher als eigener,
+priorisierter Punkt vorgemerkt statt weiter nebenbei mitzuschleppen.
+Vollständig durchsucht (2026-08-19, zuletzt aktualisiert nach der
+Betroffenenanfragen-Neugestaltung noch am selben Tag).
+
+- [ ] Provider-Entscheidung (SMTP-Relay wie Postmark/SendGrid/Amazon SES
+      vs. reines SMTP gegen einen vom Kunden vorgegebenen Mailserver) +
+      Konfiguration (Host/Port/User/Passwort/Absenderadresse/TLS) über
+      `AppSettings` (Dashboard, analog zu anderen Integrationen) statt
+      nur `.env`
+- [ ] `MailerService` von Logger-Stub auf echten Versand umstellen
+      (z.B. `nodemailer`), inkl. Fehlerbehandlung – ein Zustellfehler
+      darf nicht nur im Server-Log verschwinden, muss im Dashboard
+      sichtbar sein (z.B. `SystemMessage`-Hinweis, analog zu Webhook-
+      Fehlschlägen)
+- [ ] Test-Versand-Button in den Einstellungen, um eine Konfiguration zu
+      prüfen, bevor sie scharfgeschaltet wird
+- [ ] Echte HTML-Vorlagen (+ Text-Fallback) für jeden bereits
+      verdrahteten Auslöser, aktuell nur reine Log-Zeilen ohne Layout:
+  - [ ] Konto-Verifikation nach Registrierung
+        (`sendVerificationEmail`, `auth.service.ts`, siehe Phase 2a)
+  - [ ] Passwort-Reset, öffentliches Self-Service-Formular
+        (`sendPasswordResetEmail` über `requestPasswordReset()`,
+        `auth.service.ts:542`, siehe Phase 2a)
+  - [ ] Passwort-Reset, Admin-ausgelöst – Button "Passwort
+        zurücksetzen" auf der Benutzer-Seite
+        (`user-edit-view.tsx:284` → `adminRequestPasswordReset()` →
+        `sendPasswordResetEmail`, `auth.service.ts:762`; gleiche
+        Mail-Art wie oben, aber eigener Auslöser/Kontext)
+  - [ ] Benutzer einladen – Button "Benutzer einladen"
+        (`create-user-dialog.tsx:99`, läuft über denselben
+        Admin-Passwort-Reset-Mechanismus wie oben)
+  - [ ] DSB-Vorfall-Benachrichtigung (`sendDpoIncidentNotification`,
+        Datenschutz-Seite → Datenschutzbeauftragter-Tab, automatisch
+        bei neuem Vorfall, kein eigener Button)
+  - [ ] DSB-Monatsbericht (`sendDpoMonthlyReport`, monatlicher Cron,
+        `PrivacyReportSchedulerService`, kein eigener Button)
+  - [ ] Auskunft nach Art. 15 DSGVO – Button "Auskunft senden"
+        (`subject-access-request-dialog.tsx` → `sendSubjectAccessReport`,
+        Betroffenenrechte-Karte, siehe
+        [privacy-page.md](../knowledge-base/auth/privacy-page.md))
+  - [ ] Betroffenenanfragen-Log: Eingangsbestätigung
+        (`sendDeletionRequestAcknowledgement`, automatisch beim
+        Anlegen, Automatik-Schalter)
+  - [ ] Betroffenenanfragen-Log: Rückfrage an Absender – Button
+        "Rückfrage an Absender" öffnet ein Popup mit Freitext-Feld,
+        der Admin formuliert die Nachricht selbst
+        (`sendDeletionRequestFollowUp`, siehe
+        [data-subject-requests.md](../knowledge-base/auth/data-subject-requests.md))
+  - [ ] Betroffenenanfragen-Log: Fristerinnerung an den DSB
+        (`sendDeletionRequestDeadlineReminder`, täglicher Cron,
+        `DeletionRequestReminderSchedulerService`, Automatik-Schalter)
+  - [ ] Auftragsverarbeiter-Tab: "AV-Vertrag anfordern" – Karte "Offene
+        Punkte" (`sendDataProcessorContractRequest`, siehe
+        [privacy-page.md](../knowledge-base/auth/privacy-page.md))
+- [ ] Bounce-/Zustellfehler zumindest protokollieren (kein Anspruch auf
+      vollständiges Bounce-Handling in der ersten Ausbaustufe)
+
+**Zusätzlich: zwei UI-Bereiche, die E-Mail-Funktionen ankündigen, aber
+noch nicht einmal einen Backend-Aufruf haben** (brauchen also nicht nur
+SMTP-Anbindung, sondern erst noch eigene Datenmodelle/Logik obendrauf –
+per vollständiger Frontend-Suche gefunden, 2026-08-19):
+
+- [ ] Einstellungen → "Benachrichtigungen" (System-Absender):
+      `settings-form.tsx` (Nav-Eintrag ~Z. 116-119, Inhalt ~Z. 1037-1041)
+      – reine `PlaceholderCard` mit Text "Ein eigener Mail-Absender und
+      der Versand von Systemmails sind in Vorbereitung...". Braucht ein
+      UI für die oben genannte SMTP-Konfiguration.
+- [ ] "Mein Konto" → Tab "Benachrichtigungen" (pro Nutzer):
+      `my-account-view.tsx` (~Z. 334-341), auch verlinkt aus der
+      Glocke im Header (`dashboard-header.tsx` ~Z. 239-252) – reiner
+      Platzhaltertext, keine Anbindung. Braucht ein eigenes
+      Datenmodell für Opt-in/-out pro Ereignistyp (z.B. "bei neuer
+      Löschanfrage per Mail benachrichtigen"), zusätzlich zu den
+      bereits bestehenden reinen In-App-Glocke/Banner-Schaltern in
+      `notification-settings-card.tsx` (die sind bewusst NICHT
+      E-Mail, nicht verwechseln).
+
+**Nachtrag, selbiger Tag**: Die Löschanfragen-Neugestaltung wurde
+entgegen der ursprünglichen Empfehlung oben (erst Mail-Versand, dann
+Neugestaltung) doch direkt umgesetzt (Nutzervorgabe) – dadurch 3
+weitere Dev-Stub-Konsumenten statt der vorhergesagten Verzögerung.
+Siehe [data-subject-requests.md](../knowledge-base/auth/data-subject-requests.md)
+für Details. Zwei Folgevorhaben dabei zunächst vom Nutzer als
+**"später"** benannt, eines davon noch selbigen Tag doch umgesetzt:
+- [x] Selbstauskunft/-löschung aus dem eigenen Konto heraus – komplett
+      umgesetzt (Backend zuerst, dann Klarstellung: "ich unterscheide
+      backend und frontend. frontend ist die webseite für den
+      endanwender und nicht die oberfläche des backends" → Dashboard-UI
+      war gemeint, kein separates öffentliches Frontend): `POST
+      /deletion-requests/self-service` (ohne `@RequirePermission`,
+      jeder eingeloggte Nutzer; Name/E-Mail aus dem eigenen Konto,
+      `linkedUserId` sofort gesetzt) + Karte "Meine Daten" in Mein
+      Konto → Sicherheit (`self-service-request-card.tsx`).
+- [ ] Ein allgemeines Formular im (öffentlichen) Footer als Anfragequelle
+      – weiterhin offen; setzt entweder ein eigenes Formular-Modul
+      (siehe 2b.10) oder eine externe, das API konsumierende Website
+      voraus, da `apps/web` selbst keine öffentliche Website-
+      Auslieferung hat.
+
 - [ ] Audit-Log tatsächlich befüllen (aktuell nur Datenmodell)
 - [ ] Dark-Mode-Umschalter im Dashboard
 - [ ] Redis-Anbindung für Caching/Sessions aktivieren

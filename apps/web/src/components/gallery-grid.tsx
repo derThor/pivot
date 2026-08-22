@@ -16,7 +16,7 @@ import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { toRepeaterItems, toImageValue } from "@/components/block-field-output";
 import { toGallerySettings, GALLERY_EFFECT_LABELS } from "@/lib/gallery-settings";
 import { resolveImageSrc } from "@/lib/media";
-import { cn } from "@/lib/utils";
+import { cn, truncateMiddle } from "@/lib/utils";
 import type { GlobalModule, ModuleType } from "@/lib/api-server";
 
 const darkTextClassName = "text-[#132033]";
@@ -175,8 +175,8 @@ export function GalleryGrid({
       <ConfirmDeleteDialog
         open={deleteGallery !== null}
         onOpenChange={(open) => !open && setDeleteGallery(null)}
-        title={`„${deleteGallery?.name}“ löschen?`}
-        description="Wird aus allen Seiten entfernt, die sie einbinden. Diese Aktion kann nicht rückgängig gemacht werden."
+        title={`„${truncateMiddle(deleteGallery?.name ?? "")}“ löschen?`}
+        description="Wird aus allen Seiten entfernt, die sie einbinden, und in den Papierkorb verschoben, von wo sie wiederhergestellt werden kann."
         onConfirm={handleDelete}
       />
     </div>

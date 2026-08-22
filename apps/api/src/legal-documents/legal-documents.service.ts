@@ -26,6 +26,7 @@ type CompanyFields = {
   companyRegisterNumber: string | null;
   companyVatId: string | null;
   companySupervisoryAuthority: string | null;
+  companyDisputeResolution: string | null;
   // Datenschutzbeauftragter-Absatz (Nutzervorgabe, 2026-08-18): wirkt nur,
   // wenn dpoListInLegalTexts aktiv ist UND ein Name/Firma hinterlegt ist –
   // kein reiner Anzeige-Schalter, siehe LegalDocumentsService.
@@ -76,6 +77,8 @@ const TEMPLATES: Record<string, { title: string; slug: string; generate: (c: Com
       if (c.companyVatId) lines.push(`USt-IdNr.: ${c.companyVatId}`);
       if (c.companySupervisoryAuthority)
         lines.push(`Aufsichtsbehörde: ${c.companySupervisoryAuthority}`);
+      if (c.companyDisputeResolution)
+        lines.push('', `Streitschlichtung: ${c.companyDisputeResolution}`);
       const dpo = dpoLine(c);
       if (dpo) lines.push('', dpo);
       return lines.join('\n');
@@ -165,6 +168,7 @@ export class LegalDocumentsService {
       companyRegisterNumber: settings.companyRegisterNumber,
       companyVatId: settings.companyVatId,
       companySupervisoryAuthority: settings.companySupervisoryAuthority,
+      companyDisputeResolution: settings.companyDisputeResolution,
       dpoListInLegalTexts: settings.dpoListInLegalTexts,
       dpoName: settings.dpoName,
       dpoCompany: settings.dpoCompany,

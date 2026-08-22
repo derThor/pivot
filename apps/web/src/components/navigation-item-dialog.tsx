@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { toastCreated, toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -22,12 +23,166 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxStatus,
+} from "@/components/ui/combobox";
 import type { ContentListItem, NavigationItemNode } from "@/lib/api-server";
 
 const targetTypeOptions: Record<string, string> = {
   content: "Inhalt",
   external: "Externe URL",
 };
+
+const MIN_QUERY_LENGTH = 3;
+
+interface ContentSearchResult {
+  id: string;
+  title: string;
+  slug: string;
+  contentTypeName: string;
+}
+
+interface ContentPickerItem {
+  value: string;
+  label: string;
+  slug: string;
+  contentTypeName: string;
+}
+
+/** Kombiniert Browsen und Live-Suche (Nutzervorgabe, 2026-08-21: "so muss
+ * ich ja genau wissen, wonach ich suchen will" – eine reine Suche ohne
+ * Browse-Möglichkeit war eine Verschlechterung gegenüber der alten
+ * `<Select>`-Liste, siehe knowledge-base/content/navigation-management.md).
+ * Ohne Eingabe bzw. unterhalb `MIN_QUERY_LENGTH` wird `browseItems`
+ * (client-seitig gefiltert, falls schon etwas getippt wurde) gezeigt – die
+ * bereits ohnehin geladene, auf 100 Einträge begrenzte Liste. Ab
+ * `MIN_QUERY_LENGTH` übernimmt die echte Server-Suche
+ * (`GET /content/search`, gleiches Muster wie `header-search.tsx`), die
+ * auch Inhalte jenseits der 100er-Grenze findet.
+ *
+ * Nutzt seit der Nachbesserung (Nutzer-Bugreport, gleicher Tag: "das ist
+ * nicht gut", Screenshot eines aufgeblähten Dialogs mit innerem
+ * Scrollbalken) die echte Base-UI-`Combobox`-Primitive statt eines
+ * selbstgebauten `absolute`-Divs – das Popup ist dadurch portaliert
+ * (rendert in `document.body`), bläht den umgebenden Dialog also nicht
+ * mehr auf. Gleiches Muster wie `select.tsx`/`dropdown-menu.tsx`, die aus
+ * demselben Grund bereits portaliert sind. */
+function ContentPicker({
+  id,
+  initialTitle,
+  browseItems,
+  onChange,
+}: {
+  id?: string;
+  initialTitle: string;
+  browseItems: ContentListItem[];
+  onChange: (id: string, title: string) => void;
+}) {
+  // Auswahl UND Schließen des Popups feuern bei einem Klick auf einen
+  // Eintrag im selben React-Batch – ohne diesen Guard würde
+  // `onOpenChange`s Zurücksetzen auf `initialTitle` (alter, noch nicht
+  // aktualisierter Prop-Wert) das gerade in `onValueChange` gesetzte
+  // Ergebnis wieder überschreiben (Reihenfolge beider Handler nicht
+  // garantiert).
+  const justSelectedRef = useRef(false);
+  const [query, setQuery] = useState(initialTitle);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<
+    ContentSearchResult[] | null
+  >(null);
+
+  const trimmed = query.trim();
+  const isSearching = trimmed.length >= MIN_QUERY_LENGTH;
+
+  useEffect(() => {
+    if (!isSearching) return;
+    setIsLoading(true);
+    const timeout = setTimeout(async () => {
+      const res = await fetch(
+        `/api/content/search?q=${encodeURIComponent(trimmed)}&limit=8`,
+      );
+      const data = await res.json().catch(() => null);
+      setSearchResults(Array.isArray(data) ? data : []);
+      setIsLoading(false);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [isSearching, trimmed]);
+
+  const browseResults: ContentPickerItem[] = browseItems
+    .filter((c) => c.title.toLowerCase().includes(trimmed.toLowerCase()))
+    .map((c) => ({
+      value: c.id,
+      label: c.title,
+      slug: c.slug,
+      contentTypeName: c.contentType.name,
+    }));
+  const searchItems: ContentPickerItem[] = (searchResults ?? []).map((r) => ({
+    value: r.id,
+    label: r.title,
+    slug: r.slug,
+    contentTypeName: r.contentTypeName,
+  }));
+  const items = isSearching ? searchItems : browseResults;
+
+  return (
+    <Combobox
+      items={items}
+      filter={null}
+      inputValue={query}
+      onInputValueChange={setQuery}
+      openOnInputClick
+      onValueChange={(item: ContentPickerItem | null) => {
+        if (!item) return;
+        justSelectedRef.current = true;
+        onChange(item.value, item.label);
+        setQuery(item.label);
+      }}
+      onOpenChange={(nextOpen) => {
+        if (nextOpen) return;
+        // Getipptes ohne Auswahl beim Schließen verwerfen – der zuletzt
+        // bestätigte Titel bleibt bestehen, statt einen Text stehen zu
+        // lassen, der zu keiner ausgewählten `contentId` mehr passt. Nicht
+        // nach einer echten Auswahl (siehe Guard oben).
+        if (justSelectedRef.current) {
+          justSelectedRef.current = false;
+          return;
+        }
+        setQuery(initialTitle);
+      }}
+    >
+      <ComboboxInput
+        id={id}
+        placeholder="Inhalt suchen oder aus der Liste wählen …"
+      />
+      <ComboboxContent>
+        {isSearching && isLoading ?
+          <ComboboxStatus>Suche…</ComboboxStatus>
+        : <>
+            <ComboboxEmpty>Keine Treffer.</ComboboxEmpty>
+            <ComboboxList>
+              {(item: ContentPickerItem) => (
+                <ComboboxItem key={item.value} value={item}>
+                  <span className="w-full truncate font-medium">
+                    {item.label}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {item.contentTypeName} · /{item.slug}
+                  </span>
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </>
+        }
+      </ComboboxContent>
+    </Combobox>
+  );
+}
 
 export function NavigationItemDialog({
   navigationId,
@@ -60,18 +215,28 @@ export function NavigationItemDialog({
   );
   const [contentId, setContentId] = useState(item?.contentId ?? "");
   const [externalUrl, setExternalUrl] = useState(item?.externalUrl ?? "");
+  const [openInNewTab, setOpenInNewTab] = useState(
+    item?.openInNewTab ?? false,
+  );
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const contentOptions = Object.fromEntries(
+  const contentTitleById = Object.fromEntries(
     contentItems.map((c) => [c.id, c.title]),
+  );
+  const [contentTitle, setContentTitle] = useState(
+    item?.contentId ? (contentTitleById[item.contentId] ?? "") : "",
   );
 
   function resetForm() {
     setLabel(item?.label ?? "");
     setTargetType(item?.externalUrl ? "external" : "content");
     setContentId(item?.contentId ?? "");
+    setContentTitle(
+      item?.contentId ? (contentTitleById[item.contentId] ?? "") : "",
+    );
     setExternalUrl(item?.externalUrl ?? "");
+    setOpenInNewTab(item?.openInNewTab ?? false);
     setError(null);
   }
 
@@ -89,6 +254,7 @@ export function NavigationItemDialog({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             label,
+            openInNewTab,
             ...(!isEditing && { parentId }),
             ...(targetType === "content"
               ? { contentId, externalUrl: null }
@@ -130,7 +296,7 @@ export function NavigationItemDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="nav-item-label">Label</Label>
+            <Label htmlFor="nav-item-label" required>Label</Label>
             <Input
               id="nav-item-label"
               value={label}
@@ -159,27 +325,23 @@ export function NavigationItemDialog({
           </div>
           {targetType === "content" ? (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="nav-item-content">Inhalt</Label>
-              <Select
-                value={contentId}
-                onValueChange={(value) => setContentId(value ?? "")}
-                items={contentOptions}
-              >
-                <SelectTrigger id="nav-item-content" className="w-full">
-                  <SelectValue placeholder="Inhalt wählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  {contentItems.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="nav-item-content" required>
+                Inhalt
+              </Label>
+              <ContentPicker
+                key={contentTitle}
+                id="nav-item-content"
+                initialTitle={contentTitle}
+                browseItems={contentItems}
+                onChange={(id, title) => {
+                  setContentId(id);
+                  setContentTitle(title);
+                }}
+              />
             </div>
           ) : (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="nav-item-url">Externe URL</Label>
+              <Label htmlFor="nav-item-url" required>Externe URL</Label>
               <Input
                 id="nav-item-url"
                 type="url"
@@ -190,6 +352,13 @@ export function NavigationItemDialog({
               />
             </div>
           )}
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox
+              checked={openInNewTab}
+              onCheckedChange={(checked) => setOpenInNewTab(checked === true)}
+            />
+            In neuem Tab öffnen
+          </label>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button

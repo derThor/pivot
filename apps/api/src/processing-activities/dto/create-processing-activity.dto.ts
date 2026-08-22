@@ -20,5 +20,10 @@ export class CreateProcessingActivityDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  retentionPeriod?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   recipients?: string;
 }

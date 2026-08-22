@@ -860,7 +860,7 @@ export function ContentEditorForm({
                           render={({ field }) => (
                             <FormItem>
                               <div className="flex items-center gap-1.5">
-                                <FormLabel>Content-Type</FormLabel>
+                                <FormLabel required>Content-Type</FormLabel>
                                 <InfoTooltip text="Legt fest, welche Felder dieser Inhalt hat (z.B. Titel + Text). Kann nach dem Anlegen nicht mehr geändert werden." />
                               </div>
                               <Select
@@ -903,7 +903,7 @@ export function ContentEditorForm({
                           name="title"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Titel</FormLabel>
+                              <FormLabel required>Titel</FormLabel>
                               <FormControl>
                                 <Input
                                   {...field}
@@ -923,7 +923,7 @@ export function ContentEditorForm({
                           render={({ field }) => (
                             <FormItem>
                               <div className="flex items-center gap-1.5">
-                                <FormLabel>Slug</FormLabel>
+                                <FormLabel required>Slug</FormLabel>
                                 <InfoTooltip text="Der URL-freundliche Teil der Adresse, z.B. wird aus „Mein Titel“ „mein-titel“. Wird automatisch aus dem Titel erzeugt, lässt sich aber manuell anpassen." />
                               </div>
                               <FormControl>
@@ -975,7 +975,7 @@ export function ContentEditorForm({
 
                         {watchedValues.status === "SCHEDULED" && (
                           <div className="flex flex-col gap-2">
-                            <Label htmlFor="scheduled-for">
+                            <Label htmlFor="scheduled-for" required>
                               Veröffentlichungszeitpunkt
                             </Label>
                             <DateTimePicker
@@ -1074,11 +1074,11 @@ export function ContentEditorForm({
                                 key={field.name}
                                 className="flex flex-col gap-2"
                               >
-                                <Label htmlFor={`data-${field.name}`}>
+                                <Label
+                                  htmlFor={`data-${field.name}`}
+                                  required={field.required}
+                                >
                                   {field.name}
-                                  {field.required && (
-                                    <span className="text-destructive"> *</span>
-                                  )}
                                 </Label>
                                 {field.type === "text" ? (
                                   <Textarea
@@ -1129,11 +1129,11 @@ export function ContentEditorForm({
                               key={field.name}
                               className="flex min-h-0 flex-1 flex-col gap-2"
                             >
-                              <Label htmlFor={`data-${field.name}`}>
+                              <Label
+                                htmlFor={`data-${field.name}`}
+                                required={field.required}
+                              >
                                 {field.name}
-                                {field.required && (
-                                  <span className="text-destructive"> *</span>
-                                )}
                               </Label>
                               <RichTextEditor
                                 id={`data-${field.name}`}

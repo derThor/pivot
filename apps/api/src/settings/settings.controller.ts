@@ -1,17 +1,24 @@
 import {
   Body,
   Controller,
+  Delete,
   forwardRef,
   Get,
+  Header,
   HttpCode,
   HttpStatus,
   Inject,
+  Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { SettingsService } from './settings.service';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
+import { UpdateCompanyDto } from './dto/update-company.dto';
+import { UpdatePrivacyDto } from './dto/update-privacy.dto';
+import { QuerySettingsChangesDto } from './dto/query-settings-changes.dto';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -49,12 +56,111 @@ export class SettingsController {
     return this.settingsService.update(dto, user.sub);
   }
 
+  // Firma-Stammdaten (Verwaltung → Firma) – eigenes Recht `company:*`,
+  // getrennt von `settings:*` (Nutzervorgabe, 2026-08-21: "admin soll
+  // aber firma sehen können", siehe UpdateCompanyDto/getCompany()).
+  @ApiBearerAuth()
+  @RequirePermission('company:read')
+  @Get('company')
+  getCompany() {
+    return this.settingsService.getCompany();
+  }
+
+  @ApiBearerAuth()
+  @RequirePermission('company:update')
+  @Patch('company')
+  updateCompany(
+    @Body() dto: UpdateCompanyDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.settingsService.updateCompany(dto, user.sub);
+  }
+
   // "Letzte Änderungen" auf der Firma-Seite (Verwaltung → Firma).
   @ApiBearerAuth()
-  @RequirePermission('settings:read')
+  @RequirePermission('company:read')
   @Get('company/changes')
   getCompanyChanges() {
     return this.settingsService.getCompanyChanges();
+  }
+
+  // Datenschutz-Seite (Verwaltung → Datenschutz) – eigenes Recht
+  // `privacy:*` statt `settings:*`, gleicher Grund wie bei `company:*`
+  // (Nutzer-Bugreport, 2026-08-21: "warum habe ich als admin keine
+  // datenschutz zugriffsrechte, obwohl die rolle vergeben ist").
+  @ApiBearerAuth()
+  @RequirePermission('privacy:read')
+  @Get('privacy')
+  getPrivacySettings() {
+    return this.settingsService.getPrivacy();
+  }
+
+  @ApiBearerAuth()
+  @RequirePermission('privacy:update')
+  @Patch('privacy')
+  updatePrivacySettings(
+    @Body() dto: UpdatePrivacyDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.settingsService.updatePrivacy(dto, user.sub);
+  }
+
+  // "Protokoll"-Tab unter Einstellungen (Nutzervorgabe, 2026-08-22: "baue
+  // protokolierung", 1:1 nach Bildvorlage "Letzte Änderungen an den
+  // Einstellungen"). Gleiches Recht wie der Rest der allgemeinen
+  // Einstellungen (`settings:read`, also Pivot-exklusiv) – anders als
+  // Firma/Datenschutz kein eigenes Recht nötig, das Protokoll gehört zur
+  // Einstellungen-Seite selbst.
+  @ApiBearerAuth()
+  @RequirePermission('settings:read')
+  @Get('changes')
+  getSettingsChanges(@Query() query: QuerySettingsChangesDto) {
+    return this.settingsService.getSettingsChanges(query.page, query.pageSize);
+  }
+
+  // "Einstellungen als JSON" (Nutzervorgabe, 2026-08-22: "umsetzen").
+  @ApiBearerAuth()
+  @RequirePermission('settings:read')
+  @Get('export')
+  exportSettingsJson() {
+    return this.settingsService.exportSettingsJson();
+  }
+
+  // CSV-Export der Protokoll-Historie (Nutzervorgabe, 2026-08-22: "füge
+  // export hinzu"). Vor `changes/:id` in der Datei nicht relevant, da
+  // beides statische bzw. eindeutig unterscheidbare Pfade sind.
+  @ApiBearerAuth()
+  @RequirePermission('settings:read')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header(
+    'Content-Disposition',
+    'attachment; filename="einstellungen-protokoll.csv"',
+  )
+  @Get('changes/export')
+  exportSettingsChanges() {
+    return this.settingsService.exportSettingsChangesCsv();
+  }
+
+  // "Alle löschen" (Nutzervorgabe, 2026-08-22: "mache bei letzte änderung
+  // ... rechts alle löschen dazu") – vor `changes/:id` in der Datei, da
+  // inhaltlich zusammengehörig; Reihenfolge ist Express/Nest gegenüber
+  // unkritisch (unterschiedliche Pfadstruktur, kein Shadowing möglich).
+  @ApiBearerAuth()
+  @RequirePermission('settings:update')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('changes')
+  deleteAllSettingsChanges() {
+    return this.settingsService.deleteAllSettingsChanges();
+  }
+
+  // Einzelnen Protokoll-Eintrag löschen (Nutzervorgabe, 2026-08-22: "das
+  // soll man löschen können") – bewusst nicht revisionssicher.
+  @ApiBearerAuth()
+  @RequirePermission('settings:update')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('changes/:id')
+  deleteSettingsChange(@Param('id') id: string) {
+    return this.settingsService.deleteSettingsChange(id);
   }
 
   // "Cache leeren" unter Einstellungen (Nutzervorgabe, 2026-08-16) – leert

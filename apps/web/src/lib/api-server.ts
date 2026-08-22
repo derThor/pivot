@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "./auth";
 import type { SearchResult } from "./search";
+import type { CompanyFieldKey } from "./company-fields";
 
 const API_URL = process.env.API_URL ?? "http://localhost:3001/v1";
 
@@ -17,6 +18,9 @@ export interface CurrentUser {
   avatarUrl: string | null;
   department: string | null;
   phone: string | null;
+  street: string | null;
+  postalCode: string | null;
+  city: string | null;
   isActive: boolean;
   emailVerifiedAt: string | null;
   lastLoginAt: string | null;
@@ -24,6 +28,7 @@ export interface CurrentUser {
   twoFactorEnabled: boolean;
   twoFactorEnabledAt: string | null;
   failedLoginAttempts: number;
+  deletedAt: string | null;
   anonymizedAt: string | null;
   createdAt: string;
   roles: UserRoleRef[];
@@ -200,6 +205,7 @@ export interface NavigationItemNode {
   id: string;
   label: string;
   externalUrl: string | null;
+  openInNewTab: boolean;
   contentId: string | null;
   content: { id: string; title: string; slug: string; status: ContentStatus } | null;
   sortOrder: number;
@@ -257,6 +263,8 @@ export function getUsers(params?: {
   pageSize?: number;
   roleId?: string;
   isActive?: boolean;
+  anonymized?: boolean;
+  deleted?: boolean;
   q?: string;
 }) {
   const search = new URLSearchParams();
@@ -264,6 +272,8 @@ export function getUsers(params?: {
   if (params?.pageSize) search.set("pageSize", String(params.pageSize));
   if (params?.roleId) search.set("roleId", params.roleId);
   if (params?.isActive !== undefined) search.set("isActive", String(params.isActive));
+  if (params?.anonymized !== undefined) search.set("anonymized", String(params.anonymized));
+  if (params?.deleted !== undefined) search.set("deleted", String(params.deleted));
   if (params?.q) search.set("q", params.q);
   const query = search.toString();
 
@@ -647,7 +657,7 @@ export interface PermissionDescriptor {
   resource: string;
   action: string;
   key: string;
-  category: "core" | "extensions" | "administration";
+  category: "core" | "extensions" | "administration" | "system";
 }
 
 export function getPermissionsCatalog() {
@@ -659,6 +669,7 @@ export interface AppSettings {
   allowRegistration: boolean;
   allowPasswordReset: boolean;
   allowEmailChange: boolean;
+  allowAdminEmailChange: boolean;
   requireAdminActivation: boolean;
   autosaveEnabled: boolean;
   mediaResponsiveVariantsEnabled: boolean;
@@ -692,6 +703,8 @@ export interface AppSettings {
   notifyPendingActivations: boolean;
   notifyFailedLogins: boolean;
   notifyPendingPasswordChanges: boolean;
+  notifyCompanyIncomplete: boolean;
+  notifyLegalDocuments: boolean;
   companyLogoUrl: string | null;
   companyName: string | null;
   companyStreet: string | null;
@@ -705,6 +718,7 @@ export interface AppSettings {
   companyRegisterNumber: string | null;
   companyVatId: string | null;
   companySupervisoryAuthority: string | null;
+  companyDisputeResolution: string | null;
   dpoIsExternal: boolean;
   dpoName: string | null;
   dpoCompany: string | null;
@@ -721,6 +735,15 @@ export interface AppSettings {
   retentionAccessLogMonths: number;
   retentionDeactivatedAccountsMonths: number;
   retentionTrashDays: number;
+  dsbFormSelfServiceDisclosure: boolean;
+  dsbFormStoreSubmissionIp: boolean;
+  dsrAutoAcknowledgeReceipt: boolean;
+  dsrDeadlineReminderEnabled: boolean;
+  notifyDeletionRequests: boolean;
+  notifyTrashExpiring: boolean;
+  sccTemplateMediaId: string | null;
+  /** Nur bei `getPublicSettings()` (GET /settings/public) vorhanden, nicht bei `getSettings()`. */
+  sccTemplateMedia?: { id: string; filename: string; url: string } | null;
   updatedAt: string;
 }
 
@@ -734,7 +757,7 @@ export interface CompanyLocation {
   postalCode: string | null;
   city: string | null;
   phone: string | null;
-  openingHours: string | null;
+  email: string | null;
   employeeCount: number | null;
   createdAt: string;
   updatedAt: string;
@@ -754,6 +777,74 @@ export interface CompanyChange {
 
 export function getCompanyChanges() {
   return apiFetch<CompanyChange[]>("/settings/company/changes");
+}
+
+// "Protokoll"-Tab unter Einstellungen (Nutzervorgabe, 2026-08-22: "baue
+// protokolierung"). Gleiches Muster wie CompanyChange, aber mit
+// tatsächlichem before/after statt nur wasEmpty (siehe SettingsService.
+// update()) und echter Pagination statt festem Limit.
+export interface SettingsChangeEntry {
+  id: string;
+  action: string;
+  metadata: { field: string; before: unknown; after: unknown } | null;
+  createdAt: string;
+  user: { id: string; firstName: string | null; lastName: string };
+}
+
+export interface SettingsChangesResponse {
+  items: SettingsChangeEntry[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
+export function getSettingsChanges(params?: {
+  page?: number;
+  pageSize?: number;
+}) {
+  return apiFetch<SettingsChangesResponse>(`/settings/changes${taxonomyQuery(params)}`);
+}
+
+// Eigener, engerer Endpoint für `company:read` (Nutzervorgabe, 2026-08-21:
+// "admin soll aber firma sehen können" – Administrator hat kein
+// `settings:*` mehr, aber weiterhin `company:*`, siehe
+// SettingsController.getCompany()). `CompanyFieldKey` ist dieselbe
+// geteilte Feldliste wie companyFields.ts.
+export type CompanySettings = Record<CompanyFieldKey, string>;
+
+export function getCompanySettings() {
+  return apiFetch<CompanySettings>("/settings/company");
+}
+
+// Eigener, engerer Endpoint für `privacy:read` statt `settings:read`
+// (Nutzer-Bugreport, 2026-08-21: "warum habe ich als admin keine
+// datenschutz zugriffsrechte, obwohl die rolle vergeben ist" – dieselbe
+// Kopplungs-Ursache wie bei company:*, siehe SettingsController.getPrivacy()).
+export type PrivacySettings = Pick<
+  AppSettings,
+  | "dpoIsExternal"
+  | "dpoName"
+  | "dpoCompany"
+  | "dpoEmail"
+  | "dpoPhone"
+  | "dpoAppointedAt"
+  | "dpoReportedAt"
+  | "dpoSupervisoryAuthority"
+  | "dpoLastContactAt"
+  | "dpoListInLegalTexts"
+  | "dpoNotifyOnIncident"
+  | "dpoMonthlyReportEnabled"
+  | "retentionFormSubmissionsDays"
+  | "retentionAccessLogMonths"
+  | "retentionDeactivatedAccountsMonths"
+  | "retentionTrashDays"
+  | "dsbFormSelfServiceDisclosure"
+  | "dsbFormStoreSubmissionIp"
+  | "dsrAutoAcknowledgeReceipt"
+  | "dsrDeadlineReminderEnabled"
+  | "sccTemplateMediaId"
+>;
+
+export function getPrivacySettings() {
+  return apiFetch<PrivacySettings>("/settings/privacy");
 }
 
 export function getSettings() {
@@ -819,14 +910,22 @@ export type DeletionRequestStatus =
   | "completed"
   | "rejected";
 
+export type DataSubjectRequestType = "deletion" | "access" | "rectification";
+
 export interface DeletionRequest {
   id: string;
+  dsrId: string;
+  type: DataSubjectRequestType;
   requesterName: string;
   requesterEmail: string;
   reason: string | null;
+  source: string | null;
+  affectedRecordsCount: number | null;
+  linkedUserId: string | null;
   status: DeletionRequestStatus;
   dueAt: string | null;
   completedAt: string | null;
+  reminderSentAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -835,11 +934,19 @@ export function getDeletionRequests() {
   return apiFetch<DeletionRequest[]>("/deletion-requests");
 }
 
+/** "Meine Daten" (Mein Konto → Sicherheit) – eigene, bereits gestellte
+ * Anfragen des aufrufenden Nutzers, keine `privacy:read`-Berechtigung
+ * nötig (Selbstbedienungs-Endpoint). */
+export function getMyDeletionRequests() {
+  return apiFetch<DeletionRequest[]>("/deletion-requests/self-service");
+}
+
 export interface ProcessingActivity {
   id: string;
   purpose: string;
   legalBasis: string | null;
   dataCategories: string | null;
+  retentionPeriod: string | null;
   recipients: string | null;
   createdAt: string;
   updatedAt: string;
@@ -855,6 +962,12 @@ export interface DataProcessor {
   purpose: string | null;
   hasContract: boolean;
   contractDate: string | null;
+  contractMediaId: string | null;
+  contractMedia: { id: string; filename: string; url: string; size: number } | null;
+  location: string | null;
+  complianceNote: string | null;
+  outsideEu: boolean;
+  contactEmail: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -873,6 +986,10 @@ export interface PrivacyIncident {
   severity: PrivacyIncidentSeverity;
   status: PrivacyIncidentStatus;
   occurredAt: string | null;
+  affectedCount: number | null;
+  authorityNotifiedAt: string | null;
+  subjectsNotifiedAt: string | null;
+  measuresDocumented: string | null;
   resolvedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -897,7 +1014,8 @@ export interface RetentionDeactivatedAccount {
   email: string;
   firstName: string | null;
   lastName: string;
-  deactivatedAt: string;
+  deletedAt: string;
+  overdue: boolean;
 }
 
 export function getRetentionDeactivatedAccountsDue() {
@@ -964,4 +1082,26 @@ export function getTrash(filter?: { type?: TrashType; q?: string }) {
   if (filter?.q) params.set("q", filter.q);
   const search = params.toString();
   return apiFetch<TrashListResult>(`/trash${search ? `?${search}` : ""}`);
+}
+
+export type NotificationCategory = "system" | "security" | "privacy" | "accounts";
+
+export interface AppNotification {
+  id: string;
+  category: NotificationCategory;
+  title: string;
+  description: string;
+  actorName: string | null;
+  isUrgent: boolean;
+  actionLabel: string | null;
+  actionUrl: string | null;
+  isRead: boolean;
+  readAt: string | null;
+  isResolved: boolean;
+  resolvedAt: string | null;
+  createdAt: string;
+}
+
+export function getNotifications() {
+  return apiFetch<AppNotification[]>("/notifications");
 }

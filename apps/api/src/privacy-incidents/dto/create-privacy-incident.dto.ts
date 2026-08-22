@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsISO8601, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
+import {
+  IsISO8601,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export const PRIVACY_INCIDENT_SEVERITIES = ['low', 'medium', 'high'] as const;
 export const PRIVACY_INCIDENT_STATUSES = ['open', 'resolved'] as const;
@@ -29,4 +37,15 @@ export class CreatePrivacyIncidentDto {
   @IsOptional()
   @IsISO8601()
   occurredAt?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  affectedCount?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  measuresDocumented?: string;
 }

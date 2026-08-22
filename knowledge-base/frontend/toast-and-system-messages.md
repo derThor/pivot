@@ -376,3 +376,152 @@ border border-[#E5E5E5] bg-transparent px-3 py-2 text-[12.5px]
 font-medium text-destructive hover:bg-destructive/5`) – jetzt exakt
 gleiche Höhe wie "Neue Codes generieren", nur mit rotem statt grauem
 Text/Rahmen.
+
+## Update 2026-08-19: Bestehende Seiten-Warnhinweise als 2 neue Kategorien nachgezogen + Standing Rule
+
+Neue, jetzt **9.** und **10.** Kategorie in `NotificationSettingsCard`/
+`system-messages/page.tsx`: **Unvollständige Firmendaten** und
+**Veraltete/fehlende Rechtstexte** – beide spiegeln 1:1 bereits
+bestehende Inline-Warnhinweise, die vorher nur auf ihrer jeweiligen
+Seite sichtbar waren (Firma-Seite "Vollständigkeit"-Kachel,
+Datenschutz-Seite "Rechtstexte brauchen Aufmerksamkeit"-Banner). Neue
+`AppSettings`-Felder `notifyCompanyIncomplete`/`notifyLegalDocuments`
+(gleiches `@default(true)`-Muster wie die 7 bestehenden `notify*`-
+Felder), neue Banner-Komponenten `CompanyIncompleteBanner`/
+`LegalDocumentsBanner` (`components/company-legal-banners.tsx`, Muster:
+`UserNotificationBanners` – Action-Button zurück zur Ursprungsseite).
+`Datenschutz`-Banner ist zusätzlich per `privacy:read`-Berechtigung
+gegated (analog zu `users:read` bei den Nutzer-Kategorien), Firma-Daten
+brauchen keine eigene Gate-Prüfung, da `companyName` etc. bereits Teil
+von `GET /settings/public` sind (keine sensiblen Zugangsdaten). Die
+`companyFields`-Liste (12 Feld-Keys) wurde aus `company-view.tsx` in
+eine geteilte Datei `lib/company-fields.ts` extrahiert, damit Firma-
+Seite und Systemnachrichten-Seite exakt dieselbe Vollständigkeits-
+Berechnung nutzen statt zweier potenziell divergierender Kopien.
+
+**Standing Rule (Nutzervorgabe, mit Nachdruck: "Merke, grundsätzlich
+sind solche Meldungen in Systembenachrichtigung zu setzen")**: Jeder
+künftige inline "etwas fehlt/ist überfällig"-Warnhinweis auf einer
+Dashboard-Seite muss ab sofort **von Anfang an** auch als Kategorie
+hier im zentralen Hub mitgeplant werden, nicht nachträglich. Siehe
+[[feedback_warnings_need_system_message]] in der persistenten
+Session-Memory für den Checklisten-Ablauf (Schema-Feld → Toggle-Zeile →
+Banner-Block).
+
+**Nachtrag, selbiger Tag: Glocken-Badge im Header zählte die 2 neuen
+Kategorien nicht mit** (Nutzer-Bugreport: "ich habe keine Zählung als
+Badge bei der Glocke mit den neuen Einträgen") – der Badge-Zähler in
+`dashboard/layout.tsx` (`systemMessageCount`, an `DashboardHeader`
+durchgereicht) ist eine **eigene, zweite Berechnung** parallel zu
+`system-messages/page.tsx`, nicht von dort abgeleitet – beim Hinzufügen
+einer neuen Kategorie müssen also **beide** Stellen angefasst werden.
+Ergänzt: `canViewLegalDocuments`-Gate (`privacy:read`) + `getLegalDocuments()`-
+Fetch, `companyFields`-Check direkt aus `settings` (kein Extra-Fetch
+nötig, da Firmenfelder bereits Teil von `GET /settings/public` sind).
+Beide zählen wie die bestehenden Kategorien als **1 pro aktiver
+Kategorie**, nicht pro einzelnem fehlendem Feld/veraltetem Dokument
+(anders als die lokalen Entwürfe, die einzeln gezählt werden, siehe
+`dashboard-header.tsx`-Kommentar oben). Per Playwright verifiziert:
+Badge zeigt "2" bei zwei gleichzeitig aktiven neuen Kategorien.
+
+**Weitere Nachträge, selbiger Tag (10. und 11. Kategorie):**
+`notifyDeletionRequests` ("Offene Betroffenenanfragen",
+`deletion-requests-banner.tsx`) und `notifyTrashExpiring`
+("Papierkorb-Einträge laufen ab", `trash-expiring-banner.tsx`) –
+beide diesmal von Anfang an inkl. Bell-Badge in `dashboard/layout.tsx`
+umgesetzt (Lehre aus dem Bugreport oben direkt angewendet). Beide
+Gates orientieren sich an bereits bestehenden Berechtigungsmustern:
+Betroffenenanfragen teilt sich `privacy:read` mit den Rechtstexten,
+Papierkorb braucht mindestens eine der sechs papierkorb-fähigen
+`:read`-Berechtigungen (`TRASH_READ_PERMISSIONS`-Konstante, deckt sich
+mit `TrashController.readableTypes()`).
+
+## Update 2026-08-21: Von zustandslosen Bannern zu einem echten Postfach (`/dashboard/system-messages` = "Benachrichtigungen")
+
+Grundlegender Umbau (Nutzervorgabe, 1:1 nach Bildvorlage: "setze
+systembenachrichtigungen genau wie auf dem screener um. die
+benachrichtigungen sollen nach tag geordnet werden. also heute, gestern
+und ältere"). Vorher: bei jedem Seitenaufruf live berechnete
+`SystemMessage`-Banner ohne echten Zustand (kein Gelesen/Ungelesen, keine
+Einzel-Einträge, kein Verlauf). Jetzt: neues, persistentes
+`Notification`-Modell pro Nutzer.
+
+**Zwei Rückfragen vor dem Bau geklärt** (Nutzerentscheidung):
+1. Echtes Postfach (neues DB-Modell) statt nur Optik nachbauen.
+2. "Freigaben" (Freigabe-Workflow) und "Kommentare" (Kommentare an
+   Entwürfen) – beides existiert in dieser App nicht als echtes Feature
+   (siehe ROADMAP 2b.9 "Workflow", bewusst offen) – **weglassen**, kein
+   erfundener Inhalt. Bei der Umsetzung stellte sich heraus, dass die
+   Bildvorlage noch mehr nicht-existente Features zeigte
+   ("Formulare"/Formular-Einsendungen – kein Formular-Modul vorhanden;
+   ein 2FA-losigkeit-Check pro Konto; eine Geo-Anomalie-Login-Erkennung;
+   eine "Zustellung"-Karte mit E-Mail/Ruhezeiten/Aufbewahrung – es gibt
+   keinen echten Mail-Versand für diese Kategorien) – dieselbe
+   "weglassen"-Entscheidung konsequent auch darauf angewendet, statt
+   erneut nachzufragen.
+
+**Datenmodell** (`packages/database/prisma/schema.prisma`,
+`model Notification`): `userId`, `category` (nur vier mit echter
+Datengrundlage: `system`/`security`/`privacy`/`accounts` – "accounts"
+ersetzt die aus der Vorlage übernommene, aber nicht existente
+"Formulare"-Kategorie, da "Wartende Freischaltungen" inhaltlich Konten
+betrifft, keine Formular-Einsendungen), `dedupeKey` (Dedupe-Schlüssel,
+z.B. `webhook-failure:<id>`), `title`/`description`/`actorName`
+(`null` = "System"), `isUrgent`, `actionLabel`/`actionUrl`,
+`isRead`/`readAt`, `isResolved`/`resolvedAt`.
+
+**`NotificationsService.sync()`** (`apps/api/src/notifications/`) prüft
+bei jedem `findAll()`-Aufruf dieselben Bedingungen, die vorher
+`system-messages/page.tsx` live berechnet hat (Wartungsmodus,
+Speicherquote, Webhook-Fehler pro Webhook, Papierkorb läuft ab,
+Firmendaten unvollständig, Rechtstexte veraltet, Betroffenenanfragen mit
+Frist in <2 Tagen, wartende Freischaltungen, auffällige Fehlversuche,
+anstehende Passwortwechsel) und legt für jede zutreffende Bedingung
+**genau einmal** eine Zeile an (`@@unique([userId, dedupeKey])` im
+Schema, `createMany` mit Existenz-Vorprüfung). Bereits gelesene/erledigte
+Zeilen werden dabei nie angefasst, auch wenn die Bedingung weiter
+zutrifft – "erledigt" wird ausschließlich durch Klick auf den
+Aktions-Button gesetzt (`markResolved()`), nicht automatisch beim
+Verschwinden der Bedingung. Dieselben Berechtigungs-Gates wie vorher
+(`users:read`/`privacy:read`/papierkorb-`:read`) filtern, welche
+Kandidaten für einen Nutzer überhaupt erzeugt werden.
+
+**Frontend** (`notifications-view.tsx`, ersetzt alle bisherigen
+Banner-Komponenten dieser Seite): 4 Statistik-Kacheln
+(Ungelesen/Dringend/Heute eingegangen/Erledigt heute – "Dringend" ersetzt
+die "Freigaben offen"-Kachel der Vorlage), Warnbanner bei offenen
+dringenden Meldungen mit "Nur diese zeigen"-Filter, "Nur
+ungelesen"-Schalter, nach Tag gruppierte Liste (Heute/Gestern/Älter,
+`dayGroup()` nach Kalendertag, nicht 24h-Fenster) mit Kategorien-Sidebar
+(Zähler pro Kategorie, klickbar zum Filtern). Zeilenklick markiert
+gelesen, Aktions-Button markiert zusätzlich erledigt und navigiert zur
+Zielseite (`render={<Link .../>}` + `onClick` fürs Erledigt-Markieren,
+gleiches Button-Muster wie an vielen anderen Stellen der App). "Regeln
+bearbeiten" verlinkt zu Einstellungen → Benachrichtigungen (dort leben
+weiterhin die `notify*`-Ein/Aus-Schalter je Kategorie, siehe
+settings-page-redesign.md – unverändert, `sync()` erzeugt für
+deaktivierte Kategorien gar nicht erst Kandidaten).
+
+**Bell-Badge** (`dashboard/layout.tsx`) zeigt jetzt den echten
+Ungelesen-Zähler aus `getNotifications()` statt der vorherigen, direkt in
+`layout.tsx` dupliziert berechneten Bedingungen – der komplette alte
+Berechnungsblock (sechs parallele Datenabfragen + verschachtelte
+`Number(...)`-Summen) konnte ersatzlos durch einen einzigen Aufruf
+ersetzt werden. Lokale Entwürfe (`notifyLocalDrafts`) bleiben bewusst
+**außerhalb** des neuen Postfachs (`dashboard-header.tsx`s
+`localDraftCount`-Merge unverändert) – rein browserlokale Daten
+(`localStorage`) können grundsätzlich nicht in ein serverseitig
+persistiertes Notification-Log einfließen, das Bell-Badge zählt sie
+weiterhin separat dazu, auf der Postfach-Seite selbst tauchen sie aber
+nicht mehr als Zeile auf (die alte `LocalDraftsSection`-Komponente wurde
+mit den anderen jetzt vollständig ungenutzten Banner-Komponenten
+gelöscht: `SystemMessagesEmptyState`, `TrashExpiringBanner`).
+
+Sidebar-Eintrag + Seitentitel/Breadcrumb von "Systemnachrichten" auf
+"Benachrichtigungen" umbenannt (URL `/dashboard/system-messages`
+bewusst unverändert gelassen, um keine bestehenden Links zu brechen).
+Berechtigungs-Gate auf dem Sidebar-Eintrag entfernt (`settings:read`) –
+das Postfach ist jetzt wie die Glocke selbst für jeden eingeloggten
+Nutzer erreichbar, auch wenn es für die meisten Rollen aktuell leer
+bleibt (alle vier Kategorien setzen mindestens eine Admin-Berechtigung
+voraus).

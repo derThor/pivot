@@ -26,6 +26,8 @@ const EMPTY_FORM = {
   severity: "low" as PrivacyIncidentSeverity,
   status: "open" as PrivacyIncidentStatus,
   occurredAt: "",
+  affectedCount: "",
+  measuresDocumented: "",
 };
 
 function toForm(row: PrivacyIncident) {
@@ -35,6 +37,8 @@ function toForm(row: PrivacyIncident) {
     severity: row.severity,
     status: row.status,
     occurredAt: row.occurredAt ? row.occurredAt.slice(0, 10) : "",
+    affectedCount: row.affectedCount != null ? String(row.affectedCount) : "",
+    measuresDocumented: row.measuresDocumented ?? "",
   };
 }
 
@@ -84,6 +88,9 @@ export function PrivacyIncidentDialog({
         status: form.status,
         occurredAt:
           form.occurredAt ? new Date(form.occurredAt).toISOString() : undefined,
+        affectedCount:
+          form.affectedCount.trim() ? Number(form.affectedCount) : undefined,
+        measuresDocumented: form.measuresDocumented || undefined,
       };
       const res = await fetch(
         isEdit ?
@@ -119,7 +126,7 @@ export function PrivacyIncidentDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
-            <Label htmlFor="pi-title">Titel</Label>
+            <Label htmlFor="pi-title" required>Titel</Label>
             <Input
               id="pi-title"
               autoFocus
@@ -179,7 +186,7 @@ export function PrivacyIncidentDialog({
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <Label htmlFor="pi-occurred">Datum</Label>
+              <Label htmlFor="pi-occurred">Bekannt geworden</Label>
               <Input
                 id="pi-occurred"
                 type="date"
@@ -189,6 +196,29 @@ export function PrivacyIncidentDialog({
                 }
               />
             </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="pi-affected-count">Betroffene</Label>
+            <Input
+              id="pi-affected-count"
+              type="number"
+              min={0}
+              value={form.affectedCount}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, affectedCount: e.target.value }))
+              }
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="pi-measures">Ergriffene Maßnahmen</Label>
+            <Textarea
+              id="pi-measures"
+              rows={3}
+              value={form.measuresDocumented}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, measuresDocumented: e.target.value }))
+              }
+            />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>

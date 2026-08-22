@@ -128,6 +128,32 @@ beiden Seiten.
   gesperrt ... kann nicht mehr wiederhergestellt werden – keine
   automatische Löschung").
 
+## Nachtrag 2026-08-19: Lösch-Dialoge sagen jetzt korrekt "Papierkorb" statt "kann nicht rückgängig gemacht werden"
+
+Nutzer-Bugreport: die `ConfirmDeleteDialog`-Texte für die 6
+papierkorb-fähigen Typen (Seiten/Medien/Kategorien/Tags/Galerien/FAQs)
+stammten noch aus der Zeit vor dem Papierkorb-Umbau und behaupteten
+fälschlich "kann nicht rückgängig gemacht werden" – obwohl das Löschen
+seitdem nur noch in den Papierkorb verschiebt. In
+`content-row-actions.tsx`, `media-detail-panel.tsx`, `tags-manager.tsx`,
+`taxonomy-manager.tsx` (Einzel + Sammel-Löschung über
+`SelectionToolbar`), `gallery-grid.tsx`, `faq-groups-manager.tsx`
+(nur die Gruppe, nicht die Einzel-Frage – die liegt als JSON-Eintrag
+in `GlobalModule.values`, nicht papierkorb-fähig) und
+`global-modules-manager.tsx` (Einzel + Sammel) auf "Wird in den
+Papierkorb verschoben und kann von dort wiederhergestellt werden."
+umgestellt. `folder-tile-menu.tsx` hatte zusätzlich einen **sachlich
+falschen** Text ("Medien werden unwiderruflich mitgelöscht") – der
+Ordner selbst ist zwar nicht papierkorb-fähig, die darin enthaltenen
+Medien aber schon (`MediaFoldersService.removeRecursive()` ruft
+`MediaService.remove()` pro Datei auf, das ist Soft-Delete) – Text
+korrigiert, um beides klar zu trennen. **Bewusst unverändert**
+gelassen, wo die Aussage stimmt: Firma-Standorte, Content-Versionen,
+Menüs, Vorschau-Links, alle Datenschutz-CRUD-Tabs, Rollen, Benutzer-
+Anonymisierung, Webhooks, sowie jede Aktion innerhalb des Papierkorbs
+selbst (dort *ist* es tatsächlich endgültig) – keiner dieser Typen ist
+papierkorb-fähig bzw. der Papierkorb selbst meint "endgültig" wörtlich.
+
 ## Judgment Calls
 
 - **"Belegter Speicher"** zeigt nur die Summe der Medien-Dateigrößen

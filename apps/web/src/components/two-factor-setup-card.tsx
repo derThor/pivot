@@ -254,7 +254,7 @@ export function TwoFactorSetupCard({
                   </p>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <Label htmlFor="setup-code">Bestätigungscode</Label>
+                  <Label htmlFor="setup-code" required>Bestätigungscode</Label>
                   <Input
                     id="setup-code"
                     inputMode="numeric"
@@ -328,7 +328,7 @@ export function TwoFactorSetupCard({
           </DialogHeader>
           <form onSubmit={confirmDisable} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <Label htmlFor="disable-password">Passwort bestätigen</Label>
+              <Label htmlFor="disable-password" required>Passwort bestätigen</Label>
               <PasswordInput
                 id="disable-password"
                 autoFocus

@@ -3,32 +3,93 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SwitchRow } from "@/components/switch-row";
 import type { AppSettings } from "@/lib/api-server";
 
 type NotifyKey =
   | "notifyMaintenanceMode"
   | "notifyStorageQuota"
   | "notifyWebhookFailures"
-  | "notifyLocalDrafts"
   | "notifyPendingActivations"
   | "notifyFailedLogins"
-  | "notifyPendingPasswordChanges";
+  | "notifyPendingPasswordChanges"
+  | "notifyCompanyIncomplete"
+  | "notifyLegalDocuments"
+  | "notifyDeletionRequests"
+  | "notifyTrashExpiring";
 
-const ROWS: { key: NotifyKey; label: string }[] = [
-  { key: "notifyMaintenanceMode", label: "Wartungsmodus" },
-  { key: "notifyStorageQuota", label: "Speicherplatz fast voll" },
-  { key: "notifyWebhookFailures", label: "Fehlschlagende Webhooks" },
-  { key: "notifyLocalDrafts", label: "Nicht gespeicherte Entwürfe" },
-  { key: "notifyPendingActivations", label: "Wartende Freischaltungen" },
-  { key: "notifyFailedLogins", label: "Auffällige Fehlversuche" },
-  { key: "notifyPendingPasswordChanges", label: "Anstehende Passwortwechsel" },
+const ROWS: { key: NotifyKey; label: string; description: string }[] = [
+  {
+    key: "notifyMaintenanceMode",
+    label: "Wartungsmodus",
+    description: "Zeigt einen Hinweis im Dashboard, dass die Website aktuell im Wartungsmodus ist.",
+  },
+  {
+    key: "notifyStorageQuota",
+    label: "Speicherplatz fast voll",
+    description: "Warnt, wenn das Speicherkontingent für Medien fast ausgeschöpft ist.",
+  },
+  {
+    key: "notifyWebhookFailures",
+    label: "Fehlschlagende Webhooks",
+    description: "Warnt, wenn ein Webhook wiederholt fehlschlägt.",
+  },
+  {
+    key: "notifyPendingActivations",
+    label: "Wartende Freischaltungen",
+    description: "Zeigt an, wenn neu registrierte Konten auf eine Admin-Freischaltung warten.",
+  },
+  {
+    key: "notifyFailedLogins",
+    label: "Auffällige Fehlversuche",
+    description: "Warnt bei auffällig vielen fehlgeschlagenen Login-Versuchen in Folge.",
+  },
+  {
+    key: "notifyPendingPasswordChanges",
+    label: "Anstehende Passwortwechsel",
+    description: "Weist auf Konten hin, deren Passwort in Kürze abläuft.",
+  },
+  {
+    key: "notifyCompanyIncomplete",
+    label: "Unvollständige Firmendaten",
+    description: "Weist auf fehlende Pflichtangaben in den Firmen-Stammdaten hin.",
+  },
+  {
+    key: "notifyLegalDocuments",
+    label: "Veraltete/fehlende Rechtstexte",
+    description: "Weist auf veraltete oder fehlende Rechtstexte hin.",
+  },
+  {
+    key: "notifyDeletionRequests",
+    label: "Offene Betroffenenanfragen",
+    description: "Zeigt offene DSGVO-Anfragen (Löschung/Auskunft/Berichtigung) an.",
+  },
+  {
+    key: "notifyTrashExpiring",
+    label: "Papierkorb-Einträge laufen ab",
+    description: "Warnt, wenn Papierkorb-Einträge bald für die Wiederherstellung gesperrt werden.",
+  },
 ];
 
-// Ein-/Ausschalter je Systembenachrichtigung-Kategorie (Nutzervorgabe,
-// 2026-08-16) – schaltet nur, OB die Kategorie als Banner/Glocken-Zähler
-// auftaucht, nicht den zugrunde liegenden Zustand selbst (z.B. bleibt der
-// Wartungsmodus aktiv, auch wenn die Benachrichtigung dazu ausgeblendet ist).
+/** Ein-/Ausschalter je Systembenachrichtigung-Kategorie (Nutzervorgabe,
+ * 2026-08-16) – schaltet nur, OB die Kategorie als Banner/Glocken-Zähler
+ * auftaucht, nicht den zugrunde liegenden Zustand selbst (z.B. bleibt der
+ * Wartungsmodus aktiv, auch wenn die Benachrichtigung dazu ausgeblendet
+ * ist). Bewusst weiterhin Instant-Save je Zeile statt Teil des großen
+ * Speichern/Verwerfen-Formulars in `settings-form.tsx` (Nutzervorgabe,
+ * 2026-08-21: von Systemnachrichten hierher verschoben, Instant-Save-
+ * Verhalten dabei unverändert übernommen).
+ *
+ * `notifyLocalDrafts` bewusst NICHT mehr hier gelistet (Nutzer-Bugreport,
+ * gleicher Tag: Glocke zeigte mehr an als das Postfach enthielt) – das
+ * Feld wirkt seit dem Umbau auf ein echtes, serverseitiges Postfach
+ * (siehe toast-and-system-messages.md) nirgends mehr: lokale Entwürfe
+ * sind rein browserlokal und können nie eine `Notification`-Zeile werden,
+ * die Glocke zählt seither ausschließlich `Notification.isRead`. Der
+ * Schalter wäre hier wirkungslos gewesen. `AppSettings.notifyLocalDrafts`
+ * existiert als DB-Feld weiterhin (kein Migrationsschritt nötig), hat nur
+ * keinen Leser mehr. */
 export function NotificationSettingsCard({
   settings,
 }: {
@@ -54,23 +115,25 @@ export function NotificationSettingsCard({
   }
 
   return (
-    <div className="flex h-fit flex-col gap-1 rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6">
-      <h2 className="mb-2 font-semibold">Benachrichtigungen</h2>
-      <div className="flex flex-col divide-y divide-[#F0F0F0]">
+    <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+      <CardHeader>
+        <CardTitle>Benachrichtigungen</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Steuert, welche Systembenachrichtigungen im Dashboard erscheinen.
+        </p>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
         {ROWS.map((row) => (
-          <div
+          <SwitchRow
             key={row.key}
-            className="flex items-center justify-between gap-3 py-3"
-          >
-            <span className="text-sm">{row.label}</span>
-            <Switch
-              checked={values[row.key]}
-              disabled={pendingKey === row.key}
-              onCheckedChange={(next) => handleToggle(row.key, next)}
-            />
-          </div>
+            label={row.label}
+            description={row.description}
+            checked={values[row.key]}
+            disabled={pendingKey === row.key}
+            onCheckedChange={(next) => handleToggle(row.key, next)}
+          />
         ))}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
