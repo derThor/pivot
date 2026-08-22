@@ -1,56 +1,226 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
+import { PrismaService } from '../prisma/prisma.service';
+import { decryptSecret } from '../common/utils/secret-encryption';
 
+interface SmtpConfig {
+  host: string;
+  port: number;
+  username: string | null;
+  password: string | null;
+  fromAddress: string | null;
+  fromName: string | null;
+  secure: string;
+}
+
+interface MailAttachment {
+  filename: string;
+  content: string;
+  contentType: string;
+}
+
+/**
+ * Verschickt echte Mails über SMTP, sobald unter Einstellungen →
+ * Integrationen ein Dienst eingerichtet ist (Nutzervorgabe, 2026-08-22:
+ * "email versand bauen ... die bestehenden system-mails sollen dann echt
+ * verschickt werden"). Ohne Konfiguration (kein `smtpHost` gesetzt)
+ * bleibt der bisherige Dev-Stub-Fallback aktiv – reiner Logger-Eintrag,
+ * kein Absturz für Umgebungen ohne SMTP.
+ */
 @Injectable()
 export class MailerService {
   private readonly logger = new Logger(MailerService.name);
 
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
+  ) {}
+
+  private get encryptionKey(): string {
+    return this.config.getOrThrow<string>('TOTP_ENCRYPTION_KEY');
+  }
+
+  private async loadConfig(): Promise<SmtpConfig | null> {
+    const settings = await this.prisma.appSettings.findUnique({
+      where: { id: 1 },
+      select: {
+        smtpHost: true,
+        smtpPort: true,
+        smtpUsername: true,
+        smtpPasswordEncrypted: true,
+        smtpFromAddress: true,
+        smtpFromName: true,
+        smtpSecure: true,
+      },
+    });
+    if (!settings?.smtpHost) return null;
+    return {
+      host: settings.smtpHost,
+      port: settings.smtpPort ?? 587,
+      username: settings.smtpUsername,
+      password: settings.smtpPasswordEncrypted
+        ? decryptSecret(settings.smtpPasswordEncrypted, this.encryptionKey)
+        : null,
+      fromAddress: settings.smtpFromAddress,
+      fromName: settings.smtpFromName,
+      secure: settings.smtpSecure,
+    };
+  }
+
+  private buildTransport(cfg: SmtpConfig): Transporter {
+    return nodemailer.createTransport({
+      host: cfg.host,
+      port: cfg.port,
+      secure: cfg.secure === 'ssl',
+      requireTLS: cfg.secure === 'starttls',
+      auth: cfg.username
+        ? { user: cfg.username, pass: cfg.password ?? undefined }
+        : undefined,
+    });
+  }
+
+  /** "Einrichten"-Dialog, Button "Verbindung testen" (nach dem Speichern
+   * ausgelöst) – prüft die aktuell gespeicherte Konfiguration, ohne eine
+   * Mail zu verschicken. */
+  async testConnection(): Promise<{ ok: boolean; error?: string }> {
+    const cfg = await this.loadConfig();
+    if (!cfg) return { ok: false, error: 'Kein SMTP-Server hinterlegt.' };
+    try {
+      await this.buildTransport(cfg).verify();
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  }
+
+  /** "Einrichten"-Dialog, Button "Testmail senden" – verschickt eine
+   * echte Mail an die eigene Konto-Adresse des Pivot-Nutzers. */
+  async sendTestEmail(to: string): Promise<{ ok: boolean; error?: string }> {
+    const cfg = await this.loadConfig();
+    if (!cfg) return { ok: false, error: 'Kein SMTP-Server hinterlegt.' };
+    try {
+      await this.buildTransport(cfg).sendMail({
+        from: this.formatFrom(cfg),
+        to,
+        subject: 'Test-Mail von Pivot',
+        text: 'Diese Mail bestätigt, dass der E-Mail-Versand (SMTP) korrekt eingerichtet ist.',
+      });
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  }
+
+  private formatFrom(cfg: SmtpConfig): string {
+    const address = cfg.fromAddress ?? cfg.username ?? cfg.host;
+    return cfg.fromName ? `"${cfg.fromName}" <${address}>` : address;
+  }
+
+  private async deliver(
+    to: string,
+    subject: string,
+    text: string,
+    attachments?: MailAttachment[],
+  ): Promise<void> {
+    const cfg = await this.loadConfig();
+    if (!cfg) {
+      this.logger.log(`[Dev-Stub] "${subject}" an ${to}: ${text}`);
+      return;
+    }
+    try {
+      await this.buildTransport(cfg).sendMail({
+        from: this.formatFrom(cfg),
+        to,
+        subject,
+        text,
+        attachments,
+      });
+    } catch (err) {
+      this.logger.error(
+        `Mailversand an ${to} fehlgeschlagen ("${subject}"): ${(err as Error).message}`,
+      );
+    }
+  }
+
   async sendVerificationEmail(to: string, link: string): Promise<void> {
-    this.logger.log(`[Dev-Stub] Verifikations-Mail an ${to}: ${link}`);
+    await this.deliver(
+      to,
+      'Bestätige deine E-Mail-Adresse',
+      `Bitte bestätige deine E-Mail-Adresse über folgenden Link: ${link}`,
+    );
   }
 
   async sendPasswordResetEmail(to: string, link: string): Promise<void> {
-    this.logger.log(`[Dev-Stub] Passwort-Reset-Mail an ${to}: ${link}`);
+    await this.deliver(
+      to,
+      'Passwort zurücksetzen',
+      `Setze dein Passwort über folgenden Link zurück: ${link}`,
+    );
   }
 
   /** Datenschutzbeauftragter-Tab, Schalter "Bei jedem Vorfall automatisch
-   * benachrichtigen" (Nutzervorgabe, 2026-08-18). Dev-Stub wie alle
-   * System-Mails in dieser App – kein SMTP angebunden. */
+   * benachrichtigen" (Nutzervorgabe, 2026-08-18). */
   async sendDpoIncidentNotification(
     to: string,
     incident: { title: string; severity: string },
   ): Promise<void> {
-    this.logger.log(
-      `[Dev-Stub] Vorfall-Benachrichtigung an DSB ${to}: „${incident.title}“ (Schweregrad: ${incident.severity})`,
+    await this.deliver(
+      to,
+      `Neuer Datenschutzvorfall: ${incident.title}`,
+      `Es wurde ein neuer Datenschutzvorfall erfasst: „${incident.title}“ (Schweregrad: ${incident.severity}).`,
     );
   }
 
   /** Datenschutzbeauftragter-Tab, Schalter "Monatsbericht per E-Mail" –
    * ausgelöst vom Cron in PrivacyReportSchedulerService. */
   async sendDpoMonthlyReport(to: string, csv: string): Promise<void> {
-    this.logger.log(
-      `[Dev-Stub] Monatsbericht an DSB ${to} (${csv.split('\n').length - 1} Kennzahlen).`,
+    const rows = csv.split('\n').length - 1;
+    await this.deliver(
+      to,
+      'Monatsbericht Datenschutz',
+      `Im Anhang findest du den aktuellen Datenschutz-Monatsbericht (${rows} Kennzahlen).`,
+      [
+        {
+          filename: 'monatsbericht.csv',
+          content: csv,
+          contentType: 'text/csv; charset=utf-8',
+        },
+      ],
     );
   }
 
   /** "Auskunft senden" (Betroffenenrechte-Kachel, Art. 15 DSGVO,
    * Nutzervorgabe 2026-08-19) – nutzt die im Konto hinterlegte E-Mail-
-   * Adresse, kein separates Empfänger-Feld. Wie alle System-Mails hier
-   * nur ein Dev-Stub (kein SMTP angebunden). */
+   * Adresse, kein separates Empfänger-Feld. */
   async sendSubjectAccessReport(to: string, csv: string): Promise<void> {
-    this.logger.log(
-      `[Dev-Stub] Auskunft (Art. 15 DSGVO) an ${to} (${csv.split('\n').length - 1} Zeilen).`,
+    const rows = csv.split('\n').length - 1;
+    await this.deliver(
+      to,
+      'Ihre Auskunft nach Art. 15 DSGVO',
+      `Im Anhang finden Sie Ihre Auskunft nach Art. 15 DSGVO (${rows} Zeilen).`,
+      [
+        {
+          filename: 'auskunft.csv',
+          content: csv,
+          contentType: 'text/csv; charset=utf-8',
+        },
+      ],
     );
   }
 
   /** Betroffenenanfragen-Log, Schalter "Eingang automatisch bestätigen"
    * (Nutzervorgabe, 2026-08-19): Mail an den Absender direkt beim Anlegen
-   * einer neuen Anfrage. Dev-Stub wie jede Mail hier. */
+   * einer neuen Anfrage. */
   async sendDeletionRequestAcknowledgement(
     to: string,
     dsrId: string,
   ): Promise<void> {
-    this.logger.log(
-      `[Dev-Stub] Eingangsbestätigung für ${dsrId} an ${to}.`,
+    await this.deliver(
+      to,
+      'Eingang Ihrer Anfrage bestätigt',
+      `Wir haben Ihre Anfrage (${dsrId}) erhalten und bearbeiten sie zeitnah.`,
     );
   }
 
@@ -62,7 +232,7 @@ export class MailerService {
     dsrId: string,
     message: string,
   ): Promise<void> {
-    this.logger.log(`[Dev-Stub] Rückfrage zu ${dsrId} an ${to}: "${message}"`);
+    await this.deliver(to, `Rückfrage zu Ihrer Anfrage (${dsrId})`, message);
   }
 
   /** Betroffenenanfragen-Log, Schalter "Erinnerung 7 Tage vor Fristende"
@@ -73,8 +243,10 @@ export class MailerService {
     dsrId: string,
     dueAt: Date,
   ): Promise<void> {
-    this.logger.log(
-      `[Dev-Stub] Fristerinnerung für ${dsrId} (fällig ${dueAt.toISOString()}) an ${to}.`,
+    await this.deliver(
+      to,
+      `Frist läuft bald ab: Anfrage ${dsrId}`,
+      `Die Frist für die Anfrage ${dsrId} läuft am ${dueAt.toLocaleDateString('de-DE')} ab.`,
     );
   }
 
@@ -84,8 +256,10 @@ export class MailerService {
     to: string,
     processorName: string,
   ): Promise<void> {
-    this.logger.log(
-      `[Dev-Stub] AV-Vertrag-Anfrage für "${processorName}" an ${to}.`,
+    await this.deliver(
+      to,
+      'Anfrage AV-Vertrag',
+      `Wir bitten um Zusendung des Auftragsverarbeitungsvertrags für "${processorName}".`,
     );
   }
 }

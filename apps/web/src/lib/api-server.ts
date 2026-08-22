@@ -803,6 +803,25 @@ export function getSettingsChanges(params?: {
   return apiFetch<SettingsChangesResponse>(`/settings/changes${taxonomyQuery(params)}`);
 }
 
+// Einstellungen → Integrationen, Karte "Dienste" (Nutzervorgabe,
+// 2026-08-22: "email versand bauen ... als dienst"). Passwort kommt nie
+// mit, nur `hasPassword` (siehe SettingsService.getSmtpSettings()).
+export interface SmtpSettings {
+  host: string | null;
+  port: number | null;
+  username: string | null;
+  hasPassword: boolean;
+  fromAddress: string | null;
+  fromName: string | null;
+  secure: string;
+  verifiedAt: string | null;
+  configured: boolean;
+}
+
+export function getSmtpSettings() {
+  return apiFetch<SmtpSettings>("/settings/smtp");
+}
+
 // Eigener, engerer Endpoint für `company:read` (Nutzervorgabe, 2026-08-21:
 // "admin soll aber firma sehen können" – Administrator hat kein
 // `settings:*` mehr, aber weiterhin `company:*`, siehe

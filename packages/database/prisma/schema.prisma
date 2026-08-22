@@ -186,6 +186,24 @@ model AppSettings {
   // zum Download – kein erfundenes Rechtsmuster im Repo, echte Datei nötig.
   sccTemplateMediaId String?
   sccTemplateMedia   Media?  @relation(fields: [sccTemplateMediaId], references: [id])
+  // Einstellungen → Integrationen, Karte "Dienste" (Nutzervorgabe,
+  // 2026-08-22: "email versand bauen ... als dienst", 1:1 nach
+  // Bildvorlage "E-Mail-Versand (SMTP)"). smtpPasswordEncrypted nutzt
+  // denselben AES-256-GCM-Helfer wie TOTP-Secrets (siehe
+  // common/utils/secret-encryption.ts) statt Klartext-Speicherung.
+  // smtpVerifiedAt wird bei jeder Konfigurationsänderung zurückgesetzt
+  // und erst nach erfolgreichem Verbindungstest neu gesetzt – daraus
+  // leitet sich der "aktiv"/"offen"-Status in der UI ab, kein separates
+  // Status-Feld nötig.
+  smtpHost               String?
+  smtpPort               Int?
+  smtpUsername            String?
+  smtpPasswordEncrypted   String?
+  smtpFromAddress         String?
+  smtpFromName            String?
+  // "none" | "starttls" | "ssl"
+  smtpSecure              String  @default("starttls")
+  smtpVerifiedAt          DateTime?
   companyLogoUrl             String?
   companyName                String?
   companyStreet              String?

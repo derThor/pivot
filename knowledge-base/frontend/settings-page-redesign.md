@@ -211,8 +211,11 @@ bei den 13 Firma-Feldern zusammenkommen.
   Bildvorlage) mit drei Zeilen: Zugriffsprotokoll (CSV,
   `GET /settings/changes/export`, `text/csv` mit UTF-8-BOM wie beim
   DSGVO-Bericht), Einstellungen als JSON (`GET /settings/export`, gibt
-  das komplette `AppSettings`-Objekt ohne `id` zurück) – beide echt. Der
-  CSV-Export saß ursprünglich im Protokoll-Karten-Header, wurde aber auf
+  das komplette `AppSettings`-Objekt ohne `id` **und ohne
+  `smtpPasswordEncrypted`** zurück – Letzteres erst mit der SMTP-
+  Erweiterung unten relevant geworden, ein JSON-Export ist kein
+  vertrauenswürdiges Backup-Format) – beide echt. Der CSV-Export saß
+  ursprünglich im Protokoll-Karten-Header, wurde aber auf
   Nutzerkorrektur in diese eigene Karte verschoben. "Vollständiger
   Inhaltsexport" bleibt deaktiviert, da Formular-Einsendungen kein
   reales Feature dieser App sind.
@@ -225,6 +228,64 @@ bei den 13 Firma-Feldern zusammenkommen.
   `create()`/`update()` jetzt (wie schon `findAll()`) die
   `contractMedia`-Relation zurück, sonst blieb der Button nach
   Live-Änderungen ohne Neuladen fälschlich sichtbar/unsichtbar.
+
+## Update 2026-08-22: Integrationen → Dienste, echter E-Mail-Versand (SMTP)
+
+Nutzervorgabe: "lass uns jetzt email versand bauen unter einstellungen und
+integration die settings dafür als dienst" (1:1 nach Bildvorlage
+"Dienste"-Karte). Vorher versendete `MailerService` ausschließlich
+Dev-Stub-Logeinträge (kein SMTP angebunden) – jetzt echter Versand, sobald
+konfiguriert.
+
+- Berechtigung bewusst per Rückfrage geklärt statt geraten (siehe
+  [[feedback_ask_before_assigning_module_permissions]]): SMTP-Konfiguration
+  hängt an `settings:*`, genau wie Webhooks seit 2026-08-21 – kein neues
+  Recht `integrations:*`.
+- `AppSettings` bekommt sechs neue Felder (`smtpHost`, `smtpPort`,
+  `smtpUsername`, `smtpPasswordEncrypted`, `smtpFromAddress`,
+  `smtpFromName`, `smtpSecure`, `smtpVerifiedAt`). Passwort liegt
+  AES-256-GCM-verschlüsselt in der DB, nie im Klartext – der bisher
+  TOTP-spezifische Helfer `common/utils/totp-encryption.ts` wurde dafür in
+  `secret-encryption.ts` umbenannt und generisch gemacht
+  (`encryptSecret`/`decryptSecret` statt `...TotpSecret`), `TwoFactorService`
+  entsprechend angepasst. Gleicher Schlüssel `TOTP_ENCRYPTION_KEY` aus der
+  `.env` (kein neuer env-Wert nötig, Name historisch, Funktion generisch).
+- `smtpVerifiedAt` ist die einzige Statusquelle für "aktiv"/"offen" in der
+  UI: jede Konfigurationsänderung setzt es auf `null` zurück,
+  `SettingsService.updateSmtpSettings()` ruft direkt danach
+  `MailerService.testConnection()` (`nodemailer`-`transporter.verify()`)
+  auf und setzt bei Erfolg einen neuen Zeitstempel. Speichern schlägt bei
+  falschen Zugangsdaten NICHT fehl (Config wird trotzdem persistiert,
+  bleibt aber "offen") – der Fehler kommt als `testError` im PATCH-Response
+  zurück und wird im "Einrichten"-Dialog inline angezeigt (`SystemMessage`,
+  Variante `error`), damit man falsche Zugangsdaten nachträglich korrigieren
+  kann, ohne von vorn anzufangen.
+- Endpunkte: `GET/PATCH /settings/smtp` (Passwort im GET nie im Klartext,
+  nur `hasPassword: boolean` – leeres Passwortfeld beim Speichern = altes
+  Passwort behalten), `POST /settings/smtp/test-email` (schickt eine echte
+  Mail an die eigene Konto-Adresse, unabhängig vom automatischen Test beim
+  Speichern).
+- **"Ja, alle umstellen" (Nutzerentscheidung):** Alle 8 bestehenden
+  `MailerService`-Methoden (Verifikation, Passwort-Reset, DSB-Vorfall,
+  DSB-Monatsbericht, Auskunft Art. 15, Löschanfrage-Bestätigung/-Rückfrage/
+  -Fristerinnerung, AV-Vertrag-Anfrage) verschicken jetzt echte Mails über
+  den konfigurierten SMTP-Server (gleicher Textinhalt wie vorher im
+  Dev-Stub-Log, nur mit zusätzlichem Betreff; CSV-Berichte gehen als
+  Anhang statt nur als Zeilenzahl im Text). Ohne SMTP-Konfiguration bleibt
+  der Dev-Stub-Fallback (Logger-Eintrag) automatisch aktiv – kein Absturz,
+  kein Unterschied für Umgebungen ohne SMTP.
+- `settings-services-card.tsx` zeigt bewusst nur die eine echte Zeile
+  "E-Mail-Versand (SMTP)" – "Reichweiten-Messung", "Suche", "Backup-Ziel"
+  aus der Bildvorlage wurden NICHT ergänzt (kein Matomo/Such-Index/
+  Backup-Ziel-Feature im Repo, kein erfundener Inhalt). Lokaler
+  `useState` im Dialog-Ergebnis aktualisiert Badge/Button sofort ohne
+  `router.refresh()` (gleiches Live-Update-Prinzip wie beim
+  AV-Vertrag-Button).
+- Protokoll: SMTP-Änderungen erscheinen als "E-Mail-Versand (SMTP)
+  geändert" im "Protokoll"-Tab (`action: 'settings.smtp_updated'`,
+  `FIELD_LABELS.emailSmtp`) – bewusst ohne `before`/`after`-Werte in den
+  Metadaten (Host/Port sind nicht sensibel, aber ein eigener Diff lohnt
+  sich für ein einzelnes Dienst-Objekt nicht wie bei Einzelfeldern).
 
 ## Offene Punkte
 

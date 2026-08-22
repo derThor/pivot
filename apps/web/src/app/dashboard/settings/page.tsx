@@ -4,6 +4,7 @@ import {
   getMediaFolders,
   getSettings,
   getSettingsChanges,
+  getSmtpSettings,
   getWebhooks,
 } from "@/lib/api-server";
 
@@ -24,7 +25,7 @@ export default async function SettingsPage({
   // Eigener Query-Param `webhooksPage`/`protocolPage` statt `page`, damit
   // sich die Paginierungen der einzelnen Einstellungen-Abschnitte nicht
   // gegenseitig überschreiben.
-  const [webhooks, settingsChanges] = await Promise.all([
+  const [webhooks, settingsChanges, smtp] = await Promise.all([
     getWebhooks({
       page: webhooksPage,
       pageSize: settings?.defaultPageSize ?? 10,
@@ -33,6 +34,7 @@ export default async function SettingsPage({
       page: protocolPage,
       pageSize: settings?.defaultPageSize ?? 10,
     }),
+    getSmtpSettings(),
   ]);
   // Nach Namen filtern statt nur `isSystem`: seit dem "Avatare"-Systemordner
   // (Profilfoto-Upload, 2026-08-17) gibt es mehr als einen isSystem-Ordner.
@@ -63,6 +65,19 @@ export default async function SettingsPage({
       logoFolderId={logoFolderId}
       webhooks={webhooks}
       settingsChanges={settingsChanges}
+      smtp={
+        smtp ?? {
+          host: null,
+          port: null,
+          username: null,
+          hasPassword: false,
+          fromAddress: null,
+          fromName: null,
+          secure: "starttls",
+          verifiedAt: null,
+          configured: false,
+        }
+      }
     />
   );
 }

@@ -19,6 +19,8 @@ import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdatePrivacyDto } from './dto/update-privacy.dto';
 import { QuerySettingsChangesDto } from './dto/query-settings-changes.dto';
+import { UpdateSmtpSettingsDto } from './dto/update-smtp-settings.dto';
+import { MailerService } from '../mailer/mailer.service';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -32,6 +34,7 @@ export class SettingsController {
   constructor(
     private readonly settingsService: SettingsService,
     private readonly cache: CacheService,
+    private readonly mailer: MailerService,
     @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
   ) {}
@@ -161,6 +164,39 @@ export class SettingsController {
   @Delete('changes/:id')
   deleteSettingsChange(@Param('id') id: string) {
     return this.settingsService.deleteSettingsChange(id);
+  }
+
+  // Einstellungen → Integrationen, Karte "Dienste" (Nutzervorgabe,
+  // 2026-08-22: "email versand bauen ... als dienst", 1:1 nach
+  // Bildvorlage "E-Mail-Versand (SMTP)"). Gleiches Recht wie der Rest der
+  // allgemeinen Einstellungen (`settings:*`, Pivot-exklusiv wie
+  // Webhooks) – kein eigenes Recht, da Nutzervorgabe.
+  @ApiBearerAuth()
+  @RequirePermission('settings:read')
+  @Get('smtp')
+  getSmtpSettings() {
+    return this.settingsService.getSmtpSettings();
+  }
+
+  @ApiBearerAuth()
+  @RequirePermission('settings:update')
+  @Patch('smtp')
+  updateSmtpSettings(
+    @Body() dto: UpdateSmtpSettingsDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.settingsService.updateSmtpSettings(dto, user.sub);
+  }
+
+  // "Einrichten"-Dialog, Button "Testmail senden" – schickt eine echte
+  // Mail an die eigene Konto-Adresse des Pivot-Nutzers, unabhängig vom
+  // automatischen Verbindungstest beim Speichern.
+  @ApiBearerAuth()
+  @RequirePermission('settings:update')
+  @HttpCode(HttpStatus.OK)
+  @Post('smtp/test-email')
+  sendSmtpTestEmail(@CurrentUser() user: JwtPayload) {
+    return this.mailer.sendTestEmail(user.email);
   }
 
   // "Cache leeren" unter Einstellungen (Nutzervorgabe, 2026-08-16) – leert

@@ -35,11 +35,13 @@ import { SettingsExportCard } from "@/components/settings-export-card";
 import { WebhookDialog } from "@/components/webhook-dialog";
 import { WebhookFailureBanner } from "@/components/webhook-failure-banner";
 import { WebhooksManager } from "@/components/webhooks-manager";
+import { SettingsServicesCard } from "@/components/settings-services-card";
 import { PaginationControls } from "@/components/pagination-controls";
 import { cn } from "@/lib/utils";
 import type {
   AppSettings,
   SettingsChangesResponse,
+  SmtpSettings,
   WebhookListResponse,
 } from "@/lib/api-server";
 
@@ -167,11 +169,13 @@ export function SettingsForm({
   logoFolderId,
   webhooks,
   settingsChanges,
+  smtp,
 }: {
   settings: AppSettings;
   logoFolderId: string | null;
   webhooks: WebhookListResponse | null;
   settingsChanges: SettingsChangesResponse | null;
+  smtp: SmtpSettings;
 }) {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<SectionId>("access");
@@ -1067,10 +1071,13 @@ export function SettingsForm({
             )}
 
             {activeSection === "integrations" && (
-              <PlaceholderCard
-                title="Integrationen"
-                note="Eigene API-Schlüssel für externe Anwendungen sind in Vorbereitung und folgen in einem späteren Ausbauschritt."
-              />
+              <div className="flex flex-col gap-4">
+                <PlaceholderCard
+                  title="API-Schlüssel"
+                  note="Eigene API-Schlüssel für externe Anwendungen sind in Vorbereitung und folgen in einem späteren Ausbauschritt."
+                />
+                <SettingsServicesCard smtp={smtp} />
+              </div>
             )}
 
             {activeSection === "webhooks" && (

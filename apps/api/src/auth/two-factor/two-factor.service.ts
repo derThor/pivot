@@ -9,9 +9,9 @@ import * as QRCode from 'qrcode';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'node:crypto';
 import {
-  decryptTotpSecret,
-  encryptTotpSecret,
-} from '../../common/utils/totp-encryption';
+  decryptSecret as decryptSecretWithKey,
+  encryptSecret as encryptSecretWithKey,
+} from '../../common/utils/secret-encryption';
 
 const RECOVERY_CODE_COUNT = 10;
 const ISSUER = 'Pivot CMS';
@@ -32,11 +32,11 @@ export class TwoFactorService {
   }
 
   encryptSecret(secret: string): string {
-    return encryptTotpSecret(secret, this.encryptionKey);
+    return encryptSecretWithKey(secret, this.encryptionKey);
   }
 
   decryptSecret(encrypted: string): string {
-    return decryptTotpSecret(encrypted, this.encryptionKey);
+    return decryptSecretWithKey(encrypted, this.encryptionKey);
   }
 
   async buildQrCodeDataUrl(secret: string, email: string): Promise<string> {

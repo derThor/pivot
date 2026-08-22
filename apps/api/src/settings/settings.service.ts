@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { MailerService } from '../mailer/mailer.service';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdatePrivacyDto } from './dto/update-privacy.dto';
+import { UpdateSmtpSettingsDto } from './dto/update-smtp-settings.dto';
+import { encryptSecret } from '../common/utils/secret-encryption';
 
 function csvEscape(v: unknown): string {
   return `"${String(v).replace(/"/g, '""')}"`;
@@ -81,7 +85,13 @@ export class SettingsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLog: AuditLogService,
+    private readonly mailer: MailerService,
+    private readonly config: ConfigService,
   ) {}
+
+  private get encryptionKey(): string {
+    return this.config.getOrThrow<string>('TOTP_ENCRYPTION_KEY');
+  }
 
   async get() {
     return this.prisma.appSettings.upsert({
@@ -310,8 +320,12 @@ export class SettingsService {
   // CSV, keine Excel-Interpretation involviert.
   async exportSettingsJson() {
     const settings = await this.get();
-    const { id, ...rest } = settings;
+    // `smtpPasswordEncrypted` darf ein exportiertes JSON niemals verlassen
+    // (auch verschlüsselt nicht) – der Export ist zum manuellen Weitergeben
+    // gedacht, kein Backup-Format mit vertrauenswürdiger Aufbewahrung.
+    const { id, smtpPasswordEncrypted, ...rest } = settings;
     void id;
+    void smtpPasswordEncrypted;
     return rest;
   }
 
@@ -347,5 +361,73 @@ export class SettingsService {
         .join(',');
     });
     return CSV_BOM + [header, ...lines].join('\n');
+  }
+
+  // Einstellungen → Integrationen, Karte "Dienste" (Nutzervorgabe,
+  // 2026-08-22: "email versand bauen ... als dienst"). Passwort kommt nie
+  // im Klartext zurück, nur `hasPassword` – anders als bei den echten
+  // Formularfeldern (Firma/Datenschutz) gibt es hier kein "leeres Feld
+  // bedeutet nichts hinterlegt", ein Passwortfeld zeigt seinen Wert nie an.
+  async getSmtpSettings() {
+    const settings = await this.get();
+    return {
+      host: settings.smtpHost,
+      port: settings.smtpPort,
+      username: settings.smtpUsername,
+      hasPassword: !!settings.smtpPasswordEncrypted,
+      fromAddress: settings.smtpFromAddress,
+      fromName: settings.smtpFromName,
+      secure: settings.smtpSecure,
+      verifiedAt: settings.smtpVerifiedAt,
+      configured: !!settings.smtpHost,
+    };
+  }
+
+  async updateSmtpSettings(dto: UpdateSmtpSettingsDto, actingUserId: string) {
+    const existing = await this.get();
+    await this.prisma.appSettings.update({
+      where: { id: 1 },
+      data: {
+        smtpHost: dto.host,
+        smtpPort: dto.port,
+        smtpUsername: dto.username,
+        // Leer gelassen = bestehendes Passwort behalten (siehe
+        // UpdateSmtpSettingsDto) – nur bei tatsächlicher Eingabe
+        // überschreiben, sonst würde jedes Speichern ohne Passwortfeld das
+        // Konto stillschweigend aussperren.
+        ...(dto.password
+          ? {
+              smtpPasswordEncrypted: encryptSecret(
+                dto.password,
+                this.encryptionKey,
+              ),
+            }
+          : {}),
+        smtpFromAddress: dto.fromAddress,
+        smtpFromName: dto.fromName,
+        ...(dto.secure ? { smtpSecure: dto.secure } : {}),
+        // Jede Konfigurationsänderung braucht einen neuen Verbindungstest,
+        // bevor der Dienst wieder als "aktiv" gilt.
+        smtpVerifiedAt: null,
+      },
+    });
+
+    await this.auditLog.record({
+      action: 'settings.smtp_updated',
+      entityType: SETTINGS_ENTITY_TYPE,
+      entityId: SETTINGS_ENTITY_ID,
+      userId: actingUserId,
+      metadata: { field: 'emailSmtp', wasConfigured: !!existing.smtpHost },
+    });
+
+    const test = await this.mailer.testConnection();
+    if (test.ok) {
+      await this.prisma.appSettings.update({
+        where: { id: 1 },
+        data: { smtpVerifiedAt: new Date() },
+      });
+    }
+
+    return { ...(await this.getSmtpSettings()), testError: test.error };
   }
 }
