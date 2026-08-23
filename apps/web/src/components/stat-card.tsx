@@ -14,7 +14,7 @@ export function StatCard({
   valueClassName?: string;
 }) {
   return (
-    <div className="rounded-xl border border-[#E5E5E5] bg-card p-4 shadow-sm">
+    <div className="rounded-xl bg-card p-4 shadow-sm">
       <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
         {label}
       </p>

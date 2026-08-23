@@ -108,7 +108,7 @@ export function AccountForm({
   }
 
   return (
-    <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+    <Card className="rounded-xl shadow-sm">
       <CardHeader>
         <CardTitle>Persönliche Angaben</CardTitle>
         <CardDescription>Deine Kontodaten.</CardDescription>

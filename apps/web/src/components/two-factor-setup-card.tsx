@@ -157,7 +157,7 @@ export function TwoFactorSetupCard({
 
   return (
     <>
-      <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+      <Card className="rounded-xl shadow-sm">
         <CardHeader>
           <CardTitle>Zwei-Faktor</CardTitle>
         </CardHeader>

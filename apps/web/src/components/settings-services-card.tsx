@@ -27,7 +27,7 @@ export function SettingsServicesCard({ smtp }: { smtp: SmtpSettings }) {
     : "Nicht eingerichtet";
 
   return (
-    <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+    <Card className="rounded-xl shadow-sm">
       <CardHeader>
         <CardTitle>Dienste</CardTitle>
       </CardHeader>

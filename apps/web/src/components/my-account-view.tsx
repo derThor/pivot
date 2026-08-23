@@ -143,7 +143,7 @@ export function MyAccountView({
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl bg-card shadow-sm p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Avatar size="lg" className="size-14">
             {user.avatarUrl && (
@@ -231,7 +231,7 @@ export function MyAccountView({
                 />
               </div>
               <div className="flex flex-col gap-4">
-                <div className="rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6">
+                <div className="rounded-xl bg-card shadow-sm p-6">
                   <h3 className="text-xs font-medium text-muted-foreground uppercase">
                     Meine Rolle
                   </h3>
@@ -243,7 +243,7 @@ export function MyAccountView({
                       "Änderungen an der eigenen Rolle sind nicht möglich."}
                   </p>
                 </div>
-                <div className="rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6">
+                <div className="rounded-xl bg-card shadow-sm p-6">
                   <h3 className="text-xs font-medium text-muted-foreground uppercase">
                     Diese Woche
                   </h3>
@@ -285,7 +285,7 @@ export function MyAccountView({
                   allowTwoFactor={allowTwoFactor}
                 />
               </div>
-              <div className="rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6">
+              <div className="rounded-xl bg-card shadow-sm p-6">
                 <h3 className="text-xs font-medium text-muted-foreground uppercase">
                   Meine Sitzungen
                 </h3>
@@ -352,7 +352,7 @@ export function MyAccountView({
           </TabsContent>
 
           <TabsContent value="display">
-            <div className="rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6">
+            <div className="rounded-xl bg-card shadow-sm p-6">
               <h2 className="font-semibold">Darstellung</h2>
               <p className="mt-2 text-sm text-muted-foreground">
                 Persönliche Anzeige-Einstellungen sind in Vorbereitung und
@@ -362,7 +362,7 @@ export function MyAccountView({
           </TabsContent>
 
           <TabsContent value="notifications">
-            <div className="rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6">
+            <div className="rounded-xl bg-card shadow-sm p-6">
               <h2 className="font-semibold">Benachrichtigungen</h2>
               <p className="mt-2 text-sm text-muted-foreground">
                 Persönliche Benachrichtigungs-Einstellungen sind in

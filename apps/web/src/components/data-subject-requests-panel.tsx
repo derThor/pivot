@@ -282,7 +282,7 @@ export function DataSubjectRequestsPanel({
 
   return (
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_360px]">
-      <div className="overflow-hidden rounded-xl border border-[#E5E5E5] bg-card shadow-sm">
+      <div className="overflow-hidden rounded-xl bg-card shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F0F0F0] px-4 py-3">
           <div className="flex items-center gap-3">
             <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -395,7 +395,7 @@ export function DataSubjectRequestsPanel({
 
       <div className="flex flex-col gap-4">
         {selected ? (
-          <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+          <Card className="rounded-xl shadow-sm">
             <CardHeader>
               <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                 Anfrage
@@ -460,12 +460,12 @@ export function DataSubjectRequestsPanel({
             </CardContent>
           </Card>
         ) : (
-          <div className="rounded-xl border border-[#E5E5E5] bg-card p-6 text-sm text-muted-foreground shadow-sm">
+          <div className="rounded-xl bg-card p-6 text-sm text-muted-foreground shadow-sm">
             Wähle links eine Anfrage aus oder lege eine neue an.
           </div>
         )}
 
-        <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+        <Card className="rounded-xl shadow-sm">
           <CardHeader>
             <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               Automatik

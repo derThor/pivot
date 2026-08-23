@@ -261,7 +261,7 @@ export function NotificationsView({
       </div>
 
       {urgentOpen.length > 0 && (
-        <div className="flex flex-col items-start gap-3 rounded-xl border border-[#E5E5E5] bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col items-start gap-3 rounded-xl bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600">
               <AlertTriangle className="size-[18px]" />
@@ -290,13 +290,13 @@ export function NotificationsView({
 
       <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-4">
-          <label className="inline-flex w-fit items-center gap-2 rounded-xl border border-[#E5E5E5] bg-card px-4 py-2.5 text-sm shadow-sm">
+          <label className="inline-flex w-fit items-center gap-2 rounded-xl bg-card px-4 py-2.5 text-sm shadow-sm">
             <Switch checked={onlyUnread} onCheckedChange={setOnlyUnread} />
             Nur ungelesen
           </label>
 
           {groups.length === 0 ? (
-            <div className="rounded-xl border border-[#E5E5E5] bg-card p-6 text-sm text-muted-foreground shadow-sm">
+            <div className="rounded-xl bg-card p-6 text-sm text-muted-foreground shadow-sm">
               Keine Benachrichtigungen.
             </div>
           ) : (
@@ -311,7 +311,7 @@ export function NotificationsView({
                     {group.items.length}
                   </span>
                 </div>
-                <div className="flex flex-col overflow-hidden rounded-xl border border-[#E5E5E5] bg-card shadow-sm">
+                <div className="flex flex-col overflow-hidden rounded-xl bg-card shadow-sm">
                   {group.items.map((n) => {
                     const Icon = CATEGORY_ICONS[n.category];
                     const time = formatRowTime(n.createdAt, group.key);
@@ -426,7 +426,7 @@ export function NotificationsView({
         </div>
 
         <div className="flex flex-col gap-4">
-          <div className="rounded-xl border border-[#E5E5E5] bg-card p-4 shadow-sm">
+          <div className="rounded-xl bg-card p-4 shadow-sm">
             <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               Kategorien
             </p>

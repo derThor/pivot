@@ -165,7 +165,7 @@ const SECTIONS: {
  * "Mein Konto") – kein erfundener Inhalt, nur ein ehrlicher Hinweis. */
 function PlaceholderCard({ title, note }: { title: string; note: string }) {
   return (
-    <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+    <Card className="rounded-xl shadow-sm">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
@@ -373,7 +373,7 @@ export function SettingsForm({
         {error && <p className="text-sm text-destructive">{error}</p>}
 
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-          <div className="overflow-hidden rounded-xl border border-[#E5E5E5] bg-card shadow-sm lg:w-80 lg:shrink-0">
+          <div className="overflow-hidden rounded-xl bg-card shadow-sm lg:w-80 lg:shrink-0">
             <div className="flex flex-col divide-y divide-[#F0F0F0]">
               {SECTIONS.map((section) => {
                 const isActive = section.id === activeSection;
@@ -416,7 +416,7 @@ export function SettingsForm({
 
           <div className="flex min-w-0 flex-1 flex-col gap-4">
             {activeSection === "access" && (
-              <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+              <Card className="rounded-xl shadow-sm">
                 <CardHeader>
                   <CardTitle>Zugriff & Funktionen</CardTitle>
                   <p className="text-sm text-muted-foreground">
@@ -605,7 +605,7 @@ export function SettingsForm({
 
             {activeSection === "security" && (
               <>
-                <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+                <Card className="rounded-xl shadow-sm">
                   <CardHeader>
                     <CardTitle>Passwort-Richtlinie</CardTitle>
                     <p className="text-sm text-muted-foreground">
@@ -734,7 +734,7 @@ export function SettingsForm({
                   </CardContent>
                 </Card>
 
-                <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+                <Card className="rounded-xl shadow-sm">
                   <CardHeader>
                     <CardTitle>Anmeldung</CardTitle>
                     <p className="text-sm text-muted-foreground">
@@ -879,7 +879,7 @@ export function SettingsForm({
 
             {activeSection === "display" && (
               <>
-                <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+                <Card className="rounded-xl shadow-sm">
                   <CardHeader>
                     <CardTitle>Marke</CardTitle>
                     <p className="text-sm text-muted-foreground">
@@ -996,7 +996,7 @@ export function SettingsForm({
                   </CardContent>
                 </Card>
 
-                <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+                <Card className="rounded-xl shadow-sm">
                   <CardHeader>
                     <CardTitle>Oberfläche</CardTitle>
                     <p className="text-sm text-muted-foreground">
@@ -1106,7 +1106,7 @@ export function SettingsForm({
             )}
 
             {activeSection === "webhooks" && (
-              <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+              <Card className="rounded-xl shadow-sm">
                 <CardHeader className="flex-row items-center justify-between">
                   <div>
                     <CardTitle>Webhooks</CardTitle>

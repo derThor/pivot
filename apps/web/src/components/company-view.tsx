@@ -162,7 +162,7 @@ export function CompanyView({
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <div className="flex flex-col gap-4 rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl bg-card shadow-sm p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Building2 className="size-5" />
@@ -221,7 +221,7 @@ export function CompanyView({
 
         <TabsContent value="stammdaten">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
-            <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+            <Card className="rounded-xl shadow-sm">
               <CardHeader>
                 <CardTitle>Firmenangaben</CardTitle>
                 <p className="text-sm text-muted-foreground">
@@ -249,7 +249,7 @@ export function CompanyView({
             </Card>
 
             <div className="flex flex-col gap-4">
-              <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+              <Card className="rounded-xl shadow-sm">
                 <CardHeader>
                   <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                     Vollständigkeit
@@ -287,7 +287,7 @@ export function CompanyView({
                 </CardContent>
               </Card>
 
-              <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+              <Card className="rounded-xl shadow-sm">
                 <CardHeader>
                   <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                     Letzte Änderungen
@@ -343,7 +343,7 @@ export function CompanyView({
 
         <TabsContent value="standorte">
           <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_360px]">
-            <div className="overflow-hidden rounded-xl border border-[#E5E5E5] bg-card shadow-sm">
+            <div className="overflow-hidden rounded-xl bg-card shadow-sm">
               {locations.length === 0 ? (
                 <div className="p-6 text-sm text-muted-foreground">
                   Noch keine Standorte angelegt.
@@ -432,7 +432,7 @@ export function CompanyView({
 
             <div className="flex flex-col gap-4">
               {selectedLocation ? (
-                <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+                <Card className="rounded-xl shadow-sm">
                   <CardHeader>
                     <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                       Standort
@@ -488,7 +488,7 @@ export function CompanyView({
                   </CardContent>
                 </Card>
               ) : (
-                <div className="rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6 text-sm text-muted-foreground">
+                <div className="rounded-xl bg-card shadow-sm p-6 text-sm text-muted-foreground">
                   Wähle links einen Standort aus oder lege einen neuen an.
                 </div>
               )}

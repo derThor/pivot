@@ -715,7 +715,7 @@ export function BlockEditorField({
           Lösung gegen abgeschnittene Schatten: Innenabstand, der dem
           Schatten Platz gibt, bevor der Container ihn kappt. */}
       <div className="flex w-full shrink-0 flex-col gap-3 self-start md:sticky md:top-4 md:max-h-[calc(100vh-2rem)] md:w-72 md:overflow-y-auto">
-        <div className="flex flex-col gap-3 rounded-xl border border-[#E5E5E5] bg-card p-4 shadow-sm">
+        <div className="flex flex-col gap-3 rounded-xl bg-card p-4 shadow-sm">
           <div className="relative shrink-0">
             <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input

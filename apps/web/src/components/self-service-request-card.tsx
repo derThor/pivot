@@ -116,7 +116,7 @@ export function SelfServiceRequestCard({
   }
 
   return (
-    <div className="rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6">
+    <div className="rounded-xl bg-card shadow-sm p-6">
       <h3 className="text-xs font-medium text-muted-foreground uppercase">
         Meine Daten
       </h3>

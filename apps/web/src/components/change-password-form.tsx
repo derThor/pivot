@@ -104,7 +104,7 @@ export function ChangePasswordForm({
   }
 
   return (
-    <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+    <Card className="rounded-xl shadow-sm">
       <CardHeader>
         <CardTitle>Passwort ändern</CardTitle>
         <CardDescription>

@@ -34,7 +34,7 @@ const statusClassName: Record<ContentStatus, string> = {
 
 export function ContentTable({ entries }: { entries: ContentListItem[] }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-[#E5E5E5] bg-card shadow-sm">
+    <div className="overflow-hidden rounded-xl bg-card shadow-sm">
       <Table>
         <TableHeader className="bg-background">
           <TableRow>

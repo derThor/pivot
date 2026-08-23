@@ -200,7 +200,7 @@ export function TrashView({
       </div>
 
       {stats.expiringSoonCount > 0 && (
-        <div className="flex flex-col items-start gap-3 rounded-xl border border-[#E5E5E5] bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:gap-4">
+        <div className="flex flex-col items-start gap-3 rounded-xl bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:gap-4">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600">
             <Clock className="size-[18px]" />
           </span>
@@ -266,7 +266,7 @@ export function TrashView({
           onDelete={handleBulkDelete}
           onClear={clear}
         />
-        <div className="overflow-hidden rounded-xl border border-[#E5E5E5] bg-card shadow-sm">
+        <div className="overflow-hidden rounded-xl bg-card shadow-sm">
           <Table>
             <TableHeader className="bg-background">
               <TableRow>

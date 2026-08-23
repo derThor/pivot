@@ -308,7 +308,7 @@ export function UserEditView({
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl bg-card shadow-sm p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Avatar size="lg" className="size-14">
             {user.avatarUrl && (
@@ -419,7 +419,7 @@ export function UserEditView({
           <TabsContent value="profil">
             <Form {...form}>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                <div className="flex flex-col gap-6 rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6 lg:col-span-2">
+                <div className="flex flex-col gap-6 rounded-xl bg-card shadow-sm p-6 lg:col-span-2">
                   <h2 className="font-semibold">Stammdaten</h2>
                   <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
                     <FormField
@@ -614,7 +614,7 @@ export function UserEditView({
                 </div>
 
                 <div className="flex flex-col gap-4">
-                  <div className="rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6">
+                  <div className="rounded-xl bg-card shadow-sm p-6">
                     <h3 className="text-xs font-medium text-muted-foreground uppercase">
                       Aktivität
                     </h3>
@@ -639,7 +639,7 @@ export function UserEditView({
                   </div>
 
                   {canDelete && !isSelf && (
-                    <div className="flex flex-col gap-3 rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6">
+                    <div className="flex flex-col gap-3 rounded-xl bg-card shadow-sm p-6">
                       <h3 className="font-semibold text-destructive">
                         Konto entfernen
                       </h3>
@@ -673,7 +673,7 @@ export function UserEditView({
             <Form {...form}>
               <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
                 <div className="flex flex-col gap-4 lg:col-span-2">
-                  <div className="flex flex-col gap-4 rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6">
+                  <div className="flex flex-col gap-4 rounded-xl bg-card shadow-sm p-6">
                     <h2 className="font-semibold">Anmeldung</h2>
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center justify-between rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
@@ -795,7 +795,7 @@ export function UserEditView({
                   </div>
                 </div>
 
-                <div className="h-fit rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6">
+                <div className="h-fit rounded-xl bg-card shadow-sm p-6">
                   <h3 className="text-xs font-medium text-muted-foreground uppercase">
                     Konto
                   </h3>
@@ -833,7 +833,7 @@ export function UserEditView({
           </TabsContent>
 
           <TabsContent value="aktivitaet">
-            <div className="rounded-xl border border-[#E5E5E5] bg-card shadow-sm p-6">
+            <div className="rounded-xl bg-card shadow-sm p-6">
               <h2 className="mb-4 font-semibold">Verlauf</h2>
               <UserActivityTimeline userId={user.id} initialData={activity} />
             </div>

@@ -92,7 +92,7 @@ export function RecentJobRunsCard({
   }
 
   return (
-    <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+    <Card className="rounded-xl shadow-sm">
       <CardHeader>
         <CardTitle>Letzte Läufe</CardTitle>
         <CardAction>

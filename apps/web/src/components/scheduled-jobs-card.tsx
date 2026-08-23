@@ -129,7 +129,7 @@ export function ScheduledJobsCard({
 
   return (
     <>
-      <Card className="rounded-xl border-[#E5E5E5] shadow-sm">
+      <Card className="rounded-xl shadow-sm">
         <CardHeader>
           <CardTitle>Geplante Aufgaben</CardTitle>
           <p className="text-sm text-muted-foreground">
