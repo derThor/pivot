@@ -407,6 +407,31 @@ Vorgabe-Beispieltext + Verlinkung auf eine Seite per Dropdown).
     zusätzliche Backend-Verknüpfung nötig (Nachteil: Link wird nicht
     automatisch aktualisiert, wenn die Zielseite später umbenannt wird).
 
+## Update 2026-08-23: Echter Feld-Name im Platzhalter-Tooltip
+
+Beim Mailing-Reiter zeigt der Tooltip über einem Platzhalter-Chip nun bei
+formulargebundenen Vorlagen (Admin-Benachrichtigung/Bestätigung) den
+echten Feld-Namen aus dem Formular-Builder statt eines generischen
+Textes ("Wert aus dem Formularfeld „feld_3“") – Nutzervorgabe, der
+generische Text sei "blöd".
+
+- **`formFieldLabels(fields)`** (neu, `mail-templates.catalog.ts`):
+  Feld-Id → Feld-Label aus `Form.fields`, analog zu
+  `formFieldPlaceholders()` (gleicher `section`-Ausschluss).
+- **`MailerService.listMailTemplates()`**: formulargebundene Items
+  bekommen jetzt zusätzlich `placeholderLabels: Record<string,string>`
+  (Feld-Labels + feste Einträge für `formName`/`submittedAt`).
+  System-Mail-Items haben `placeholderLabels` nicht gesetzt (`undefined`).
+- **Frontend (`mailing-settings-card.tsx`)**: `placeholderDescription()`
+  prüft jetzt zuerst `template.placeholderLabels?.[placeholder]`, dann
+  die feste `PLACEHOLDER_DESCRIPTIONS`-Tabelle (für die 9 System-Mail-
+  Platzhalter wie `link`/`dsrId`/`processorName`), erst danach der
+  generische Fallback-Text (der dadurch faktisch nur noch für
+  System-Mails mit unbekanntem Platzhalter greift).
+- Live gegen ein Testformular mit Datum-/Dropdown-/Radio-/Checkbox-/
+  Datenschutzhinweis-Feldern verifiziert: `placeholderLabels` liefert
+  korrekt z.B. `feld_2: "Datum"`, `feld_9: "Mehrfachauswahl"`.
+
 ## Offene Punkte / mögliche Folgearbeiten
 
 - Datei-Upload-Feldtyp (Backend-Katalog vorhanden, kein Upload-Handling).
