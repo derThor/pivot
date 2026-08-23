@@ -555,6 +555,7 @@ model User {
   deletedCategories    Category[]     @relation("CategoryDeletedBy")
   deletedTags          Tag[]          @relation("TagDeletedBy")
   deletedGlobalModules GlobalModule[] @relation("GlobalModuleDeletedBy")
+  deletedForms         Form[]         @relation("FormDeletedBy")
   createdPreviewTokens    ContentPreviewToken[]
   contentVersions         ContentVersion[]
   media                   Media[]                  @relation("MediaUploadedBy")
@@ -1126,4 +1127,104 @@ model Webhook {
   updatedAt            DateTime  @updatedAt
 
   @@map("webhooks")
+}
+
+// ---------- Formulare & Mailing ----------
+// Nutzervorgabe, 2026-08-23: "formulare als punkt links in der sidebar
+// bei inhalte ... unter mailing möchte ich die dazugehörenden
+// mailvorlagen ... das soll so kombiniert werden, das ich in den
+// formularen die entsprechende vorlage auswählen kann". Bewusst ein
+// eigenes, dediziertes Datenmodell statt Wiederverwendung von
+// GlobalModule/ModuleType (Basis von Galerie/FAQ) – dieses generische
+// System wurde für stark strukturierte, repeater-lastige Inhalte
+// bereits einmal verworfen (siehe knowledge-base/content/
+// faq-and-gallery-dedicated-pages.md) und kennt ohnehin kein
+// "viele Einsendungen zu einer Definition"-Konzept (nur 1 `values`-Json
+// pro Instanz, keine Kind-Tabelle).
+model Form {
+  id     String @id @default(cuid())
+  name   String
+  slug   String @unique
+  // draft | published | paused – Sidebar-Filterpills, Status-Badge.
+  status String @default("draft")
+  // [{ id, type, label, required, width, options? }] – `id` ist die
+  // stabile Feld-ID (= Platzhalter-Name in den Mail-Vorlagen dieses
+  // Formulars, z.B. {{name}}). `type` ∈ text/textarea/email/tel/number
+  // (Basis), select/radio/checkbox (Auswahl, mit `options`), date/file
+  // (Erweitert – "file" nur strukturell vorgesehen, kein Upload-Handling
+  // in dieser Ausbaustufe).
+  fields Json
+  // Welche Feld-`id` die Ziel-Adresse der Bestätigungsmail liefert;
+  // null = kein E-Mail-Feld vorhanden, Bestätigung technisch nicht
+  // möglich (siehe `sendConfirmation`).
+  emailFieldId     String?
+  sendConfirmation Boolean @default(false)
+  // Absenden-Button des öffentlichen Formulars (form-block-render.tsx).
+  submitButtonText  String  @default("Absenden")
+  submitButtonAlign String  @default("left") // left | center | right
+  // Optionale Weiterleitung nach erfolgreichem Absenden statt der
+  // eingebauten "Vielen Dank"-Meldung – leer = Standardmeldung bleibt.
+  redirectUrl String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("FormDeletedBy", fields: [deletedById], references: [id])
+
+  submissions   FormSubmission[]
+  mailTemplates MailTemplate[]
+
+  @@map("forms")
+}
+
+model FormSubmission {
+  id     String @id @default(cuid())
+  formId String
+  form   Form   @relation(fields: [formId], references: [id], onDelete: Cascade)
+  values Json
+  // Nur befüllt, wenn AppSettings.dsbFormStoreSubmissionIp aktiv ist –
+  // aktiviert erstmals diese bisher wirkungslose Datenschutz-Einstellung
+  // (siehe privacy-view.tsx, dort bislang als "vorgehalten, nicht
+  // funktional" dokumentiert).
+  submitterIp String?
+  // Basis für den "unbearbeitet"-Zähler in der Formulare-Übersicht,
+  // gleiches Prinzip wie Notification.isRead.
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([formId, createdAt])
+  @@map("form_submissions")
+}
+
+// Eine gemeinsame Tabelle für ALLE Mail-Vorlagen dieser App – die 11
+// bestehenden System-Mail-Auslöser (Verifikation, Passwort-Reset,
+// DSB-Mails, ...) UND die beiden formulargebundenen Vorlagen
+// (Admin-Benachrichtigung/Bestätigung) landen bewusst in derselben
+// Tabelle/Liste (Nutzervorgabe: unter Mailing zusammen bearbeitbar).
+// `key` = fester, im Code vergebener Schlüssel für System-Mails (z.B.
+// "auth.verify-email"), `formId`+`formKind` = für formulargebundene
+// Vorlagen. Genau eine der beiden Zuordnungen ist pro Zeile gesetzt.
+model MailTemplate {
+  id       String  @id @default(cuid())
+  key      String? @unique
+  formId   String?
+  form     Form?   @relation(fields: [formId], references: [id], onDelete: Cascade)
+  formKind String? // "admin_notification" | "confirmation"
+  subject  String
+  body     String
+  // "Versand aktiv"-Schalter pro Vorlage – gleiches Prinzip wie
+  // ScheduledJob.isPaused: deaktiviert überspringt den Versand beim
+  // nächsten Auslöser, statt etwas zu löschen.
+  enabled Boolean @default(true)
+  // Nur bei admin-gerichteten Mails mit editierbarem Empfänger gesetzt
+  // (z.B. Formular-Admin-Benachrichtigung). System-Mails mit
+  // kontextabhängigem Empfänger (Passwort-Reset geht an den
+  // anfragenden Nutzer, DSB-Mails an den DSB-Kontakt, ...) lassen das
+  // bewusst leer – kein editierbares Empfänger-Feld in der UI dafür.
+  recipientTo String?
+  updatedAt   DateTime @updatedAt
+
+  @@unique([formId, formKind])
+  @@map("mail_templates")
 }

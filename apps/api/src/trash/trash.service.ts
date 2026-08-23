@@ -5,6 +5,7 @@ import { MediaService } from '../media/media.service';
 import { CategoriesService } from '../categories/categories.service';
 import { TagsService } from '../tags/tags.service';
 import { GlobalModulesService } from '../global-modules/global-modules.service';
+import { FormsService } from '../forms/forms.service';
 import type { TrashType } from './trash.types';
 
 interface DeletedByRef {
@@ -69,6 +70,7 @@ export class TrashService {
     private readonly categories: CategoriesService,
     private readonly tags: TagsService,
     private readonly globalModules: GlobalModulesService,
+    private readonly forms: FormsService,
   ) {}
 
   private serviceFor(type: TrashType) {
@@ -84,26 +86,30 @@ export class TrashService {
       case 'gallery':
       case 'faq':
         return this.globalModules;
+      case 'forms':
+        return this.forms;
     }
   }
 
-  /** Sammelt alle sechs Papierkorb-Typen in eine gemeinsame Form. `types`
+  /** Sammelt alle sieben Papierkorb-Typen in eine gemeinsame Form. `types`
    * schränkt (falls gesetzt) auf die Typen ein, für die der Aufrufer
    * Lese-/Löschrechte hat – ohne diese Einschränkung würde z.B. ein Nutzer
    * mit nur `tags:read` auch fremde gelöschte Seiten/Medien sehen. */
   private async collect(types?: TrashType[]): Promise<TrashItem[]> {
     const wants = (type: TrashType) => !types || types.includes(type);
-    const [content, media, categories, tags, modules] = await Promise.all([
-      wants('content') ? this.content.findAllTrashed() : Promise.resolve([]),
-      wants('media') ? this.media.findAllTrashed() : Promise.resolve([]),
-      wants('categories')
-        ? this.categories.findAllTrashed()
-        : Promise.resolve([]),
-      wants('tags') ? this.tags.findAllTrashed() : Promise.resolve([]),
-      wants('gallery') || wants('faq')
-        ? this.globalModules.findTrashed()
-        : Promise.resolve([]),
-    ]);
+    const [content, media, categories, tags, modules, forms] =
+      await Promise.all([
+        wants('content') ? this.content.findAllTrashed() : Promise.resolve([]),
+        wants('media') ? this.media.findAllTrashed() : Promise.resolve([]),
+        wants('categories')
+          ? this.categories.findAllTrashed()
+          : Promise.resolve([]),
+        wants('tags') ? this.tags.findAllTrashed() : Promise.resolve([]),
+        wants('gallery') || wants('faq')
+          ? this.globalModules.findTrashed()
+          : Promise.resolve([]),
+        wants('forms') ? this.forms.findAllTrashed() : Promise.resolve([]),
+      ]);
 
     const items: TrashItem[] = [];
 
@@ -180,6 +186,27 @@ export class TrashService {
         subtitle: `${count} ${unit}`,
         deletedAt: gm.deletedAt as Date,
         deletedBy: gm.deletedBy,
+        sizeBytes: null,
+      });
+    }
+
+    for (const form of forms as Array<{
+      id: string;
+      name: string;
+      fields: unknown;
+      _count: { submissions: number };
+      deletedAt: Date | null;
+      deletedBy: DeletedByRef | null;
+    }>) {
+      const fieldCount = Array.isArray(form.fields) ? form.fields.length : 0;
+      const submissionCount = form._count.submissions;
+      items.push({
+        id: form.id,
+        type: 'forms',
+        title: form.name,
+        subtitle: `${fieldCount} ${fieldCount === 1 ? 'Feld' : 'Felder'} · ${submissionCount} ${submissionCount === 1 ? 'Einsendung' : 'Einsendungen'}`,
+        deletedAt: form.deletedAt as Date,
+        deletedBy: form.deletedBy,
         sizeBytes: null,
       });
     }

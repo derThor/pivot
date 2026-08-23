@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Clock,
+  ClipboardList,
   FileText,
   FolderTree,
   HelpCircle,
@@ -46,6 +47,7 @@ const TYPE_FILTERS: { value: TrashType | null; label: string }[] = [
   { value: "tags", label: "Tags" },
   { value: "gallery", label: "Galerien" },
   { value: "faq", label: "FAQs" },
+  { value: "forms", label: "Formulare" },
 ];
 
 const TYPE_LABELS: Record<TrashType, string> = {
@@ -55,6 +57,7 @@ const TYPE_LABELS: Record<TrashType, string> = {
   tags: "Tag",
   gallery: "Galerie",
   faq: "FAQ",
+  forms: "Formular",
 };
 
 // Farbschema pro Typ (Icon-Box + Badge neben dem Titel) – eigene, in sich
@@ -67,6 +70,7 @@ const TYPE_STYLES: Record<TrashType, { icon: typeof FileText; className: string 
   tags: { icon: TagIcon, className: "bg-purple-100 text-purple-700" },
   gallery: { icon: Images, className: "bg-green-100 text-green-700" },
   faq: { icon: HelpCircle, className: "bg-amber-100 text-amber-700" },
+  forms: { icon: ClipboardList, className: "bg-indigo-100 text-indigo-700" },
 };
 
 const dateFormatter = new Intl.DateTimeFormat("de-DE", {

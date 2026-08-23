@@ -1,9 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 import { PrismaService } from '../prisma/prisma.service';
 import { decryptSecret } from '../common/utils/secret-encryption';
+import {
+  SYSTEM_MAIL_TEMPLATES,
+  defaultFormTemplate,
+  formFieldPlaceholders,
+  type FormMailKind,
+} from './mail-templates.catalog';
 
 interface SmtpConfig {
   host: string;
@@ -21,13 +27,42 @@ interface MailAttachment {
   contentType: string;
 }
 
+interface RenderedMail {
+  subject: string;
+  text: string;
+}
+
+export interface MailTemplateListItem {
+  id: string;
+  category: 'auth' | 'privacy' | 'forms';
+  label: string;
+  subject: string;
+  body: string;
+  enabled: boolean;
+  recipientTo: string | null;
+  recipientEditable: boolean;
+  placeholders: string[];
+  isCustomized: boolean;
+  formId: string | null;
+}
+
+export interface UpdateMailTemplateInput {
+  subject?: string;
+  body?: string;
+  enabled?: boolean;
+  recipientTo?: string | null;
+}
+
 /**
  * Verschickt echte Mails über SMTP, sobald unter Einstellungen →
- * Integrationen ein Dienst eingerichtet ist (Nutzervorgabe, 2026-08-22:
- * "email versand bauen ... die bestehenden system-mails sollen dann echt
- * verschickt werden"). Ohne Konfiguration (kein `smtpHost` gesetzt)
- * bleibt der bisherige Dev-Stub-Fallback aktiv – reiner Logger-Eintrag,
- * kein Absturz für Umgebungen ohne SMTP.
+ * Integrationen ein Dienst eingerichtet ist. Ohne Konfiguration (kein
+ * `smtpHost` gesetzt) bleibt der Dev-Stub-Fallback aktiv – reiner
+ * Logger-Eintrag, kein Absturz für Umgebungen ohne SMTP.
+ *
+ * Seit 2026-08-23 (Formulare + Mailing) sind alle festen System-Mail-Texte
+ * über `MailTemplate` anpassbar (siehe mail-templates.catalog.ts) – ohne
+ * eigene DB-Zeile liefert `renderSystemTemplate()` exakt den bisherigen
+ * Standardtext zurück.
  */
 @Injectable()
 export class MailerService {
@@ -118,15 +153,50 @@ export class MailerService {
     return cfg.fromName ? `"${cfg.fromName}" <${address}>` : address;
   }
 
+  /** Fußzeile aus den echten Firma-Stammdaten (Verwaltung → Firma) –
+   * bewusst zentral hier statt pro Vorlage dupliziert. Ohne hinterlegten
+   * Firmennamen bleibt die Mail unverändert (kein erfundener Platzhalter-
+   * text). */
+  private async appendFooter(text: string): Promise<string> {
+    const settings = await this.prisma.appSettings.findUnique({
+      where: { id: 1 },
+      select: {
+        companyName: true,
+        companyStreet: true,
+        companyPostalCode: true,
+        companyCity: true,
+        companyEmail: true,
+        companyPhone: true,
+      },
+    });
+    if (!settings?.companyName) return text;
+    const addressLine = [
+      settings.companyStreet,
+      [settings.companyPostalCode, settings.companyCity]
+        .filter(Boolean)
+        .join(' '),
+    ]
+      .filter(Boolean)
+      .join(', ');
+    const contactLine = [settings.companyEmail, settings.companyPhone]
+      .filter(Boolean)
+      .join(' · ');
+    const footer = [settings.companyName, addressLine, contactLine]
+      .filter(Boolean)
+      .join('\n');
+    return `${text}\n\n---\n${footer}`;
+  }
+
   private async deliver(
     to: string,
     subject: string,
     text: string,
     attachments?: MailAttachment[],
   ): Promise<void> {
+    const fullText = await this.appendFooter(text);
     const cfg = await this.loadConfig();
     if (!cfg) {
-      this.logger.log(`[Dev-Stub] "${subject}" an ${to}: ${text}`);
+      this.logger.log(`[Dev-Stub] "${subject}" an ${to}: ${fullText}`);
       return;
     }
     try {
@@ -134,7 +204,7 @@ export class MailerService {
         from: this.formatFrom(cfg),
         to,
         subject,
-        text,
+        text: fullText,
         attachments,
       });
     } catch (err) {
@@ -144,89 +214,147 @@ export class MailerService {
     }
   }
 
-  async sendVerificationEmail(to: string, link: string): Promise<void> {
-    await this.deliver(
-      to,
-      'Bestätige deine E-Mail-Adresse',
-      `Bitte bestätige deine E-Mail-Adresse über folgenden Link: ${link}`,
+  private renderPlaceholders(
+    text: string,
+    vars: Record<string, string>,
+  ): string {
+    return text.replace(/\{\{(\w+)\}\}/g, (_match, key: string) =>
+      key in vars ? vars[key] : '',
     );
+  }
+
+  /** Lädt die aktuell gültige System-Vorlage (DB-Override oder
+   * Standardtext) und ersetzt die Platzhalter. `null` = Vorlage ist
+   * pausiert ("Versand aktiv" aus) – der Aufrufer überspringt den Versand
+   * dann kommentarlos, wie ein pausierter Job. */
+  private async renderSystemTemplate(
+    key: string,
+    vars: Record<string, string>,
+    options?: { ignoreEnabled?: boolean },
+  ): Promise<RenderedMail | null> {
+    const fallback = SYSTEM_MAIL_TEMPLATES.find((t) => t.key === key);
+    if (!fallback) {
+      throw new Error(`Unbekannter Mail-Vorlagen-Schlüssel: ${key}`);
+    }
+    const override = await this.prisma.mailTemplate.findUnique({
+      where: { key },
+    });
+    if (override && !override.enabled && !options?.ignoreEnabled) return null;
+    return {
+      subject: this.renderPlaceholders(
+        override?.subject ?? fallback.subject,
+        vars,
+      ),
+      text: this.renderPlaceholders(override?.body ?? fallback.body, vars),
+    };
+  }
+
+  private async renderFormTemplate(
+    formId: string,
+    kind: FormMailKind,
+    vars: Record<string, string>,
+    options?: { ignoreEnabled?: boolean },
+  ): Promise<RenderedMail | null> {
+    const form = await this.prisma.form.findUnique({ where: { id: formId } });
+    if (!form) return null;
+    const fallback = defaultFormTemplate(form, kind);
+    const override = await this.prisma.mailTemplate.findUnique({
+      where: { formId_formKind: { formId, formKind: kind } },
+    });
+    if (override && !override.enabled && !options?.ignoreEnabled) return null;
+    return {
+      subject: this.renderPlaceholders(
+        override?.subject ?? fallback.subject,
+        vars,
+      ),
+      text: this.renderPlaceholders(override?.body ?? fallback.body, vars),
+    };
+  }
+
+  async sendVerificationEmail(to: string, link: string): Promise<void> {
+    const rendered = await this.renderSystemTemplate('auth.verify-email', {
+      link,
+    });
+    if (!rendered) return;
+    await this.deliver(to, rendered.subject, rendered.text);
   }
 
   async sendPasswordResetEmail(to: string, link: string): Promise<void> {
-    await this.deliver(
-      to,
-      'Passwort zurücksetzen',
-      `Setze dein Passwort über folgenden Link zurück: ${link}`,
-    );
+    const rendered = await this.renderSystemTemplate('auth.password-reset', {
+      link,
+    });
+    if (!rendered) return;
+    await this.deliver(to, rendered.subject, rendered.text);
   }
 
   /** Datenschutzbeauftragter-Tab, Schalter "Bei jedem Vorfall automatisch
-   * benachrichtigen" (Nutzervorgabe, 2026-08-18). */
+   * benachrichtigen". */
   async sendDpoIncidentNotification(
     to: string,
     incident: { title: string; severity: string },
   ): Promise<void> {
-    await this.deliver(
-      to,
-      `Neuer Datenschutzvorfall: ${incident.title}`,
-      `Es wurde ein neuer Datenschutzvorfall erfasst: „${incident.title}“ (Schweregrad: ${incident.severity}).`,
+    const rendered = await this.renderSystemTemplate(
+      'privacy.dpo-incident-notification',
+      { title: incident.title, severity: incident.severity },
     );
+    if (!rendered) return;
+    await this.deliver(to, rendered.subject, rendered.text);
   }
 
   /** Datenschutzbeauftragter-Tab, Schalter "Monatsbericht per E-Mail" –
    * ausgelöst vom Cron in PrivacyReportSchedulerService. */
   async sendDpoMonthlyReport(to: string, csv: string): Promise<void> {
     const rows = csv.split('\n').length - 1;
-    await this.deliver(
-      to,
-      'Monatsbericht Datenschutz',
-      `Im Anhang findest du den aktuellen Datenschutz-Monatsbericht (${rows} Kennzahlen).`,
-      [
-        {
-          filename: 'monatsbericht.csv',
-          content: csv,
-          contentType: 'text/csv; charset=utf-8',
-        },
-      ],
+    const rendered = await this.renderSystemTemplate(
+      'privacy.dpo-monthly-report',
+      { rows: String(rows) },
     );
+    if (!rendered) return;
+    await this.deliver(to, rendered.subject, rendered.text, [
+      {
+        filename: 'monatsbericht.csv',
+        content: csv,
+        contentType: 'text/csv; charset=utf-8',
+      },
+    ]);
   }
 
-  /** "Auskunft senden" (Betroffenenrechte-Kachel, Art. 15 DSGVO,
-   * Nutzervorgabe 2026-08-19) – nutzt die im Konto hinterlegte E-Mail-
-   * Adresse, kein separates Empfänger-Feld. */
+  /** "Auskunft senden" (Betroffenenrechte-Kachel, Art. 15 DSGVO) – nutzt
+   * die im Konto hinterlegte E-Mail-Adresse, kein separates
+   * Empfänger-Feld. */
   async sendSubjectAccessReport(to: string, csv: string): Promise<void> {
     const rows = csv.split('\n').length - 1;
-    await this.deliver(
-      to,
-      'Ihre Auskunft nach Art. 15 DSGVO',
-      `Im Anhang finden Sie Ihre Auskunft nach Art. 15 DSGVO (${rows} Zeilen).`,
-      [
-        {
-          filename: 'auskunft.csv',
-          content: csv,
-          contentType: 'text/csv; charset=utf-8',
-        },
-      ],
+    const rendered = await this.renderSystemTemplate(
+      'privacy.subject-access-report',
+      { rows: String(rows) },
     );
+    if (!rendered) return;
+    await this.deliver(to, rendered.subject, rendered.text, [
+      {
+        filename: 'auskunft.csv',
+        content: csv,
+        contentType: 'text/csv; charset=utf-8',
+      },
+    ]);
   }
 
-  /** Betroffenenanfragen-Log, Schalter "Eingang automatisch bestätigen"
-   * (Nutzervorgabe, 2026-08-19): Mail an den Absender direkt beim Anlegen
-   * einer neuen Anfrage. */
+  /** Betroffenenanfragen-Log, Schalter "Eingang automatisch bestätigen":
+   * Mail an den Absender direkt beim Anlegen einer neuen Anfrage. */
   async sendDeletionRequestAcknowledgement(
     to: string,
     dsrId: string,
   ): Promise<void> {
-    await this.deliver(
-      to,
-      'Eingang Ihrer Anfrage bestätigt',
-      `Wir haben Ihre Anfrage (${dsrId}) erhalten und bearbeiten sie zeitnah.`,
+    const rendered = await this.renderSystemTemplate(
+      'privacy.deletion-request-acknowledgement',
+      { dsrId },
     );
+    if (!rendered) return;
+    await this.deliver(to, rendered.subject, rendered.text);
   }
 
   /** Betroffenenanfragen-Log, Button "Rückfrage an Absender" – der Admin
-   * formuliert die Rückfrage selbst im Popup (Nutzervorgabe, 2026-08-19),
-   * kein fester Textbaustein mehr. */
+   * formuliert die Rückfrage selbst im Popup, kein fester Textbaustein
+   * (daher keine Vorlage, siehe mail-templates.catalog.ts). */
   async sendDeletionRequestFollowUp(
     to: string,
     dsrId: string,
@@ -235,41 +363,39 @@ export class MailerService {
     await this.deliver(to, `Rückfrage zu Ihrer Anfrage (${dsrId})`, message);
   }
 
-  /** Betroffenenanfragen-Log, Schalter "Erinnerung 7 Tage vor Fristende"
-   * (Nutzervorgabe, 2026-08-19) – Mail an den Datenschutzbeauftragten,
-   * nicht an den Absender, damit intern rechtzeitig reagiert wird. */
+  /** Betroffenenanfragen-Log, Schalter "Erinnerung 7 Tage vor Fristende" –
+   * Mail an den Datenschutzbeauftragten, nicht an den Absender. */
   async sendDeletionRequestDeadlineReminder(
     to: string,
     dsrId: string,
     dueAt: Date,
   ): Promise<void> {
-    await this.deliver(
-      to,
-      `Frist läuft bald ab: Anfrage ${dsrId}`,
-      `Die Frist für die Anfrage ${dsrId} läuft am ${dueAt.toLocaleDateString('de-DE')} ab.`,
+    const rendered = await this.renderSystemTemplate(
+      'privacy.deletion-request-deadline-reminder',
+      { dsrId, dueAt: dueAt.toLocaleDateString('de-DE') },
     );
+    if (!rendered) return;
+    await this.deliver(to, rendered.subject, rendered.text);
   }
 
   /** Auftragsverarbeiter-Tab, Karte "Offene Punkte", Button "AV-Vertrag
-   * anfordern" (Nutzervorgabe, 2026-08-20). */
+   * anfordern". */
   async sendDataProcessorContractRequest(
     to: string,
     processorName: string,
   ): Promise<void> {
-    await this.deliver(
-      to,
-      'Anfrage AV-Vertrag',
-      `Wir bitten um Zusendung des Auftragsverarbeitungsvertrags für "${processorName}".`,
+    const rendered = await this.renderSystemTemplate(
+      'privacy.data-processor-contract-request',
+      { processorName },
     );
+    if (!rendered) return;
+    await this.deliver(to, rendered.subject, rendered.text);
   }
 
   /** Systembenachrichtigungen (Wartungsmodus, Speicherplatz, Webhooks
-   * usw.) an die gemeinsame Empfänger-Adresse (Nutzervorgabe, 2026-08-22:
-   * "wie stelle ich ein, dass die benachrichtigungen an eine bestimmte
-   * email gesendet werden" – "sofort bei jedem neuen Vorfall"). Aufrufer
-   * ist NotificationsService.sync(), das per NotificationEmailLog dafür
-   * sorgt, dass pro `dedupeKey` nur einmal gemailt wird, unabhängig davon,
-   * welcher Nutzer den auslösenden Sync-Lauf ausführt. */
+   * usw.) – Titel/Text kommen bereits fertig formuliert aus
+   * NotificationsService, daher keine Vorlage (siehe
+   * mail-templates.catalog.ts). */
   async sendSystemNotificationEmail(
     to: string,
     notification: {
@@ -291,7 +417,243 @@ export class MailerService {
     await this.deliver(to, notification.title, text);
   }
 
+  /** Formular-Baustein: Admin-Benachrichtigung nach jeder Einsendung. */
+  async sendFormAdminNotification(
+    form: { id: string; name: string },
+    to: string,
+    fieldValues: Record<string, string>,
+  ): Promise<void> {
+    const rendered = await this.renderFormTemplate(
+      form.id,
+      'admin_notification',
+      {
+        ...fieldValues,
+        formName: form.name,
+        submittedAt: new Date().toLocaleString('de-DE'),
+      },
+    );
+    if (!rendered) return;
+    await this.deliver(to, rendered.subject, rendered.text);
+  }
+
+  /** Formular-Baustein: Bestätigung an den Absender, nur wenn das
+   * Formular ein E-Mail-Feld hat und `sendConfirmation` aktiv ist (siehe
+   * FormsService.submit()). */
+  async sendFormConfirmation(
+    form: { id: string; name: string },
+    to: string,
+    fieldValues: Record<string, string>,
+  ): Promise<void> {
+    const rendered = await this.renderFormTemplate(form.id, 'confirmation', {
+      ...fieldValues,
+      formName: form.name,
+      submittedAt: new Date().toLocaleString('de-DE'),
+    });
+    if (!rendered) return;
+    await this.deliver(to, rendered.subject, rendered.text);
+  }
+
   private frontendOrigin(): string {
     return this.config.get<string>('CORS_ORIGIN', 'http://localhost:3000');
+  }
+
+  // ---------- Mailing (Einstellungen → Mailing) ----------
+  // Vereinheitlichte Liste aus System-Mails UND formulargebundenen
+  // Vorlagen (Nutzervorgabe: zusammen unter Mailing bearbeitbar). Die
+  // virtuelle Id ist entweder der feste `key` (System-Mails, enthält kein
+  // ":") oder `${formId}:${formKind}` (Formular-Vorlagen) – daran wird in
+  // updateMailTemplate()/resetMailTemplate()/sendMailTemplateTest()
+  // unterschieden.
+
+  private isFormTemplateId(id: string): boolean {
+    return id.includes(':');
+  }
+
+  private splitFormTemplateId(id: string): {
+    formId: string;
+    formKind: FormMailKind;
+  } {
+    const [formId, formKind] = id.split(':');
+    return { formId, formKind: formKind as FormMailKind };
+  }
+
+  async listMailTemplates(): Promise<MailTemplateListItem[]> {
+    const overrides = await this.prisma.mailTemplate.findMany();
+    const overrideByKey = new Map(
+      overrides.filter((o) => o.key).map((o) => [o.key as string, o]),
+    );
+    const overrideByForm = new Map(
+      overrides
+        .filter((o) => o.formId && o.formKind)
+        .map((o) => [`${o.formId}:${o.formKind}`, o]),
+    );
+
+    const systemItems: MailTemplateListItem[] = SYSTEM_MAIL_TEMPLATES.map(
+      (def) => {
+        const override = overrideByKey.get(def.key);
+        return {
+          id: def.key,
+          category: def.category,
+          label: def.label,
+          subject: override?.subject ?? def.subject,
+          body: override?.body ?? def.body,
+          enabled: override?.enabled ?? true,
+          recipientTo: def.recipientEditable
+            ? (override?.recipientTo ?? null)
+            : null,
+          recipientEditable: def.recipientEditable,
+          placeholders: def.placeholders,
+          isCustomized: Boolean(override),
+          formId: null,
+        };
+      },
+    );
+
+    const forms = await this.prisma.form.findMany({
+      where: { deletedAt: null },
+      select: { id: true, name: true, fields: true },
+      orderBy: { name: 'asc' },
+    });
+    const formItems: MailTemplateListItem[] = forms.flatMap((form) => {
+      const placeholders = [
+        ...formFieldPlaceholders(form.fields),
+        'formName',
+        'submittedAt',
+      ];
+      return (['admin_notification', 'confirmation'] as const).map((kind) => {
+        const virtualId = `${form.id}:${kind}`;
+        const override = overrideByForm.get(virtualId);
+        const fallback = defaultFormTemplate(form, kind);
+        return {
+          id: virtualId,
+          category: 'forms' as const,
+          label: `${form.name} – ${
+            kind === 'admin_notification'
+              ? 'Admin-Benachrichtigung'
+              : 'Bestätigung an Absender'
+          }`,
+          subject: override?.subject ?? fallback.subject,
+          body: override?.body ?? fallback.body,
+          enabled: override?.enabled ?? true,
+          recipientTo:
+            kind === 'admin_notification'
+              ? (override?.recipientTo ?? null)
+              : null,
+          recipientEditable: kind === 'admin_notification',
+          placeholders,
+          isCustomized: Boolean(override),
+          formId: form.id,
+        };
+      });
+    });
+
+    return [...systemItems, ...formItems];
+  }
+
+  async updateMailTemplate(id: string, dto: UpdateMailTemplateInput) {
+    if (this.isFormTemplateId(id)) {
+      const { formId, formKind } = this.splitFormTemplateId(id);
+      const form = await this.prisma.form.findUnique({
+        where: { id: formId },
+      });
+      if (!form) {
+        throw new NotFoundException(`Formular ${formId} nicht gefunden.`);
+      }
+      const fallback = defaultFormTemplate(form, formKind);
+      const recipientEditable = formKind === 'admin_notification';
+      return this.prisma.mailTemplate.upsert({
+        where: { formId_formKind: { formId, formKind } },
+        create: {
+          formId,
+          formKind,
+          subject: dto.subject ?? fallback.subject,
+          body: dto.body ?? fallback.body,
+          enabled: dto.enabled ?? true,
+          recipientTo: recipientEditable ? (dto.recipientTo ?? null) : null,
+        },
+        update: {
+          subject: dto.subject,
+          body: dto.body,
+          enabled: dto.enabled,
+          recipientTo: recipientEditable ? dto.recipientTo : undefined,
+        },
+      });
+    }
+
+    const fallback = SYSTEM_MAIL_TEMPLATES.find((t) => t.key === id);
+    if (!fallback) {
+      throw new NotFoundException(`Unbekannte Mail-Vorlage: ${id}`);
+    }
+    return this.prisma.mailTemplate.upsert({
+      where: { key: id },
+      create: {
+        key: id,
+        subject: dto.subject ?? fallback.subject,
+        body: dto.body ?? fallback.body,
+        enabled: dto.enabled ?? true,
+        recipientTo: fallback.recipientEditable
+          ? (dto.recipientTo ?? null)
+          : null,
+      },
+      update: {
+        subject: dto.subject,
+        body: dto.body,
+        enabled: dto.enabled,
+        recipientTo: fallback.recipientEditable ? dto.recipientTo : undefined,
+      },
+    });
+  }
+
+  /** "Auf Standard zurücksetzen" – löscht schlicht die DB-Zeile, danach
+   * greift wieder der Standardtext (siehe render*Template()). */
+  async resetMailTemplate(id: string): Promise<void> {
+    if (this.isFormTemplateId(id)) {
+      const { formId, formKind } = this.splitFormTemplateId(id);
+      await this.prisma.mailTemplate.deleteMany({
+        where: { formId, formKind },
+      });
+      return;
+    }
+    await this.prisma.mailTemplate.deleteMany({ where: { key: id } });
+  }
+
+  /** Vorlagen-Editor, Button "Testmail senden" – rendert mit Beispielwerten
+   * und verschickt unabhängig vom "Versand aktiv"-Schalter (der Nutzer
+   * will die Vorlage sehen, nicht den Pausenzustand testen). */
+  async sendMailTemplateTest(id: string, to: string): Promise<void> {
+    if (this.isFormTemplateId(id)) {
+      const { formId, formKind } = this.splitFormTemplateId(id);
+      const form = await this.prisma.form.findUnique({
+        where: { id: formId },
+      });
+      if (!form) {
+        throw new NotFoundException(`Formular ${formId} nicht gefunden.`);
+      }
+      const fields = formFieldPlaceholders(form.fields);
+      const vars = Object.fromEntries(
+        fields.map((id) => [id, `Beispielwert (${id})`]),
+      );
+      const rendered = await this.renderFormTemplate(formId, formKind, vars, {
+        ignoreEnabled: true,
+      });
+      if (rendered) {
+        await this.deliver(to, `[Test] ${rendered.subject}`, rendered.text);
+      }
+      return;
+    }
+
+    const def = SYSTEM_MAIL_TEMPLATES.find((t) => t.key === id);
+    if (!def) {
+      throw new NotFoundException(`Unbekannte Mail-Vorlage: ${id}`);
+    }
+    const vars = Object.fromEntries(
+      def.placeholders.map((p) => [p, `Beispielwert (${p})`]),
+    );
+    const rendered = await this.renderSystemTemplate(id, vars, {
+      ignoreEnabled: true,
+    });
+    if (rendered) {
+      await this.deliver(to, `[Test] ${rendered.subject}`, rendered.text);
+    }
   }
 }

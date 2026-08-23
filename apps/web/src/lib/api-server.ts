@@ -1117,7 +1117,8 @@ export type TrashType =
   | "categories"
   | "tags"
   | "gallery"
-  | "faq";
+  | "faq"
+  | "forms";
 
 export interface TrashItem {
   id: string;
@@ -1152,6 +1153,150 @@ export function getTrash(filter?: { type?: TrashType; q?: string }) {
   if (filter?.q) params.set("q", filter.q);
   const search = params.toString();
   return apiFetch<TrashListResult>(`/trash${search ? `?${search}` : ""}`);
+}
+
+// ---------- Formulare & Mailing ----------
+
+export type FormStatus = "draft" | "published" | "paused";
+
+export interface FormFieldOption {
+  id: string;
+  type: string;
+  label: string;
+  required: boolean;
+  /** Prozentuale Breite (10-100), siehe form-field.types.ts. */
+  width: number;
+  options?: string[];
+  /** Nur für "radio"/"checkbox" – Anordnung der Optionen. */
+  optionsLayout?: "vertical" | "horizontal";
+  helpText?: string;
+  /** `undefined`/`true` = Titel sichtbar. */
+  showLabel?: boolean;
+  /** Nur für "privacy_notice" – Verlinkung auf eine Content-Seite. */
+  privacyPageSlug?: string;
+  privacyPageTitle?: string;
+}
+
+export interface FormListItem {
+  id: string;
+  name: string;
+  slug: string;
+  status: FormStatus;
+  fields: FormFieldOption[];
+  emailFieldId: string | null;
+  sendConfirmation: boolean;
+  submitButtonText: string;
+  submitButtonAlign: "left" | "center" | "right";
+  redirectUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count: { submissions: number };
+  unreadSubmissions: number;
+}
+
+export interface FormListResponse {
+  items: FormListItem[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
+export interface FormDetail extends Omit<FormListItem, "_count" | "unreadSubmissions"> {
+  submissionCount: number;
+}
+
+export function getForms(params?: {
+  page?: number;
+  pageSize?: number;
+  status?: FormStatus;
+  q?: string;
+}) {
+  const search = new URLSearchParams();
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.pageSize) search.set("pageSize", String(params.pageSize));
+  if (params?.status) search.set("status", params.status);
+  if (params?.q) search.set("q", params.q);
+  const query = search.toString();
+  return apiFetch<FormListResponse>(`/forms${query ? `?${query}` : ""}`);
+}
+
+export function getForm(id: string) {
+  return apiFetch<FormDetail>(`/forms/${id}`);
+}
+
+export interface FormStats {
+  total: number;
+  published: number;
+  draft: number;
+  paused: number;
+  submissionsLast30Days: number;
+  unread: number;
+}
+
+export function getFormStats() {
+  return apiFetch<FormStats>("/forms/stats");
+}
+
+export interface FormSubmission {
+  id: string;
+  formId: string;
+  values: Record<string, unknown>;
+  submitterIp: string | null;
+  isRead: boolean;
+  createdAt: string;
+  form?: { id: string; name: string; slug: string; fields?: FormFieldOption[] };
+}
+
+export interface FormSubmissionListResponse {
+  items: FormSubmission[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
+export function getFormSubmissions(
+  formId: string,
+  params?: { page?: number; pageSize?: number; isRead?: boolean },
+) {
+  const search = new URLSearchParams();
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.pageSize) search.set("pageSize", String(params.pageSize));
+  if (params?.isRead !== undefined) search.set("isRead", String(params.isRead));
+  const query = search.toString();
+  return apiFetch<FormSubmissionListResponse>(
+    `/forms/${formId}/submissions${query ? `?${query}` : ""}`,
+  );
+}
+
+export function getAllFormSubmissions(params?: {
+  page?: number;
+  pageSize?: number;
+  isRead?: boolean;
+}) {
+  const search = new URLSearchParams();
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.pageSize) search.set("pageSize", String(params.pageSize));
+  if (params?.isRead !== undefined) search.set("isRead", String(params.isRead));
+  const query = search.toString();
+  return apiFetch<FormSubmissionListResponse>(
+    `/forms/submissions${query ? `?${query}` : ""}`,
+  );
+}
+
+export type MailTemplateCategory = "auth" | "privacy" | "forms";
+
+export interface MailTemplateListItem {
+  id: string;
+  category: MailTemplateCategory;
+  label: string;
+  subject: string;
+  body: string;
+  enabled: boolean;
+  recipientTo: string | null;
+  recipientEditable: boolean;
+  placeholders: string[];
+  isCustomized: boolean;
+  formId: string | null;
+}
+
+export function getMailTemplates() {
+  return apiFetch<MailTemplateListItem[]>("/settings/mail-templates");
 }
 
 export type NotificationCategory = "system" | "security" | "privacy" | "accounts";

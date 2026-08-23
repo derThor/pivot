@@ -299,13 +299,18 @@ tatsächlich). Details siehe
 
 ### 2b.10 – Formulare
 
-- [ ] Formular-Builder
-- [ ] Formular-Auswertungen
-- [ ] CSV-Export
-- [ ] Spam-Schutz (Captcha)
-- [ ] E-Mail-Benachrichtigungen
+- [x] Formular-Builder (`/dashboard/forms`, eigener Seiten-Designer-
+      Baustein, Mailing-Integration – siehe
+      `knowledge-base/content/forms.md`, 2026-08-23)
+- [ ] Formular-Auswertungen (Abschlussrate/Analytics bewusst
+      zurückgestellt, siehe forms.md "Bewusst nicht gebaut")
+- [ ] CSV-Export (Einsendungen)
+- [ ] Spam-Schutz (Captcha) – aktuell nur der app-weite `ThrottlerGuard`
+- [x] E-Mail-Benachrichtigungen (Admin-Benachrichtigung + Bestätigung an
+      Absender, über Mailing verwaltbar, 2026-08-23)
 - [ ] Webhook nach Formularversand
-- [ ] Individuelle Validierungen
+- [ ] Individuelle Validierungen (über Pflichtfeld hinaus)
+- [ ] Datei-Upload-Feldtyp (Katalog vorhanden, kein Upload-Handling)
 
 ### 2b.11 – Dateien & Downloads
 
@@ -630,11 +635,19 @@ bereits verdrahtete Mail-Auslöser + 2 UI-Platzhalter ohne Backend-Aufruf.
       Zieladresse frei wählbar – nach einem Bugreport korrigiert, ging
       anfangs fälschlich immer an die Konto-Adresse des Pivot-Nutzers
       statt an eine echte, vom Nutzer kontrollierte Adresse).
-- [ ] Echte HTML-Vorlagen (+ Text-Fallback) für jeden Auslöser – **alle
-      11 Auslöser verschicken jetzt echte Mails**, aber weiterhin als
-      reiner Text (gleicher Wortlaut wie vorher im Dev-Stub-Log, nur mit
-      zusätzlichem Betreff; CSV-Berichte gehen als Anhang statt nur als
-      Zeilenzahl im Text) – kein HTML-Layout:
+- [x] **Update 2026-08-23: Betreff+Text jeder System-Mail sind jetzt über
+      Einstellungen → Mailing editierbar** (siehe
+      [forms.md](../knowledge-base/content/forms.md)) – Platzhalter-Chips,
+      Testmail-Versand, Vorschau, "Auf Standard zurücksetzen", pro Vorlage
+      ein "Versand aktiv"-Schalter. **Weiterhin kein HTML-Layout** (reiner
+      Text wie bisher, nur jetzt anpassbar statt hart codiert) – "echte
+      HTML-Vorlagen" im ursprünglichen Sinn (Layout/Branding) bleibt offen,
+      siehe Bounce-Punkt unten. Zwei Auslöser bekamen bewusst KEINE Vorlage
+      (`sendDeletionRequestFollowUp`: Admin tippt frei, kein Standardtext;
+      `sendSystemNotificationEmail`: Text kommt bereits fertig aus
+      `NotificationsService`).
+- [x] Alle 11 Auslöser verschicken jetzt echte Mails (CSV-Berichte gehen
+      als Anhang statt nur als Zeilenzahl im Text):
   - [x] Konto-Verifikation nach Registrierung (`sendVerificationEmail`)
   - [x] Passwort-Reset, öffentliches Self-Service-Formular
         (`sendPasswordResetEmail` über `requestPasswordReset()`)

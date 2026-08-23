@@ -21,6 +21,7 @@ import { UpdatePrivacyDto } from './dto/update-privacy.dto';
 import { QuerySettingsChangesDto } from './dto/query-settings-changes.dto';
 import { UpdateSmtpSettingsDto } from './dto/update-smtp-settings.dto';
 import { SendSmtpTestEmailDto } from './dto/send-smtp-test-email.dto';
+import { UpdateMailTemplateDto } from './dto/update-mail-template.dto';
 import { MailerService } from '../mailer/mailer.service';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
 import { Public } from '../auth/decorators/public.decorator';
@@ -201,6 +202,48 @@ export class SettingsController {
   @Post('smtp/test-email')
   sendSmtpTestEmail(@Body() dto: SendSmtpTestEmailDto) {
     return this.mailer.sendTestEmail(dto.to);
+  }
+
+  // Mailing-Reiter (Nutzervorgabe, 2026-08-23: "unter mailing möchte ich
+  // die dazugehörenden mailvorlagen ... bearbeiten können ... auch
+  // systemmails ... mailing soll dann doch unter einstellungen kommen") –
+  // gleiches Recht wie der Rest der allgemeinen Einstellungen
+  // (Pivot-exklusiv), kein eigenes Recht.
+  @ApiBearerAuth()
+  @RequirePermission('settings:read')
+  @Get('mail-templates')
+  listMailTemplates() {
+    return this.mailer.listMailTemplates();
+  }
+
+  @ApiBearerAuth()
+  @RequirePermission('settings:update')
+  @Patch('mail-templates/:id')
+  updateMailTemplate(
+    @Param('id') id: string,
+    @Body() dto: UpdateMailTemplateDto,
+  ) {
+    return this.mailer.updateMailTemplate(id, dto);
+  }
+
+  // "Auf Standard zurücksetzen".
+  @ApiBearerAuth()
+  @RequirePermission('settings:update')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('mail-templates/:id')
+  resetMailTemplate(@Param('id') id: string) {
+    return this.mailer.resetMailTemplate(id);
+  }
+
+  @ApiBearerAuth()
+  @RequirePermission('settings:update')
+  @HttpCode(HttpStatus.OK)
+  @Post('mail-templates/:id/test')
+  sendMailTemplateTest(
+    @Param('id') id: string,
+    @Body() dto: SendSmtpTestEmailDto,
+  ) {
+    return this.mailer.sendMailTemplateTest(id, dto.to);
   }
 
   // "Cache leeren" unter Einstellungen (Nutzervorgabe, 2026-08-16) – leert

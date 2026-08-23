@@ -37,6 +37,12 @@ const PERMISSIONS: { resource: string; action: string }[] = [
   { resource: "faq", action: "create" },
   { resource: "faq", action: "update" },
   { resource: "faq", action: "delete" },
+  { resource: "forms", action: "read" },
+  { resource: "forms", action: "create" },
+  { resource: "forms", action: "update" },
+  { resource: "forms", action: "delete" },
+  { resource: "form-submissions", action: "read" },
+  { resource: "form-submissions", action: "delete" },
   { resource: "preview-links", action: "read" },
   { resource: "preview-links", action: "create" },
   { resource: "preview-links", action: "revoke" },
@@ -569,6 +575,20 @@ async function main() {
             ],
           },
         ],
+      },
+    },
+    {
+      // Referenziert ein Formular über seine Id (neuer Feldtyp "form",
+      // siehe module-field-input.tsx/block-field-output.tsx) statt eigene
+      // Formularfelder im Baustein selbst zu duplizieren – analog zur
+      // globalModuleId-Referenz bei Galerie/FAQ, nur als eigener Feldtyp
+      // statt über "modules", da Formulare bewusst kein GlobalModule sind
+      // (siehe knowledge-base/content/forms.md).
+      name: "Formular",
+      slug: "form",
+      icon: "ClipboardList",
+      schema: {
+        fields: [{ name: "formId", type: "form", required: true }],
       },
     },
     {

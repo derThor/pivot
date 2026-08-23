@@ -34,6 +34,7 @@ import { PrivacyModule } from './privacy/privacy.module';
 import { TrashModule } from './trash/trash.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { JobsModule } from './jobs/jobs.module';
+import { FormsModule } from './forms/forms.module';
 import { validateEnv } from './common/config/env.validation';
 
 @Module({
@@ -76,6 +77,7 @@ import { validateEnv } from './common/config/env.validation';
     TrashModule,
     NotificationsModule,
     JobsModule,
+    FormsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

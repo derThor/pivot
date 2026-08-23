@@ -2,10 +2,18 @@ import type { CSSProperties, ReactNode } from "react";
 import { Image as ImageIcon, Video as VideoIcon } from "lucide-react";
 import { RichTextDisplay } from "@/components/rich-text-display";
 import { GallerySwiper } from "@/components/gallery-swiper";
+import { FormBlockRender } from "@/components/form-block-render";
 import { resolveImageSrc } from "@/lib/media";
 import { cn } from "@/lib/utils";
-import { DEFAULT_GALLERY_SETTINGS, type GallerySettings } from "@/lib/gallery-settings";
-import type { ContentTypeField, GlobalModule, MediaVariant } from "@/lib/api-server";
+import {
+  DEFAULT_GALLERY_SETTINGS,
+  type GallerySettings,
+} from "@/lib/gallery-settings";
+import type {
+  ContentTypeField,
+  GlobalModule,
+  MediaVariant,
+} from "@/lib/api-server";
 
 // Löst eine Modul-Instanz auf ihren *effektiven* Modul-Typ + Werte auf:
 // bei einer normalen Instanz unverändert die eigenen Werte, bei einer
@@ -104,19 +112,29 @@ export function toRepeaterItems(raw: unknown): RepeaterItem[] {
 // dadurch abwärtskompatibel lesbar.
 export function toImageValue(raw: unknown): ImageFieldValue {
   if (typeof raw === "string") return { url: raw };
-  if (raw && typeof raw === "object" && "url" in (raw as Record<string, unknown>)) {
+  if (
+    raw &&
+    typeof raw === "object" &&
+    "url" in (raw as Record<string, unknown>)
+  ) {
     const obj = raw as Record<string, unknown>;
     const align = obj.align;
     return {
       url: typeof obj.url === "string" ? obj.url : "",
       width: typeof obj.width === "number" ? obj.width : undefined,
       align:
-        align === "full" || align === "left" || align === "center" || align === "right"
+        align === "full" ||
+        align === "left" ||
+        align === "center" ||
+        align === "right"
           ? align
           : "none",
       mediaId: typeof obj.mediaId === "string" ? obj.mediaId : undefined,
-      variants: Array.isArray(obj.variants) ? (obj.variants as MediaVariant[]) : undefined,
-      thumbnailUrl: typeof obj.thumbnailUrl === "string" ? obj.thumbnailUrl : undefined,
+      variants: Array.isArray(obj.variants)
+        ? (obj.variants as MediaVariant[])
+        : undefined,
+      thumbnailUrl:
+        typeof obj.thumbnailUrl === "string" ? obj.thumbnailUrl : undefined,
       focalX: typeof obj.focalX === "number" ? obj.focalX : undefined,
       focalY: typeof obj.focalY === "number" ? obj.focalY : undefined,
     };
@@ -140,7 +158,11 @@ export interface VideoFieldValue {
 
 export function toVideoValue(raw: unknown): VideoFieldValue {
   if (typeof raw === "string") return { url: raw };
-  if (raw && typeof raw === "object" && "url" in (raw as Record<string, unknown>)) {
+  if (
+    raw &&
+    typeof raw === "object" &&
+    "url" in (raw as Record<string, unknown>)
+  ) {
     const obj = raw as Record<string, unknown>;
     return {
       url: typeof obj.url === "string" ? obj.url : "",
@@ -168,7 +190,12 @@ export function videoEmbedSrc(url: string): string | null {
 
 export type SpacingSide = "top" | "right" | "bottom" | "left";
 
-export const SPACING_SIDES: readonly SpacingSide[] = ["top", "right", "bottom", "left"];
+export const SPACING_SIDES: readonly SpacingSide[] = [
+  "top",
+  "right",
+  "bottom",
+  "left",
+];
 
 // Einzelne Werte je Seite (oben/rechts/unten/links) – `undefined` je Seite
 // bedeutet kein eigener Wert für diese Seite, keine Auswirkung.
@@ -233,10 +260,12 @@ export function BlockSpacingWrapper({
   return (
     <div
       className={cn("block-spacing", className)}
-      style={{
-        ...spacingStyleVars(layout?.padding, "padding"),
-        ...spacingStyleVars(layout?.margin, "margin"),
-      } as CSSProperties}
+      style={
+        {
+          ...spacingStyleVars(layout?.padding, "padding"),
+          ...spacingStyleVars(layout?.margin, "margin"),
+        } as CSSProperties
+      }
     >
       {children}
     </div>
@@ -341,7 +370,9 @@ export function isDividerModule(contentFields: ContentTypeField[]): boolean {
 // den Feldtyp "repeater" – diese sind immer zentral gepflegte, wiederver-
 // wendbare Bausteine (siehe isFaqModuleType/isGalleryModuleType unten und
 // block-editor-field.tsx), keine seiteneigenen Instanzen.
-export function isComplexModuleType(contentFields: ContentTypeField[]): boolean {
+export function isComplexModuleType(
+  contentFields: ContentTypeField[],
+): boolean {
   return contentFields.some((f) => f.type === "repeater");
 }
 
@@ -350,14 +381,18 @@ export function isComplexModuleType(contentFields: ContentTypeField[]): boolean 
 // Repeater, FAQ/Akkordeon nicht. Bestimmt, unter welcher Bibliothek
 // ("FAQs" bzw. "Galerien", je eigener Sidebar-Unterpunkt bei "Seiten")
 // eine Instanz zentral verwaltet wird.
-export function isGalleryModuleType(contentFields: ContentTypeField[]): boolean {
+export function isGalleryModuleType(
+  contentFields: ContentTypeField[],
+): boolean {
   if (!isComplexModuleType(contentFields)) return false;
   const repeaterField = contentFields.find((f) => f.type === "repeater");
   return repeaterField?.fields?.some((f) => f.type === "image") ?? false;
 }
 
 export function isFaqModuleType(contentFields: ContentTypeField[]): boolean {
-  return isComplexModuleType(contentFields) && !isGalleryModuleType(contentFields);
+  return (
+    isComplexModuleType(contentFields) && !isGalleryModuleType(contentFields)
+  );
 }
 
 export function DividerOutput() {
@@ -371,6 +406,12 @@ export function DividerOutput() {
 // dem Text fließen, sondern als Vollflächen-Hintergrund dahinter liegen.
 export function isCoverModuleType(contentFields: ContentTypeField[]): boolean {
   return contentFields.some((f) => f.type === "image" && f.variant === "cover");
+}
+
+// Formular-Baustein (siehe form-block-render.tsx) – Form-Erkennung statt
+// Slug-Abfrage, wie bei allen anderen Bausteinen hier.
+export function isFormModuleType(contentFields: ContentTypeField[]): boolean {
+  return contentFields.some((f) => f.type === "form");
 }
 
 // Vollflächiges Hero-/Cover-Modul: Hintergrundbild, Überschrift, optionaler
@@ -391,7 +432,10 @@ export function CoverOutput({
   );
   const buttonField = contentFields.find((f) => f.variant === "button");
   const textFields = contentFields.filter(
-    (f) => f !== imageField && f !== buttonField && (f.type === "string" || f.type === "text"),
+    (f) =>
+      f !== imageField &&
+      f !== buttonField &&
+      (f.type === "string" || f.type === "text"),
   );
   const headingField = textFields[0];
   const subtextField = textFields[1];
@@ -417,7 +461,9 @@ export function CoverOutput({
       <div className="absolute inset-0 bg-black/40" />
       <div className="relative flex max-w-2xl flex-col items-center gap-3 px-6 py-12 text-center text-white">
         <h2 className="text-3xl font-bold text-balance">{heading || "…"}</h2>
-        {subtext && <p className="text-lg text-white/90 text-balance">{subtext}</p>}
+        {subtext && (
+          <p className="text-lg text-white/90 text-balance">{subtext}</p>
+        )}
         {buttonLabel && (
           <span className="mt-2 inline-flex w-fit rounded-md bg-gradient-to-r from-orange-400 to-rose-500 px-4 py-2 text-sm font-medium text-white">
             {buttonLabel}
@@ -492,6 +538,11 @@ export function BlockFieldOutput({
   swiperAllowTouchMove?: boolean;
 }) {
   const stringValue = typeof value === "string" ? value : "";
+
+  if (field.type === "form") {
+    if (!showPlaceholders && !stringValue) return null;
+    return <FormBlockRender key={stringValue} formId={stringValue} />;
+  }
 
   if (field.type === "image") {
     const img = toImageValue(value);
@@ -572,7 +623,6 @@ export function BlockFieldOutput({
       );
     }
     return (
-       
       <video
         src={resolveImageSrc(video.url)}
         controls
@@ -600,12 +650,16 @@ export function BlockFieldOutput({
 
       if (interactive) {
         const images = items.flatMap((item) => {
-          const img = imageField ? toImageValue(item.values[imageField.name]) : null;
+          const img = imageField
+            ? toImageValue(item.values[imageField.name])
+            : null;
           if (!img?.url) return [];
           const caption = captionField
             ? String(item.values[captionField.name] ?? "")
             : "";
-          return [{ url: img.url, focalX: img.focalX, focalY: img.focalY, caption }];
+          return [
+            { url: img.url, focalX: img.focalX, focalY: img.focalY, caption },
+          ];
         });
         return (
           <GallerySwiper

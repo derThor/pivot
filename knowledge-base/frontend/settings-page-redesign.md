@@ -309,6 +309,29 @@ aus `settings-form.tsx`, Sidebar-Untertitel bei "Benachrichtigungen" von
 Tab enthält jetzt nur noch die echten Ein/Aus-Schalter
 (`NotificationSettingsCard`).
 
+## Update 2026-08-23: neuer Reiter "Mailing"
+
+Nutzervorgabe (Formulare + Mailing, siehe
+[knowledge-base/content/forms.md](../content/forms.md)): ein neuer
+`SECTIONS`-Eintrag "Mailing" zwischen "Jobs" und "Protokoll", eigenes
+Recht bewusst NICHT nötig (`settings:*`, Pivot-exklusiv wie der Rest der
+allgemeinen Einstellungen). Neue Komponente `mailing-settings-card.tsx`:
+links eine nach Kategorie gruppierte Liste (System-Mails nach
+auth/privacy + eine "Formulare"-Gruppe mit den formulargebundenen
+Vorlagen), rechts Detail mit "Versand aktiv"-Schalter, Tabs
+"Vorlage"/"Vorschau" (+ "Empfänger"-Tab nur bei der Formular-
+Admin-Benachrichtigung, da einzige Vorlage mit editierbarem Empfänger).
+`settings/page.tsx` lädt die Liste über `getMailTemplates()`
+(`GET /settings/mail-templates`) und reicht sie als `mailTemplates`-Prop
+durch – gleiches Prinzip wie `jobs`/`jobRuns`.
+
+**Kein URL-Query-Param für `activeSection`:** anders als z.B. die
+Protokoll-/Jobs-Paginierung (`?protocolPage=`/`?jobsPage=`) ist der aktive
+Reiter selbst reiner `useState`, nicht in der URL gespiegelt. Ein
+Deep-Link auf "direkt zum Mailing-Reiter dieses Formulars" (aus dem
+Formular-Editor, Tab "Benachrichtigung") ist dadurch nicht möglich – der
+Link dort führt nur auf die allgemeine Einstellungen-Seite.
+
 ## Offene Punkte
 
 - Datenschutz-Feldänderungen (DPO-Kontakt, Aufbewahrungsfristen) haben

@@ -525,7 +525,12 @@ der Modul-Bibliothek).
 `"FileText"`, `"Image"`, `"Columns2"`), keine hochgeladene Bilddatei. Die
 Zuordnung String → Komponente passiert über eine feste Lookup-Tabelle in
 `block-editor-field.tsx` (`ICONS`), mit `Component` (generisches
-Baustein-Icon) als Fallback für unbekannte/leere Werte.
+Baustein-Icon) als Fallback für unbekannte/leere Werte. **Bei jedem neuen,
+per Seed angelegten `ModuleType` das gewählte `icon`-Symbol auch hier
+ergänzen** – sonst zeigt die Baustein-Palette nur das generische
+Fallback-Icon (passiert bei der Einführung des "Formular"-Bausteins
+(`icon: "ClipboardList"`, siehe [forms.md](./forms.md)) zunächst genau
+so, erst beim Review aufgefallen).
 
 ## Tests
 

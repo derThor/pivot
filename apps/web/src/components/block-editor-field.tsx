@@ -6,6 +6,7 @@ import {
   AlignCenter,
   AlignLeft,
   AlignRight,
+  ClipboardList,
   Columns2,
   Component,
   FileText,
@@ -57,6 +58,7 @@ import {
   isComplexModuleType,
   isCoverModuleType,
   isDividerModule,
+  isFormModuleType,
   isGalleryModuleType,
   isTilesModule,
   resolveBlockLayout,
@@ -75,13 +77,18 @@ import {
 import { ImagePickerDialog } from "@/components/image-picker-dialog";
 import { VideoPickerDialog } from "@/components/video-picker-dialog";
 import { InsertSharedBlockDialog } from "@/components/insert-shared-block-dialog";
+import { InsertFormBlockDialog } from "@/components/insert-form-block-dialog";
 import { ModuleFieldInput } from "@/components/module-field-input";
 import { resolveImageSrc } from "@/lib/media";
 import { cn } from "@/lib/utils";
 import { toGallerySettings } from "@/lib/gallery-settings";
 import type { GlobalModule, ModuleType } from "@/lib/api-server";
 
-const ALIGN_OPTIONS: { value: ImageAlign; label: string; icon: typeof Square }[] = [
+const ALIGN_OPTIONS: {
+  value: ImageAlign;
+  label: string;
+  icon: typeof Square;
+}[] = [
   { value: "none", label: "Keine", icon: Square },
   { value: "full", label: "Volle Breite", icon: Maximize2 },
   { value: "left", label: "Linksbündig", icon: AlignLeft },
@@ -130,8 +137,14 @@ function EditableImageField({
 
     function onMove(ev: PointerEvent) {
       const deltaPct = ((ev.clientX - startX) / containerWidth) * 100;
-      const nextWidth = Math.round(Math.min(100, Math.max(15, startWidth + deltaPct)));
-      onChange({ ...img, width: nextWidth, align: img.align === "full" ? "none" : img.align });
+      const nextWidth = Math.round(
+        Math.min(100, Math.max(15, startWidth + deltaPct)),
+      );
+      onChange({
+        ...img,
+        width: nextWidth,
+        align: img.align === "full" ? "none" : img.align,
+      });
     }
     function onUp() {
       setResizing(false);
@@ -225,6 +238,7 @@ const ICONS: Record<string, typeof Component> = {
   Images,
   Video: VideoIcon,
   LayoutTemplate,
+  ClipboardList,
 };
 
 function iconFor(moduleType: ModuleType | undefined) {
@@ -411,49 +425,89 @@ function SpacingBoxEditor({
     // (Nutzer-Bugreport, 2026-08-18: Footer-/Presets-Text wurde
     // rechts abgeschnitten).
     <div className="overflow-x-auto">
-    <div className="w-fit min-w-full rounded-xl border border-[#E5E5E5] bg-[#FAFAFA] p-3">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Außenabstand <span className="font-normal normal-case">margin, px</span>
-        </span>
-        <LinkToggle active={marginLinked} onClick={() => setMarginLinked((v) => !v)} />
-      </div>
-      {/* Bewusst verschachtelte Flex-Zeilen statt eines gemeinsamen CSS-
+      <div className="w-fit min-w-full rounded-xl border border-[#E5E5E5] bg-[#FAFAFA] p-3">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            Außenabstand{" "}
+            <span className="font-normal normal-case">margin, px</span>
+          </span>
+          <LinkToggle
+            active={marginLinked}
+            onClick={() => setMarginLinked((v) => !v)}
+          />
+        </div>
+        {/* Bewusst verschachtelte Flex-Zeilen statt eines gemeinsamen CSS-
           Grids für außen+innen: geteilte Grid-Spalten zwischen äußerem
           und innerem Box-Modell zwangen beide auf dieselbe Spaltenbreite
           und quetschten dadurch die "Inhalt"-Box gegen das rechte
           Innenabstand-Feld (Nutzer-Bugreport, 2026-08-18). Jede Ebene
           bekommt hier ihre eigene, unabhängige Breite. */}
-      <div className="mx-auto flex w-fit flex-col items-center gap-1.5">
-        <SpacingSideInput side="top" value={margin?.top} onChange={(v) => setMarginSide("top", v)} />
-        <div className="flex items-center gap-1.5">
-          <SpacingSideInput side="left" value={margin?.left} onChange={(v) => setMarginSide("left", v)} />
+        <div className="mx-auto flex w-fit flex-col items-center gap-1.5">
+          <SpacingSideInput
+            side="top"
+            value={margin?.top}
+            onChange={(v) => setMarginSide("top", v)}
+          />
+          <div className="flex items-center gap-1.5">
+            <SpacingSideInput
+              side="left"
+              value={margin?.left}
+              onChange={(v) => setMarginSide("left", v)}
+            />
 
-          <div className="rounded-xl border border-green-300 bg-green-50 p-3">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <span className="text-xs font-semibold tracking-wide text-green-700 uppercase">
-                Innenabstand <span className="font-normal normal-case">padding</span>
-              </span>
-              <LinkToggle active={paddingLinked} onClick={() => setPaddingLinked((v) => !v)} />
-            </div>
-            <div className="flex flex-col items-center gap-1.5">
-              <SpacingSideInput side="top" value={padding?.top} onChange={(v) => setPaddingSide("top", v)} />
-              <div className="flex items-center gap-1.5">
-                <SpacingSideInput side="left" value={padding?.left} onChange={(v) => setPaddingSide("left", v)} />
-                <div className="flex h-12 min-w-20 items-center justify-center rounded-lg border border-[#D4D4D4] bg-card px-3 text-sm text-muted-foreground">
-                  Inhalt
-                </div>
-                <SpacingSideInput side="right" value={padding?.right} onChange={(v) => setPaddingSide("right", v)} />
+            <div className="rounded-xl border border-green-300 bg-green-50 p-3">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold tracking-wide text-green-700 uppercase">
+                  Innenabstand{" "}
+                  <span className="font-normal normal-case">padding</span>
+                </span>
+                <LinkToggle
+                  active={paddingLinked}
+                  onClick={() => setPaddingLinked((v) => !v)}
+                />
               </div>
-              <SpacingSideInput side="bottom" value={padding?.bottom} onChange={(v) => setPaddingSide("bottom", v)} />
+              <div className="flex flex-col items-center gap-1.5">
+                <SpacingSideInput
+                  side="top"
+                  value={padding?.top}
+                  onChange={(v) => setPaddingSide("top", v)}
+                />
+                <div className="flex items-center gap-1.5">
+                  <SpacingSideInput
+                    side="left"
+                    value={padding?.left}
+                    onChange={(v) => setPaddingSide("left", v)}
+                  />
+                  <div className="flex h-12 min-w-20 items-center justify-center rounded-lg border border-[#D4D4D4] bg-card px-3 text-sm text-muted-foreground">
+                    Inhalt
+                  </div>
+                  <SpacingSideInput
+                    side="right"
+                    value={padding?.right}
+                    onChange={(v) => setPaddingSide("right", v)}
+                  />
+                </div>
+                <SpacingSideInput
+                  side="bottom"
+                  value={padding?.bottom}
+                  onChange={(v) => setPaddingSide("bottom", v)}
+                />
+              </div>
             </div>
-          </div>
 
-          <SpacingSideInput side="right" value={margin?.right} onChange={(v) => setMarginSide("right", v)} />
+            <SpacingSideInput
+              side="right"
+              value={margin?.right}
+              onChange={(v) => setMarginSide("right", v)}
+            />
+          </div>
+          <SpacingSideInput
+            side="bottom"
+            value={margin?.bottom}
+            onChange={(v) => setMarginSide("bottom", v)}
+          />
         </div>
-        <SpacingSideInput side="bottom" value={margin?.bottom} onChange={(v) => setMarginSide("bottom", v)} />
       </div>
-    </div>
     </div>
   );
 }
@@ -470,10 +524,18 @@ export function BlockEditorField({
   globalModules: GlobalModule[];
 }) {
   const [search, setSearch] = useState("");
-  const [draggingPaletteId, setDraggingPaletteId] = useState<string | null>(null);
-  const [draggingInstanceId, setDraggingInstanceId] = useState<string | null>(null);
-  const [editingInstanceId, setEditingInstanceId] = useState<string | null>(null);
-  const [spacingInstanceId, setSpacingInstanceId] = useState<string | null>(null);
+  const [draggingPaletteId, setDraggingPaletteId] = useState<string | null>(
+    null,
+  );
+  const [draggingInstanceId, setDraggingInstanceId] = useState<string | null>(
+    null,
+  );
+  const [editingInstanceId, setEditingInstanceId] = useState<string | null>(
+    null,
+  );
+  const [spacingInstanceId, setSpacingInstanceId] = useState<string | null>(
+    null,
+  );
   const [spacingTab, setSpacingTab] = useState<SpacingBreakpoint>("mobile");
   const [resizingLayoutId, setResizingLayoutId] = useState<string | null>(null);
   const [imagePicker, setImagePicker] = useState<{
@@ -498,6 +560,14 @@ export function BlockEditorField({
     // Zeile ein.
     matchAlign?: ImageAlign;
   } | null>(null);
+  // Gleiches Prinzip wie `pendingInsert`, aber für den "Formular"-Baustein
+  // (siehe isFormModuleType) – hier wird kein GlobalModule referenziert,
+  // sondern direkt die Form-Id in `values.formId` geschrieben.
+  const [pendingFormInsert, setPendingFormInsert] = useState<{
+    index: number;
+    moduleType: ModuleType;
+    matchAlign?: ImageAlign;
+  } | null>(null);
   // Referenz-Breite für alle Zieh-Größenänderungen (Bild-Feld UND
   // Block-Layout) – bewusst EIN gemeinsamer Ref auf die stabile
   // Canvas-Spalte statt je Block/Feld eine eigene Messung, sonst würde
@@ -518,9 +588,13 @@ export function BlockEditorField({
   // eigenes Geschwister-Element.
   const instanceAligns = value.map((instance) => {
     const resolved = resolveInstanceValues(instance, globalModules);
-    const moduleType = moduleTypes.find((mt) => mt.id === resolved.moduleTypeId);
-    const contentFields = moduleType?.schema.fields.filter((f) => !f.option) ?? [];
-    return resolveBlockLayout(contentFields, resolved.values, instance.layout).align;
+    const moduleType = moduleTypes.find(
+      (mt) => mt.id === resolved.moduleTypeId,
+    );
+    const contentFields =
+      moduleType?.schema.fields.filter((f) => !f.option) ?? [];
+    return resolveBlockLayout(contentFields, resolved.values, instance.layout)
+      .align;
   });
   function isFloatedAlign(align: ImageAlign | undefined) {
     return align === "left" || align === "right";
@@ -530,7 +604,11 @@ export function BlockEditorField({
     mt.name.toLowerCase().includes(search.toLowerCase()),
   );
 
-  function insertAt(index: number, moduleType: ModuleType, matchAlign?: ImageAlign) {
+  function insertAt(
+    index: number,
+    moduleType: ModuleType,
+    matchAlign?: ImageAlign,
+  ) {
     const instance: ModuleInstance = {
       id: crypto.randomUUID(),
       moduleTypeId: moduleType.id,
@@ -549,7 +627,11 @@ export function BlockEditorField({
   // Moduls ist nach dem Anlegen unveränderlich, siehe global-module-
   // dialog.tsx) – reine Bequemlichkeit für Stellen, die es ohne Auflösung
   // lesen, keine zweite Quelle der Wahrheit.
-  function insertGlobalAt(index: number, globalModule: GlobalModule, matchAlign?: ImageAlign) {
+  function insertGlobalAt(
+    index: number,
+    globalModule: GlobalModule,
+    matchAlign?: ImageAlign,
+  ) {
     const instance: ModuleInstance = {
       id: crypto.randomUUID(),
       moduleTypeId: globalModule.moduleTypeId,
@@ -562,7 +644,32 @@ export function BlockEditorField({
     onChange(next);
   }
 
-  function moveTo(instanceId: string, targetIndex: number, matchAlign?: ImageAlign) {
+  // Formular-Baustein: schreibt die gewählte Form-Id direkt in das
+  // Schema-Feld vom Typ "form" (Name wird dynamisch aufgelöst statt
+  // hartkodiert "formId" anzunehmen, falls der Seed-Feldname sich ändert).
+  function insertFormAt(
+    index: number,
+    moduleType: ModuleType,
+    formId: string,
+    matchAlign?: ImageAlign,
+  ) {
+    const formField = moduleType.schema.fields.find((f) => f.type === "form");
+    const instance: ModuleInstance = {
+      id: crypto.randomUUID(),
+      moduleTypeId: moduleType.id,
+      values: formField ? { [formField.name]: formId } : {},
+      ...(matchAlign && { layout: { align: matchAlign } }),
+    };
+    const next = [...value];
+    next.splice(index, 0, instance);
+    onChange(next);
+  }
+
+  function moveTo(
+    instanceId: string,
+    targetIndex: number,
+    matchAlign?: ImageAlign,
+  ) {
     const fromIndex = value.findIndex((i) => i.id === instanceId);
     if (fromIndex === -1) return;
     const next = [...value];
@@ -581,13 +688,19 @@ export function BlockEditorField({
     onChange(next);
   }
 
-  function handleDropAt(index: number, payload: string, matchAlign?: ImageAlign) {
+  function handleDropAt(
+    index: number,
+    payload: string,
+    matchAlign?: ImageAlign,
+  ) {
     if (payload.startsWith("new:")) {
       const moduleType = moduleTypes.find((mt) => mt.id === payload.slice(4));
       if (!moduleType) return;
       const contentFields = moduleType.schema.fields.filter((f) => !f.option);
       if (isComplexModuleType(contentFields)) {
         setPendingInsert({ index, moduleType, matchAlign });
+      } else if (isFormModuleType(contentFields)) {
+        setPendingFormInsert({ index, moduleType, matchAlign });
       } else {
         insertAt(index, moduleType, matchAlign);
       }
@@ -597,10 +710,18 @@ export function BlockEditorField({
   }
 
   function updateModule(id: string, values: Record<string, unknown>) {
-    onChange(value.map((instance) => (instance.id === id ? { ...instance, values } : instance)));
+    onChange(
+      value.map((instance) =>
+        instance.id === id ? { ...instance, values } : instance,
+      ),
+    );
   }
 
-  function updateField(instanceId: string, fieldName: string, fieldValue: unknown) {
+  function updateField(
+    instanceId: string,
+    fieldName: string,
+    fieldValue: unknown,
+  ) {
     const instance = value.find((i) => i.id === instanceId);
     if (!instance) return;
     updateModule(instanceId, { ...instance.values, [fieldName]: fieldValue });
@@ -612,7 +733,11 @@ export function BlockEditorField({
   }
 
   function updateInstanceLayout(instanceId: string, layout: BlockLayoutValue) {
-    onChange(value.map((instance) => (instance.id === instanceId ? { ...instance, layout } : instance)));
+    onChange(
+      value.map((instance) =>
+        instance.id === instanceId ? { ...instance, layout } : instance,
+      ),
+    );
   }
 
   // Aktualisiert Innen- (`padding`) oder Außenabstand (`margin`) für eine
@@ -630,9 +755,18 @@ export function BlockEditorField({
     if (!instance) return;
     const numericValue = rawValue.trim() === "" ? undefined : Number(rawValue);
     const currentResponsive = instance.layout?.[kind];
-    const nextBox: BoxSpacing = { ...currentResponsive?.[breakpoint], [side]: numericValue };
-    const nextResponsive: ResponsiveSpacing = { ...currentResponsive, [breakpoint]: nextBox };
-    updateInstanceLayout(instanceId, { ...instance.layout, [kind]: nextResponsive });
+    const nextBox: BoxSpacing = {
+      ...currentResponsive?.[breakpoint],
+      [side]: numericValue,
+    };
+    const nextResponsive: ResponsiveSpacing = {
+      ...currentResponsive,
+      [breakpoint]: nextBox,
+    };
+    updateInstanceLayout(instanceId, {
+      ...instance.layout,
+      [kind]: nextResponsive,
+    });
   }
 
   // Setzt alle vier Seiten auf einmal (verknüpfte Ketten-Boxen, "Innen
@@ -658,8 +792,14 @@ export function BlockEditorField({
       left: numericValue,
     };
     const currentResponsive = instance.layout?.[kind];
-    const nextResponsive: ResponsiveSpacing = { ...currentResponsive, [breakpoint]: nextBox };
-    updateInstanceLayout(instanceId, { ...instance.layout, [kind]: nextResponsive });
+    const nextResponsive: ResponsiveSpacing = {
+      ...currentResponsive,
+      [breakpoint]: nextBox,
+    };
+    updateInstanceLayout(instanceId, {
+      ...instance.layout,
+      [kind]: nextResponsive,
+    });
   }
 
   // Löscht Innen- und Außenabstand für einen Breakpoint komplett (Reset-
@@ -678,7 +818,11 @@ export function BlockEditorField({
   // Block-weite Größenänderung per Zieh-Griff (für Module ohne eigenes
   // Bild-Feld, z.B. Zitat) – analog zu `EditableImageField.startResize`,
   // schreibt aber in `instance.layout` statt in einen Feldwert.
-  function startLayoutResize(e: React.PointerEvent, instance: ModuleInstance, currentWidth: number) {
+  function startLayoutResize(
+    e: React.PointerEvent,
+    instance: ModuleInstance,
+    currentWidth: number,
+  ) {
     e.preventDefault();
     e.stopPropagation();
     const containerWidth = columnRef.current?.getBoundingClientRect().width;
@@ -688,9 +832,14 @@ export function BlockEditorField({
 
     function onMove(ev: PointerEvent) {
       const deltaPct = ((ev.clientX - startX) / containerWidth!) * 100;
-      const nextWidth = Math.round(Math.min(100, Math.max(15, currentWidth + deltaPct)));
+      const nextWidth = Math.round(
+        Math.min(100, Math.max(15, currentWidth + deltaPct)),
+      );
       updateInstanceLayout(instance.id, {
-        align: instance.layout?.align === "full" ? "none" : (instance.layout?.align ?? "none"),
+        align:
+          instance.layout?.align === "full"
+            ? "none"
+            : (instance.layout?.align ?? "none"),
         width: nextWidth,
       });
     }
@@ -704,7 +853,9 @@ export function BlockEditorField({
   }
 
   const editingInstance = value.find((i) => i.id === editingInstanceId);
-  const editingType = moduleTypes.find((mt) => mt.id === editingInstance?.moduleTypeId);
+  const editingType = moduleTypes.find(
+    (mt) => mt.id === editingInstance?.moduleTypeId,
+  );
   const spacingInstance = value.find((i) => i.id === spacingInstanceId);
 
   return (
@@ -734,7 +885,10 @@ export function BlockEditorField({
                   draggable
                   onDragStart={(e) => {
                     setDraggingPaletteId(moduleType.id);
-                    e.dataTransfer.setData("text/plain", `new:${moduleType.id}`);
+                    e.dataTransfer.setData(
+                      "text/plain",
+                      `new:${moduleType.id}`,
+                    );
                   }}
                   onDragEnd={() => setDraggingPaletteId(null)}
                   className={cn(
@@ -769,7 +923,11 @@ export function BlockEditorField({
             zu lassen. */}
         <div ref={columnRef} className="flow-root px-6 py-4">
           {value.length === 0 ? (
-            <DropZone active={isDragging} onDrop={(p) => handleDropAt(0, p)} large>
+            <DropZone
+              active={isDragging}
+              onDrop={(p) => handleDropAt(0, p)}
+              large
+            >
               <div className="flex h-full flex-col items-center justify-center gap-1 py-12 text-center text-sm text-muted-foreground">
                 <p>Noch keine Bausteine.</p>
                 <p>Baustein von links hierher ziehen.</p>
@@ -790,9 +948,12 @@ export function BlockEditorField({
             // "FAQs"-/"Galerien"-Unterseite bei "Seiten" bzw. beim Einfügen.
             const isGlobal = Boolean(instance.globalModuleId);
             const resolved = resolveInstanceValues(instance, globalModules);
-            const moduleType = moduleTypes.find((mt) => mt.id === resolved.moduleTypeId);
+            const moduleType = moduleTypes.find(
+              (mt) => mt.id === resolved.moduleTypeId,
+            );
             const Icon = iconFor(moduleType);
-            const contentFields = moduleType?.schema.fields.filter((f) => !f.option) ?? [];
+            const contentFields =
+              moduleType?.schema.fields.filter((f) => !f.option) ?? [];
             const isTiles = isTilesModule(contentFields);
             const isDivider = isDividerModule(contentFields);
             const isCover = isCoverModuleType(contentFields);
@@ -800,14 +961,22 @@ export function BlockEditorField({
             const imageValue = imageField
               ? toImageValue(resolved.values[imageField.name])
               : null;
-            const blockLayout = resolveBlockLayout(contentFields, resolved.values, instance.layout);
+            const blockLayout = resolveBlockLayout(
+              contentFields,
+              resolved.values,
+              instance.layout,
+            );
             // Kein eigenes Bild-Feld (Rich-Text, CTA-Button, Zitat, …):
             // Ausrichtung/Größe des ganzen Blocks kommen aus
             // `instance.layout` – eigener Zieh-Griff + Menü unten.
             const hasBlockLayoutControls = !imageField;
             const currentAlign =
               ALIGN_OPTIONS.find(
-                (o) => o.value === (imageField ? (imageValue?.align ?? "none") : blockLayout.align),
+                (o) =>
+                  o.value ===
+                  (imageField
+                    ? (imageValue?.align ?? "none")
+                    : blockLayout.align),
               ) ?? ALIGN_OPTIONS[0];
             return (
               <Fragment key={instance.id}>
@@ -853,7 +1022,10 @@ export function BlockEditorField({
                     <span
                       draggable
                       onDragStart={(e) => {
-                        e.dataTransfer.setData("text/plain", `move:${instance.id}`);
+                        e.dataTransfer.setData(
+                          "text/plain",
+                          `move:${instance.id}`,
+                        );
                         // React-State (und damit ein Re-Render vieler
                         // Bausteine) NICHT synchron im dragstart-Handler
                         // setzen: der Browser erstellt direkt im Anschluss
@@ -923,7 +1095,9 @@ export function BlockEditorField({
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   updateField(instance.id, imageField.name, {
-                                    ...toImageValue(instance.values[imageField.name]),
+                                    ...toImageValue(
+                                      instance.values[imageField.name],
+                                    ),
                                     align: option.value,
                                   });
                                 }}
@@ -940,7 +1114,10 @@ export function BlockEditorField({
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setImagePicker({ instanceId: instance.id, fieldName: imageField.name });
+                            setImagePicker({
+                              instanceId: instance.id,
+                              fieldName: imageField.name,
+                            });
                           }}
                         >
                           {imageValue?.url ? "Ersetzen" : "Bild wählen"}
@@ -1022,90 +1199,16 @@ export function BlockEditorField({
                     </Button>
                   </div>
                   <BlockSpacingWrapper layout={instance.layout}>
-                  {moduleType && isTiles && !isGlobal && (
-                    // Kacheln-artiges Modul (mehrere Bild-Felder, z.B. der
-                    // "Kacheln"-Baustein): festes 2-Spalten-Raster statt
-                    // der Float-/Resize-Logik von EditableImageField –
-                    // jede Kachel ist immer quadratisch und fest im Raster
-                    // platziert, kein individuelles Ausrichten/Skalieren.
-                    <div className="grid grid-cols-2 gap-2">
-                      {contentFields.map((field) => {
-                        const img = toImageValue(resolved.values[field.name]);
-                        if (!img.url) {
-                          return (
-                            <button
-                              key={field.name}
-                              type="button"
-                              draggable={false}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setImagePicker({ instanceId: instance.id, fieldName: field.name });
-                              }}
-                              className="flex aspect-square flex-col items-center justify-center gap-1 rounded-md border border-dashed text-sm text-muted-foreground transition-colors hover:border-orange-400"
-                            >
-                              <ImageIcon className="size-6" />
-                              Bild wählen
-                            </button>
-                          );
-                        }
-                        return (
-                          <div
-                            key={field.name}
-                            className="group/tile relative aspect-square overflow-hidden rounded-md"
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={resolveImageSrc(img.thumbnailUrl ?? img.url)}
-                              alt=""
-                              draggable={false}
-                              className="size-full object-cover"
-                            />
-                            {/* Kleiner Button in der Ecke statt (wie vorher)
-                                die ganze Kachel als Overlay abzudecken – ein
-                                `inset-0`-Button über der kompletten Fläche
-                                ließ praktisch keinen Platz mehr übrig, um
-                                den Baustein per Drag&Drop zu greifen. */}
-                            <button
-                              type="button"
-                              draggable={false}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setImagePicker({ instanceId: instance.id, fieldName: field.name });
-                              }}
-                              className="absolute top-1.5 right-1.5 rounded-md bg-black/60 px-1.5 py-1 text-xs font-medium text-white opacity-0 transition-opacity group-hover/tile:opacity-100"
-                            >
-                              Ersetzen
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                  {moduleType && isDivider && (
-                    <div className="py-2">
-                      <DividerOutput />
-                    </div>
-                  )}
-                  {moduleType && isCover && !isGlobal && (
-                    // Wie Kacheln: feste, read-only Vorschau statt der
-                    // Feld-für-Feld-Bearbeitung unten – Hintergrundbild
-                    // fließt bei Cover nicht neben dem Text, sondern liegt
-                    // vollflächig dahinter, das passt nicht zur
-                    // EditableImageField-Float-Logik. Bearbeitet wird über
-                    // den Stift-Button (Dialog unten).
-                    <CoverOutput contentFields={contentFields} values={instance.values} />
-                  )}
-                  {moduleType && !isTiles && !isDivider && !isCover && !isGlobal && (
-                    // `flow-root` statt `flex flex-col`: Bild-Felder mit
-                    // Links-/Rechtsbündig floaten (siehe EditableImageField)
-                    // – Flex-Kinder ignorieren `float` komplett, außerdem
-                    // fängt `flow-root` das Float korrekt innerhalb dieses
-                    // Blocks ein, statt in nachfolgende Blöcke "auszulaufen".
-                    <div className="flow-root space-y-3">
-                      {contentFields.map((field) => {
-                        if (field.type === "video") {
-                          const video = toVideoValue(instance.values[field.name]);
-                          if (!video.url) {
+                    {moduleType && isTiles && !isGlobal && (
+                      // Kacheln-artiges Modul (mehrere Bild-Felder, z.B. der
+                      // "Kacheln"-Baustein): festes 2-Spalten-Raster statt
+                      // der Float-/Resize-Logik von EditableImageField –
+                      // jede Kachel ist immer quadratisch und fest im Raster
+                      // platziert, kein individuelles Ausrichten/Skalieren.
+                      <div className="grid grid-cols-2 gap-2">
+                        {contentFields.map((field) => {
+                          const img = toImageValue(resolved.values[field.name]);
+                          if (!img.url) {
                             return (
                               <button
                                 key={field.name}
@@ -1113,21 +1216,115 @@ export function BlockEditorField({
                                 draggable={false}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setVideoPicker({ instanceId: instance.id, fieldName: field.name });
+                                  setImagePicker({
+                                    instanceId: instance.id,
+                                    fieldName: field.name,
+                                  });
                                 }}
-                                className="block w-full overflow-hidden rounded-md border border-dashed text-left transition-colors hover:border-orange-400"
+                                className="flex aspect-square flex-col items-center justify-center gap-1 rounded-md border border-dashed text-sm text-muted-foreground transition-colors hover:border-orange-400"
                               >
-                                <div className="flex flex-col items-center justify-center gap-1 py-10 text-sm text-muted-foreground">
-                                  <VideoIcon className="size-6" />
-                                  Video auswählen
-                                </div>
+                                <ImageIcon className="size-6" />
+                                Bild wählen
                               </button>
                             );
                           }
-                          const embedSrc = videoEmbedSrc(video.url);
                           return (
-                            <div key={field.name} className="relative">
-                              {/* Im Designer-Canvas bewusst OHNE native
+                            <div
+                              key={field.name}
+                              className="group/tile relative aspect-square overflow-hidden rounded-md"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={resolveImageSrc(
+                                  img.thumbnailUrl ?? img.url,
+                                )}
+                                alt=""
+                                draggable={false}
+                                className="size-full object-cover"
+                              />
+                              {/* Kleiner Button in der Ecke statt (wie vorher)
+                                die ganze Kachel als Overlay abzudecken – ein
+                                `inset-0`-Button über der kompletten Fläche
+                                ließ praktisch keinen Platz mehr übrig, um
+                                den Baustein per Drag&Drop zu greifen. */}
+                              <button
+                                type="button"
+                                draggable={false}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setImagePicker({
+                                    instanceId: instance.id,
+                                    fieldName: field.name,
+                                  });
+                                }}
+                                className="absolute top-1.5 right-1.5 rounded-md bg-black/60 px-1.5 py-1 text-xs font-medium text-white opacity-0 transition-opacity group-hover/tile:opacity-100"
+                              >
+                                Ersetzen
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {moduleType && isDivider && (
+                      <div className="py-2">
+                        <DividerOutput />
+                      </div>
+                    )}
+                    {moduleType && isCover && !isGlobal && (
+                      // Wie Kacheln: feste, read-only Vorschau statt der
+                      // Feld-für-Feld-Bearbeitung unten – Hintergrundbild
+                      // fließt bei Cover nicht neben dem Text, sondern liegt
+                      // vollflächig dahinter, das passt nicht zur
+                      // EditableImageField-Float-Logik. Bearbeitet wird über
+                      // den Stift-Button (Dialog unten).
+                      <CoverOutput
+                        contentFields={contentFields}
+                        values={instance.values}
+                      />
+                    )}
+                    {moduleType &&
+                      !isTiles &&
+                      !isDivider &&
+                      !isCover &&
+                      !isGlobal && (
+                        // `flow-root` statt `flex flex-col`: Bild-Felder mit
+                        // Links-/Rechtsbündig floaten (siehe EditableImageField)
+                        // – Flex-Kinder ignorieren `float` komplett, außerdem
+                        // fängt `flow-root` das Float korrekt innerhalb dieses
+                        // Blocks ein, statt in nachfolgende Blöcke "auszulaufen".
+                        <div className="flow-root space-y-3">
+                          {contentFields.map((field) => {
+                            if (field.type === "video") {
+                              const video = toVideoValue(
+                                instance.values[field.name],
+                              );
+                              if (!video.url) {
+                                return (
+                                  <button
+                                    key={field.name}
+                                    type="button"
+                                    draggable={false}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setVideoPicker({
+                                        instanceId: instance.id,
+                                        fieldName: field.name,
+                                      });
+                                    }}
+                                    className="block w-full overflow-hidden rounded-md border border-dashed text-left transition-colors hover:border-orange-400"
+                                  >
+                                    <div className="flex flex-col items-center justify-center gap-1 py-10 text-sm text-muted-foreground">
+                                      <VideoIcon className="size-6" />
+                                      Video auswählen
+                                    </div>
+                                  </button>
+                                );
+                              }
+                              const embedSrc = videoEmbedSrc(video.url);
+                              return (
+                                <div key={field.name} className="relative">
+                                  {/* Im Designer-Canvas bewusst OHNE native
                                   Steuerleiste/iframe-Interaktion (`controls`
                                   weggelassen, iframe mit `pointer-events-none`)
                                   – Browser-eigene Video-/Embed-Bedienelemente
@@ -1135,105 +1332,119 @@ export function BlockEditorField({
                                   Drag am Baustein-Rahmen auslösen. In der
                                   echten Ausgabe (BlockFieldOutput) bleibt
                                   alles voll interaktiv. */}
-                              {embedSrc ? (
-                                <div className="pointer-events-none aspect-video w-full overflow-hidden rounded-md bg-black">
-                                  <iframe
-                                    src={embedSrc}
-                                    title="Video"
-                                    tabIndex={-1}
-                                    className="size-full"
-                                  />
+                                  {embedSrc ? (
+                                    <div className="pointer-events-none aspect-video w-full overflow-hidden rounded-md bg-black">
+                                      <iframe
+                                        src={embedSrc}
+                                        title="Video"
+                                        tabIndex={-1}
+                                        className="size-full"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <video
+                                      src={resolveImageSrc(video.url)}
+                                      muted
+                                      playsInline
+                                      preload="metadata"
+                                      draggable={false}
+                                      className="pointer-events-none block max-h-[36rem] w-full rounded-md bg-black"
+                                    />
+                                  )}
+                                  <button
+                                    type="button"
+                                    draggable={false}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setVideoPicker({
+                                        instanceId: instance.id,
+                                        fieldName: field.name,
+                                      });
+                                    }}
+                                    className="absolute top-2 right-2 rounded-md bg-black/60 px-2 py-1 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100"
+                                  >
+                                    Ersetzen
+                                  </button>
                                 </div>
-                              ) : (
-                                 
-                                <video
-                                  src={resolveImageSrc(video.url)}
-                                  muted
-                                  playsInline
-                                  preload="metadata"
-                                  draggable={false}
-                                  className="pointer-events-none block max-h-[36rem] w-full rounded-md bg-black"
-                                />
-                              )}
-                              <button
-                                type="button"
-                                draggable={false}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setVideoPicker({ instanceId: instance.id, fieldName: field.name });
-                                }}
-                                className="absolute top-2 right-2 rounded-md bg-black/60 px-2 py-1 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100"
-                              >
-                                Ersetzen
-                              </button>
-                            </div>
-                          );
-                        }
-                        if (field.type !== "image") {
-                          return (
-                            <BlockFieldOutput
-                              key={field.name}
-                              field={field}
-                              value={instance.values[field.name]}
-                              showPlaceholders
-                            />
-                          );
-                        }
-                        const img = toImageValue(instance.values[field.name]);
-                        if (!img.url) {
-                          return (
-                            <button
-                              key={field.name}
-                              type="button"
-                              draggable={false}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setImagePicker({ instanceId: instance.id, fieldName: field.name });
-                              }}
-                              className="block w-full overflow-hidden rounded-md border border-dashed text-left transition-colors hover:border-orange-400"
-                            >
-                              <div className="flex flex-col items-center justify-center gap-1 py-10 text-sm text-muted-foreground">
-                                <ImageIcon className="size-6" />
-                                Bild auswählen
-                              </div>
-                            </button>
-                          );
-                        }
-                        return (
-                          <EditableImageField
-                            key={field.name}
-                            value={instance.values[field.name]}
-                            onChange={(next) => updateField(instance.id, field.name, next)}
-                            onReplace={() =>
-                              setImagePicker({ instanceId: instance.id, fieldName: field.name })
+                              );
                             }
-                            applyOwnLayout={contentFields.length > 1}
+                            if (field.type !== "image") {
+                              return (
+                                <BlockFieldOutput
+                                  key={field.name}
+                                  field={field}
+                                  value={instance.values[field.name]}
+                                  showPlaceholders
+                                />
+                              );
+                            }
+                            const img = toImageValue(
+                              instance.values[field.name],
+                            );
+                            if (!img.url) {
+                              return (
+                                <button
+                                  key={field.name}
+                                  type="button"
+                                  draggable={false}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setImagePicker({
+                                      instanceId: instance.id,
+                                      fieldName: field.name,
+                                    });
+                                  }}
+                                  className="block w-full overflow-hidden rounded-md border border-dashed text-left transition-colors hover:border-orange-400"
+                                >
+                                  <div className="flex flex-col items-center justify-center gap-1 py-10 text-sm text-muted-foreground">
+                                    <ImageIcon className="size-6" />
+                                    Bild auswählen
+                                  </div>
+                                </button>
+                              );
+                            }
+                            return (
+                              <EditableImageField
+                                key={field.name}
+                                value={instance.values[field.name]}
+                                onChange={(next) =>
+                                  updateField(instance.id, field.name, next)
+                                }
+                                onReplace={() =>
+                                  setImagePicker({
+                                    instanceId: instance.id,
+                                    fieldName: field.name,
+                                  })
+                                }
+                                applyOwnLayout={contentFields.length > 1}
+                              />
+                            );
+                          })}
+                        </div>
+                      )}
+                    {isGlobal && isTiles && (
+                      <TilesGridOutput
+                        contentFields={contentFields}
+                        values={resolved.values}
+                      />
+                    )}
+                    {isGlobal && !isTiles && !isDivider && (
+                      <div className="flow-root space-y-3">
+                        {contentFields.map((field) => (
+                          <BlockFieldOutput
+                            key={field.name}
+                            field={field}
+                            value={resolved.values[field.name]}
+                            showPlaceholders
+                            interactive
+                            gallerySettings={toGallerySettings(
+                              resolved.settings,
+                            )}
+                            swiperAllowTouchMove={false}
                           />
-                        );
-                      })}
-                    </div>
-                  )}
-                  {isGlobal && isTiles && (
-                    <TilesGridOutput
-                      contentFields={contentFields}
-                      values={resolved.values}
-                    />
-                  )}
-                  {isGlobal && !isTiles && !isDivider && (
-                    <div className="flow-root space-y-3">
-                      {contentFields.map((field) => (
-                        <BlockFieldOutput
-                          key={field.name}
-                          field={field}
-                          value={resolved.values[field.name]}
-                          showPlaceholders
-                          interactive
-                          gallerySettings={toGallerySettings(resolved.settings)}
-                          swiperAllowTouchMove={false}
-                        />
-                      ))}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    )}
                   </BlockSpacingWrapper>
                   {hasBlockLayoutControls && (
                     <div
@@ -1268,7 +1479,9 @@ export function BlockEditorField({
       >
         <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-md">
           <DialogHeader className="shrink-0">
-            <DialogTitle>{editingType?.name ?? "Baustein bearbeiten"}</DialogTitle>
+            <DialogTitle>
+              {editingType?.name ?? "Baustein bearbeiten"}
+            </DialogTitle>
           </DialogHeader>
           {editingInstance && editingType && (
             <div className="flex flex-col gap-4 overflow-y-auto">
@@ -1337,16 +1550,38 @@ export function BlockEditorField({
                 margin={spacingInstance.layout?.margin?.[spacingTab]}
                 padding={spacingInstance.layout?.padding?.[spacingTab]}
                 onChangeMargin={(side, v) =>
-                  updateSpacing(spacingInstance.id, "margin", spacingTab, side, v)
+                  updateSpacing(
+                    spacingInstance.id,
+                    "margin",
+                    spacingTab,
+                    side,
+                    v,
+                  )
                 }
                 onChangeMarginAll={(v) =>
-                  updateSpacingAllSides(spacingInstance.id, "margin", spacingTab, v)
+                  updateSpacingAllSides(
+                    spacingInstance.id,
+                    "margin",
+                    spacingTab,
+                    v,
+                  )
                 }
                 onChangePadding={(side, v) =>
-                  updateSpacing(spacingInstance.id, "padding", spacingTab, side, v)
+                  updateSpacing(
+                    spacingInstance.id,
+                    "padding",
+                    spacingTab,
+                    side,
+                    v,
+                  )
                 }
                 onChangePaddingAll={(v) =>
-                  updateSpacingAllSides(spacingInstance.id, "padding", spacingTab, v)
+                  updateSpacingAllSides(
+                    spacingInstance.id,
+                    "padding",
+                    spacingTab,
+                    v,
+                  )
                 }
               />
 
@@ -1379,8 +1614,10 @@ export function BlockEditorField({
                 <span className="text-sm text-muted-foreground">
                   {SPACING_SIDES.some(
                     (side) =>
-                      spacingInstance.layout?.margin?.[spacingTab]?.[side] !== undefined ||
-                      spacingInstance.layout?.padding?.[spacingTab]?.[side] !== undefined,
+                      spacingInstance.layout?.margin?.[spacingTab]?.[side] !==
+                        undefined ||
+                      spacingInstance.layout?.padding?.[spacingTab]?.[side] !==
+                        undefined,
                   )
                     ? "Eigene Werte gesetzt"
                     : "Keine eigenen Werte"}
@@ -1393,7 +1630,10 @@ export function BlockEditorField({
                   >
                     Zurücksetzen
                   </Button>
-                  <Button type="button" onClick={() => setSpacingInstanceId(null)}>
+                  <Button
+                    type="button"
+                    onClick={() => setSpacingInstanceId(null)}
+                  >
                     Fertig
                   </Button>
                 </div>
@@ -1443,14 +1683,36 @@ export function BlockEditorField({
         moduleType={pendingInsert?.moduleType ?? null}
         items={
           pendingInsert
-            ? globalModules.filter((gm) => gm.moduleTypeId === pendingInsert.moduleType.id)
+            ? globalModules.filter(
+                (gm) => gm.moduleTypeId === pendingInsert.moduleType.id,
+              )
             : []
         }
         onSelect={(globalModule) => {
           if (pendingInsert) {
-            insertGlobalAt(pendingInsert.index, globalModule, pendingInsert.matchAlign);
+            insertGlobalAt(
+              pendingInsert.index,
+              globalModule,
+              pendingInsert.matchAlign,
+            );
           }
           setPendingInsert(null);
+        }}
+      />
+
+      <InsertFormBlockDialog
+        open={pendingFormInsert !== null}
+        onOpenChange={(open) => !open && setPendingFormInsert(null)}
+        onSelect={(formId) => {
+          if (pendingFormInsert) {
+            insertFormAt(
+              pendingFormInsert.index,
+              pendingFormInsert.moduleType,
+              formId,
+              pendingFormInsert.matchAlign,
+            );
+          }
+          setPendingFormInsert(null);
         }}
       />
     </div>

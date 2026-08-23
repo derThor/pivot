@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
+  ClipboardList,
   Image as ImageIcon,
   Plus,
   Trash2,
@@ -15,6 +16,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { ImagePickerDialog } from "@/components/image-picker-dialog";
 import { VideoPickerDialog } from "@/components/video-picker-dialog";
@@ -27,7 +35,83 @@ import {
   type RepeaterItem,
 } from "@/components/block-field-output";
 import { resolveImageSrc } from "@/lib/media";
-import type { ContentTypeField } from "@/lib/api-server";
+import type { ContentTypeField, FormListItem } from "@/lib/api-server";
+
+// Nur veröffentlichte Formulare sind wählbar – ein Entwurf/pausiertes
+// Formular hätte im Baustein nichts zu suchen (siehe FormsService.submit(),
+// das nur `status: "published"` annimmt). Lädt einmalig pro Editor-Sitzung,
+// nicht pro Feld-Instanz (mehrere Formular-Bausteine auf derselben Seite
+// teilen sich denselben Abruf).
+let formsCache: Promise<FormListItem[]> | null = null;
+export function loadPublishedForms(): Promise<FormListItem[]> {
+  if (!formsCache) {
+    formsCache = fetch("/api/forms?status=published&pageSize=100")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => data?.items ?? [])
+      .catch(() => []);
+  }
+  return formsCache;
+}
+
+function FormFieldSelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [forms, setForms] = useState<FormListItem[] | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    loadPublishedForms().then((items) => {
+      if (active) setForms(items);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (forms === null) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <ClipboardList className="size-4" />
+        Formulare werden geladen …
+      </div>
+    );
+  }
+
+  if (forms.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-1 rounded-md border border-dashed py-8 text-center text-sm text-muted-foreground">
+        <ClipboardList className="size-5" />
+        Kein veröffentlichtes Formular vorhanden.
+        <span>Lege eines unter „Formulare&quot; an.</span>
+      </div>
+    );
+  }
+
+  const items = Object.fromEntries(forms.map((f) => [f.id, f.name]));
+
+  return (
+    <Select
+      value={value}
+      onValueChange={(v) => onChange(v ?? "")}
+      items={items}
+    >
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder="Formular auswählen" />
+      </SelectTrigger>
+      <SelectContent>
+        {forms.map((form) => (
+          <SelectItem key={form.id} value={form.id}>
+            {form.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
 
 export function ModuleFieldInput({
   field,
@@ -92,6 +176,15 @@ export function ModuleFieldInput({
     );
   }
 
+  if (field.type === "form") {
+    return (
+      <div className="flex flex-col gap-1.5">
+        <Label required={field.required}>Formular</Label>
+        <FormFieldSelect value={stringValue} onChange={(v) => onChange(v)} />
+      </div>
+    );
+  }
+
   if (field.type === "boolean") {
     // Fehlender Wert (z.B. Einträge von vor Einführung dieses Felds) gilt
     // als "an" – konsistent mit der Lese-Seite (siehe isPublished-Prüfung
@@ -129,7 +222,6 @@ export function ModuleFieldInput({
                 />
               </div>
             ) : (
-               
               <video
                 src={resolveImageSrc(video.url)}
                 controls
@@ -283,10 +375,7 @@ export function ModuleFieldInput({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <Label
-        htmlFor={`module-field-${field.name}`}
-        required={field.required}
-      >
+      <Label htmlFor={`module-field-${field.name}`} required={field.required}>
         {field.name}
       </Label>
       {field.type === "richtext" ? (

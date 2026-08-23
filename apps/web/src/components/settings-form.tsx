@@ -9,6 +9,7 @@ import {
   Bell,
   Contrast,
   History,
+  Mail,
   Menu,
   Palette,
   Plug,
@@ -39,11 +40,13 @@ import { WebhooksManager } from "@/components/webhooks-manager";
 import { SettingsServicesCard } from "@/components/settings-services-card";
 import { ScheduledJobsCard } from "@/components/scheduled-jobs-card";
 import { RecentJobRunsCard } from "@/components/recent-job-runs-card";
+import { MailingSettingsCard } from "@/components/mailing-settings-card";
 import { PaginationControls } from "@/components/pagination-controls";
 import { cn } from "@/lib/utils";
 import type {
   AppSettings,
   JobRunsResponse,
+  MailTemplateListItem,
   ScheduledJobsResponse,
   SettingsChangesResponse,
   SmtpSettings,
@@ -102,6 +105,7 @@ type SectionId =
   | "webhooks"
   | "notifications"
   | "jobs"
+  | "mailing"
   | "protocol";
 
 const SECTIONS: {
@@ -153,6 +157,12 @@ const SECTIONS: {
     icon: Timer,
   },
   {
+    id: "mailing",
+    title: "Mailing",
+    subtitle: "Mailvorlagen & Versand",
+    icon: Mail,
+  },
+  {
     id: "protocol",
     title: "Protokoll",
     subtitle: "Änderungen & Export",
@@ -184,6 +194,7 @@ export function SettingsForm({
   smtp,
   jobs,
   jobRuns,
+  mailTemplates,
 }: {
   settings: AppSettings;
   logoFolderId: string | null;
@@ -192,6 +203,7 @@ export function SettingsForm({
   smtp: SmtpSettings;
   jobs: ScheduledJobsResponse;
   jobRuns: JobRunsResponse;
+  mailTemplates: MailTemplateListItem[];
 }) {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<SectionId>("access");
@@ -1144,6 +1156,10 @@ export function SettingsForm({
                   jobsGloballyPaused={settings.jobsGloballyPaused}
                 />
               </div>
+            )}
+
+            {activeSection === "mailing" && (
+              <MailingSettingsCard templates={mailTemplates} />
             )}
 
             {activeSection === "protocol" && (

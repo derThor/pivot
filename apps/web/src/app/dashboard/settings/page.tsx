@@ -3,6 +3,7 @@ import { PageContent } from "@/components/page-content";
 import {
   getJobRuns,
   getJobs,
+  getMailTemplates,
   getMediaFolders,
   getSettings,
   getSettingsChanges,
@@ -38,22 +39,24 @@ export default async function SettingsPage({
   // Eigener Query-Param `webhooksPage`/`protocolPage`/`jobsRunsPage` statt
   // `page`, damit sich die Paginierungen der einzelnen
   // Einstellungen-Abschnitte nicht gegenseitig überschreiben.
-  const [webhooks, settingsChanges, smtp, jobs, jobRuns] = await Promise.all([
-    getWebhooks({
-      page: webhooksPage,
-      pageSize: settings?.defaultPageSize ?? 10,
-    }),
-    getSettingsChanges({
-      page: protocolPage,
-      pageSize: settings?.defaultPageSize ?? 10,
-    }),
-    getSmtpSettings(),
-    getJobs({ page: jobsPage, pageSize: settings?.defaultPageSize ?? 10 }),
-    getJobRuns({
-      page: jobsRunsPage,
-      pageSize: settings?.defaultPageSize ?? 10,
-    }),
-  ]);
+  const [webhooks, settingsChanges, smtp, jobs, jobRuns, mailTemplates] =
+    await Promise.all([
+      getWebhooks({
+        page: webhooksPage,
+        pageSize: settings?.defaultPageSize ?? 10,
+      }),
+      getSettingsChanges({
+        page: protocolPage,
+        pageSize: settings?.defaultPageSize ?? 10,
+      }),
+      getSmtpSettings(),
+      getJobs({ page: jobsPage, pageSize: settings?.defaultPageSize ?? 10 }),
+      getJobRuns({
+        page: jobsRunsPage,
+        pageSize: settings?.defaultPageSize ?? 10,
+      }),
+      getMailTemplates(),
+    ]);
   // Nach Namen filtern statt nur `isSystem`: seit dem "Avatare"-Systemordner
   // (Profilfoto-Upload, 2026-08-17) gibt es mehr als einen isSystem-Ordner.
   const logoFolderId =
@@ -108,6 +111,7 @@ export default async function SettingsPage({
           meta: { page: 1, pageSize: 10, total: 0, pageCount: 1 },
         }
       }
+      mailTemplates={mailTemplates ?? []}
     />
   );
 }

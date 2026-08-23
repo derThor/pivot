@@ -24,6 +24,7 @@ import {
   Images,
   MessageSquare,
   Trash2,
+  ClipboardList,
 } from "lucide-react";
 
 import {
@@ -117,6 +118,12 @@ export const navGroups = [
         children: [{ title: "Tags", url: "/dashboard/tags", icon: Tags }],
       },
       { title: "Kategorien", url: "/dashboard/categories", icon: FolderTree },
+      {
+        title: "Formulare",
+        url: "/dashboard/forms",
+        icon: ClipboardList,
+        permission: "forms:read",
+      },
       {
         title: "Menüs",
         url: "/dashboard/navigation",
