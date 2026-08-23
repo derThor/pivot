@@ -207,7 +207,12 @@ export interface NavigationItemNode {
   externalUrl: string | null;
   openInNewTab: boolean;
   contentId: string | null;
-  content: { id: string; title: string; slug: string; status: ContentStatus } | null;
+  content: {
+    id: string;
+    title: string;
+    slug: string;
+    status: ContentStatus;
+  } | null;
   sortOrder: number;
   parentId: string | null;
   children: NavigationItemNode[];
@@ -271,9 +276,12 @@ export function getUsers(params?: {
   if (params?.page) search.set("page", String(params.page));
   if (params?.pageSize) search.set("pageSize", String(params.pageSize));
   if (params?.roleId) search.set("roleId", params.roleId);
-  if (params?.isActive !== undefined) search.set("isActive", String(params.isActive));
-  if (params?.anonymized !== undefined) search.set("anonymized", String(params.anonymized));
-  if (params?.deleted !== undefined) search.set("deleted", String(params.deleted));
+  if (params?.isActive !== undefined)
+    search.set("isActive", String(params.isActive));
+  if (params?.anonymized !== undefined)
+    search.set("anonymized", String(params.anonymized));
+  if (params?.deleted !== undefined)
+    search.set("deleted", String(params.deleted));
   if (params?.q) search.set("q", params.q);
   const query = search.toString();
 
@@ -802,7 +810,9 @@ export function getSettingsChanges(params?: {
   page?: number;
   pageSize?: number;
 }) {
-  return apiFetch<SettingsChangesResponse>(`/settings/changes${taxonomyQuery(params)}`);
+  return apiFetch<SettingsChangesResponse>(
+    `/settings/changes${taxonomyQuery(params)}`,
+  );
 }
 
 // Einstellungen → Integrationen, Karte "Dienste" (Nutzervorgabe,
@@ -975,10 +985,7 @@ export function getLegalDocuments() {
 }
 
 export type DeletionRequestStatus =
-  | "open"
-  | "in_progress"
-  | "completed"
-  | "rejected";
+  "open" | "in_progress" | "completed" | "rejected";
 
 export type DataSubjectRequestType = "deletion" | "access" | "rectification";
 
@@ -1033,7 +1040,12 @@ export interface DataProcessor {
   hasContract: boolean;
   contractDate: string | null;
   contractMediaId: string | null;
-  contractMedia: { id: string; filename: string; url: string; size: number } | null;
+  contractMedia: {
+    id: string;
+    filename: string;
+    url: string;
+    size: number;
+  } | null;
   location: string | null;
   complianceNote: string | null;
   outsideEu: boolean;
@@ -1112,13 +1124,7 @@ export function getRetentionTrashDue() {
 }
 
 export type TrashType =
-  | "content"
-  | "media"
-  | "categories"
-  | "tags"
-  | "gallery"
-  | "faq"
-  | "forms";
+  "content" | "media" | "categories" | "tags" | "gallery" | "faq" | "forms";
 
 export interface TrashItem {
   id: string;
@@ -1199,7 +1205,10 @@ export interface FormListResponse {
   meta: { page: number; pageSize: number; total: number; pageCount: number };
 }
 
-export interface FormDetail extends Omit<FormListItem, "_count" | "unreadSubmissions"> {
+export interface FormDetail extends Omit<
+  FormListItem,
+  "_count" | "unreadSubmissions"
+> {
   submissionCount: number;
 }
 
@@ -1291,6 +1300,7 @@ export interface MailTemplateListItem {
   recipientTo: string | null;
   recipientEditable: boolean;
   placeholders: string[];
+  placeholderLabels?: Record<string, string>;
   isCustomized: boolean;
   formId: string | null;
 }
@@ -1299,7 +1309,8 @@ export function getMailTemplates() {
   return apiFetch<MailTemplateListItem[]>("/settings/mail-templates");
 }
 
-export type NotificationCategory = "system" | "security" | "privacy" | "accounts";
+export type NotificationCategory =
+  "system" | "security" | "privacy" | "accounts";
 
 export interface AppNotification {
   id: string;

@@ -127,6 +127,27 @@ export function formFieldPlaceholders(fields: unknown): string[] {
     .filter((id): id is string => typeof id === 'string');
 }
 
+/** Feld-Id → Feld-Label, für die Platzhalter-Tooltips im Mailing-Editor
+ * (Nutzervorgabe: dort muss der echte Feld-Name stehen, nicht ein
+ * generischer Platzhaltertext). */
+export function formFieldLabels(fields: unknown): Record<string, string> {
+  if (!Array.isArray(fields)) return {};
+  const labels: Record<string, string> = {};
+  for (const f of fields) {
+    if (!f || typeof f !== 'object') continue;
+    const { id, label, type } = f as {
+      id?: unknown;
+      label?: unknown;
+      type?: unknown;
+    };
+    if (type === 'section' || typeof id !== 'string') continue;
+    if (typeof label === 'string' && label.trim()) {
+      labels[id] = label;
+    }
+  }
+  return labels;
+}
+
 export function defaultFormTemplate(form: FormLike, kind: FormMailKind) {
   const fields = Array.isArray(form.fields)
     ? (form.fields as Array<{ id: string; label: string; type?: string }>)

@@ -1,10 +1,13 @@
 import {
+  Building2,
+  ClipboardList,
   Compass,
   FileText,
   FolderTree,
   HelpCircle,
   Image as ImageIcon,
   Images,
+  Inbox,
   Layers,
   Link2,
   Lock,
@@ -29,10 +32,13 @@ export const resourceLabels: Record<string, string> = {
   "module-types": "Bausteine",
   gallery: "Galerien",
   faq: "FAQs",
+  forms: "Formulare",
+  "form-submissions": "Formular-Einsendungen",
   "preview-links": "Vorschau-Links",
   users: "Benutzer",
   roles: "Rollen & Rechte",
   settings: "Einstellungen",
+  company: "Firma",
   privacy: "Datenschutz",
 };
 
@@ -45,10 +51,13 @@ export const resourceIcons: Record<string, LucideIcon> = {
   "module-types": Layers,
   gallery: Images,
   faq: HelpCircle,
+  forms: ClipboardList,
+  "form-submissions": Inbox,
   "preview-links": Link2,
   users: Users,
   roles: ShieldCheck,
   settings: Settings,
+  company: Building2,
   privacy: Lock,
 };
 

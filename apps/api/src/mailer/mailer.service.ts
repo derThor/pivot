@@ -8,6 +8,7 @@ import {
   SYSTEM_MAIL_TEMPLATES,
   defaultFormTemplate,
   formFieldPlaceholders,
+  formFieldLabels,
   type FormMailKind,
 } from './mail-templates.catalog';
 
@@ -42,6 +43,9 @@ export interface MailTemplateListItem {
   recipientTo: string | null;
   recipientEditable: boolean;
   placeholders: string[];
+  // Nur bei formulargebundenen Vorlagen gesetzt – Feld-Id → echtes
+  // Feld-Label aus dem Formular-Builder, für die Platzhalter-Tooltips.
+  placeholderLabels?: Record<string, string>;
   isCustomized: boolean;
   formId: string | null;
 }
@@ -520,6 +524,11 @@ export class MailerService {
         'formName',
         'submittedAt',
       ];
+      const placeholderLabels = {
+        ...formFieldLabels(form.fields),
+        formName: 'Name des Formulars',
+        submittedAt: 'Zeitpunkt der Einsendung',
+      };
       return (['admin_notification', 'confirmation'] as const).map((kind) => {
         const virtualId = `${form.id}:${kind}`;
         const override = overrideByForm.get(virtualId);
@@ -541,6 +550,7 @@ export class MailerService {
               : null,
           recipientEditable: kind === 'admin_notification',
           placeholders,
+          placeholderLabels,
           isCustomized: Boolean(override),
           formId: form.id,
         };

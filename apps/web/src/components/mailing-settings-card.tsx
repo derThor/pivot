@@ -13,14 +13,53 @@ import { SwitchRow } from "@/components/switch-row";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import type { MailTemplateCategory, MailTemplateListItem } from "@/lib/api-server";
+import type {
+  MailTemplateCategory,
+  MailTemplateListItem,
+} from "@/lib/api-server";
 
 const CATEGORY_LABELS: Record<MailTemplateCategory, string> = {
   auth: "Konto & Anmeldung",
   privacy: "Datenschutz",
   forms: "Formulare",
 };
+
+// Erklärung je Platzhalter für den Tooltip beim Hovern über einen Chip –
+// deckt den festen Katalog der System-Mails ab (siehe
+// mail-templates.catalog.ts) sowie die beiden bei jeder Formular-Vorlage
+// immer vorhandenen Platzhalter. Dynamische Formularfeld-Ids (siehe
+// formFieldPlaceholders()) werden stattdessen über
+// `template.placeholderLabels` mit dem echten Feld-Titel aus dem
+// Formular-Builder aufgelöst (Nutzervorgabe: generischer Text war
+// "blöd", hier muss der echte Name stehen).
+const PLACEHOLDER_DESCRIPTIONS: Record<string, string> = {
+  link: "Bestätigungs- bzw. Zurücksetzen-Link",
+  title: "Titel des Datenschutzvorfalls",
+  severity: "Schweregrad des Vorfalls",
+  rows: "Anzahl der Zeilen/Kennzahlen im Bericht",
+  dsrId: "ID der Betroffenenanfrage",
+  dueAt: "Datum, an dem die Frist abläuft",
+  processorName: "Name des Auftragsverarbeiters",
+  formName: "Name des Formulars",
+  submittedAt: "Zeitpunkt der Einsendung",
+};
+
+function placeholderDescription(
+  placeholder: string,
+  placeholderLabels?: Record<string, string>,
+): string {
+  return (
+    placeholderLabels?.[placeholder] ??
+    PLACEHOLDER_DESCRIPTIONS[placeholder] ??
+    `Wert aus dem Formularfeld „${placeholder}“`
+  );
+}
 
 function sampleValue(placeholder: string): string {
   return `Beispielwert (${placeholder})`;
@@ -95,9 +134,12 @@ function TemplateDetail({
   }
 
   async function handleReset() {
-    await fetch(`/api/settings/mail-templates/${encodeURIComponent(template.id)}`, {
-      method: "DELETE",
-    });
+    await fetch(
+      `/api/settings/mail-templates/${encodeURIComponent(template.id)}`,
+      {
+        method: "DELETE",
+      },
+    );
     toastEdited("Vorlage wurde auf den Standard zurückgesetzt.");
     onSaved();
   }
@@ -132,7 +174,12 @@ function TemplateDetail({
         {template.isCustomized && (
           <ConfirmDeleteDialog
             trigger={
-              <Button type="button" variant="outline" size="sm" className="border-[#D4D4D4]">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="border-[#D4D4D4]"
+              >
                 <RotateCcw className="size-4" />
                 Auf Standard zurücksetzen
               </Button>
@@ -184,14 +231,25 @@ function TemplateDetail({
               <Label>Platzhalter</Label>
               <div className="flex flex-wrap gap-1.5">
                 {template.placeholders.map((placeholder) => (
-                  <button
-                    key={placeholder}
-                    type="button"
-                    onClick={() => insertPlaceholder(placeholder)}
-                    className="rounded-full bg-[#F4F4F5] px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-                  >
-                    {`{{${placeholder}}}`}
-                  </button>
+                  <Tooltip key={placeholder}>
+                    <TooltipTrigger
+                      render={
+                        <button
+                          type="button"
+                          onClick={() => insertPlaceholder(placeholder)}
+                          className="rounded-full bg-[#F4F4F5] px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                        />
+                      }
+                    >
+                      {`{{${placeholder}}}`}
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {placeholderDescription(
+                        placeholder,
+                        template.placeholderLabels,
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
                 ))}
               </div>
             </div>
@@ -272,13 +330,15 @@ export function MailingSettingsCard({
   const [selectedId, setSelectedId] = useState(templates[0]?.id ?? null);
   const selected = templates.find((t) => t.id === selectedId) ?? templates[0];
 
-  const groups: { category: MailTemplateCategory; items: MailTemplateListItem[] }[] =
-    (["auth", "privacy", "forms"] as const)
-      .map((category) => ({
-        category,
-        items: templates.filter((t) => t.category === category),
-      }))
-      .filter((group) => group.items.length > 0);
+  const groups: {
+    category: MailTemplateCategory;
+    items: MailTemplateListItem[];
+  }[] = (["auth", "privacy", "forms"] as const)
+    .map((category) => ({
+      category,
+      items: templates.filter((t) => t.category === category),
+    }))
+    .filter((group) => group.items.length > 0);
 
   return (
     <Card className="rounded-xl shadow-sm">
@@ -295,7 +355,7 @@ export function MailingSettingsCard({
             <div className="flex flex-col gap-4">
               {groups.map((group) => (
                 <div key={group.category} className="flex flex-col gap-1">
-                  <p className="px-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  <p className="border-b border-[#E5E5E5] px-2 pb-1.5 text-xs font-semibold tracking-wide text-accent-foreground uppercase">
                     {CATEGORY_LABELS[group.category]}
                   </p>
                   {group.items.map((item) => (
@@ -304,10 +364,10 @@ export function MailingSettingsCard({
                       type="button"
                       onClick={() => setSelectedId(item.id)}
                       className={cn(
-                        "flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors",
+                        "flex items-center justify-between gap-2 rounded-lg border-l-4 px-3 py-2 text-left text-sm transition-colors",
                         item.id === selected?.id
-                          ? "bg-primary/10 font-medium text-primary"
-                          : "text-foreground hover:bg-[#F4F4F5]",
+                          ? "border-l-primary bg-primary/15 font-semibold text-foreground"
+                          : "border-l-transparent text-foreground hover:bg-[#F4F4F5]",
                       )}
                     >
                       <span className="truncate">{item.label}</span>

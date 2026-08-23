@@ -145,6 +145,12 @@ const SECTIONS: {
     icon: Plug,
   },
   {
+    id: "mailing",
+    title: "Mailing",
+    subtitle: "Mailvorlagen & Versand",
+    icon: Mail,
+  },
+  {
     id: "webhooks",
     title: "Webhooks",
     subtitle: "Automatisierte Events",
@@ -155,12 +161,6 @@ const SECTIONS: {
     title: "Jobs",
     subtitle: "Geplante Aufgaben",
     icon: Timer,
-  },
-  {
-    id: "mailing",
-    title: "Mailing",
-    subtitle: "Mailvorlagen & Versand",
-    icon: Mail,
   },
   {
     id: "protocol",

@@ -871,6 +871,9 @@ function FieldPropertiesPanel({
                   })
                 }
               />
+              <p className="text-xs text-muted-foreground">
+                Es lassen sich nur veröffentlichte Seiten auswählen.
+              </p>
             </div>
           )}
 
