@@ -85,22 +85,16 @@ export class LicenseClientService implements OnModuleInit {
     await this.performCheck();
   }
 
-  // Abklingzeit für `/license/wakeup` (Nutzerfrage, 2026-08-24: "kann man
-  // die Seite lahmlegen durch Aufruf der Wecken-Funktion?") – rein
-  // defensiv: der Aufruf war schon vorher durch den gleichen Schlüssel wie
-  // `/license/check` UND den globalen `ThrottlerGuard` (100/Minute pro IP)
-  // abgesichert, ein Angreifer mit dem Key könnte ohnehin nichts erreichen,
-  // was er nicht schon über `/license/check` direkt könnte. Diese
-  // In-Memory-Sperre schützt zusätzlich davor, dass derselbe gültige Key
-  // über mehrere IPs verteilt den IP-basierten Rate-Limit umgeht und so
-  // wiederholt echte Master-Anfragen samt DB-Schreibzugriffen auslöst.
-  private lastWakeupTriggeredAt = 0;
-  private readonly WAKEUP_COOLDOWN_MS = 60_000;
-
+  // Update 2026-08-24: Abklingzeit wieder entfernt – sie schluckte einen
+  // legitimen Wecken-Aufruf stillschweigend (meldete trotzdem "erfolgreich"),
+  // sobald kurz zuvor aus irgendeinem Grund schon eine Prüfung lief (eigener
+  // vorheriger Klick, Cron, o.ä.) – genau der normale Ablauf "sperren, dann
+  // sofort wecken" lief dadurch ins Leere. War ohnehin nur rein defensiv
+  // gedacht (der Aufruf ist schon durch denselben Key wie `/license/check`
+  // UND den globalen `ThrottlerGuard` abgesichert, kein akutes Loch ohne
+  // sie) – der Schaden an der eigentlichen Funktion wiegt schwerer als der
+  // marginale zusätzliche Schutz.
   async requestWakeup(): Promise<void> {
-    const now = Date.now();
-    if (now - this.lastWakeupTriggeredAt < this.WAKEUP_COOLDOWN_MS) return;
-    this.lastWakeupTriggeredAt = now;
     await this.performCheck();
   }
 
