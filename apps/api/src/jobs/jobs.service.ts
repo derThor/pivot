@@ -18,7 +18,20 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 import { ContentService } from '../content/content.service';
 import { DeletionRequestReminderSchedulerService } from '../deletion-requests/deletion-request-reminder-scheduler.service';
 import { PrivacyReportSchedulerService } from '../privacy/privacy-report-scheduler.service';
+import { LICENSE_CHECK_JOB_ID } from '../license-client/license-client.service';
+import { WEBSITE_MONITOR_JOB_ID } from '../websites/website-monitor.service';
 import { UpdateJobDto } from './dto/update-job.dto';
+
+// Nur für die Anzeige in "Letzte Läufe" (siehe findRecentRuns()) – bewusst
+// NICHT Teil von `definitions` unten: die Lizenzprüfung und die
+// Live-Überwachung gesperrter Websites dürfen sich nicht pausieren oder
+// umplanen lassen (das würde die Durchsetzung untergraben, die sie
+// eigentlich sicherstellen), tauchen deshalb auch nicht unter "Geplante
+// Aufgaben" auf. Rein lesbare Historie.
+const READ_ONLY_JOB_TITLES: Record<string, string> = {
+  [LICENSE_CHECK_JOB_ID]: 'Lizenzprüfung (Client)',
+  [WEBSITE_MONITOR_JOB_ID]: 'Live-Überwachung gesperrter Websites (Master)',
+};
 
 interface JobDefinition {
   id: string;
@@ -316,7 +329,10 @@ export class JobsService implements OnModuleInit {
       }),
       this.prisma.jobRun.count(),
     ]);
-    const titleById = new Map(this.definitions.map((d) => [d.id, d.title]));
+    const titleById = new Map([
+      ...this.definitions.map((d): [string, string] => [d.id, d.title]),
+      ...Object.entries(READ_ONLY_JOB_TITLES),
+    ]);
     return {
       items: items.map((run) => ({
         id: run.id,

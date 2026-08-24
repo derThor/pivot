@@ -15,6 +15,16 @@ const GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000;
 // gewertet werden.
 const CLOCK_REGRESSION_TOLERANCE_MS = 5 * 60 * 1000;
 
+// `JobRun.jobId` für die Lizenzprüfung (siehe recordJobRun()) – taucht in
+// der "Letzte Läufe"-Karte unter Einstellungen → Jobs auf, aber bewusst
+// NICHT in `JobsService.definitions`, siehe dortiger Kommentar.
+export const LICENSE_CHECK_JOB_ID = 'license-check';
+
+interface JobOutcome {
+  status: 'success' | 'error';
+  message: string;
+}
+
 export type EffectiveLicenseStatus =
   | { mode: 'master' }
   | { mode: 'slave'; status: 'live' | 'development' | 'unchecked' }
@@ -69,6 +79,25 @@ export class LicenseClientService implements OnModuleInit {
     await this.performCheck();
   }
 
+  // Abklingzeit für `/license/wakeup` (Nutzerfrage, 2026-08-24: "kann man
+  // die Seite lahmlegen durch Aufruf der Wecken-Funktion?") – rein
+  // defensiv: der Aufruf war schon vorher durch den gleichen Schlüssel wie
+  // `/license/check` UND den globalen `ThrottlerGuard` (100/Minute pro IP)
+  // abgesichert, ein Angreifer mit dem Key könnte ohnehin nichts erreichen,
+  // was er nicht schon über `/license/check` direkt könnte. Diese
+  // In-Memory-Sperre schützt zusätzlich davor, dass derselbe gültige Key
+  // über mehrere IPs verteilt den IP-basierten Rate-Limit umgeht und so
+  // wiederholt echte Master-Anfragen samt DB-Schreibzugriffen auslöst.
+  private lastWakeupTriggeredAt = 0;
+  private readonly WAKEUP_COOLDOWN_MS = 60_000;
+
+  async requestWakeup(): Promise<void> {
+    const now = Date.now();
+    if (now - this.lastWakeupTriggeredAt < this.WAKEUP_COOLDOWN_MS) return;
+    this.lastWakeupTriggeredAt = now;
+    await this.performCheck();
+  }
+
   private getState() {
     return this.prisma.licenseState.findUnique({ where: { id: 'singleton' } });
   }
@@ -84,8 +113,45 @@ export class LicenseClientService implements OnModuleInit {
     });
   }
 
+  /** Nutzervorgabe, 2026-08-24: "Job soll unter Einstellungen → Jobs
+   * auftauchen" – schreibt bei jedem Lauf einen `JobRun` mit `jobId:
+   * "license-check"`, damit die bestehende "Letzte Läufe"-Karte die
+   * Historie automatisch mit anzeigt. `JobRun.jobId` ist per Fremdschlüssel
+   * an `ScheduledJob` gebunden, daher zuerst eine (idempotente) Zeile dort
+   * anlegen – aber bewusst NICHT in `JobsService.definitions` registrieren:
+   * dort ließe sich der Job pausieren/umplanen, was genau die Durchsetzung
+   * unterläuft, die er eigentlich sicherstellen soll. Ohne Eintrag in
+   * `definitions` findet `JobsService.update()`/`runNow()` diese Zeile nie
+   * (siehe `getDefinition()` dort) – rein lesbare Historie, keine neue
+   * Bearbeitungsfläche. */
+  private async recordJobRun(startedAt: Date, outcome: JobOutcome) {
+    await this.prisma.scheduledJob.upsert({
+      where: { id: LICENSE_CHECK_JOB_ID },
+      create: {
+        id: LICENSE_CHECK_JOB_ID,
+        cronExpression: '0 0 * * 1',
+        isCritical: true,
+      },
+      update: {},
+    });
+    await this.prisma.jobRun.create({
+      data: {
+        jobId: LICENSE_CHECK_JOB_ID,
+        startedAt,
+        durationMs: Date.now() - startedAt.getTime(),
+        status: outcome.status,
+        message: outcome.message,
+      },
+    });
+  }
+
   async performCheck(): Promise<void> {
-    const now = new Date();
+    const startedAt = new Date();
+    const outcome = await this.runCheck(startedAt);
+    await this.recordJobRun(startedAt, outcome);
+  }
+
+  private async runCheck(now: Date): Promise<JobOutcome> {
     const masterUrl = this.config.get<string>('LICENSE_MASTER_URL');
     const domain = this.config.get<string>('LICENSE_SITE_DOMAIN');
     const apiKey = this.config.get<string>('LICENSE_API_KEY');
@@ -94,13 +160,13 @@ export class LicenseClientService implements OnModuleInit {
     );
 
     if (!masterUrl || !domain || !apiKey || !masterPublicKey) {
-      this.logger.error(
+      const message =
         'Slave-Modus aktiv, aber LICENSE_MASTER_URL/LICENSE_SITE_DOMAIN/' +
-          'LICENSE_API_KEY/LICENSE_MASTER_PUBLIC_KEY fehlen – kann keine ' +
-          'Lizenzprüfung durchführen.',
-      );
+        'LICENSE_API_KEY/LICENSE_MASTER_PUBLIC_KEY fehlen – kann keine ' +
+        'Lizenzprüfung durchführen.';
+      this.logger.error(message);
       await this.recordAttempt(now);
-      return;
+      return { status: 'error', message };
     }
 
     const controller = new AbortController();
@@ -116,41 +182,43 @@ export class LicenseClientService implements OnModuleInit {
         signal: controller.signal,
       });
       if (!res.ok) {
-        this.logger.warn(`Lizenzprüfung fehlgeschlagen: HTTP ${res.status}`);
+        const message = `Lizenzprüfung fehlgeschlagen: HTTP ${res.status}`;
+        this.logger.warn(message);
         await this.recordAttempt(now);
-        return;
+        return { status: 'error', message };
       }
       const data = (await res.json().catch(() => null)) as {
         token?: string;
       } | null;
       if (!data?.token) {
-        this.logger.warn('Lizenzprüfung: Antwort ohne Token.');
+        const message = 'Lizenzprüfung: Antwort ohne Token.';
+        this.logger.warn(message);
         await this.recordAttempt(now);
-        return;
+        return { status: 'error', message };
       }
 
       const payload = verifyLicenseToken(data.token, masterPublicKey);
       if (!payload) {
-        this.logger.error('Lizenz-Token-Signatur ungültig – verworfen.');
+        const message = 'Lizenz-Token-Signatur ungültig – verworfen.';
+        this.logger.error(message);
         await this.recordAttempt(now);
-        return;
+        return { status: 'error', message };
       }
       if (payload.domain !== domain) {
-        this.logger.error(
-          'Lizenz-Token für falsche Domain erhalten – verworfen.',
-        );
+        const message = 'Lizenz-Token für falsche Domain erhalten – verworfen.';
+        this.logger.error(message);
         await this.recordAttempt(now);
-        return;
+        return { status: 'error', message };
       }
 
       const currentState = await this.getState();
       if (currentState && payload.seq <= currentState.seq) {
-        this.logger.warn(
+        const message =
           `Lizenz-Token mit seq=${payload.seq} nicht neuer als gespeicherter ` +
-            `Stand (${currentState.seq}) – verworfen (Replay-Schutz).`,
-        );
+          `Stand (${currentState.seq}) – verworfen (Replay-Schutz).`;
+        this.logger.warn(message);
         await this.recordAttempt(now);
-        return;
+        return { status: 'error', message };
       }
 
       await this.prisma.licenseState.upsert({
@@ -177,12 +245,14 @@ export class LicenseClientService implements OnModuleInit {
           lastObservedAt: now,
         },
       });
-      this.logger.log(`Lizenzprüfung erfolgreich – Status: ${payload.status}.`);
+      const message = `Status: ${payload.status}.`;
+      this.logger.log(`Lizenzprüfung erfolgreich – ${message}`);
+      return { status: 'success', message };
     } catch (error) {
-      this.logger.warn(
-        `Lizenzprüfung fehlgeschlagen: ${(error as Error).message}`,
-      );
+      const message = `Lizenzprüfung fehlgeschlagen: ${(error as Error).message}`;
+      this.logger.warn(message);
       await this.recordAttempt(now);
+      return { status: 'error', message };
     } finally {
       clearTimeout(timeout);
     }

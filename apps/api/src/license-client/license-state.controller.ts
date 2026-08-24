@@ -80,7 +80,10 @@ export class LicenseStateController {
     if (!isValid) {
       throw new UnauthorizedException('Ungültiger Weck-Schlüssel.');
     }
-    await this.licenseClient.performCheck();
+    // Entprellt (siehe requestWakeup()) – schützt zusätzlich zum globalen
+    // ThrottlerGuard davor, dass derselbe gültige Key über mehrere IPs
+    // verteilt wiederholt echte Master-Anfragen auslöst.
+    await this.licenseClient.requestWakeup();
     return { triggered: true };
   }
 }
