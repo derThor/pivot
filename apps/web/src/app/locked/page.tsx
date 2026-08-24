@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getLicenseState, getPublicSettings } from "@/lib/api-server";
+import { getLicenseState } from "@/lib/api-server";
 
 // Meta-Tag-Marker, den WebsiteMonitorService (Master-seitige Live-
 // Überwachung, siehe knowledge-base/platform/master-slave-licensing.md)
@@ -32,35 +32,30 @@ function isLightColor(hex: string): boolean {
  * sobald diese Installation im Client-Modus gesperrt ist. Titel/Text unter
  * Einstellungen → Wartungsseite editierbar; Logo/Firmenname/Kontaktdaten/
  * Akzentfarbe kommen automatisch aus den bestehenden Firmen-/Darstellungs-
- * Einstellungen (Firma-Seite bzw. Einstellungen → Darstellung) – keine
- * eigene Konfiguration nötig, jede Installation zeigt automatisch ihre
- * eigene Marke. */
+ * Einstellungen – keine eigene Konfiguration nötig, jede Installation zeigt
+ * automatisch ihre eigene Marke. Bezieht ALLES ausschließlich über
+ * `getLicenseState()` (`/license/state`), NICHT über `getPublicSettings()`
+ * (`/settings/public`) – letzteres ist während einer echten Sperre selbst
+ * blockiert (siehe `LicenseEnforcementGuard`), wäre also ausgerechnet dann
+ * leer, wenn diese Seite tatsächlich gebraucht wird. */
 export default async function LockedPage() {
-  const [state, settings] = await Promise.all([
-    getLicenseState(),
-    getPublicSettings(),
-  ]);
-  const title =
-    (state?.mode === "slave" &&
-      state.status === "locked" &&
-      state.maintenanceTitle) ||
-    DEFAULT_TITLE;
-  const message =
-    (state?.mode === "slave" &&
-      state.status === "locked" &&
-      state.maintenanceMessage) ||
-    DEFAULT_MESSAGE;
+  const state = await getLicenseState();
+  const branding =
+    state?.mode === "slave" && state.status === "locked" ? state : null;
 
-  const accent = settings?.accentColor || DEFAULT_ACCENT;
+  const title = branding?.maintenanceTitle || DEFAULT_TITLE;
+  const message = branding?.maintenanceMessage || DEFAULT_MESSAGE;
+
+  const accent = branding?.accentColor || DEFAULT_ACCENT;
   const isLight = isLightColor(accent);
   const textColor = isLight ? "#0B1220" : "#FFFFFF";
   const mutedColor = isLight ? "rgba(11,18,32,0.6)" : "rgba(255,255,255,0.7)";
   const borderColor = isLight ? "rgba(11,18,32,0.15)" : "rgba(255,255,255,0.2)";
 
-  const companyName = settings?.companyName || "Pivot";
-  const companyCity = settings?.companyCity;
-  const companyEmail = settings?.companyEmail;
-  const companyPhone = settings?.companyPhone;
+  const companyName = branding?.companyName || "Pivot";
+  const companyCity = branding?.companyCity;
+  const companyEmail = branding?.companyEmail;
+  const companyPhone = branding?.companyPhone;
   const hasContact = Boolean(companyEmail || companyPhone || companyCity);
 
   return (
@@ -70,14 +65,14 @@ export default async function LockedPage() {
     >
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2.5">
-          {settings?.companyLogoUrl ? (
+          {branding?.companyLogoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- externe Medien-URL, next/image-Domainliste unnötig für diese eine öffentliche Seite
             <img
-              src={settings.companyLogoUrl}
+              src={branding.companyLogoUrl}
               alt={companyName}
               className="h-8 w-auto object-contain"
             />
-          ) : !settings?.companyName ? (
+          ) : !branding?.companyName ? (
             // eslint-disable-next-line @next/next/no-img-element -- statisches Asset unter public/, kein next/image nötig
             <img
               src="/brand/logo-collapsed.png"

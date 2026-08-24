@@ -25,16 +25,22 @@ interface JobOutcome {
   message: string;
 }
 
+export interface LockedPageBranding {
+  maintenanceTitle: string | null;
+  maintenanceMessage: string | null;
+  companyName: string | null;
+  companyLogoUrl: string | null;
+  companyEmail: string | null;
+  companyPhone: string | null;
+  companyCity: string | null;
+  accentColor: string | null;
+}
+
 export type EffectiveLicenseStatus =
   | { mode: 'master' }
   | { mode: 'slave'; status: 'live' | 'development' | 'unchecked' }
   | { mode: 'slave'; status: 'pending'; expiresAt: Date }
-  | {
-      mode: 'slave';
-      status: 'locked';
-      maintenanceTitle: string | null;
-      maintenanceMessage: string | null;
-    };
+  | ({ mode: 'slave'; status: 'locked' } & LockedPageBranding);
 
 /**
  * Slave-seitiger Lizenz-Client (siehe
@@ -315,19 +321,33 @@ export class LicenseClientService implements OnModuleInit {
   /** Nur bei "locked" gebraucht – eigener Query statt in jedem Aufruf von
    * `getEffectiveStatus()` mitzuladen. `GET /license/state` bleibt auch
    * bei Sperre erreichbar (siehe LicenseEnforcementGuard-Allowlist),
-   * `GET /settings/public` dagegen nicht mehr – die Wartungsseite muss
-   * ihren Inhalt deshalb über diesen Weg bekommen. */
-  private async getMaintenanceContent(): Promise<{
-    maintenanceTitle: string | null;
-    maintenanceMessage: string | null;
-  }> {
+   * `GET /settings/public` dagegen nicht mehr – die Wartungsseite
+   * (`apps/web/src/app/locked/page.tsx`) muss ihren KOMPLETTEN Inhalt
+   * (Titel/Text UND Marke: Firmenname/Logo/Kontakt/Akzentfarbe) deshalb
+   * über diesen Weg bekommen, nicht über `getPublicSettings()`. */
+  private async getMaintenanceContent(): Promise<LockedPageBranding> {
     const settings = await this.prisma.appSettings.findUnique({
       where: { id: 1 },
-      select: { maintenancePageTitle: true, maintenancePageMessage: true },
+      select: {
+        maintenancePageTitle: true,
+        maintenancePageMessage: true,
+        companyName: true,
+        companyLogoUrl: true,
+        companyEmail: true,
+        companyPhone: true,
+        companyCity: true,
+        accentColor: true,
+      },
     });
     return {
       maintenanceTitle: settings?.maintenancePageTitle ?? null,
       maintenanceMessage: settings?.maintenancePageMessage ?? null,
+      companyName: settings?.companyName ?? null,
+      companyLogoUrl: settings?.companyLogoUrl ?? null,
+      companyEmail: settings?.companyEmail ?? null,
+      companyPhone: settings?.companyPhone ?? null,
+      companyCity: settings?.companyCity ?? null,
+      accentColor: settings?.accentColor ?? null,
     };
   }
 }

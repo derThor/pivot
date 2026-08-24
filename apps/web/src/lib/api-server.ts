@@ -943,16 +943,22 @@ export function getPublicSettings() {
 }
 
 // Siehe knowledge-base/platform/master-slave-licensing.md.
+export interface LockedPageBranding {
+  maintenanceTitle: string | null;
+  maintenanceMessage: string | null;
+  companyName: string | null;
+  companyLogoUrl: string | null;
+  companyEmail: string | null;
+  companyPhone: string | null;
+  companyCity: string | null;
+  accentColor: string | null;
+}
+
 export type LicenseState =
   | { mode: "master" }
   | { mode: "slave"; status: "live" | "development" | "unchecked" }
   | { mode: "slave"; status: "pending"; expiresAt: string }
-  | {
-      mode: "slave";
-      status: "locked";
-      maintenanceTitle: string | null;
-      maintenanceMessage: string | null;
-    };
+  | ({ mode: "slave"; status: "locked" } & LockedPageBranding);
 
 /** Öffentlich, unauthentifiziert (GET /license/state) – steuert das
  * Entwicklungsinstanz-Hinweisbanner im Dashboard und die öffentliche
