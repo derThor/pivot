@@ -10,8 +10,14 @@ import { LicenseClientService } from './license-client.service';
 // Bleiben auch bei "locked" erreichbar (Nutzervorgabe: "API blockt bis auf
 // einen minimalen Health-/Lizenz-Endpunkt"). Suffix-Vergleich statt
 // exaktem Pfad, damit das URI-Versionierungspräfix (`/v1/...`) keine
-// Rolle spielt.
-const ALLOWED_SUFFIXES = ['/health', '/license/state'];
+// Rolle spielt. `/license/recheck` bewusst mit dabei (Nutzervorgabe,
+// 2026-08-24: "damit du nicht neu starten musst") – sonst wäre der
+// "Jetzt prüfen"-Endpunkt ausgerechnet im gesperrten Zustand selbst
+// blockiert, obwohl genau dort (Master hat gerade entsperrt, lokaler
+// Stand ist noch veraltet) der eigentliche Anwendungsfall liegt. Bleibt
+// trotzdem hinter echtem Login + `settings:update` (JwtAuthGuard/
+// PermissionsGuard laufen unabhängig von diesem Guard weiter).
+const ALLOWED_SUFFIXES = ['/health', '/license/state', '/license/recheck'];
 
 /**
  * Globaler Guard: blockt auf einer Slave-Installation (fast) jeden
