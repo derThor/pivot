@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { ChevronRight, Globe, ShieldCheck } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronRight, Globe, RotateCcw, ShieldCheck } from "lucide-react";
 
+import { toastEdited } from "@/components/app-toast";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DeploymentModeDialog } from "@/components/deployment-mode-dialog";
 import { PaginationControls } from "@/components/pagination-controls";
@@ -11,10 +13,19 @@ import { WebsiteModeDialog } from "@/components/website-mode-dialog";
 import { formatRelativeTime } from "@/lib/utils";
 import type {
   AppSettings,
+  LicenseState,
   WebsiteListItem,
   WebsiteListResponse,
   WebsiteStatus,
 } from "@/lib/api-server";
+
+const STATUS_LABEL: Record<string, string> = {
+  live: "Live",
+  development: "Entwicklung",
+  unchecked: "Ungeprüft",
+  pending: "Karenzzeit",
+  locked: "Gesperrt",
+};
 
 const STATUS_BADGE: Record<
   WebsiteStatus,
@@ -51,20 +62,57 @@ export function MasterClientCard({
   websites: WebsiteListResponse;
 }) {
   const isMaster = settings.deploymentMode === "master";
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [selfDialogOpen, setSelfDialogOpen] = useState(false);
   const [websiteDialogTarget, setWebsiteDialogTarget] =
     useState<WebsiteListItem | null>(null);
+  const [isRechecking, setIsRechecking] = useState(false);
+
+  async function handleRecheck() {
+    setIsRechecking(true);
+    try {
+      const res = await fetch("/api/license/recheck", { method: "POST" });
+      const data = (await res.json().catch(() => null)) as LicenseState | null;
+      if (!res.ok) return;
+      const label =
+        data && "status" in data
+          ? (STATUS_LABEL[data.status] ?? data.status)
+          : "unbekannt";
+      toastEdited(`Geprüft – Status: ${label}.`);
+      router.refresh();
+    } finally {
+      setIsRechecking(false);
+    }
+  }
 
   return (
     <Card className="rounded-xl shadow-sm">
-      <CardHeader>
-        <CardTitle>Mandanten</CardTitle>
-        {isMaster && (
-          <p className="text-sm text-muted-foreground">
-            Neue Projekte unter Administration → Webseite erscheinen hier
-            automatisch.
-          </p>
+      <CardHeader
+        className={
+          !isMaster ? "flex-row items-center justify-between" : undefined
+        }
+      >
+        <div>
+          <CardTitle>Mandanten</CardTitle>
+          {isMaster && (
+            <p className="text-sm text-muted-foreground">
+              Neue Projekte unter Administration → Webseite erscheinen hier
+              automatisch.
+            </p>
+          )}
+        </div>
+        {!isMaster && (
+          <Button
+            type="button"
+            variant="outline"
+            className="border-[#D4D4D4]"
+            disabled={isRechecking}
+            onClick={handleRecheck}
+          >
+            <RotateCcw />
+            {isRechecking ? "Prüft…" : "Jetzt prüfen"}
+          </Button>
         )}
       </CardHeader>
       <CardContent className="flex flex-col gap-3">

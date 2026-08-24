@@ -1208,6 +1208,14 @@ model Website {
   lastLiveCheckAt      DateTime?
   lastLiveCheckAnomaly Boolean   @default(false)
 
+  // Überschreibt `https://{domain}/` als Ziel für den obigen Live-Check
+  // (Nutzervorgabe, 2026-08-24: "ich will auch das lokale Testen hier drin
+  // haben") – nur für lokale/Test-Installationen relevant, deren Domain
+  // nicht wirklich auf sie zeigt (z.B. `http://localhost:3010` für strasev
+  // während der lokalen Entwicklung). Bei echten Kunden-Installationen
+  // leer lassen, dann bleibt `https://{domain}/` maßgeblich.
+  testUrl String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

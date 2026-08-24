@@ -29,13 +29,19 @@ export class WebsiteMonitorService {
   async checkLockedWebsites() {
     const lockedSites = await this.prisma.website.findMany({
       where: { status: 'locked' },
-      select: { id: true, domain: true },
+      select: { id: true, domain: true, testUrl: true },
     });
     await Promise.all(lockedSites.map((site) => this.checkSite(site)));
   }
 
-  private async checkSite(site: { id: string; domain: string }) {
-    const anomaly = await this.isSiteUnexpectedlyLive(site.domain);
+  private async checkSite(site: {
+    id: string;
+    domain: string;
+    testUrl: string | null;
+  }) {
+    const anomaly = await this.isSiteUnexpectedlyLive(
+      site.testUrl ?? `https://${site.domain}/`,
+    );
     try {
       await this.prisma.website.update({
         where: { id: site.id },
@@ -50,12 +56,14 @@ export class WebsiteMonitorService {
 
   /** `true`, wenn die Seite trotz Sperre normal antwortet (Anomalie). Ein
    * fehlgeschlagener/nicht erreichbarer Aufruf ist hingegen unauffällig –
-   * genau das erwarten wir von einer korrekt durchgesetzten Sperre. */
-  private async isSiteUnexpectedlyLive(domain: string): Promise<boolean> {
+   * genau das erwarten wir von einer korrekt durchgesetzten Sperre.
+   * `url` ist entweder `https://{domain}/` oder – bei lokalen Test-
+   * Installationen – die hinterlegte `testUrl` (siehe `Website.testUrl`). */
+  private async isSiteUnexpectedlyLive(url: string): Promise<boolean> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), CHECK_TIMEOUT_MS);
     try {
-      const res = await fetch(`https://${domain}/`, {
+      const res = await fetch(url, {
         signal: controller.signal,
         redirect: 'follow',
       });

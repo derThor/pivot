@@ -45,6 +45,7 @@ export function WebsiteDialog({
   const [status, setStatus] = useState<WebsiteStatus>(
     isEdit ? target.status : "development",
   );
+  const [testUrl, setTestUrl] = useState(isEdit ? (target.testUrl ?? "") : "");
   const [nameError, setNameError] = useState<string | null>(null);
   const [domainError, setDomainError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -86,6 +87,7 @@ export function WebsiteDialog({
     setName(isEdit ? target.name : "");
     setDomain(isEdit ? target.domain : "");
     setStatus(isEdit ? target.status : "development");
+    setTestUrl(isEdit ? (target.testUrl ?? "") : "");
     setNameError(null);
     setDomainError(null);
     setSubmitError(null);
@@ -100,6 +102,7 @@ export function WebsiteDialog({
     setName(isEdit ? target.name : "");
     setDomain(isEdit ? target.domain : "");
     setStatus(isEdit ? target.status : "development");
+    setTestUrl(isEdit ? (target.testUrl ?? "") : "");
     setNameError(null);
     setDomainError(null);
     setSubmitError(null);
@@ -191,7 +194,9 @@ export function WebsiteDialog({
           method: isEdit ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(
-            isEdit ? { name, domain, status } : { name, domain },
+            isEdit
+              ? { name, domain, status, testUrl: testUrl.trim() || null }
+              : { name, domain },
           ),
         },
       );
@@ -345,6 +350,23 @@ export function WebsiteDialog({
                 value={status}
                 onChange={setStatus}
               />
+            )}
+            {isEdit && (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="website-test-url">Test-URL</Label>
+                <Input
+                  id="website-test-url"
+                  value={testUrl}
+                  onChange={(e) => setTestUrl(e.target.value)}
+                  placeholder={`https://${domain || "..."}/`}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Nur für lokale Test-Installationen: überschreibt die
+                  Live-Überwachung, falls die Domain nicht wirklich auf diese
+                  Installation zeigt (z.B. „http://localhost:3010“). Bei echten
+                  Kunden leer lassen.
+                </p>
+              </div>
             )}
             {isEdit && (
               <div className="flex flex-col gap-1.5">

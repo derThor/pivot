@@ -37,6 +37,7 @@ const PUBLIC_SELECT = {
   domain: true,
   status: true,
   deploymentMode: true,
+  testUrl: true,
   lastCheckInAt: true,
   createdAt: true,
   updatedAt: true,
@@ -116,6 +117,7 @@ export class WebsitesService {
         domain: dto.domain,
         status: dto.status,
         deploymentMode: dto.deploymentMode,
+        testUrl: dto.testUrl,
       },
       select: PUBLIC_SELECT,
     });

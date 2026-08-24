@@ -1343,6 +1343,7 @@ export interface WebsiteListItem {
   domain: string;
   status: WebsiteStatus;
   deploymentMode: "master" | "slave";
+  testUrl: string | null;
   lastCheckInAt: string | null;
   createdAt: string;
   updatedAt: string;
