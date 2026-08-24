@@ -65,22 +65,17 @@ export default async function LockedPage() {
     >
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2.5">
-          {branding?.companyLogoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- externe Medien-URL, next/image-Domainliste unnötig für diese eine öffentliche Seite
-            <img
-              src={branding.companyLogoUrl}
-              alt={companyName}
-              className="h-8 w-auto object-contain"
-            />
-          ) : !branding?.companyName ? (
-            // eslint-disable-next-line @next/next/no-img-element -- statisches Asset unter public/, kein next/image nötig
-            <img
-              src="/brand/logo-collapsed.png"
-              alt="Pivot"
-              className="size-8 rounded-lg object-contain"
-            />
-          ) : null}
-          <span className="text-base font-semibold">{companyName}</span>
+          {/* Nutzervorgabe, 2026-08-24: "das Logo oben links soll immer
+           * Pivot sein" – bewusst fest die Pivot-Marke, unabhängig von der
+           * Firma der jeweiligen Installation (die steht stattdessen im
+           * Footer, siehe unten). */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- statisches Asset unter public/, kein next/image nötig */}
+          <img
+            src="/brand/logo-collapsed.png"
+            alt="Pivot"
+            className="size-8 rounded-lg object-contain"
+          />
+          <span className="text-base font-semibold">Pivot</span>
         </div>
         <span
           className="flex items-center gap-1.5 rounded-full px-3 py-1.5 font-mono text-xs font-medium"
