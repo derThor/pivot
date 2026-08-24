@@ -88,4 +88,14 @@ export class WebsitesController {
   revealApiKey(@Param('id') id: string) {
     return this.websitesService.revealApiKey(id);
   }
+
+  // "Wecken" (Nutzervorgabe, 2026-08-24: "können wir das auch einbauen") –
+  // löst bei der Client-Installation ihren eigenen, selbst-signierten
+  // Pull-Check sofort aus, statt auf den wöchentlichen Cron zu warten.
+  // Setzt hier nie selbst einen Status, siehe WebsitesService.wakeup().
+  @RequirePermission('settings:update')
+  @Post(':id/wakeup')
+  wakeup(@Param('id') id: string) {
+    return this.websitesService.wakeup(id);
+  }
 }

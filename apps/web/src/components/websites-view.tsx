@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  BellRing,
   ExternalLink,
   Globe,
   Pencil,
@@ -57,6 +58,7 @@ export function WebsitesView({
     null,
   );
   const [isChecking, setIsChecking] = useState(false);
+  const [wakingId, setWakingId] = useState<string | null>(null);
 
   async function handleCheckNow() {
     setIsChecking(true);
@@ -67,6 +69,20 @@ export function WebsitesView({
       router.refresh();
     } finally {
       setIsChecking(false);
+    }
+  }
+
+  async function handleWakeup(website: WebsiteListItem) {
+    setWakingId(website.id);
+    try {
+      const res = await fetch(`/api/websites/${website.id}/wakeup`, {
+        method: "POST",
+      });
+      const data = await res.json().catch(() => null);
+      toastEdited(data?.message ?? "Installation nicht erreichbar.");
+      router.refresh();
+    } finally {
+      setWakingId(null);
     }
   }
 
@@ -119,6 +135,16 @@ export function WebsitesView({
                   >
                     {badge.label}
                   </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`„${website.domain}“ wecken`}
+                    disabled={wakingId === website.id}
+                    onClick={() => handleWakeup(website)}
+                  >
+                    <BellRing />
+                  </Button>
                   <Button
                     type="button"
                     variant="ghost"

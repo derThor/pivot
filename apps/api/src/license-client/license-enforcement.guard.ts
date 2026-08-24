@@ -17,7 +17,14 @@ import { LicenseClientService } from './license-client.service';
 // Stand ist noch veraltet) der eigentliche Anwendungsfall liegt. Bleibt
 // trotzdem hinter echtem Login + `settings:update` (JwtAuthGuard/
 // PermissionsGuard laufen unabhängig von diesem Guard weiter).
-const ALLOWED_SUFFIXES = ['/health', '/license/state', '/license/recheck'];
+// `/license/wakeup` aus demselben Grund: der Master muss eine gesperrte
+// Installation genau dann wecken können, wenn sie noch gesperrt ist.
+const ALLOWED_SUFFIXES = [
+  '/health',
+  '/license/state',
+  '/license/recheck',
+  '/license/wakeup',
+];
 
 /**
  * Globaler Guard: blockt auf einer Slave-Installation (fast) jeden

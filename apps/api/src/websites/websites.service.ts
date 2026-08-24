@@ -166,6 +166,52 @@ export class WebsitesService {
     };
   }
 
+  /** Nutzervorgabe, 2026-08-24: "können wir das auch einbauen" – ruft bei
+   * der Client-Installation `POST /license/wakeup` auf, um ihren eigenen
+   * Pull-Check sofort auszulösen, statt auf den wöchentlichen Cron zu
+   * warten. Bricht das Pull-Prinzip NICHT: dieser Aufruf trägt keine
+   * Autorität, er stößt bei der Installation nur denselben, weiterhin
+   * selbst-signierten Vorgang an, den sie auch von sich aus ausführen
+   * würde. `testUrl` (siehe schema.prisma) erlaubt das Ansprechen lokaler
+   * Testinstallationen, deren Domain nicht wirklich auf sie zeigt. */
+  async wakeup(id: string): Promise<{ ok: boolean; message: string }> {
+    const website = await this.prisma.website.findUnique({ where: { id } });
+    if (!website) {
+      throw new NotFoundException(`Website ${id} nicht gefunden.`);
+    }
+    if (!website.apiKeyEncrypted) {
+      return { ok: false, message: 'Kein API-Key hinterlegt.' };
+    }
+    const apiKey = decryptSecret(
+      website.apiKeyEncrypted,
+      this.getEncryptionKey(),
+    );
+    const baseUrl = (website.testUrl ?? `https://${website.domain}`).replace(
+      /\/$/,
+      '',
+    );
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+    try {
+      const res = await fetch(`${baseUrl}/api/license/wakeup`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: controller.signal,
+      });
+      return res.ok
+        ? { ok: true, message: 'Installation wurde geweckt.' }
+        : {
+            ok: false,
+            message: `Installation antwortete mit HTTP ${res.status}.`,
+          };
+    } catch {
+      return { ok: false, message: 'Installation nicht erreichbar.' };
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   /**
    * Pull-Endpunkt für Slave-Installationen (siehe
    * knowledge-base/platform/master-slave-licensing.md). Bewusst derselbe
