@@ -1,4 +1,5 @@
 import {
+  ClipboardList,
   FileText,
   FolderTree,
   HelpCircle,
@@ -19,12 +20,14 @@ export type SearchResultType =
   | "role"
   | "previewLink"
   | "faq"
-  | "gallery";
+  | "gallery"
+  | "form";
 
 export const ALL_SEARCH_RESULT_TYPES: readonly SearchResultType[] = [
   "content",
   "faq",
   "gallery",
+  "form",
   "category",
   "tag",
   "media",
@@ -120,6 +123,13 @@ export const searchTypeMeta: Record<
     badgeClassName:
       "bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-400",
   },
+  form: {
+    label: "Formular",
+    icon: ClipboardList,
+    href: "/dashboard/forms",
+    badgeClassName:
+      "bg-teal-100 text-teal-700 dark:bg-teal-500/20 dark:text-teal-400",
+  },
 };
 
 /**
@@ -143,11 +153,11 @@ export async function searchResultHref(
   defaultPageSize: number,
 ) {
   // Inhalte ("Seiten") haben eine eigene Detailseite (Editor) – dahin
-  // springt man direkt, ohne Markierung. Alle anderen Bereiche (inkl.
-  // FAQ/Galerie, seit dem Umbau auf Anlegen/Bearbeiten-Popups) werden nur
-  // per Dialog auf ihrer Listen-Seite bearbeitet, dort wird stattdessen
-  // der gesuchte Begriff im Treffer-Text markiert (siehe
-  // useHighlightParam) und – bei Bedarf – zur richtigen Seite navigiert.
+  // springt man direkt, ohne Markierung. Bereiche ohne eigene Detailseite
+  // (FAQ, Kategorien, Tags, Medien, Rollen, Vorschau-Links – nur per
+  // Dialog auf ihrer Listen-Seite bearbeitbar) markieren stattdessen den
+  // gesuchten Begriff im Treffer-Text (siehe useHighlightParam) und
+  // springen – bei Bedarf – zur richtigen Seite.
   if (result.type === "content") {
     return `/dashboard/content/${result.id}/edit`;
   }
@@ -156,6 +166,16 @@ export async function searchResultHref(
   // (Nutzervorgabe: "muss die Detailseite aufgerufen werden").
   if (result.type === "user") {
     return `/dashboard/users/${result.id}/edit`;
+  }
+  // Formulare haben wie Inhalte/Benutzer eine eigene Detailseite (Editor)
+  // – dahin springt man direkt, statt zur Liste mit markierter Zeile.
+  if (result.type === "form") {
+    return `/dashboard/forms/${result.id}`;
+  }
+  // Galerien haben (anders als FAQ) eine eigene Detailseite (Editor)
+  // – dahin springt man direkt, statt zur Liste mit markierter Zeile.
+  if (result.type === "gallery") {
+    return `/dashboard/content/galleries/${result.id}`;
   }
 
   const location = await locateResult(result, defaultPageSize);

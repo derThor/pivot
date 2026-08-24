@@ -5,16 +5,17 @@ import { ACCESS_TOKEN_COOKIE } from "@/lib/auth";
 const API_URL = process.env.API_URL ?? "http://localhost:3001/v1";
 
 // Bildet einen globalen Such-Treffertyp auf den passenden
-// "auf welcher Seite liegt dieser Eintrag"-Endpoint im Backend ab.
+// "auf welcher Seite liegt dieser Eintrag"-Endpoint im Backend ab. Nur für
+// Bereiche ohne eigene Detailseite (siehe searchResultHref in lib/search.ts
+// – content/user/form/gallery springen direkt dorthin, kommen hier also
+// nie an).
 const backendPath: Record<string, (id: string) => string> = {
   category: (id) => `/categories/${id}/page`,
   tag: (id) => `/tags/${id}/page`,
   media: (id) => `/media/${id}/page`,
-  user: (id) => `/users/${id}/page`,
   role: (id) => `/roles/${id}/page`,
   previewLink: (id) => `/content/preview-links/${id}/page`,
   faq: (id) => `/global-modules/${id}/page`,
-  gallery: (id) => `/global-modules/${id}/page`,
 };
 
 export async function GET(request: Request) {

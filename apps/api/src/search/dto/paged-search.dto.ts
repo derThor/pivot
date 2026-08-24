@@ -20,6 +20,7 @@ const SEARCH_RESULT_TYPES = [
   'previewLink',
   'faq',
   'gallery',
+  'form',
 ] as const;
 
 export class PagedSearchDto {

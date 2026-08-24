@@ -11,7 +11,8 @@ export type SearchResultType =
   | 'role'
   | 'previewLink'
   | 'faq'
-  | 'gallery';
+  | 'gallery'
+  | 'form';
 
 export interface SearchResult {
   type: SearchResultType;
@@ -76,6 +77,9 @@ export class SearchService {
     }
     if (permissions.includes('roles:read')) {
       tasks.push(this.searchRoles(q, limit));
+    }
+    if (permissions.includes('forms:read')) {
+      tasks.push(this.searchForms(q, limit));
     }
 
     const results = await Promise.all(tasks);
@@ -178,6 +182,20 @@ export class SearchService {
         ]);
         return { items, total };
       }
+      case 'form': {
+        const where = {
+          deletedAt: null,
+          OR: [
+            { name: { contains: q, mode: 'insensitive' as const } },
+            { slug: { contains: q, mode: 'insensitive' as const } },
+          ],
+        };
+        const [items, total] = await Promise.all([
+          this.searchForms(q, pageSize, skip),
+          this.prisma.form.count({ where }),
+        ]);
+        return { items, total };
+      }
     }
   }
 
@@ -198,6 +216,8 @@ export class SearchService {
         return permissions.includes('users:read');
       case 'role':
         return permissions.includes('roles:read');
+      case 'form':
+        return permissions.includes('forms:read');
     }
   }
 
@@ -421,6 +441,31 @@ export class SearchService {
       id: row.id,
       title: [row.firstName, row.lastName].filter(Boolean).join(' '),
       subtitle: row.userRoles.map((ur) => ur.role.name).join(', '),
+    }));
+  }
+
+  private async searchForms(
+    q: string,
+    take: number,
+    skip: number = 0,
+  ): Promise<SearchResult[]> {
+    const rows = await this.prisma.form.findMany({
+      where: {
+        deletedAt: null,
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { slug: { contains: q, mode: 'insensitive' } },
+        ],
+      },
+      take,
+      skip,
+      orderBy: { name: 'asc' },
+    });
+    return rows.map((row) => ({
+      type: 'form' as const,
+      id: row.id,
+      title: row.name,
+      status: row.status,
     }));
   }
 

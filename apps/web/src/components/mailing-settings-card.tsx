@@ -166,7 +166,14 @@ function TemplateDetail({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h3 className="text-base font-semibold">{template.label}</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-base font-semibold">{template.label}</h3>
+            {!template.formId && (
+              <span className="shrink-0 rounded-full bg-slate-200 px-1.5 py-0.5 text-xs text-slate-600">
+                System
+              </span>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground">
             {CATEGORY_LABELS[template.category]}
           </p>
@@ -355,9 +362,16 @@ export function MailingSettingsCard({
             <div className="flex flex-col gap-4">
               {groups.map((group) => (
                 <div key={group.category} className="flex flex-col gap-1">
-                  <p className="border-b border-[#E5E5E5] px-2 pb-1.5 text-xs font-semibold tracking-wide text-accent-foreground uppercase">
-                    {CATEGORY_LABELS[group.category]}
-                  </p>
+                  <div className="flex items-center gap-2 border-b border-[#E5E5E5] px-2 pb-1.5">
+                    <p className="text-xs font-semibold tracking-wide text-accent-foreground uppercase">
+                      {CATEGORY_LABELS[group.category]}
+                    </p>
+                    {group.category !== "forms" && (
+                      <span className="shrink-0 rounded-full bg-slate-200 px-1.5 py-0.5 text-xs text-slate-600 normal-case">
+                        System
+                      </span>
+                    )}
+                  </div>
                   {group.items.map((item) => (
                     <button
                       key={item.id}
