@@ -12,6 +12,8 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { toast } from "sonner";
+
 import { toastDeleted, toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
@@ -19,7 +21,11 @@ import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
 import { PaginationControls } from "@/components/pagination-controls";
 import { WebsiteDialog } from "@/components/website-dialog";
 import { formatRelativeTime } from "@/lib/utils";
-import type { WebsiteListItem, WebsiteStatus } from "@/lib/api-server";
+import type {
+  WebsiteCheckAllResult,
+  WebsiteListItem,
+  WebsiteStatus,
+} from "@/lib/api-server";
 
 const STATUS_BADGE: Record<
   WebsiteStatus,
@@ -60,12 +66,32 @@ export function WebsitesView({
   const [isChecking, setIsChecking] = useState(false);
   const [wakingId, setWakingId] = useState<string | null>(null);
 
+  // Nutzer-Feedback, 2026-08-24: "diese Prüfung sagt nichts aus ... alle
+  // Webseiten einmal durchlaufen und den Status ausgeben, der gerade ist"
+  // – zeigt jetzt eine ehrliche Zusammenfassung (wie viele OK/fehlgeschlagen,
+  // mit Namen bei Fehlern) statt einer nichtssagenden Erfolgsmeldung.
   async function handleCheckNow() {
     setIsChecking(true);
     try {
       const res = await fetch("/api/websites/check-now", { method: "POST" });
-      if (!res.ok) return;
-      toastEdited("Websites wurden geprüft.");
+      const data = (await res
+        .json()
+        .catch(() => null)) as WebsiteCheckAllResult | null;
+      if (!res.ok || !data) {
+        toast.error("Prüfung fehlgeschlagen.");
+        return;
+      }
+      const failed = data.results.filter((r) => !r.ok);
+      if (failed.length === 0) {
+        toastEdited(
+          `${data.results.length} Installation(en) geprüft – alle in Ordnung.`,
+        );
+      } else {
+        toast.error(
+          `${failed.length} von ${data.results.length} Installation(en) mit Problemen: ` +
+            failed.map((r) => `${r.name} (${r.message})`).join(", "),
+        );
+      }
       router.refresh();
     } finally {
       setIsChecking(false);
@@ -79,7 +105,12 @@ export function WebsitesView({
         method: "POST",
       });
       const data = await res.json().catch(() => null);
-      toastEdited(data?.message ?? "Installation nicht erreichbar.");
+      const message = data?.message ?? "Installation nicht erreichbar.";
+      if (data?.ok) {
+        toastEdited(message);
+      } else {
+        toast.error(message);
+      }
       router.refresh();
     } finally {
       setWakingId(null);
@@ -169,9 +200,25 @@ export function WebsitesView({
                 <p className="truncate font-medium">{website.domain}</p>
                 <p className="truncate text-xs text-muted-foreground">
                   {website.lastCheckInAt
-                    ? `Zuletzt geprüft ${formatRelativeTime(website.lastCheckInAt)}`
-                    : "Noch nicht geprüft"}
+                    ? `Zuletzt selbst gemeldet ${formatRelativeTime(website.lastCheckInAt)}`
+                    : "Hat sich noch nie selbst gemeldet"}
                 </p>
+                {/* Nutzervorgabe, 2026-08-24: "Status ausgeben, der gerade
+                 * ist" – Momentaufnahme vom letzten "Wecken"/"Prüfen",
+                 * bewusst mit Zeitstempel, statt einen dauerhaft aktuellen
+                 * Live-Status vorzutäuschen ("mit dem Hinweis, dass es
+                 * verzögert ist"). */}
+                {website.lastWakeupAt && (
+                  <p
+                    className={`truncate text-xs ${website.lastWakeupOk ? "text-muted-foreground" : "text-destructive"}`}
+                  >
+                    {website.lastWakeupOk ? "OK" : "Problem"} beim letzten Check
+                    ({formatRelativeTime(website.lastWakeupAt)})
+                    {website.lastWakeupMessage
+                      ? `: ${website.lastWakeupMessage}`
+                      : ""}
+                  </p>
+                )}
               </div>
               <Button
                 type="button"

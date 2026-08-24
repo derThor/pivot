@@ -21,7 +21,7 @@ const CLOCK_REGRESSION_TOLERANCE_MS = 5 * 60 * 1000;
 // NICHT in `JobsService.definitions`, siehe dortiger Kommentar.
 export const LICENSE_CHECK_JOB_ID = 'license-check';
 
-interface JobOutcome {
+export interface JobOutcome {
   status: 'success' | 'error';
   message: string;
 }
@@ -95,8 +95,8 @@ export class LicenseClientService implements OnModuleInit {
   // UND den globalen `ThrottlerGuard` abgesichert, kein akutes Loch ohne
   // sie) – der Schaden an der eigentlichen Funktion wiegt schwerer als der
   // marginale zusätzliche Schutz.
-  async requestWakeup(): Promise<void> {
-    await this.performCheck();
+  async requestWakeup(): Promise<JobOutcome> {
+    return this.performCheck();
   }
 
   private getState() {
@@ -146,10 +146,18 @@ export class LicenseClientService implements OnModuleInit {
     });
   }
 
-  async performCheck(): Promise<void> {
+  /** Gibt das tatsächliche Ergebnis zurück (Nutzer-Bugreport, 2026-08-24:
+   * "ich habe den Key erneuert, dann bei strasev ohne was anzupassen
+   * geprüft, und alles in Ordnung?????") – vorher gaben `recheck()`/
+   * `requestWakeup()` bei einem fehlgeschlagenen Versuch trotzdem den
+   * (veralteten, aus `LicenseState` zwischengespeicherten) Gesamtstatus
+   * zurück, ohne dass die eigentliche Prüfung gerade fehlgeschlagen war
+   * jemals sichtbar wurde. */
+  async performCheck(): Promise<JobOutcome> {
     const startedAt = new Date();
     const outcome = await this.runCheck(startedAt);
     await this.recordJobRun(startedAt, outcome);
+    return outcome;
   }
 
   /** Bevorzugt den über Einstellungen → Master-Client gesetzten Key
@@ -158,7 +166,7 @@ export class LicenseClientService implements OnModuleInit {
    * solange noch nie über die UI ein Key gesetzt wurde (Erstinbetriebnahme
    * per `.env`, wie bisher). Gleicher Verschlüsselungs-Helfer wie das
    * SMTP-Passwort. */
-  private async getApiKey(): Promise<string | undefined> {
+  async getApiKey(): Promise<string | undefined> {
     const settings = await this.prisma.appSettings.findUnique({
       where: { id: 1 },
       select: { licenseApiKeyEncrypted: true },

@@ -1218,6 +1218,21 @@ model Website {
   lastLiveCheckAt      DateTime?
   lastLiveCheckAnomaly Boolean   @default(false)
 
+  // Ergebnis des letzten "Wecken"-Diagnose-Durchlaufs über ALLE Websites
+  // (Nutzervorgabe, 2026-08-24: "wenn ich bei Pivot Master prüfe, sollen
+  // alle Webseiten einmal durchlaufen werden und den Status ausgeben, der
+  // gerade ist, z.B. ob der Key korrekt ist") – anders als der reine
+  // Live-Check oben (der nur gesperrte Websites betrifft und nichts über
+  // Key/Modus aussagt) weckt dieser Durchlauf JEDE Installation, die dabei
+  // ihren eigenen, echten `performCheck()` ausführt; `lastWakeupOk`/
+  // `lastWakeupMessage` spiegeln dessen tatsächliches Ergebnis (nicht nur
+  // "Aufruf angekommen"). `lastWakeupAt` macht die Kachel-Anzeige explizit
+  // als Momentaufnahme kenntlich statt einen dauerhaft aktuellen Live-
+  // Status vorzutäuschen.
+  lastWakeupAt      DateTime?
+  lastWakeupOk      Boolean?
+  lastWakeupMessage String?
+
   // Überschreibt `https://{domain}/` als Ziel für den obigen Live-Check
   // (Nutzervorgabe, 2026-08-24: "ich will auch das lokale Testen hier drin
   // haben") – nur für lokale/Test-Installationen relevant, deren Domain

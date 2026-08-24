@@ -971,6 +971,19 @@ export type LicenseState =
   | { mode: "slave"; status: "pending"; expiresAt: string }
   | ({ mode: "slave"; status: "locked" } & LockedPageBranding);
 
+// Ergebnis des GERADE eben durchgeführten Prüf-Versuchs (Nutzer-Bugreport,
+// 2026-08-24: "Key erneuert, dann ohne was anzupassen geprüft, und alles
+// in Ordnung?????") – nur bei `POST /license/recheck`, nicht bei
+// `GET /license/state`. Zeigt ehrlich, ob der Versuch selbst gerade
+// erfolgreich war, statt nur den (evtl. veralteten) Gesamtstatus.
+export interface LicenseCheckOutcome {
+  status: "success" | "error";
+  message: string;
+}
+export type LicenseRecheckResult = LicenseState & {
+  lastCheck?: LicenseCheckOutcome;
+};
+
 /** Öffentlich, unauthentifiziert (GET /license/state) – steuert das
  * Entwicklungsinstanz-Hinweisbanner im Dashboard und die öffentliche
  * Wartungsseite. */
@@ -1362,6 +1375,12 @@ export interface WebsiteListItem {
   deploymentMode: "master" | "slave";
   testUrl: string | null;
   lastCheckInAt: string | null;
+  // Ergebnis des letzten "Wecken"-Diagnose-Durchlaufs (Nutzervorgabe,
+  // 2026-08-24: "soll den Status ausgeben, der gerade ist, z.B. ob der Key
+  // korrekt ist") – `lastWakeupOk: null` = noch nie geprüft.
+  lastWakeupAt: string | null;
+  lastWakeupOk: boolean | null;
+  lastWakeupMessage: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1369,6 +1388,17 @@ export interface WebsiteListItem {
 export interface WebsiteListResponse {
   items: WebsiteListItem[];
   meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
+export interface WebsiteCheckAllResult {
+  checkedAt: string;
+  results: {
+    id: string;
+    name: string;
+    domain: string;
+    ok: boolean;
+    message: string;
+  }[];
 }
 
 export function getWebsites(params?: { page?: number; pageSize?: number }) {

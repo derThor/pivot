@@ -40,14 +40,21 @@ export class WebsitesController {
     return this.websitesService.findAll(query);
   }
 
-  // "Prüfen"-Button (Einstellungen → Master-Client, Nutzervorgabe,
-  // 2026-08-24) – löst den sonst alle 30 Minuten laufenden Live-Check
-  // sofort aus, statt auf den nächsten Cron-Lauf zu warten.
+  // "Prüfen"-Button (Nutzervorgabe, 2026-08-24, zuletzt: "diese Prüfung
+  // sagt nichts aus ... wenn ich prüfe, sollen alle Webseiten einmal
+  // durchlaufen werden und den Status ausgeben, der gerade ist") – löst
+  // zwei unabhängige Dinge sofort aus statt auf den nächsten Cron-Lauf zu
+  // warten: den Live-Check gesperrter Websites (Anomalie-Erkennung) UND das
+  // Wecken JEDER Website (echter Key-/Erreichbarkeits-Status pro
+  // Installation, siehe WebsitesService.checkAllWebsites()).
   @RequirePermission('settings:update')
   @Post('check-now')
   async checkNow() {
-    await this.websiteMonitor.checkLockedWebsites();
-    return { checkedAt: new Date().toISOString() };
+    const [, wakeup] = await Promise.all([
+      this.websiteMonitor.checkLockedWebsites(),
+      this.websitesService.checkAllWebsites(),
+    ]);
+    return wakeup;
   }
 
   // Muss vor `@Get(':id')`-artigen Routen stehen, falls je eine hinzukommt

@@ -10,6 +10,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+import { toast } from "sonner";
+
 import { toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +22,7 @@ import { WebsiteModeDialog } from "@/components/website-mode-dialog";
 import { formatRelativeTime } from "@/lib/utils";
 import type {
   AppSettings,
-  LicenseState,
+  LicenseRecheckResult,
   WebsiteListItem,
   WebsiteListResponse,
   WebsiteStatus,
@@ -81,13 +83,24 @@ export function MasterClientCard({
     setIsRechecking(true);
     try {
       const res = await fetch("/api/license/recheck", { method: "POST" });
-      const data = (await res.json().catch(() => null)) as LicenseState | null;
+      const data = (await res
+        .json()
+        .catch(() => null)) as LicenseRecheckResult | null;
       if (!res.ok) return;
-      const label =
-        data && "status" in data
-          ? (STATUS_LABEL[data.status] ?? data.status)
-          : "unbekannt";
-      toastEdited(`Geprüft – Status: ${label}.`);
+      // Nutzer-Bugreport, 2026-08-24: "Key erneuert, dann geprüft, und
+      // alles in Ordnung?????" – `lastCheck` ist das ECHTE Ergebnis des
+      // gerade eben durchgeführten Versuchs, nicht der (evtl. veraltete)
+      // Gesamtstatus. Bei Fehlschlag also klar als Fehler zeigen statt den
+      // alten Status schönzureden.
+      if (data?.lastCheck?.status === "error") {
+        toast.error(`Prüfung fehlgeschlagen: ${data.lastCheck.message}`);
+      } else {
+        const label =
+          data && "status" in data
+            ? (STATUS_LABEL[data.status] ?? data.status)
+            : "unbekannt";
+        toastEdited(`Geprüft – Status: ${label} (soeben bestätigt).`);
+      }
       router.refresh();
     } finally {
       setIsRechecking(false);

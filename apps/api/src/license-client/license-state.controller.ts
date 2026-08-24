@@ -6,7 +6,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { ConfigService } from '@nestjs/config';
 import { timingSafeEqual } from 'node:crypto';
 import { LicenseClientService } from './license-client.service';
 import { Public } from '../auth/decorators/public.decorator';
@@ -24,10 +23,7 @@ import { RequirePermission } from '../auth/decorators/permissions.decorator';
 @ApiTags('license')
 @Controller('license')
 export class LicenseStateController {
-  constructor(
-    private readonly licenseClient: LicenseClientService,
-    private readonly config: ConfigService,
-  ) {}
+  constructor(private readonly licenseClient: LicenseClientService) {}
 
   @Public()
   @Get('state')
@@ -42,14 +38,22 @@ export class LicenseStateController {
    * das selbst zu merken. Auf einer Master-Installation bewusst ein No-Op
    * (kein `performCheck()`-Aufruf) statt eine sinnlose `LicenseState`-Zeile
    * mit Fehlermeldung anzulegen – dort fehlen die `LICENSE_MASTER_*`-Werte
-   * naturgemäß. */
+   * naturgemäß.
+   *
+   * Update 2026-08-24, Nutzer-Bugreport ("Key erneuert, dann bei strasev
+   * ohne was anzupassen geprüft, und alles in Ordnung?????"): liefert jetzt
+   * zusätzlich `lastCheck` mit dem ECHTEN Ergebnis des gerade eben
+   * durchgeführten Versuchs – vorher gab dieser Endpunkt bei einem
+   * fehlgeschlagenen Versuch (z.B. falscher/veralteter Key) trotzdem
+   * kommentarlos den alten, zwischengespeicherten Status zurück. */
   @RequirePermission('settings:update')
   @Post('recheck')
   async recheck() {
     const before = await this.licenseClient.getEffectiveStatus();
     if (before.mode === 'master') return before;
-    await this.licenseClient.performCheck();
-    return this.licenseClient.getEffectiveStatus();
+    const lastCheck = await this.licenseClient.performCheck();
+    const status = await this.licenseClient.getEffectiveStatus();
+    return { ...status, lastCheck };
   }
 
   /** Nutzervorgabe, 2026-08-24: "können wir das auch einbauen" – der Master
@@ -61,14 +65,18 @@ export class LicenseStateController {
    * höchstens eine zusätzliche (harmlose) Prüfung erzwingen, nie einen
    * Status vorschreiben. Bewusst `@Public()` (kein Dashboard-Login – der
    * Master ist kein eingeloggter Nutzer) und per Bearer-Vergleich gegen den
-   * ohnehin schon zwischen Master und dieser Installation geteilten
-   * `LICENSE_API_KEY` abgesichert statt eines neuen Secrets. Steht auch in
-   * `LicenseEnforcementGuard`s Ausnahmeliste, damit eine gesperrte
-   * Installation überhaupt geweckt werden kann. */
+   * ohnehin schon zwischen Master und dieser Installation geteilten Key
+   * abgesichert statt eines neuen Secrets – über `getApiKey()` (nicht mehr
+   * nur die Umgebungsvariable), sonst würde ein über die neue
+   * Master-Client-UI gesetzter Key eingehende Weck-Aufrufe fälschlich
+   * ablehnen. Steht auch in `LicenseEnforcementGuard`s Ausnahmeliste, damit
+   * eine gesperrte Installation überhaupt geweckt werden kann. Gibt das
+   * echte Prüfungsergebnis zurück (siehe `recheck()`-Kommentar), damit der
+   * Master beim Wecken erkennt, ob der Key beim Client noch stimmt. */
   @Public()
   @Post('wakeup')
   async wakeup(@Headers('authorization') authorization?: string) {
-    const expected = this.config.get<string>('LICENSE_API_KEY');
+    const expected = await this.licenseClient.getApiKey();
     const provided = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
     const expectedBuf = Buffer.from(expected ?? '', 'utf8');
     const providedBuf = Buffer.from(provided ?? '', 'utf8');
@@ -80,10 +88,7 @@ export class LicenseStateController {
     if (!isValid) {
       throw new UnauthorizedException('Ungültiger Weck-Schlüssel.');
     }
-    // Entprellt (siehe requestWakeup()) – schützt zusätzlich zum globalen
-    // ThrottlerGuard davor, dass derselbe gültige Key über mehrere IPs
-    // verteilt wiederholt echte Master-Anfragen auslöst.
-    await this.licenseClient.requestWakeup();
-    return { triggered: true };
+    const outcome = await this.licenseClient.requestWakeup();
+    return { triggered: true, outcome };
   }
 }
