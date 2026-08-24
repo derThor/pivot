@@ -2,12 +2,19 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronRight, Globe, RotateCcw, ShieldCheck } from "lucide-react";
+import {
+  ChevronRight,
+  Globe,
+  KeyRound,
+  RotateCcw,
+  ShieldCheck,
+} from "lucide-react";
 
 import { toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DeploymentModeDialog } from "@/components/deployment-mode-dialog";
+import { LicenseApiKeyDialog } from "@/components/license-api-key-dialog";
 import { PaginationControls } from "@/components/pagination-controls";
 import { WebsiteModeDialog } from "@/components/website-mode-dialog";
 import { formatRelativeTime } from "@/lib/utils";
@@ -65,6 +72,7 @@ export function MasterClientCard({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selfDialogOpen, setSelfDialogOpen] = useState(false);
+  const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false);
   const [websiteDialogTarget, setWebsiteDialogTarget] =
     useState<WebsiteListItem | null>(null);
   const [isRechecking, setIsRechecking] = useState(false);
@@ -116,39 +124,52 @@ export function MasterClientCard({
         )}
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <button
-          type="button"
-          disabled={!isMaster}
-          onClick={() => setSelfDialogOpen(true)}
-          className="flex items-center gap-3 rounded-xl bg-[#FAFAFA] p-3 text-left transition-colors disabled:cursor-default enabled:hover:bg-[#F0F0F0]"
-        >
-          <span
-            className={
-              isMaster
-                ? "flex size-10 shrink-0 items-center justify-center rounded-lg bg-lime-100 text-lime-700"
-                : "flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"
-            }
+        <div className="flex items-center gap-3 rounded-xl bg-[#FAFAFA] p-3">
+          <button
+            type="button"
+            disabled={!isMaster}
+            onClick={() => setSelfDialogOpen(true)}
+            className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left transition-colors disabled:cursor-default enabled:hover:bg-[#F0F0F0]"
           >
-            <ShieldCheck className="size-4.5" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="truncate font-semibold">Diese Installation</p>
-              <span
-                className={
-                  isMaster
-                    ? "shrink-0 rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground"
-                    : "shrink-0 rounded-full bg-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700"
-                }
-              >
-                {isMaster ? "Master" : "Client"}
-              </span>
+            <span
+              className={
+                isMaster
+                  ? "flex size-10 shrink-0 items-center justify-center rounded-lg bg-lime-100 text-lime-700"
+                  : "flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"
+              }
+            >
+              <ShieldCheck className="size-4.5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="truncate font-semibold">Diese Installation</p>
+                <span
+                  className={
+                    isMaster
+                      ? "shrink-0 rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground"
+                      : "shrink-0 rounded-full bg-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700"
+                  }
+                >
+                  {isMaster ? "Master" : "Client"}
+                </span>
+              </div>
             </div>
-          </div>
-          {isMaster && (
-            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+            {isMaster && (
+              <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+            )}
+          </button>
+          {!isMaster && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="API-Key ändern"
+              onClick={() => setApiKeyDialogOpen(true)}
+            >
+              <KeyRound />
+            </Button>
           )}
-        </button>
+        </div>
 
         {websites.items.map((website) => {
           const badge = STATUS_BADGE[website.status];
@@ -225,6 +246,13 @@ export function MasterClientCard({
             onSaved={() => {}}
           />
         </>
+      )}
+
+      {!isMaster && (
+        <LicenseApiKeyDialog
+          open={apiKeyDialogOpen}
+          onOpenChange={setApiKeyDialogOpen}
+        />
       )}
     </Card>
   );

@@ -8,6 +8,7 @@ import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdatePrivacyDto } from './dto/update-privacy.dto';
 import { UpdateSmtpSettingsDto } from './dto/update-smtp-settings.dto';
+import { UpdateLicenseClientSettingsDto } from './dto/update-license-client-settings.dto';
 import { encryptSecret } from '../common/utils/secret-encryption';
 
 function csvEscape(v: unknown): string {
@@ -362,12 +363,15 @@ export class SettingsService {
   // CSV, keine Excel-Interpretation involviert.
   async exportSettingsJson() {
     const settings = await this.get();
-    // `smtpPasswordEncrypted` darf ein exportiertes JSON niemals verlassen
-    // (auch verschlüsselt nicht) – der Export ist zum manuellen Weitergeben
-    // gedacht, kein Backup-Format mit vertrauenswürdiger Aufbewahrung.
-    const { id, smtpPasswordEncrypted, ...rest } = settings;
+    // `smtpPasswordEncrypted`/`licenseApiKeyEncrypted` dürfen ein
+    // exportiertes JSON niemals verlassen (auch verschlüsselt nicht) – der
+    // Export ist zum manuellen Weitergeben gedacht, kein Backup-Format mit
+    // vertrauenswürdiger Aufbewahrung.
+    const { id, smtpPasswordEncrypted, licenseApiKeyEncrypted, ...rest } =
+      settings;
     void id;
     void smtpPasswordEncrypted;
+    void licenseApiKeyEncrypted;
     return rest;
   }
 
@@ -475,5 +479,37 @@ export class SettingsService {
     }
 
     return { ...(await this.getSmtpSettings()), testError: test.error };
+  }
+
+  // Einstellungen → Master-Client, Schlüssel-Icon bei "Diese Installation"
+  // (Nutzervorgabe, 2026-08-24: "eine Eingabe, wo man den Schlüssel ändern
+  // kann") – nur im Client-Modus relevant. Key kommt nie im Klartext
+  // zurück, nur `hasApiKey` (gleiches Muster wie `hasPassword` bei SMTP).
+  async getLicenseClientSettings() {
+    const settings = await this.get();
+    return { hasApiKey: !!settings.licenseApiKeyEncrypted };
+  }
+
+  async updateLicenseClientSettings(
+    dto: UpdateLicenseClientSettingsDto,
+    actingUserId: string,
+  ) {
+    if (!dto.apiKey) {
+      return this.getLicenseClientSettings();
+    }
+    await this.prisma.appSettings.update({
+      where: { id: 1 },
+      data: {
+        licenseApiKeyEncrypted: encryptSecret(dto.apiKey, this.encryptionKey),
+      },
+    });
+    await this.auditLog.record({
+      action: 'settings.license_api_key_updated',
+      entityType: SETTINGS_ENTITY_TYPE,
+      entityId: SETTINGS_ENTITY_ID,
+      userId: actingUserId,
+      metadata: { field: 'licenseApiKey' },
+    });
+    return this.getLicenseClientSettings();
   }
 }

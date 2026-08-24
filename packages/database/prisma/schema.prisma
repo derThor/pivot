@@ -82,6 +82,16 @@ model AppSettings {
   // Tokens ausschließlich auf dem echten Master liegt (siehe
   // knowledge-base/platform/master-slave-licensing.md).
   deploymentMode             String   @default("master")
+  // Nur im Client-Modus relevant: der Schlüssel, mit dem sich DIESE
+  // Installation beim Master ausweist (Nutzervorgabe, 2026-08-24: "eine
+  // Eingabe, wo man den Schlüssel ändern kann" – bisher nur per
+  // `LICENSE_API_KEY`-Umgebungsvariable + manuellem Neustart setzbar,
+  // z.B. wenn der Master-Admin den Key regeneriert hat). Verschlüsselt wie
+  // das SMTP-Passwort (`secret-encryption.ts`), nie im Klartext
+  // zurückgegeben – schreibt-only-Feld wie `smtpPasswordEncrypted`. `null`
+  // = noch nichts über die UI gesetzt, `LicenseClientService` fällt dann
+  // auf die `LICENSE_API_KEY`-Umgebungsvariable zurück (Erstinbetriebnahme).
+  licenseApiKeyEncrypted     String?
   allowRegistration          Boolean  @default(true)
   allowPasswordReset         Boolean  @default(true)
   // Getrennt nach Rolle (Nutzervorgabe, 2026-08-21): `allowEmailChange` gilt

@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { verifyLicenseToken } from '../websites/license-token.util';
+import { decryptSecret } from '../common/utils/secret-encryption';
 
 // Karenzzeit nach Ablauf, bevor eine nicht erreichbare/fehlgeschlagene
 // erneute Prüfung tatsächlich zur Sperre führt (siehe
@@ -151,10 +152,30 @@ export class LicenseClientService implements OnModuleInit {
     await this.recordJobRun(startedAt, outcome);
   }
 
+  /** Bevorzugt den über Einstellungen → Master-Client gesetzten Key
+   * (Nutzervorgabe, 2026-08-24: "eine Eingabe, wo man den Schlüssel ändern
+   * kann") – fällt auf die `LICENSE_API_KEY`-Umgebungsvariable zurück,
+   * solange noch nie über die UI ein Key gesetzt wurde (Erstinbetriebnahme
+   * per `.env`, wie bisher). Gleicher Verschlüsselungs-Helfer wie das
+   * SMTP-Passwort. */
+  private async getApiKey(): Promise<string | undefined> {
+    const settings = await this.prisma.appSettings.findUnique({
+      where: { id: 1 },
+      select: { licenseApiKeyEncrypted: true },
+    });
+    if (settings?.licenseApiKeyEncrypted) {
+      return decryptSecret(
+        settings.licenseApiKeyEncrypted,
+        this.config.getOrThrow<string>('TOTP_ENCRYPTION_KEY'),
+      );
+    }
+    return this.config.get<string>('LICENSE_API_KEY');
+  }
+
   private async runCheck(now: Date): Promise<JobOutcome> {
     const masterUrl = this.config.get<string>('LICENSE_MASTER_URL');
     const domain = this.config.get<string>('LICENSE_SITE_DOMAIN');
-    const apiKey = this.config.get<string>('LICENSE_API_KEY');
+    const apiKey = await this.getApiKey();
     const masterPublicKey = this.config.get<string>(
       'LICENSE_MASTER_PUBLIC_KEY',
     );

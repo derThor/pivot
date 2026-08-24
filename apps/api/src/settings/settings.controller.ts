@@ -21,6 +21,7 @@ import { UpdatePrivacyDto } from './dto/update-privacy.dto';
 import { QuerySettingsChangesDto } from './dto/query-settings-changes.dto';
 import { UpdateSmtpSettingsDto } from './dto/update-smtp-settings.dto';
 import { SendSmtpTestEmailDto } from './dto/send-smtp-test-email.dto';
+import { UpdateLicenseClientSettingsDto } from './dto/update-license-client-settings.dto';
 import { UpdateMailTemplateDto } from './dto/update-mail-template.dto';
 import { MailerService } from '../mailer/mailer.service';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
@@ -202,6 +203,26 @@ export class SettingsController {
   @Post('smtp/test-email')
   sendSmtpTestEmail(@Body() dto: SendSmtpTestEmailDto) {
     return this.mailer.sendTestEmail(dto.to);
+  }
+
+  // Einstellungen → Master-Client, Schlüssel-Icon bei "Diese Installation"
+  // (Nutzervorgabe, 2026-08-24) – gleiches Recht wie der Rest der
+  // allgemeinen Einstellungen, kein eigenes Recht.
+  @ApiBearerAuth()
+  @RequirePermission('settings:read')
+  @Get('license-client')
+  getLicenseClientSettings() {
+    return this.settingsService.getLicenseClientSettings();
+  }
+
+  @ApiBearerAuth()
+  @RequirePermission('settings:update')
+  @Patch('license-client')
+  updateLicenseClientSettings(
+    @Body() dto: UpdateLicenseClientSettingsDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.settingsService.updateLicenseClientSettings(dto, user.sub);
   }
 
   // Mailing-Reiter (Nutzervorgabe, 2026-08-23: "unter mailing möchte ich

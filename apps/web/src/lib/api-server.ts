@@ -841,6 +841,17 @@ export function getSmtpSettings() {
   return apiFetch<SmtpSettings>("/settings/smtp");
 }
 
+// Einstellungen → Master-Client, Schlüssel-Icon bei "Diese Installation"
+// (Nutzervorgabe, 2026-08-24). Key kommt nie mit, nur `hasApiKey` (siehe
+// SettingsService.getLicenseClientSettings()).
+export interface LicenseClientSettings {
+  hasApiKey: boolean;
+}
+
+export function getLicenseClientSettings() {
+  return apiFetch<LicenseClientSettings>("/settings/license-client");
+}
+
 // Einstellungen → "Jobs"-Reiter (Nutzervorgabe, 2026-08-22, 1:1 nach
 // Bildvorlage "Geplante Aufgaben"/"Letzte Läufe"). Nur die drei real
 // vorhandenen Cron-Jobs (siehe JobsService.definitions im Backend).
