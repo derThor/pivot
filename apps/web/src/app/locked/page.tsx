@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 const DEFAULT_TITLE = "Gleich wieder da.";
 const DEFAULT_MESSAGE =
   "Wir aktualisieren die Website. Ihre Daten bleiben unberührt — in wenigen Minuten ist alles wieder erreichbar.";
-const DEFAULT_ACCENT = "#C8EE44";
+const DEFAULT_ACCENT = "#BCE64D";
 
 // Gleiche grobe Helligkeitsschätzung wie bei der Akzentfarbe-Auswahl unter
 // Einstellungen → Darstellung (settings-form.tsx) – die Wartungsseite nutzt
