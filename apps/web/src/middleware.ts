@@ -135,9 +135,14 @@ export async function middleware(request: NextRequest) {
 
   // Gesperrte Slave-Installation: Wartungsseite statt Dashboard/Login
   // (Nutzervorgabe: "Wartungsseite konfigurierbar") – URL bleibt für den
-  // Besucher unverändert (rewrite statt redirect).
+  // Besucher unverändert (rewrite statt redirect). Echter 503-Status statt
+  // 200 – korrekt für Suchmaschinen/Monitoring ("vorübergehend nicht
+  // verfügbar", nicht indexieren), und macht `WebsiteMonitorService`s
+  // `res.ok`-Prüfung nebenbei robuster (siehe website-monitor.service.ts).
   if (await isInstanceLocked()) {
-    return NextResponse.rewrite(new URL("/locked", request.url));
+    return NextResponse.rewrite(new URL("/locked", request.url), {
+      status: 503,
+    });
   }
 
   const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;

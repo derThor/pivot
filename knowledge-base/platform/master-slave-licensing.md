@@ -745,4 +745,41 @@ Umgesetzt: neues optionales Feld `Website.testUrl` (schema.prisma) – wenn gese
 
 **Live verifiziert:** `testUrl` für strasev auf `http://localhost:3010/` gesetzt, echten `POST /websites/check-now` mit einem gültigen (manuell signierten Test-)JWT ausgelöst – `lastLiveCheckAt` aktualisiert, `lastLiveCheckAnomaly: false` (korrekt: strasev war zu diesem Zeitpunkt gesperrt UND zeigte die Wartungsseite, also keine Anomalie) – bestätigt, dass tatsächlich `testUrl` statt der nicht erreichbaren echten Domain angefragt wurde.
 
+## Update 2026-08-24: "Wecken" – der Master darf einen Client ohne Bruch des Pull-Prinzips anstupsen
+
+Nutzer-Kontext: Pivot hatte strasev gesperrt, aber strasev bekam das nicht mit ("ich habe jetzt strasev in pivot gesperrt. aber nichts passiert") – erwartungsgemäß, da nur der wöchentliche Cron oder ein manueller Klick bei strasev selbst eine neue Prüfung auslöst. Auf "ich will das über Pivot auslösen" folgte die Erklärung, dass ein echter Push das Pull-Prinzip bräche. Der Kompromiss, dem der Nutzer zugestimmt hat ("können wir das auch einbauen?"): ein **"Wecken"-Aufruf ohne Autorität** – er löst bei der Installation nur ihren eigenen, weiterhin selbst-signierten Pull-Check aus, setzt nie selbst einen Status.
+
+**Umgesetzt:**
+- Client-seitig: `POST /license/wakeup` (`license-state.controller.ts`) – `@Public()`, authentifiziert per Konstant-Zeit-Vergleich gegen den ohnehin geteilten `LICENSE_API_KEY` (kein neues Secret). Steht in `LicenseEnforcementGuard`s Ausnahmeliste, damit eine gesperrte Installation überhaupt geweckt werden kann.
+- Master-seitig: `WebsitesService.wakeup()` + `POST /websites/:id/wakeup` – entschlüsselt den gespeicherten API-Key, ruft `${website.testUrl ?? https://domain}/api/license/wakeup` auf. Neuer, dedizierter Next.js-Proxy `apps/web/src/app/api/license/wakeup/route.ts` beim Client (bewusst NICHT über `proxyToApi()`, da kein eingeloggter Nutzer, sondern der Master als Aufrufer – reiner Authorization-Header-Passthrough).
+- UI: dritter Icon-Button ("Wecken", Glocke) pro Kachel auf `/dashboard/websites`.
+- **Live verifiziert** (Nutzer-Frage danach: "was bedeutet das für die Sicherheit, kann man die Seite lahmlegen?"): Status bei Pivot auf "Live" gesetzt, strasev zeigte vorher noch "Gesperrt", `POST /websites/:id/wakeup` ausgelöst → strasev zeigt sofort `{"mode":"slave","status":"live"}`, ganz ohne Neustart.
+
+**Sicherheitsbewertung** (Antwort auf die "lahmlegen"-Frage): Kein neuer Angriffsvektor – derselbe Key, derselbe globale `ThrottlerGuard` (100/Min/IP) wie bei `/license/check`. Ein Angreifer ohne Key wird billig abgelehnt (reiner Buffer-Vergleich); ein Angreifer MIT Key könnte ohnehin schon direkt `/license/check` missbrauchen, "Wecken" eröffnet keine neue Fähigkeit. Fälschen des Lizenzstatus ist unmöglich, da `performCheck()` immer die echte Master-Signatur verifiziert.
+
+**Zusätzliche Härtung** (Nutzer, defensiv, obwohl kein akutes Loch): 60-Sekunden-Abklingzeit in `LicenseClientService.requestWakeup()` – verhindert, dass derselbe (evtl. geleakte) Key über mehrere IPs verteilt den IP-basierten Rate-Limit umgeht und wiederholt echte Master-Anfragen samt DB-Schreibzugriffen auslöst. Rein In-Memory, kein DB-Feld nötig.
+
+## Update 2026-08-24: Lizenzprüfung + Live-Überwachung als rein lesbare Jobs sichtbar
+
+Nutzerfrage: "warum wird der Job nicht unter Einstellungen → Jobs aufgeführt?" Antwort/Entscheidung: bewusst als interne Infrastruktur behandelt (siehe ursprüngliche Design-Notiz), nicht im editierbaren `ScheduledJob`-System – ein Admin dürfte diesen Job sonst pausieren und damit die Durchsetzung selbst aushebeln. Nutzer bestätigte trotz "nur Pivot-Rollen haben Zugriff" die Empfehlung, **nur lesbar** sichtbar zu machen, nicht editierbar.
+
+Umgesetzt: `LicenseClientService.performCheck()` und `WebsiteMonitorService.checkLockedWebsites()` schreiben jetzt bei jedem Lauf einen `JobRun` (`jobId: "license-check"` bzw. `"website-monitor"`). Da `JobRun.jobId` per Fremdschlüssel an `ScheduledJob` gebunden ist, legt jede Methode zuerst idempotent eine `ScheduledJob`-Zeile an (`isCritical: true`) – aber **beide IDs fehlen bewusst in `JobsService.definitions`**, wodurch `JobsService.update()`/`runNow()` sie nie finden (`getDefinition()` wirft `NotFoundException`). `JobsService.findRecentRuns()` bekommt eine zusätzliche `READ_ONLY_JOB_TITLES`-Zuordnung für hübsche Anzeigenamen. Ergebnis: Beide Jobs tauchen in "Letzte Läufe" auf, aber nicht unter "Geplante Aufgaben" – kein Pausieren, kein Umplanen möglich.
+
+**Live verifiziert:** `PATCH /jobs/website-monitor` (Versuch, zu pausieren) → `404 Unbekannter Job`. `GET /jobs/runs` zeigt den Lauf mit Titel "Live-Überwachung gesperrter Websites (Master)"; `GET /jobs` (Geplante Aufgaben) listet weiterhin nur die drei ursprünglichen Jobs.
+
 **Für später wichtig:** Diese lokale Umgebung ist rein für Entwicklungstests gedacht, kein echter Kunden-Server. Sobald ein echter Server existiert, wird eine CI/CD-Pipeline aufgebaut (Nutzerentscheidung, 2026-08-24: zentrales Deploy-Skript/CI statt manuellem `git pull` pro Server) – strasev hat bereits eine eigene `docker-compose.yml`, die sich dafür anbietet.
+
+## Update 2026-08-24: strasev bekommt ein eigenes GitHub-Repo
+
+`C:\git\strasev`s `origin` zeigte bisher auf denselben Remote wie Pivot (`github.com/derThor/pivot`) – GitHub Desktop zeigte es deshalb konsequent als "pivot" statt als eigenständiges Repo an (Namensauflösung folgt dem verknüpften GitHub-Repo, nicht dem lokalen Ordnernamen). Nutzer hat ein neues, leeres Repo `github.com/derThor/strasev` angelegt. Umgebogen: `origin` → `upstream` (bleibt Quelle für `git pull upstream master`, unverändertes Deploy-Modell), neues `origin` zeigt auf `github.com/derThor/strasev.git`. Initialer `git push -u origin master` musste der Nutzer selbst ausführen (vom Auto-Mode-Berechtigungssystem als sensible Aktion geblockt).
+
+## Update 2026-08-24: Standard-Wartungsseite nach Bildvorlage – markenfähig für jede Installation
+
+Nutzervorgabe (mit Bildvorlage – lime-grüner Hintergrund, große Headline "Gleich wieder da.", Footer mit Kontakt/Firmenname): `/locked/page.tsx` komplett neu gebaut, als **Standard für alle** ausgelieferten Installationen, nicht nur strasev. Titel/Text bleiben wie vorbereitet unter Einstellungen → Wartungsseite editierbar; alle anderen Daten kommen automatisch aus bereits bestehenden Einstellungen – keine neue Konfigurationsfläche:
+
+- **Hintergrundfarbe** = `AppSettings.accentColor` (Standard `#C8EE44`, dieselbe Farbe wie im Bildvorlage) – Textfarbe/Rahmen passen sich per Helligkeitsschätzung an (gleiche Formel wie beim Akzentfarbe-Feld unter Einstellungen → Darstellung), funktioniert also auch bei einem dunklen Kunden-Akzent.
+- **Logo/Firmenname oben links** = `companyLogoUrl`/`companyName` (öffentlich über `GET /settings/public`, war bereits vorbereitet). Ohne eigenes Logo UND ohne gesetzten Firmennamen: Fallback auf das echte Pivot-Markenzeichen (`/brand/logo-collapsed.png`) + "Pivot" – genau der unkonfigurierte Zustand, den die Bildvorlage zeigt.
+- **Footer-Kontaktzeile** (E-Mail/Telefon/Firmenname · Stadt) = `companyEmail`/`companyPhone`/`companyName`/`companyCity`, nur gerendert wenn mindestens eines davon gesetzt ist.
+- Dekorative "● 503"-Pille oben rechts. Zusätzlich: `middleware.ts`s Rewrite setzt jetzt `{status: 503}` – **live geprüft, dass Next.js diesen Status auf einen Rewrite NICHT übernimmt** (Antwort bleibt 200), also rein kosmetisch/keine Wirkung auf den tatsächlichen HTTP-Status; als harmloser Versuch drin gelassen, da er nicht schadet, aber nicht als "jetzt liefert die Seite echtes 503" missverstehen.
+
+**Wichtige Lektion beim Testen:** Ein Live-Test gegen strasev zeigte zunächst weiterhin die ALTE Wartungsseite – Ursache war nicht die neue Seite selbst, sondern schlicht vergessen, den Commit vor dem Test zu Pivot zu pushen und bei strasev zu pullen (Code lag nur lokal bei Pivot). Nach `git pull` bei strasev zeigte die neue Seite korrekt strasevs echte Firmendaten.

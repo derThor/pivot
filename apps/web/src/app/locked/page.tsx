@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getLicenseState } from "@/lib/api-server";
+import { getLicenseState, getPublicSettings } from "@/lib/api-server";
 
 // Meta-Tag-Marker, den WebsiteMonitorService (Master-seitige Live-
 // Überwachung, siehe knowledge-base/platform/master-slave-licensing.md)
@@ -10,16 +10,36 @@ export const metadata: Metadata = {
   other: { "pivot-maintenance": "true" },
 };
 
-const DEFAULT_TITLE = "Wartungsarbeiten";
+const DEFAULT_TITLE = "Gleich wieder da.";
 const DEFAULT_MESSAGE =
-  "Diese Seite ist derzeit nicht erreichbar. Bitte versuche es später erneut.";
+  "Wir aktualisieren die Website. Ihre Daten bleiben unberührt — in wenigen Minuten ist alles wieder erreichbar.";
+const DEFAULT_ACCENT = "#C8EE44";
 
-/** Wird von middleware.ts für alle geschützten Routen (Dashboard, Login,
- * Registrierung) angezeigt, sobald diese Installation im Slave-Modus
- * gesperrt ist. Inhalt konfigurierbar unter Einstellungen → Integrationen
- * (Nutzervorgabe: "Wartungsseite konfigurierbar"). */
+// Gleiche grobe Helligkeitsschätzung wie bei der Akzentfarbe-Auswahl unter
+// Einstellungen → Darstellung (settings-form.tsx) – die Wartungsseite nutzt
+// dieselbe Akzentfarbe als Hintergrund und muss ihre Textfarbe entsprechend
+// anpassen, egal welche Farbe der Kunde gewählt hat.
+function isLightColor(hex: string): boolean {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return (r * 299 + g * 587 + b * 114) / 1000 > 150;
+}
+
+/** Standard-Wartungsseite für alle ausgelieferten Installationen
+ * (Nutzervorgabe, 2026-08-24, nach Bildvorlage) – wird von middleware.ts
+ * für alle geschützten Routen (Dashboard, Login, Registrierung) angezeigt,
+ * sobald diese Installation im Client-Modus gesperrt ist. Titel/Text unter
+ * Einstellungen → Wartungsseite editierbar; Logo/Firmenname/Kontaktdaten/
+ * Akzentfarbe kommen automatisch aus den bestehenden Firmen-/Darstellungs-
+ * Einstellungen (Firma-Seite bzw. Einstellungen → Darstellung) – keine
+ * eigene Konfiguration nötig, jede Installation zeigt automatisch ihre
+ * eigene Marke. */
 export default async function LockedPage() {
-  const state = await getLicenseState();
+  const [state, settings] = await Promise.all([
+    getLicenseState(),
+    getPublicSettings(),
+  ]);
   const title =
     (state?.mode === "slave" &&
       state.status === "locked" &&
@@ -31,12 +51,115 @@ export default async function LockedPage() {
       state.maintenanceMessage) ||
     DEFAULT_MESSAGE;
 
+  const accent = settings?.accentColor || DEFAULT_ACCENT;
+  const isLight = isLightColor(accent);
+  const textColor = isLight ? "#0B1220" : "#FFFFFF";
+  const mutedColor = isLight ? "rgba(11,18,32,0.6)" : "rgba(255,255,255,0.7)";
+  const borderColor = isLight ? "rgba(11,18,32,0.15)" : "rgba(255,255,255,0.2)";
+
+  const companyName = settings?.companyName || "Pivot";
+  const companyCity = settings?.companyCity;
+  const companyEmail = settings?.companyEmail;
+  const companyPhone = settings?.companyPhone;
+  const hasContact = Boolean(companyEmail || companyPhone || companyCity);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-6">
-      <div className="max-w-md text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        <p className="mt-3 text-sm text-muted-foreground">{message}</p>
+    <div
+      className="flex min-h-screen flex-col px-6 py-6 sm:px-12 sm:py-8"
+      style={{ backgroundColor: accent, color: textColor }}
+    >
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2.5">
+          {settings?.companyLogoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- externe Medien-URL, next/image-Domainliste unnötig für diese eine öffentliche Seite
+            <img
+              src={settings.companyLogoUrl}
+              alt={companyName}
+              className="h-8 w-auto object-contain"
+            />
+          ) : !settings?.companyName ? (
+            // eslint-disable-next-line @next/next/no-img-element -- statisches Asset unter public/, kein next/image nötig
+            <img
+              src="/brand/logo-collapsed.png"
+              alt="Pivot"
+              className="size-8 rounded-lg object-contain"
+            />
+          ) : null}
+          <span className="text-base font-semibold">{companyName}</span>
+        </div>
+        <span
+          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 font-mono text-xs font-medium"
+          style={{
+            backgroundColor: isLight ? textColor : "rgba(255,255,255,0.15)",
+            color: isLight ? accent : "#FFFFFF",
+          }}
+        >
+          <span className="size-1.5 rounded-full bg-current" />
+          503
+        </span>
       </div>
+
+      <div className="flex flex-1 flex-col justify-center py-16">
+        <div className="max-w-2xl">
+          <p
+            className="text-xs font-semibold tracking-[0.2em] uppercase"
+            style={{ color: mutedColor }}
+          >
+            Wartungsarbeiten
+          </p>
+          <h1 className="mt-4 text-5xl font-black tracking-tight sm:text-6xl">
+            {title}
+          </h1>
+          <p className="mt-6 max-w-md text-lg" style={{ color: mutedColor }}>
+            {message}
+          </p>
+        </div>
+      </div>
+
+      {hasContact && (
+        <div
+          className="flex flex-col gap-4 border-t pt-6 sm:flex-row sm:items-center sm:justify-between"
+          style={{ borderColor }}
+        >
+          <div className="flex flex-wrap gap-8">
+            {companyEmail && (
+              <div>
+                <p
+                  className="text-[10px] font-semibold tracking-[0.15em] uppercase"
+                  style={{ color: mutedColor }}
+                >
+                  E-Mail
+                </p>
+                <a
+                  href={`mailto:${companyEmail}`}
+                  className="text-sm font-medium underline underline-offset-2"
+                >
+                  {companyEmail}
+                </a>
+              </div>
+            )}
+            {companyPhone && (
+              <div>
+                <p
+                  className="text-[10px] font-semibold tracking-[0.15em] uppercase"
+                  style={{ color: mutedColor }}
+                >
+                  Telefon
+                </p>
+                <a
+                  href={`tel:${companyPhone.replace(/\s+/g, "")}`}
+                  className="text-sm font-medium underline underline-offset-2"
+                >
+                  {companyPhone}
+                </a>
+              </div>
+            )}
+          </div>
+          <p className="text-sm" style={{ color: mutedColor }}>
+            {[companyName, companyCity].filter(Boolean).join(" · ")}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
