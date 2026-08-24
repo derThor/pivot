@@ -25,6 +25,9 @@ import {
   MessageSquare,
   Trash2,
   ClipboardList,
+  Server,
+  Globe,
+  Blocks,
 } from "lucide-react";
 
 import {
@@ -43,6 +46,12 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { CurrentUser } from "@/lib/api-server";
 
@@ -88,6 +97,21 @@ export const navGroups = [
     label: "Übersicht",
     icon: LayoutDashboard,
     items: [{ title: "Dashboard", url: "/dashboard", icon: LayoutDashboard }],
+  },
+  {
+    label: "Administration",
+    icon: Server,
+    items: [
+      {
+        title: "Webseite",
+        url: "/dashboard/websites",
+        icon: Globe,
+        permission: "settings:read",
+        children: [
+          { title: "Module", url: "/dashboard/modules", icon: Blocks },
+        ],
+      },
+    ],
   },
   {
     label: "Webseite",
@@ -230,22 +254,25 @@ function itemMatchesActive(
   );
 }
 
-export function AppSidebar({
-  user,
-}: {
-  user: CurrentUser;
-}) {
+export function AppSidebar({ user }: { user: CurrentUser }) {
   const pathname = usePathname();
   const router = useRouter();
   const { state: sidebarState } = useSidebar();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
   const permissions = user.permissions ?? [];
+  // "Administration" (Websites/Module) nur für die Master-Instanz sichtbar
+  // (siehe knowledge-base/platform/master-slave-licensing.md) – eine
+  // Client-Installation kennt diese Mandanten-Verwaltung gar nicht. Die
+  // Wartungsseiten-Konfiguration für die Installation selbst liegt separat
+  // unter Einstellungen → Wartungsseite (immer erreichbar).
+  const isMaster = (user.deploymentMode ?? "master") === "master";
   // "Verwaltung" wird nicht mehr in der Sidebar gerendert, sondern über das
   // neue Header-Dropdown erreicht (siehe admin-menu.tsx) – bleibt trotzdem
   // Teil von `navGroups` (Datenquelle für Breadcrumbs/Befehlspalette/
   // Header-Menü), wird hier nur aus der sichtbaren Sidebar-Liste gefiltert.
   const visibleNavGroups = navGroups
     .filter((group) => group.label !== "Verwaltung")
+    .filter((group) => group.label !== "Administration" || isMaster)
     .map((group) => ({
       ...group,
       originalItemCount: group.items.length as number,
@@ -328,22 +355,64 @@ export function AppSidebar({
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b px-[25px] transition-[padding] duration-200 ease-linear group-data-[collapsible=icon]:px-[10px]">
-        <div className="flex items-center gap-2 py-2 transition-[gap] duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
-          <div className="flex h-8 w-0 shrink-0 items-center justify-center overflow-hidden rounded-lg opacity-0 shadow-sm transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:opacity-100">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/brand/logo-collapsed.png"
-              alt="pivot CMS"
-              className="size-full object-contain"
-            />
+        <div className="relative flex items-center gap-2 py-2 transition-[gap] duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
+          <div className="relative flex h-8 w-0 shrink-0 items-center justify-center opacity-0 transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:opacity-100">
+            <div className="flex size-full items-center justify-center overflow-hidden rounded-lg shadow-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/brand/logo-collapsed.png"
+                alt="pivot CMS"
+                className="size-full object-contain"
+              />
+            </div>
+            {/* Master/Client-Indikator (Nutzervorgabe, 2026-08-24: "Slave"
+                heißt in der UI "Client") – eingeklappt nur der
+                Anfangsbuchstabe im kleinen Kreis (kein Platz für Text),
+                ausgeklappt daneben der volle Name (siehe unten). Voller
+                Name zusätzlich per Tooltip beim Hovern. */}
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <span
+                    className={cn(
+                      "absolute -top-1 -right-1 hidden size-3.5 items-center justify-center rounded-full text-[8px] font-semibold group-data-[collapsible=icon]:flex",
+                      isMaster
+                        ? "bg-yellow-400 text-black"
+                        : "bg-slate-400 text-white",
+                    )}
+                  />
+                }
+              >
+                {isMaster ? "M" : "C"}
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {isMaster ? "Master" : "Client"}
+              </TooltipContent>
+            </Tooltip>
           </div>
-          <span className="overflow-hidden whitespace-nowrap transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/brand/logo-expanded.png"
-              alt="pivot CMS"
-              className="h-11 w-auto max-w-full object-contain"
-            />
+          <span className="whitespace-nowrap transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:overflow-hidden group-data-[collapsible=icon]:opacity-0">
+            <span className="relative inline-block">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/brand/logo-expanded.png"
+                alt="pivot CMS"
+                className="h-11 w-auto max-w-full object-contain"
+              />
+              {/* Ausgeklappt: voll ausgeschriebener Name statt nur des
+                  Anfangsbuchstabens (Nutzervorgabe: "m und c nur bei
+                  eingeklappt. sonst ausgeschrieben"). Direkt am Logo-Bild
+                  positioniert, moderater `rounded-md` statt der Standard-
+                  Pillenform. */}
+              <Badge
+                variant="secondary"
+                className={cn(
+                  "absolute top-0 -right-3 h-3.5 gap-0 rounded-md px-1 py-0 text-[9px] leading-3",
+                  isMaster && "bg-yellow-400 text-black",
+                )}
+              >
+                {isMaster ? "Master" : "Client"}
+              </Badge>
+            </span>
           </span>
         </div>
       </SidebarHeader>

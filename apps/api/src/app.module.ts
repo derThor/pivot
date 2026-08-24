@@ -35,6 +35,8 @@ import { TrashModule } from './trash/trash.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { JobsModule } from './jobs/jobs.module';
 import { FormsModule } from './forms/forms.module';
+import { WebsitesModule } from './websites/websites.module';
+import { LicenseClientModule } from './license-client/license-client.module';
 import { validateEnv } from './common/config/env.validation';
 
 @Module({
@@ -78,6 +80,8 @@ import { validateEnv } from './common/config/env.validation';
     NotificationsModule,
     JobsModule,
     FormsModule,
+    WebsitesModule,
+    LicenseClientModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

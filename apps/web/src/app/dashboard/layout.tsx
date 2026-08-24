@@ -7,7 +7,13 @@ import { AccountLockBanner } from "@/components/account-lock-banner";
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { NoDashboardAccess } from "@/components/no-dashboard-access";
-import { getCurrentUser, getNotifications, getPublicSettings } from "@/lib/api-server";
+import { SystemMessage } from "@/components/ui/system-message";
+import {
+  getCurrentUser,
+  getLicenseState,
+  getNotifications,
+  getPublicSettings,
+} from "@/lib/api-server";
 import { formatName } from "@/lib/utils";
 import { buildAccentColorCss } from "@/lib/accent-color";
 
@@ -39,6 +45,15 @@ export default async function DashboardLayout({
     (n) => !n.isRead,
   ).length;
 
+  // Präsenter Hinweis für Client-Installationen (Nutzervorgabe, siehe
+  // knowledge-base/platform/master-slave-licensing.md) – nur bei
+  // "development" (bewusst von der Lizenzprüfung ausgenommen) oder
+  // "unchecked"/"pending" (Lizenzprüfung noch offen/überfällig, aber noch
+  // innerhalb der Karenzzeit) relevant. "locked" wird nie hier sichtbar,
+  // da der Backend-Guard das Dashboard dann bereits komplett blockt.
+  const licenseState =
+    user.deploymentMode === "slave" ? await getLicenseState() : null;
+
   // Cookie-Name muss mit SIDEBAR_COOKIE_NAME in ui/sidebar.tsx übereinstimmen.
   // Kann nicht importiert werden: sidebar.tsx ist "use client", einfache
   // Konstanten-Exports daraus werden beim Import in eine Server Component
@@ -49,9 +64,9 @@ export default async function DashboardLayout({
   // 2026-08-17, "Seitenleiste eingeklappt starten"). Ein bereits vom Nutzer
   // gesetztes Cookie hat immer Vorrang.
   const defaultOpen =
-    sidebarState != null ?
-      sidebarState !== "false"
-    : !settings?.sidebarCollapsedByDefault;
+    sidebarState != null
+      ? sidebarState !== "false"
+      : !settings?.sidebarCollapsedByDefault;
 
   return (
     <div
@@ -61,7 +76,6 @@ export default async function DashboardLayout({
     >
       {settings?.accentColor && (
         <style
-          // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{
             __html: buildAccentColorCss(settings.accentColor),
           }}
@@ -73,6 +87,30 @@ export default async function DashboardLayout({
           {user.impersonatedBy && (
             <ImpersonationBanner targetName={formatName(user)} />
           )}
+          {licenseState?.mode === "slave" &&
+            licenseState.status === "development" && (
+              <SystemMessage
+                variant="warning"
+                title="Entwicklungsinstanz – ungeprüft"
+                description="Diese Installation läuft im Entwicklungsmodus und ist bewusst von der Lizenzprüfung ausgenommen."
+              />
+            )}
+          {licenseState?.mode === "slave" &&
+            licenseState.status === "unchecked" && (
+              <SystemMessage
+                variant="warning"
+                title="Lizenzprüfung ausstehend"
+                description="Diese Installation wurde noch nicht erfolgreich beim Master geprüft."
+              />
+            )}
+          {licenseState?.mode === "slave" &&
+            licenseState.status === "pending" && (
+              <SystemMessage
+                variant="warning"
+                title="Lizenzprüfung ausstehend"
+                description={`Das letzte Lizenz-Token ist abgelaufen, ein erneuter Abruf steht noch aus (Ablauf: ${new Date(licenseState.expiresAt).toLocaleDateString("de-DE")}).`}
+              />
+            )}
           {user.mustChangePassword ? (
             <AccountLockBanner reason="password" />
           ) : (
@@ -84,7 +122,9 @@ export default async function DashboardLayout({
             defaultPageSize={settings?.defaultPageSize ?? 10}
             systemMessageCount={systemMessageCount}
             allowTwoFactor={settings?.allowTwoFactor ?? false}
-            keyboardShortcutsEnabled={settings?.keyboardShortcutsEnabled !== false}
+            keyboardShortcutsEnabled={
+              settings?.keyboardShortcutsEnabled !== false
+            }
           />
           <div className="flex min-w-0 flex-1 flex-col gap-6 bg-background px-5 pt-4 pb-5 sm:px-10 sm:pt-6 sm:pb-10">
             {children}

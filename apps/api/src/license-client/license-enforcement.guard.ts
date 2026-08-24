@@ -1,0 +1,42 @@
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import type { Request } from 'express';
+import { LicenseClientService } from './license-client.service';
+
+// Bleiben auch bei "locked" erreichbar (Nutzervorgabe: "API blockt bis auf
+// einen minimalen Health-/Lizenz-Endpunkt"). Suffix-Vergleich statt
+// exaktem Pfad, damit das URI-Versionierungspräfix (`/v1/...`) keine
+// Rolle spielt.
+const ALLOWED_SUFFIXES = ['/health', '/license/state'];
+
+/**
+ * Globaler Guard: blockt auf einer Slave-Installation (fast) jeden
+ * Request, sobald der lokale Lizenzstatus "locked" ist (siehe
+ * knowledge-base/platform/master-slave-licensing.md – Wartungsmodus).
+ * Auf einer Master-Installation immer inaktiv (`getEffectiveStatus()`
+ * liefert dort `{ mode: "master" }`).
+ */
+@Injectable()
+export class LicenseEnforcementGuard implements CanActivate {
+  constructor(private readonly licenseClient: LicenseClientService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const req = context.switchToHttp().getRequest<Request>();
+    if (ALLOWED_SUFFIXES.some((suffix) => req.path.endsWith(suffix))) {
+      return true;
+    }
+
+    const effective = await this.licenseClient.getEffectiveStatus();
+    if (effective.mode === 'master') return true;
+    if (effective.status === 'locked') {
+      throw new ServiceUnavailableException(
+        'Diese Installation ist derzeit gesperrt.',
+      );
+    }
+    return true;
+  }
+}

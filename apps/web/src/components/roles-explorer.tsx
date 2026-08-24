@@ -98,15 +98,24 @@ export function RolesExplorer({
     setUsersOpen(true);
     setLoadingUsers(true);
     try {
-      const res = await fetch(`/api/users?roleId=${selectedRole.id}&pageSize=100`);
+      const res = await fetch(
+        `/api/users?roleId=${selectedRole.id}&pageSize=100`,
+      );
       const data = await res.json().catch(() => null);
       const items = Array.isArray(data?.items) ? data.items : [];
       setRoleUsers(
-        items.map((u: { id: string; firstName: string | null; lastName: string; email: string }) => ({
-          id: u.id,
-          name: [u.firstName, u.lastName].filter(Boolean).join(" "),
-          email: u.email,
-        })),
+        items.map(
+          (u: {
+            id: string;
+            firstName: string | null;
+            lastName: string;
+            email: string;
+          }) => ({
+            id: u.id,
+            name: [u.firstName, u.lastName].filter(Boolean).join(" "),
+            email: u.email,
+          }),
+        ),
       );
     } finally {
       setLoadingUsers(false);
@@ -114,7 +123,9 @@ export function RolesExplorer({
   }
   const [isSaving, setIsSaving] = useState(false);
 
-  const [description, setDescription] = useState(selectedRole?.description ?? "");
+  const [description, setDescription] = useState(
+    selectedRole?.description ?? "",
+  );
   const [canAccessDashboard, setCanAccessDashboard] = useState(
     selectedRole?.canAccessDashboard ?? true,
   );
@@ -225,19 +236,19 @@ export function RolesExplorer({
     if (activeCategory !== "all" && p.category !== activeCategory) return false;
     return true;
   });
-  const resourceGroups = groupByResource(visibleCatalog).filter(
-    ([, perms]) => {
-      if (!onlyGranted) return true;
-      return perms.some((p) => permissions.has(p.key));
-    },
-  );
+  const resourceGroups = groupByResource(visibleCatalog).filter(([, perms]) => {
+    if (!onlyGranted) return true;
+    return perms.some((p) => permissions.has(p.key));
+  });
 
   const categoryCounts = {
     all: totalCatalog,
     core: permissionsCatalog.filter((p) => p.category === "core").length,
-    extensions: permissionsCatalog.filter((p) => p.category === "extensions").length,
-    administration: permissionsCatalog.filter((p) => p.category === "administration")
+    extensions: permissionsCatalog.filter((p) => p.category === "extensions")
       .length,
+    administration: permissionsCatalog.filter(
+      (p) => p.category === "administration",
+    ).length,
     system: permissionsCatalog.filter((p) => p.category === "system").length,
   };
 
@@ -283,8 +294,8 @@ export function RolesExplorer({
                   {role.name}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {role.userCount} {role.userCount === 1 ? "Nutzer" : "Nutzer"} ·{" "}
-                  {rightsLabel}
+                  {role.userCount} {role.userCount === 1 ? "Nutzer" : "Nutzer"}{" "}
+                  · {rightsLabel}
                   {!role.canAccessDashboard && (
                     <span className="text-amber-600 dark:text-amber-500">
                       {" "}
@@ -319,125 +330,133 @@ export function RolesExplorer({
           </div>
         ) : (
           <>
-          <div className="flex flex-col gap-5 rounded-[10px] bg-card p-6 shadow-sm">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="flex items-center gap-2">
-                {selectedRole.name === "Pivot" && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src="/brand/logo-collapsed.png"
-                    alt=""
-                    className="size-5 shrink-0 object-contain"
-                  />
-                )}
-                <h2 className="text-xl font-semibold">{selectedRole.name}</h2>
-                {isAdministrator ? (
-                  <Badge variant="secondary" className="gap-1">
-                    <Lock className="size-3" />
-                    Geschützt
-                  </Badge>
-                ) : (
-                  <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
-                    bearbeitbar
-                  </Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                {!selectedRole.isSystem && selectedRole.userCount === 0 && (
+            <div className="flex flex-col gap-5 rounded-[10px] bg-card p-6 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  {selectedRole.name === "Pivot" && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src="/brand/logo-collapsed.png"
+                      alt=""
+                      className="size-5 shrink-0 object-contain"
+                    />
+                  )}
+                  <h2 className="text-xl font-semibold">{selectedRole.name}</h2>
+                  {isAdministrator ? (
+                    <Badge variant="secondary" className="gap-1">
+                      <Lock className="size-3" />
+                      Geschützt
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
+                      bearbeitbar
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {!selectedRole.isSystem && selectedRole.userCount === 0 && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      className="py-1.5"
+                      onClick={() => setDeleteOpen(true)}
+                    >
+                      <Trash2 />
+                      Löschen
+                    </Button>
+                  )}
                   <Button
                     type="button"
-                    variant="destructive"
-                    className="py-1.5"
-                    onClick={() => setDeleteOpen(true)}
+                    variant="outline"
+                    className="border-[#D4D4D4] py-1.5"
+                    disabled={!isDirty || isAdministrator}
+                    onClick={resetForm}
                   >
-                    <Trash2 />
-                    Löschen
+                    Zurücksetzen
                   </Button>
-                )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="border-[#D4D4D4] py-1.5"
-                  disabled={!isDirty || isAdministrator}
-                  onClick={resetForm}
-                >
-                  Zurücksetzen
-                </Button>
-                <Button
-                  type="button"
-                  className="py-1.5"
-                  disabled={!isDirty || isAdministrator || isSaving}
-                  onClick={handleSave}
-                >
-                  {isSaving ? "Speichert…" : "Rechte speichern"}
-                </Button>
+                  <Button
+                    type="button"
+                    className="py-1.5"
+                    disabled={!isDirty || isAdministrator || isSaving}
+                    onClick={handleSave}
+                  >
+                    {isSaving ? "Speichert…" : "Rechte speichern"}
+                  </Button>
+                </div>
               </div>
-            </div>
 
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                Beschreibung der Rolle
-              </Label>
-              <Textarea
-                rows={2}
-                value={description}
-                disabled={isAdministrator}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-
-            <label className="flex items-center gap-3 rounded-xl border border-primary bg-primary/10 p-3.5">
-              <Checkbox
-                className="size-5 rounded-md"
-                checked={canAccessDashboard}
-                disabled={isAdministrator}
-                onCheckedChange={(checked) => setCanAccessDashboard(checked === true)}
-              />
-              <span className="text-sm">
-                <span className="font-medium">Zugriff auf das Backend</span>{" "}
-                <span className="text-muted-foreground">
-                  Darf sich am Admin anmelden — die Rechte unten greifen dann.
-                </span>
-              </span>
-            </label>
-
-            <div className="flex flex-col gap-2 border-t border-[#E5E5E5] pt-3">
-              <div className="flex items-center justify-between text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                <span>Umfang</span>
-                <span className="text-sm font-semibold text-foreground normal-case">
-                  {permissions.size} von {totalCatalog} Rechten
-                </span>
-              </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-primary transition-[width]"
-                  style={{
-                    width: `${totalCatalog > 0 ? (permissions.size / totalCatalog) * 100 : 0}%`,
-                  }}
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                  Beschreibung der Rolle
+                </Label>
+                <Textarea
+                  rows={2}
+                  value={description}
+                  disabled={isAdministrator}
+                  onChange={(e) => setDescription(e.target.value)}
                 />
               </div>
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  <Key className="size-3.5" />
-                  Schreibrechte <strong className="text-foreground">{writeRightsCount}</strong>
+
+              <label className="flex items-center gap-3 rounded-xl border border-primary bg-primary/10 p-3.5">
+                <Checkbox
+                  className="size-5 rounded-md"
+                  checked={canAccessDashboard}
+                  disabled={isAdministrator}
+                  onCheckedChange={(checked) =>
+                    setCanAccessDashboard(checked === true)
+                  }
+                />
+                <span className="text-sm">
+                  <span className="font-medium">Zugriff auf das Backend</span>{" "}
+                  <span className="text-muted-foreground">
+                    Darf sich am Admin anmelden — die Rechte unten greifen dann.
+                  </span>
                 </span>
-                <button
-                  type="button"
-                  onClick={openUsersDialog}
-                  className="flex items-center gap-1.5 hover:text-foreground"
-                >
-                  <Users className="size-3.5" />
-                  Nutzer <strong className="text-foreground">{selectedRole.userCount}</strong>
-                </button>
-                <span className="ml-auto">
-                  Zuletzt geändert{" "}
-                  <strong className="text-foreground">
-                    {formatDate(selectedRole.updatedAt)}
-                  </strong>
-                </span>
+              </label>
+
+              <div className="flex flex-col gap-2 border-t border-[#E5E5E5] pt-3">
+                <div className="flex items-center justify-between text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                  <span>Umfang</span>
+                  <span className="text-sm font-semibold text-foreground normal-case">
+                    {permissions.size} von {totalCatalog} Rechten
+                  </span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-[width]"
+                    style={{
+                      width: `${totalCatalog > 0 ? (permissions.size / totalCatalog) * 100 : 0}%`,
+                    }}
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <Key className="size-3.5" />
+                    Schreibrechte{" "}
+                    <strong className="text-foreground">
+                      {writeRightsCount}
+                    </strong>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={openUsersDialog}
+                    className="flex items-center gap-1.5 hover:text-foreground"
+                  >
+                    <Users className="size-3.5" />
+                    Nutzer{" "}
+                    <strong className="text-foreground">
+                      {selectedRole.userCount}
+                    </strong>
+                  </button>
+                  <span className="ml-auto">
+                    Zuletzt geändert{" "}
+                    <strong className="text-foreground">
+                      {formatDate(selectedRole.updatedAt)}
+                    </strong>
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3">
               <Tabs
@@ -452,11 +471,7 @@ export function RolesExplorer({
                     Alle {categoryCounts.all}
                   </TabsTrigger>
                   {categoryOrder.map((cat) => (
-                    <TabsTrigger
-                      key={cat}
-                      className="px-2 sm:px-4"
-                      value={cat}
-                    >
+                    <TabsTrigger key={cat} className="px-2 sm:px-4" value={cat}>
                       {categoryLabels[cat]} {categoryCounts[cat]}
                     </TabsTrigger>
                   ))}
@@ -476,7 +491,9 @@ export function RolesExplorer({
 
             <div className="flex flex-col gap-6">
               {categoryOrder
-                .filter((cat) => activeCategory === "all" || activeCategory === cat)
+                .filter(
+                  (cat) => activeCategory === "all" || activeCategory === cat,
+                )
                 .map((cat) => {
                   const groupsInCat = resourceGroups.filter(
                     ([, perms]) => perms[0]?.category === cat,
@@ -484,7 +501,18 @@ export function RolesExplorer({
                   if (groupsInCat.length === 0) return null;
                   return (
                     <div key={cat} className="flex flex-col gap-3">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        {cat === "system" && (
+                          // Pivot-Logo statt Text-Hinweis: markiert, dass
+                          // diese Rechte exklusiv der Pivot-Rolle
+                          // vorbehalten sind (siehe PERMISSIONS_CATALOG).
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src="/brand/logo-collapsed.png"
+                            alt="Pivot"
+                            className="size-3.5 shrink-0 object-contain"
+                          />
+                        )}
                         <p className="shrink-0 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                           {categorySectionLabels[cat]}
                         </p>
@@ -496,7 +524,8 @@ export function RolesExplorer({
                           const assignedKeys = perms
                             .map((p) => p.key)
                             .filter((key) => permissions.has(key));
-                          const allSelected = assignedKeys.length === perms.length;
+                          const allSelected =
+                            assignedKeys.length === perms.length;
                           // Nur Pivot darf `settings:*` vergeben
                           // (Nutzervorgabe, 2026-08-21) – bei jeder Rolle
                           // sichtbar, aber für alle außer Pivot deaktiviert,
@@ -523,7 +552,8 @@ export function RolesExplorer({
                                       {resourceLabels[resource] ?? resource}
                                     </p>
                                     <p className="text-sm text-muted-foreground">
-                                      {assignedKeys.length} / {perms.length} Rechte
+                                      {assignedKeys.length} / {perms.length}{" "}
+                                      Rechte
                                     </p>
                                   </div>
                                 </div>
@@ -544,7 +574,10 @@ export function RolesExplorer({
                               <Separator className="bg-[#E5E5E5]" />
                               <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                                 {perms.map(({ key, action }) => (
-                                  <div key={key} className="flex items-center gap-2.5">
+                                  <div
+                                    key={key}
+                                    className="flex items-center gap-2.5"
+                                  >
                                     <Checkbox
                                       id={key}
                                       className="size-5 rounded-md"
@@ -554,7 +587,10 @@ export function RolesExplorer({
                                         togglePermission(key, checked === true)
                                       }
                                     />
-                                    <Label htmlFor={key} className="text-sm font-normal">
+                                    <Label
+                                      htmlFor={key}
+                                      className="text-sm font-normal"
+                                    >
                                       {actionLabels[action] ?? action}
                                     </Label>
                                   </div>
@@ -640,7 +676,12 @@ export function RolesExplorerExportButton({ roles }: { roles: Role[] }) {
   }
 
   return (
-    <Button type="button" variant="outline" className="border-[#D4D4D4]" onClick={handleExport}>
+    <Button
+      type="button"
+      variant="outline"
+      className="border-[#D4D4D4]"
+      onClick={handleExport}
+    >
       <Download />
       Rechte exportieren
     </Button>

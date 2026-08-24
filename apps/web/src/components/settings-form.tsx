@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
   Bell,
+  Construction,
   Contrast,
   History,
   Mail,
@@ -14,6 +15,7 @@ import {
   Palette,
   Plug,
   Shield,
+  ShieldCheck,
   Timer,
   Webhook,
   type LucideIcon,
@@ -25,7 +27,6 @@ import { SegmentedPicker } from "@/components/segmented-picker";
 import { SwitchRow } from "@/components/switch-row";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
@@ -38,6 +39,8 @@ import { WebhookDialog } from "@/components/webhook-dialog";
 import { WebhookFailureBanner } from "@/components/webhook-failure-banner";
 import { WebhooksManager } from "@/components/webhooks-manager";
 import { SettingsServicesCard } from "@/components/settings-services-card";
+import { MaintenancePageCard } from "@/components/maintenance-page-card";
+import { MasterClientCard } from "@/components/master-client-card";
 import { ScheduledJobsCard } from "@/components/scheduled-jobs-card";
 import { RecentJobRunsCard } from "@/components/recent-job-runs-card";
 import { MailingSettingsCard } from "@/components/mailing-settings-card";
@@ -51,6 +54,7 @@ import type {
   SettingsChangesResponse,
   SmtpSettings,
   WebhookListResponse,
+  WebsiteListResponse,
 } from "@/lib/api-server";
 
 // Feste Akzentfarben-Auswahl (1:1 nach Bildvorlage) + freier Farbwähler
@@ -104,6 +108,8 @@ type SectionId =
   | "integrations"
   | "webhooks"
   | "notifications"
+  | "master-client"
+  | "maintenance-page"
   | "jobs"
   | "mailing"
   | "protocol";
@@ -157,6 +163,18 @@ const SECTIONS: {
     icon: Webhook,
   },
   {
+    id: "master-client",
+    title: "Master-Client",
+    subtitle: "Mandanten & Modus",
+    icon: ShieldCheck,
+  },
+  {
+    id: "maintenance-page",
+    title: "Wartungsseite",
+    subtitle: "Inhalt bei Sperrung",
+    icon: Construction,
+  },
+  {
     id: "jobs",
     title: "Jobs",
     subtitle: "Geplante Aufgaben",
@@ -195,6 +213,7 @@ export function SettingsForm({
   jobs,
   jobRuns,
   mailTemplates,
+  websites,
 }: {
   settings: AppSettings;
   logoFolderId: string | null;
@@ -204,6 +223,7 @@ export function SettingsForm({
   jobs: ScheduledJobsResponse;
   jobRuns: JobRunsResponse;
   mailTemplates: MailTemplateListItem[];
+  websites: WebsiteListResponse;
 }) {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<SectionId>("access");
@@ -211,9 +231,9 @@ export function SettingsForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const defaultMediaStorageQuotaMb =
-    settings.mediaStorageQuotaMb != null ?
-      String(settings.mediaStorageQuotaMb)
-    : "";
+    settings.mediaStorageQuotaMb != null
+      ? String(settings.mediaStorageQuotaMb)
+      : "";
 
   const [mediaStorageQuotaMb, setMediaStorageQuotaMb] = useState(
     defaultMediaStorageQuotaMb,
@@ -358,7 +378,10 @@ export function SettingsForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="flex flex-col gap-6"
+      >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
@@ -397,17 +420,17 @@ export function SettingsForm({
                     onClick={() => setActiveSection(section.id)}
                     className={cn(
                       "flex items-start gap-3 border-l-4 px-4 py-4 text-left transition-colors",
-                      isActive ?
-                        "border-l-primary bg-primary/15"
-                      : "border-l-transparent hover:bg-muted/50",
+                      isActive
+                        ? "border-l-primary bg-primary/15"
+                        : "border-l-transparent hover:bg-muted/50",
                     )}
                   >
                     <span
                       className={cn(
                         "flex size-9 shrink-0 items-center justify-center rounded-lg",
-                        isActive ?
-                          "bg-primary/25 text-foreground"
-                        : "bg-[#F4F4F5] text-muted-foreground",
+                        isActive
+                          ? "bg-primary/25 text-foreground"
+                          : "bg-[#F4F4F5] text-muted-foreground",
                       )}
                     >
                       <Icon className="size-4" />
@@ -432,8 +455,7 @@ export function SettingsForm({
                 <CardHeader>
                   <CardTitle>Zugriff & Funktionen</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Steuert, welche Selbstbedienungs-Funktionen verfügbar
-                    sind.
+                    Steuert, welche Selbstbedienungs-Funktionen verfügbar sind.
                   </p>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3">
@@ -535,28 +557,14 @@ export function SettingsForm({
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="maintenanceModeEnabled"
-                    render={({ field }) => (
-                      <FormItem>
-                        <SwitchRow
-                          label="Wartungsmodus"
-                          description="Zeigt einen Hinweis im Dashboard, dass die Website aktuell im Wartungsmodus ist."
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormItem>
-                    )}
-                  />
                   <div className="flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
                     <div className="flex flex-col gap-0.5">
-                      <Label htmlFor="mediaStorageQuotaMb">
+                      <Label htmlFor="mediaStorageQuotaMb" className="text-sm">
                         Medien-Speicherkontingent (MB)
                       </Label>
                       <p className="text-sm text-muted-foreground">
-                        Ab 90 % Auslastung erscheint ein Hinweis im
-                        Dashboard. Leer lassen für unbegrenzt.
+                        Ab 90 % Auslastung erscheint ein Hinweis im Dashboard.
+                        Leer lassen für unbegrenzt.
                       </p>
                     </div>
                     <Input
@@ -571,14 +579,14 @@ export function SettingsForm({
                   </div>
                   <div className="flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
                     <div className="flex flex-col gap-0.5">
-                      <Label htmlFor="maxUploadSizeMb">
+                      <Label htmlFor="maxUploadSizeMb" className="text-sm">
                         Maximale Dateigröße pro Upload (MB)
                       </Label>
                       <p className="text-sm text-muted-foreground">
-                        Gilt für jeden Upload (Medien, Profilbild,
-                        Firmenlogo). Verschärft nur die technischen
-                        Kategorie-Obergrenzen, hebt sie nie auf. Leer lassen
-                        für keine zusätzliche Grenze.
+                        Gilt für jeden Upload (Medien, Profilbild, Firmenlogo).
+                        Verschärft nur die technischen Kategorie-Obergrenzen,
+                        hebt sie nie auf. Leer lassen für keine zusätzliche
+                        Grenze.
                       </p>
                     </div>
                     <Input
@@ -593,7 +601,7 @@ export function SettingsForm({
                   </div>
                   <div className="flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
                     <div className="flex flex-col gap-0.5">
-                      <Label>Cache</Label>
+                      <Label className="text-sm">Cache</Label>
                       <p className="text-sm text-muted-foreground">
                         Leert den serverseitigen Cache (z.B. Zähler für
                         Systembenachrichtigungen). Wirkt sich nicht auf
@@ -621,8 +629,8 @@ export function SettingsForm({
                   <CardHeader>
                     <CardTitle>Passwort-Richtlinie</CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      Gilt für Registrierung, neue Benutzer, Passwort ändern
-                      und Passwort-Reset.
+                      Gilt für Registrierung, neue Benutzer, Passwort ändern und
+                      Passwort-Reset.
                     </p>
                   </CardHeader>
                   <CardContent className="flex flex-col gap-4">
@@ -751,8 +759,8 @@ export function SettingsForm({
                     <CardTitle>Anmeldung</CardTitle>
                     <p className="text-sm text-muted-foreground">
                       2FA per Authenticator-App (z.B. Google Authenticator,
-                      Authy, Microsoft Authenticator), Sitzungsdauer und
-                      globale Konto-Aktionen.
+                      Authy, Microsoft Authenticator), Sitzungsdauer und globale
+                      Konto-Aktionen.
                     </p>
                   </CardHeader>
                   <CardContent className="flex flex-col gap-3">
@@ -788,9 +796,9 @@ export function SettingsForm({
                     <div
                       className={cn(
                         "grid transition-all duration-300 ease-in-out",
-                        form.watch("requireTwoFactorForAll") ?
-                          "grid-rows-[0fr] opacity-0"
-                        : "grid-rows-[1fr] opacity-100",
+                        form.watch("requireTwoFactorForAll")
+                          ? "grid-rows-[0fr] opacity-0"
+                          : "grid-rows-[1fr] opacity-100",
                       )}
                     >
                       <div className="flex flex-col gap-3 overflow-hidden">
@@ -852,9 +860,9 @@ export function SettingsForm({
                             className="border-[#D4D4D4]"
                             disabled={isRevokingAllSessions}
                           >
-                            {isRevokingAllSessions ?
-                              "Beendet…"
-                            : "Alle Sitzungen beenden"}
+                            {isRevokingAllSessions
+                              ? "Beendet…"
+                              : "Alle Sitzungen beenden"}
                           </Button>
                         }
                         variant="default"
@@ -872,9 +880,9 @@ export function SettingsForm({
                             className="border-[#D4D4D4] text-destructive hover:text-destructive"
                             disabled={isForcingPasswordResetAll}
                           >
-                            {isForcingPasswordResetAll ?
-                              "Erzwingt…"
-                            : "Passwort-Reset für alle erzwingen"}
+                            {isForcingPasswordResetAll
+                              ? "Erzwingt…"
+                              : "Passwort-Reset für alle erzwingen"}
                           </Button>
                         }
                         title="Passwort-Reset für alle Konten erzwingen?"
@@ -920,8 +928,7 @@ export function SettingsForm({
                         const current = field.value ?? ACCENT_PRESETS[0].hex;
                         const isCustom = !ACCENT_PRESETS.some(
                           (preset) =>
-                            preset.hex.toLowerCase() ===
-                            current.toLowerCase(),
+                            preset.hex.toLowerCase() === current.toLowerCase(),
                         );
                         // Grobe Helligkeitsschätzung, nur um das
                         // Paletten-Icon auf der eigenen Farbe lesbar zu
@@ -950,17 +957,16 @@ export function SettingsForm({
                                         aria-label={preset.label}
                                         onClick={() =>
                                           field.onChange(
-                                            preset.hex ===
-                                              ACCENT_PRESETS[0].hex ?
-                                              null
-                                            : preset.hex,
+                                            preset.hex === ACCENT_PRESETS[0].hex
+                                              ? null
+                                              : preset.hex,
                                           )
                                         }
                                         className={cn(
                                           "size-8 shrink-0 rounded-full ring-2 ring-offset-2 transition-all",
-                                          isSelected ?
-                                            "ring-foreground"
-                                          : "ring-transparent",
+                                          isSelected
+                                            ? "ring-foreground"
+                                            : "ring-transparent",
                                         )}
                                         style={{ backgroundColor: preset.hex }}
                                       />
@@ -969,19 +975,19 @@ export function SettingsForm({
                                   <label
                                     className={cn(
                                       "relative flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-all",
-                                      isCustom ?
-                                        cn(
-                                          "ring-2 ring-foreground ring-offset-2",
-                                          isLightCustom ?
-                                            "text-foreground"
-                                          : "text-white",
-                                        )
-                                      : "border border-dashed border-muted-foreground/40 text-muted-foreground",
+                                      isCustom
+                                        ? cn(
+                                            "ring-2 ring-foreground ring-offset-2",
+                                            isLightCustom
+                                              ? "text-foreground"
+                                              : "text-white",
+                                          )
+                                        : "border border-dashed border-muted-foreground/40 text-muted-foreground",
                                     )}
                                     style={
-                                      isCustom ?
-                                        { backgroundColor: current }
-                                      : undefined
+                                      isCustom
+                                        ? { backgroundColor: current }
+                                        : undefined
                                     }
                                     title="Eigene Farbe wählen"
                                   >
@@ -1040,7 +1046,10 @@ export function SettingsForm({
                       render={({ field }) => (
                         <FormItem>
                           <div className="flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
-                            <Label htmlFor="defaultPageSize">
+                            <Label
+                              htmlFor="defaultPageSize"
+                              className="text-sm"
+                            >
                               Einträge pro Seite
                             </Label>
                             <FormControl>
@@ -1117,6 +1126,37 @@ export function SettingsForm({
               </div>
             )}
 
+            {activeSection === "master-client" && (
+              <MasterClientCard settings={settings} websites={websites} />
+            )}
+
+            {activeSection === "maintenance-page" && (
+              <div className="flex flex-col gap-4">
+                <Card className="rounded-xl shadow-sm">
+                  <CardContent className="pt-6">
+                    <FormField
+                      control={form.control}
+                      name="maintenanceModeEnabled"
+                      render={({ field }) => (
+                        <FormItem>
+                          <SwitchRow
+                            label="Wartungsmodus"
+                            description="Zeigt einen Hinweis im Dashboard, dass die Website aktuell im Wartungsmodus ist."
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+                <MaintenancePageCard
+                  title={settings.maintenancePageTitle}
+                  message={settings.maintenancePageMessage}
+                />
+              </div>
+            )}
+
             {activeSection === "webhooks" && (
               <Card className="rounded-xl shadow-sm">
                 <CardHeader className="flex-row items-center justify-between">
@@ -1130,7 +1170,9 @@ export function SettingsForm({
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3">
                   {webhooks && (
-                    <WebhookFailureBanner failingCount={webhooks.meta.failingCount} />
+                    <WebhookFailureBanner
+                      failingCount={webhooks.meta.failingCount}
+                    />
                   )}
                   <WebhooksManager items={webhooks?.items ?? []} />
                   {webhooks && (

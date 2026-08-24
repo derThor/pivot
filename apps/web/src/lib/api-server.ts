@@ -40,6 +40,9 @@ export interface CurrentUser {
   impersonatedBy?: string;
   /** Nur bei getCurrentUser() (GET /auth/me) vorhanden, nicht bei getUsers(). */
   twoFactorSetupRequired?: boolean;
+  /** Nur bei getCurrentUser() (GET /auth/me) vorhanden, nicht bei getUsers().
+   * Steuert den Master-exklusiven "Administration"-Sidebar-Bereich. */
+  deploymentMode?: "master" | "slave";
 }
 
 export interface UserSession {
@@ -674,6 +677,10 @@ export function getPermissionsCatalog() {
 
 export interface AppSettings {
   id: number;
+  // Siehe knowledge-base/platform/master-slave-licensing.md.
+  deploymentMode: "master" | "slave";
+  maintenancePageTitle: string | null;
+  maintenancePageMessage: string | null;
   allowRegistration: boolean;
   allowPasswordReset: boolean;
   allowEmailChange: boolean;
@@ -933,6 +940,25 @@ export function getSettings() {
 
 export function getPublicSettings() {
   return publicApiFetch<PublicSettings>("/settings/public");
+}
+
+// Siehe knowledge-base/platform/master-slave-licensing.md.
+export type LicenseState =
+  | { mode: "master" }
+  | { mode: "slave"; status: "live" | "development" | "unchecked" }
+  | { mode: "slave"; status: "pending"; expiresAt: string }
+  | {
+      mode: "slave";
+      status: "locked";
+      maintenanceTitle: string | null;
+      maintenanceMessage: string | null;
+    };
+
+/** Öffentlich, unauthentifiziert (GET /license/state) – steuert das
+ * Entwicklungsinstanz-Hinweisbanner im Dashboard und die öffentliche
+ * Wartungsseite. */
+export function getLicenseState() {
+  return publicApiFetch<LicenseState>("/license/state");
 }
 
 export interface MessageResponse {
@@ -1307,6 +1333,32 @@ export interface MailTemplateListItem {
 
 export function getMailTemplates() {
   return apiFetch<MailTemplateListItem[]>("/settings/mail-templates");
+}
+
+export type WebsiteStatus = "live" | "development" | "locked";
+
+export interface WebsiteListItem {
+  id: string;
+  name: string;
+  domain: string;
+  status: WebsiteStatus;
+  deploymentMode: "master" | "slave";
+  lastCheckInAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WebsiteListResponse {
+  items: WebsiteListItem[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
+export function getWebsites(params?: { page?: number; pageSize?: number }) {
+  const search = new URLSearchParams();
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.pageSize) search.set("pageSize", String(params.pageSize));
+  const query = search.toString();
+  return apiFetch<WebsiteListResponse>(`/websites${query ? `?${query}` : ""}`);
 }
 
 export type NotificationCategory =

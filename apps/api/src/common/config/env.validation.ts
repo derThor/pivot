@@ -21,6 +21,19 @@ export const envSchema = z.object({
       /^[0-9a-f]{64}$/i,
       'TOTP_ENCRYPTION_KEY muss ein 64-stelliger Hex-String sein (32 Byte, für AES-256-GCM)',
     ),
+  // Master/Slave-Modus liegt seit 2026-08-24 in `AppSettings.deploymentMode`
+  // (Pivot-Admin-editierbar unter Einstellungen), nicht mehr hier – siehe
+  // knowledge-base/platform/master-slave-licensing.md. Die folgenden Werte
+  // bleiben Umgebungsvariablen (Zugangsdaten, gehören nicht in eine
+  // web-editierbare Einstellung): nur relevant, wenn diese Installation im
+  // Slave-Modus läuft, werden zur Laufzeit von LicenseClientService
+  // geprüft, nicht hier beim Start erzwungen (der Modus ist zum
+  // Validierungszeitpunkt noch nicht aus der DB bekannt).
+  LICENSE_SIGNING_PRIVATE_KEY: z.string().optional(),
+  LICENSE_MASTER_URL: z.string().optional(),
+  LICENSE_SITE_DOMAIN: z.string().optional(),
+  LICENSE_API_KEY: z.string().optional(),
+  LICENSE_MASTER_PUBLIC_KEY: z.string().optional(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

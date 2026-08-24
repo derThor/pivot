@@ -807,6 +807,96 @@ für Details. Zwei Folgevorhaben dabei zunächst vom Nutzer als
 - [ ] Lesbarkeitsanalyse
 - [ ] Interne Linkvorschläge
 
+### 4.4 – Master/Slave-Lizenzsystem (Websites-Verwaltung)
+
+Mehrsitzungs-Vorhaben (Planungsstand 2026-08-24, Umsetzung noch nicht
+begonnen). Ziel: eine **Master-Instanz** (diese Codebase, `C:\git\pivot`)
+verwaltet mehrere ausgelieferte **Slave-Installationen** (erste:
+**strasev**, `C:\git\strasev`) zentral und kann eine Installation bei
+Bedarf in den Wartungsmodus versetzen (z.B. bei Zahlungsausfall). Voller
+Plan inkl. Token-Design, Sicherheitsüberlegungen und offenen Punkten:
+[master-slave-licensing.md](../knowledge-base/platform/master-slave-licensing.md).
+
+**Bereits entschieden (2026-08-24):**
+- [x] Ein Repo mit `DEPLOYMENT_MODE=master|slave`-Umgebungsschalter statt
+      zwei getrennter Codebases
+- [x] Pull-Modell (Slave fragt wöchentlich beim Master ab, nicht
+      umgekehrt) – vermeidet Erreichbarkeitsanforderungen an Kunden-Domains
+- [x] Signiertes Token (Ed25519, asymmetrisch – kein gemeinsames Secret),
+      domain-gebunden, mit monotonem `seq`-Zähler gegen Replay/Rollback
+- [x] 14 Tage Token-Laufzeit + Karenzzeit mit Warnhinweis vor echter Sperre,
+      damit ein vorübergehend nicht erreichbarer Master niemals sofort den
+      Wartungsmodus auslöst
+- [x] Status "Entwicklung" von der Lizenzprüfung ausgenommen, zeigt
+      stattdessen einen präsenten Hinweis ("Entwicklungsinstanz –
+      ungeprüft")
+- [x] Wartungsseite pro Installation konfigurierbar
+- [x] `C:\git\strasev` als reiner Git-Checkout desselben Repos angelegt
+      (noch ohne eigene `.env`/Datenbank/Port – folgt erst nach der
+      Code-Basis)
+
+**Master-seitig umgesetzt (2026-08-24):**
+- [x] `Website`-Datenmodell (`packages/database/prisma/schema.prisma`)
+- [x] Token-Ausstellung: `POST /license/check` (Pull-Endpunkt, Site-API-Key-
+      Auth, Ed25519-Signierung über `apps/api/src/websites/
+      license-token.util.ts`, generischer 401 für unbekannte Domain/falschen
+      Key, monotoner `seq`-Zähler) – live gegen echte Requests verifiziert
+      (korrekter/falscher Key, unbekannte Domain, Signaturprüfung,
+      Manipulationserkennung, `seq`-Inkrement, Statuswechsel, Validierung,
+      Berechtigungsgate)
+- [x] Master-Admin-CRUD (`WebsitesController`, Pivot-exklusiv über
+      `settings:read`/`settings:update`, kein neues Recht)
+- [x] Eigene Seite `/dashboard/websites` (nicht mehr in den Einstellungen
+      verschachtelt, siehe "Update 2026-08-24: Umbau auf eigene Seite" –
+      Kacheln direkt auf dem Seitenhintergrund, kein umschließender
+      Card-Kasten, echte URL-Pagination, Statusänderung nur noch über den
+      "Bearbeiten"-Dialog)
+- [x] Neue Sidebar-Gruppe "Administration" (nur Master, gesteuert über
+      `deploymentMode` aus `GET /auth/me`) mit Menüpunkt "Webseite" und
+      Unterpunkt "Module" (Platzhalter, künftige branchenspezifische
+      Erweiterungen)
+- [x] `DEPLOYMENT_MODE`-Env-Schalter im Master gesetzt (`master`) +
+      Zod-Validierung (`env.validation.ts`)
+- [ ] Echter Browser-/visueller Abgleich der neuen Websites-Kacheln (bisher
+      nur Typecheck/Lint/SSR-Statuscode geprüft – kein Playwright/Chromium
+      verfügbar, kein Login-Session-Cookie für einen echten Nutzer zur Hand)
+
+**Slave-seitige Phase umgesetzt (2026-08-24):**
+- [x] Modus liegt in `AppSettings.deploymentMode`, umschaltbar unter
+      Einstellungen → Integrationen ("Bereitstellungsmodus") – Nutzer-
+      entscheidung: UI-Schalter statt reiner Umgebungsvariable. "Slave"
+      heißt in der UI "Client".
+- [x] `LicenseClientService` (wöchentlicher Pull-Abruf + Sofort-Check bei
+      Erstinstallation, Ed25519-Signaturprüfung, `seq`-Replay-Schutz,
+      14-Tage-Gültigkeit + 7-Tage-Karenz, Uhrzeit-Manipulationsschutz über
+      `lastObservedAt`)
+- [x] `LicenseEnforcementGuard` (global, blockt bei "locked" alles außer
+      `/health` + `/license/state`) + öffentlicher Status-Endpunkt
+- [x] `MasterOnlyGuard` auf Websites-/Lizenz-Endpunkten – zusätzliche,
+      verteidigungstiefe Absicherung, dass ein lokal umgeschalteter
+      "Master" nie echten Zugriff bekommt (die eigentliche Grenze bleibt
+      der private Signierschlüssel, siehe Knowledge-Base)
+- [x] Konfigurierbare Wartungsseite (`/locked`, Next.js-Middleware-Rewrite,
+      Titel/Text unter Einstellungen editierbar, Meta-Tag-Marker für die
+      Master-Überwachung) + Entwicklungs-/Karenzzeit-Hinweisbanner im
+      Dashboard
+- [x] `WebsiteMonitorService` (Master-seitig, Nutzervorgabe: "Test, der
+      regelmäßig prüft, ob eine gesperrte Seite trotzdem noch live ist" –
+      offene, dokumentierte Anomalie-Erkennung statt des abgelehnten
+      verdeckten Signals) + Benachrichtigung im bestehenden Postfach
+- [x] Live verifiziert: Guard-Sperre/-Freigabe je Modus, `/auth/me` und
+      `/license/state` korrekt aus der DB, Wartungsseite inkl. Meta-Tag
+      und konfigurierbarem/Standard-Text
+- [ ] `LicenseClientService.performCheck()` nicht gegen eine zweite, echte
+      Slave-Installation end-to-end getestet (kein zweiter laufender
+      Server verfügbar) – erfolgt natürlich bei der strasev-Einrichtung
+- [ ] `WebsiteMonitorService`s echter HTTPS-Abruf nicht gegen eine reale
+      Domain getestet (bewusst keine unbeteiligte externe Seite angefragt)
+
+**Noch offen:**
+- [ ] strasev-Installation technisch lauffähig machen (`.env`, Datenbank,
+      Port, `pnpm install`) – Nutzervorgabe: "immer erst fragen"
+
 ## Priorisierungsprinzip
 
 Reihenfolge orientiert sich daran, was ein Redaktionsteam für den täglichen

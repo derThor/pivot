@@ -71,6 +71,17 @@ model UserRole {
 
 model AppSettings {
   id                         Int      @id @default(1)
+  // "master" (verwaltet Websites/stellt Lizenz-Tokens aus) oder "slave"
+  // (eine ausgelieferte Installation, prüft wöchentlich beim Master) –
+  // Nutzervorgabe, 2026-08-24: vom Pivot-Admin unter Einstellungen
+  // umschaltbar statt nur per Umgebungsvariable. Sicherheitsrelevant:
+  // steuert NUR lokale UI-Sichtbarkeit + ob die Websites-/Lizenz-
+  // Endpunkte dieser Installation aktiv sind (siehe MasterOnlyGuard) –
+  // niemals Zugriff auf andere Installationen, da jede ihre eigene,
+  // isolierte Datenbank hat und der Signierschlüssel für echte Lizenz-
+  // Tokens ausschließlich auf dem echten Master liegt (siehe
+  // knowledge-base/platform/master-slave-licensing.md).
+  deploymentMode             String   @default("master")
   allowRegistration          Boolean  @default(true)
   allowPasswordReset         Boolean  @default(true)
   // Getrennt nach Rolle (Nutzervorgabe, 2026-08-21): `allowEmailChange` gilt
@@ -87,6 +98,14 @@ model AppSettings {
   autosaveEnabled            Boolean  @default(true)
   mediaResponsiveVariantsEnabled Boolean @default(true)
   maintenanceModeEnabled     Boolean  @default(false)
+  // Inhalt der Wartungsseite, die eine Slave-Installation öffentlichen
+  // Besuchern zeigt, sobald der Master sie sperrt (siehe
+  // knowledge-base/platform/master-slave-licensing.md – "Wartungsseite
+  // konfigurierbar"). Bewusst getrennt vom bestehenden
+  // `maintenanceModeEnabled`-Schalter oben (eigenständiges, manuelles
+  // Konzept). `null` = eingebauter Standardtext.
+  maintenancePageTitle       String?
+  maintenancePageMessage     String?
   mediaStorageQuotaMb        Int?
   // Maximale Dateigröße pro Upload (Nutzervorgabe, 2026-08-18) – gilt für
   // jeden Upload-Weg in der App (Medienbibliothek, Avatar, Firmenlogo,
@@ -181,6 +200,11 @@ model AppSettings {
   dsrDeadlineReminderEnabled   Boolean @default(true)
   notifyDeletionRequests       Boolean @default(true)
   notifyTrashExpiring          Boolean @default(true)
+  // Master-seitige Live-Überwachung gesperrter Websites (Nutzervorgabe,
+  // 2026-08-24: "baue einen test ein, der regelmäßig testet, ob eine
+  // Seite live ist. wenn gesperrt, dennoch live, dass ich in Master
+  // gewarnt werde") – siehe WebsiteMonitorService.
+  notifyWebsiteAnomaly         Boolean @default(true)
   // Gemeinsame Empfänger-Adresse für alle Systembenachrichtigungen
   // (Nutzervorgabe, 2026-08-22: "wie stelle ich ein, das die
   // benachrichtigungen an eine bestimmte email gesendet werden" – eine
@@ -1127,6 +1151,103 @@ model Webhook {
   updatedAt            DateTime  @updatedAt
 
   @@map("webhooks")
+}
+
+// ---------- Master/Slave-Lizenzsystem ----------
+// Nutzervorgabe, 2026-08-24: diese Codebase kann sowohl als "Master"
+// (verwaltet alle ausgelieferten Installationen, dieses Modell) als auch
+// als "Slave" (eine ausgelieferte Installation, prüft wöchentlich per Pull
+// bei ihrem Master) laufen (`DEPLOYMENT_MODE`-Umgebungsschalter). Voller
+// Plan inkl. Token-Design und Sicherheitsüberlegungen:
+// knowledge-base/platform/master-slave-licensing.md.
+model Website {
+  id     String @id @default(cuid())
+  name   String
+  domain String @unique
+
+  // "live" | "development" | "locked" – "development" ist von der
+  // Lizenzprüfung komplett ausgenommen (siehe Slave-seitige Durchsetzung,
+  // noch nicht implementiert), "locked" löst auf der Slave-Installation
+  // den Wartungsmodus aus.
+  status String @default("development")
+
+  // AES-256-GCM-verschlüsselter Site-API-Key (Pull-Authentifizierung durch
+  // die Slave-Installation an `POST /license/check`) – Nutzervorgabe,
+  // 2026-08-24: "ich will mir den Key immer mit Icon anzeigen lassen",
+  // daher bewusst umkehrbar verschlüsselt statt gehasht (wie zuvor).
+  // Bekannter Trade-off (siehe knowledge-base/platform/
+  // master-slave-licensing.md): ein DB-Leak legt damit nutzbare Keys für
+  // alle Websites offen, nicht nur für neu angelegte. Gleicher
+  // Verschlüsselungs-Helfer wie beim SMTP-Passwort
+  // (common/utils/secret-encryption.ts). `null` bei Installationen, deren
+  // Key vor dieser Spalte angelegt wurde (erst beim nächsten
+  // "Neu erzeugen" befüllt).
+  apiKeyEncrypted String?
+
+  // "master" | "slave" – rein informativ/dokumentarisch (Nutzervorgabe,
+  // 2026-08-24: Einstellungen → Master-Client soll für JEDE Zeile,
+  // einschließlich Mandanten, ein einfaches Master/Client-Popup anbieten).
+  // Hat KEINE technische Wirkung: der Master hat keinen Push-Mechanismus,
+  // um den tatsächlichen Modus einer entfernten Installation zu setzen –
+  // jede Installation stellt ihren echten Modus ausschließlich über ihr
+  // eigenes `AppSettings.deploymentMode` vor Ort ein.
+  deploymentMode String @default("slave")
+
+  // Monoton steigender Zähler, in jedes ausgestellte Token eingebettet –
+  // verhindert, dass eine Slave-Installation ein altes, noch nicht
+  // abgelaufenes Token (z.B. aus einem Backup) wiederherstellt, um eine
+  // später ausgesprochene Sperre zu umgehen.
+  lastSeq       Int       @default(0)
+  lastCheckInAt DateTime?
+
+  // Master-seitige Live-Überwachung (WebsiteMonitorService, Nutzervorgabe
+  // 2026-08-24): regelmäßiger, echter HTTP-Aufruf gegen `https://domain/`
+  // für Websites mit status="locked" – bleibt die Seite trotz Sperre
+  // erreichbar (ohne Wartungsseiten-Kennzeichnung), ist das eine Anomalie
+  // und löst eine Benachrichtigung für den Pivot-Admin aus.
+  lastLiveCheckAt      DateTime?
+  lastLiveCheckAnomaly Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("websites")
+}
+
+// Slave-lokaler Zustand des zuletzt erfolgreich abgerufenen Lizenz-Tokens
+// (siehe LicenseClientService) – nur relevant bei `DEPLOYMENT_MODE=slave`.
+// Immer genau eine Zeile (fixe `id`), da eine Installation nur einen
+// eigenen Lizenzstatus hat. Getrennt vom rohen Token-Format (siehe
+// license-token.util.ts) für schnelle Abfragen ohne erneute
+// Signaturprüfung bei jedem Request.
+model LicenseState {
+  id String @id @default("singleton")
+
+  // Rohes, signiertes Token vom letzten erfolgreichen Abruf – für eine
+  // erneute Signaturprüfung bei Bedarf aufbewahrt, nicht nur die
+  // entpackten Felder unten.
+  token     String?
+  status    String? // "live" | "development" | "locked"
+  domain    String?
+  expiresAt DateTime?
+  seq       Int       @default(0)
+
+  // Letzter ERFOLGREICHER Abruf vs. letzter VERSUCH (auch fehlgeschlagene)
+  // – die Differenz steuert die Karenzzeit-Logik (14 Tage Token-Laufzeit +
+  // 7 Tage Karenz nach Ablauf, siehe knowledge-base/platform/
+  // master-slave-licensing.md).
+  lastCheckInAt      DateTime?
+  lastCheckAttemptAt DateTime?
+
+  // Schutz gegen Zeitmanipulation: höchster bisher beobachteter
+  // Zeitpunkt. Springt die Systemzeit spürbar zurück, darf das nicht
+  // automatisch mehr Vertrauen in ein sonst abgelaufenes Token schaffen
+  // (siehe "Sicherheits-Realitätscheck" in der Knowledge-Base).
+  lastObservedAt DateTime?
+
+  updatedAt DateTime @updatedAt
+
+  @@map("license_state")
 }
 
 // ---------- Formulare & Mailing ----------

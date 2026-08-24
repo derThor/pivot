@@ -9,6 +9,7 @@ import {
   getSettingsChanges,
   getSmtpSettings,
   getWebhooks,
+  getWebsites,
 } from "@/lib/api-server";
 
 export default async function SettingsPage({
@@ -19,6 +20,7 @@ export default async function SettingsPage({
     protocolPage?: string;
     jobsPage?: string;
     jobsRunsPage?: string;
+    mandantenPage?: string;
   }>;
 }) {
   const {
@@ -26,11 +28,13 @@ export default async function SettingsPage({
     protocolPage: protocolPageParam,
     jobsPage: jobsPageParam,
     jobsRunsPage: jobsRunsPageParam,
+    mandantenPage: mandantenPageParam,
   } = await searchParams;
   const webhooksPage = Number(webhooksPageParam) || 1;
   const protocolPage = Number(protocolPageParam) || 1;
   const jobsPage = Number(jobsPageParam) || 1;
   const jobsRunsPage = Number(jobsRunsPageParam) || 1;
+  const mandantenPage = Number(mandantenPageParam) || 1;
 
   const [settings, folders] = await Promise.all([
     getSettings(),
@@ -39,29 +43,40 @@ export default async function SettingsPage({
   // Eigener Query-Param `webhooksPage`/`protocolPage`/`jobsRunsPage` statt
   // `page`, damit sich die Paginierungen der einzelnen
   // Einstellungen-Abschnitte nicht gegenseitig überschreiben.
-  const [webhooks, settingsChanges, smtp, jobs, jobRuns, mailTemplates] =
-    await Promise.all([
-      getWebhooks({
-        page: webhooksPage,
-        pageSize: settings?.defaultPageSize ?? 10,
-      }),
-      getSettingsChanges({
-        page: protocolPage,
-        pageSize: settings?.defaultPageSize ?? 10,
-      }),
-      getSmtpSettings(),
-      getJobs({ page: jobsPage, pageSize: settings?.defaultPageSize ?? 10 }),
-      getJobRuns({
-        page: jobsRunsPage,
-        pageSize: settings?.defaultPageSize ?? 10,
-      }),
-      getMailTemplates(),
-    ]);
+  const [
+    webhooks,
+    settingsChanges,
+    smtp,
+    jobs,
+    jobRuns,
+    mailTemplates,
+    websites,
+  ] = await Promise.all([
+    getWebhooks({
+      page: webhooksPage,
+      pageSize: settings?.defaultPageSize ?? 10,
+    }),
+    getSettingsChanges({
+      page: protocolPage,
+      pageSize: settings?.defaultPageSize ?? 10,
+    }),
+    getSmtpSettings(),
+    getJobs({ page: jobsPage, pageSize: settings?.defaultPageSize ?? 10 }),
+    getJobRuns({
+      page: jobsRunsPage,
+      pageSize: settings?.defaultPageSize ?? 10,
+    }),
+    getMailTemplates(),
+    getWebsites({
+      page: mandantenPage,
+      pageSize: settings?.defaultPageSize ?? 10,
+    }),
+  ]);
   // Nach Namen filtern statt nur `isSystem`: seit dem "Avatare"-Systemordner
   // (Profilfoto-Upload, 2026-08-17) gibt es mehr als einen isSystem-Ordner.
   const logoFolderId =
-    folders?.find((folder) => folder.isSystem && folder.name === "Logo")
-      ?.id ?? null;
+    folders?.find((folder) => folder.isSystem && folder.name === "Logo")?.id ??
+    null;
 
   if (settings === null) {
     return (
@@ -112,6 +127,12 @@ export default async function SettingsPage({
         }
       }
       mailTemplates={mailTemplates ?? []}
+      websites={
+        websites ?? {
+          items: [],
+          meta: { page: 1, pageSize: 10, total: 0, pageCount: 1 },
+        }
+      }
     />
   );
 }

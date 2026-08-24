@@ -200,6 +200,12 @@ export class SettingsService {
       notifyPendingPasswordChanges: settings.notifyPendingPasswordChanges,
       notifyCompanyIncomplete: settings.notifyCompanyIncomplete,
       notifyLegalDocuments: settings.notifyLegalDocuments,
+      // Für die öffentliche Wartungsseite einer gesperrten Slave-
+      // Installation (kein Login vorhanden, siehe MaintenancePage in
+      // apps/web) – bewusst hier statt nur in der Pivot-only `/settings`-
+      // Antwort.
+      maintenancePageTitle: settings.maintenancePageTitle,
+      maintenancePageMessage: settings.maintenancePageMessage,
       companyLogoUrl: settings.companyLogoUrl,
       companyName: settings.companyName,
       companyStreet: settings.companyStreet,

@@ -105,8 +105,41 @@ function applyAuthCookies(response: NextResponse, tokens: TokenPair) {
   return response;
 }
 
+// Master/Slave-Lizenzsperre (siehe
+// knowledge-base/platform/master-slave-licensing.md) – kurzlebiger
+// In-Memory-Cache statt eines Aufrufs bei jedem einzelnen Request
+// (Middleware läuft auf jeder passenden Anfrage). Auf einer Master-
+// Installation liefert `/license/state` immer `{mode:"master"}`, der
+// Cache bleibt dort dauerhaft `false`.
+let lockedCache: { locked: boolean; checkedAt: number } | null = null;
+const LOCKED_CACHE_TTL_MS = 30_000;
+
+async function isInstanceLocked(): Promise<boolean> {
+  if (lockedCache && Date.now() - lockedCache.checkedAt < LOCKED_CACHE_TTL_MS) {
+    return lockedCache.locked;
+  }
+  try {
+    const res = await fetch(`${API_URL}/license/state`, { cache: "no-store" });
+    if (!res.ok) return lockedCache?.locked ?? false;
+    const data = await res.json();
+    const locked = data?.mode === "slave" && data?.status === "locked";
+    lockedCache = { locked, checkedAt: Date.now() };
+    return locked;
+  } catch {
+    return lockedCache?.locked ?? false;
+  }
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Gesperrte Slave-Installation: Wartungsseite statt Dashboard/Login
+  // (Nutzervorgabe: "Wartungsseite konfigurierbar") – URL bleibt für den
+  // Besucher unverändert (rewrite statt redirect).
+  if (await isInstanceLocked()) {
+    return NextResponse.rewrite(new URL("/locked", request.url));
+  }
+
   const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
   const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
 

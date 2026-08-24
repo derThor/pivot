@@ -44,7 +44,10 @@ export function SegmentedPicker<T extends string | number>({
           const [first, second] =
             spaceIndex === -1
               ? [option.label, null]
-              : [option.label.slice(0, spaceIndex), option.label.slice(spaceIndex + 1)];
+              : [
+                  option.label.slice(0, spaceIndex),
+                  option.label.slice(spaceIndex + 1),
+                ];
           return (
             <button
               key={String(option.value)}

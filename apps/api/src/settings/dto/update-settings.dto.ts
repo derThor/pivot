@@ -14,6 +14,22 @@ import {
 } from 'class-validator';
 
 export class UpdateSettingsDto {
+  // Siehe knowledge-base/platform/master-slave-licensing.md.
+  @ApiPropertyOptional({ enum: ['master', 'slave'] })
+  @IsOptional()
+  @IsIn(['master', 'slave'])
+  deploymentMode?: string;
+
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @IsString()
+  maintenancePageTitle?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @IsString()
+  maintenancePageMessage?: string | null;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()
@@ -443,6 +459,11 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsBoolean()
   notifyTrashExpiring?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  notifyWebsiteAnomaly?: boolean;
 
   @ApiPropertyOptional({ nullable: true })
   @IsOptional()

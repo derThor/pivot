@@ -138,6 +138,27 @@ export class NotificationsService {
       }
     }
 
+    // Master-seitige Live-Überwachung gesperrter Websites (Nutzervorgabe,
+    // 2026-08-24: regelmäßiger Test, ob eine als "locked" markierte Seite
+    // trotzdem noch normal erreichbar ist) – siehe WebsiteMonitorService,
+    // das `lastLiveCheckAnomaly` im Hintergrund setzt.
+    if (settings.notifyWebsiteAnomaly) {
+      const anomalousWebsites = await this.prisma.website.findMany({
+        where: { status: 'locked', lastLiveCheckAnomaly: true },
+      });
+      for (const site of anomalousWebsites) {
+        candidates.push({
+          category: 'system',
+          dedupeKey: `website-anomaly:${site.id}`,
+          title: `„${site.name}“ ist gesperrt, aber weiterhin live erreichbar`,
+          description: `${site.domain} antwortet trotz Sperre normal statt mit der Wartungsseite – die Sperre wird dort offenbar nicht durchgesetzt.`,
+          isUrgent: true,
+          actionLabel: 'Website öffnen',
+          actionUrl: '/dashboard/websites',
+        });
+      }
+    }
+
     if (settings.notifyTrashExpiring && readableTrashTypes.length > 0) {
       const trash = await this.trash.list({ types: readableTrashTypes });
       if (trash.stats.expiringSoonCount > 0) {

@@ -94,7 +94,10 @@ export class AuthController {
   @AllowTwoFactorSetupRequired()
   @Get('me')
   async me(@CurrentUser() user: JwtPayload) {
-    const profile = await this.usersService.findOne(user.sub);
+    const [profile, deploymentMode] = await Promise.all([
+      this.usersService.findOne(user.sub),
+      this.authService.getDeploymentMode(),
+    ]);
     return {
       ...profile,
       permissions: user.permissions,
@@ -105,6 +108,10 @@ export class AuthController {
       // Möglichkeit zu erkennen, dass der TwoFactorSetupGuard gerade fast
       // alle Routen sperrt, und Seiten blieben kommentarlos leer.
       twoFactorSetupRequired: user.twoFactorSetupRequired,
+      // Steuert im Frontend, ob der Master-exklusive "Administration"-
+      // Sidebar-Bereich angezeigt wird (siehe
+      // knowledge-base/platform/master-slave-licensing.md).
+      deploymentMode,
     };
   }
 

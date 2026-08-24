@@ -66,6 +66,16 @@ export class AuthService {
     private readonly auditLog: AuditLogService,
   ) {}
 
+  /** Steuert im Frontend, ob der Master-exklusive "Administration"-
+   * Sidebar-Bereich angezeigt wird (siehe
+   * knowledge-base/platform/master-slave-licensing.md). Liegt seit
+   * 2026-08-24 in AppSettings statt einer Umgebungsvariable (Pivot-Admin-
+   * editierbar unter Einstellungen). */
+  async getDeploymentMode(): Promise<string> {
+    const settings = await this.settings.get();
+    return settings.deploymentMode;
+  }
+
   async register(dto: RegisterDto) {
     const settings = await this.settings.get();
     if (!settings.allowRegistration) {
