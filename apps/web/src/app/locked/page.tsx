@@ -89,15 +89,15 @@ export default async function LockedPage() {
         </span>
       </div>
 
-      <div className="flex flex-1 flex-col justify-center py-16">
-        <div className="max-w-2xl">
+      <div className="flex flex-1 flex-col items-center justify-center py-16">
+        <div className="max-w-2xl text-left">
           <p
             className="text-xs font-semibold tracking-[0.2em] uppercase"
             style={{ color: mutedColor }}
           >
             Wartungsarbeiten
           </p>
-          <h1 className="mt-4 text-5xl font-black tracking-tight sm:text-6xl">
+          <h1 className="mt-4 text-6xl font-bold tracking-tight sm:text-7xl">
             {title}
           </h1>
           <p className="mt-6 max-w-md text-lg" style={{ color: mutedColor }}>
