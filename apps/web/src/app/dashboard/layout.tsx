@@ -88,10 +88,13 @@ export default async function DashboardLayout({
           {user.impersonatedBy && (
             <ImpersonationBanner targetName={formatName(user)} />
           )}
-          {licenseState?.mode === "slave" &&
-            licenseState.status === "development" && (
-              <LicenseDevelopmentToast autoLockAt={licenseState.autoLockAt} />
-            )}
+          {/* Nutzer-Bugreport, 2026-08-25: "Toast kommt nicht sofort und
+           * zuverlässig bei Entwicklerstatus" – lag am rein serverseitigen,
+           * einmaligen Render dieses Layouts (Next.js re-fetcht es nicht bei
+           * jeder Client-Navigation). Läuft deshalb unconditional für jede
+           * Client-Installation mit und holt/überwacht den Status seitdem
+           * selbst, siehe dortiger Kommentar. */}
+          {user.deploymentMode === "slave" && <LicenseDevelopmentToast />}
           {licenseState?.mode === "slave" &&
             licenseState.status === "unchecked" && (
               <SystemMessage
