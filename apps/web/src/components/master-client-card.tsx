@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 
 import { toastEdited } from "@/components/app-toast";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DeploymentModeDialog } from "@/components/deployment-mode-dialog";
@@ -168,11 +169,12 @@ export function MasterClientCard({
               </div>
               {/* Nutzervorgabe, 2026-08-25: Version dieser Installation
                * unter Einstellungen → Master-Client anzeigen (bisher in der
-               * Sidebar, dort auf Nutzerwunsch wieder entfernt). */}
+               * Sidebar, dort auf Nutzerwunsch wieder entfernt) – "immer in
+               * einem Badge, überall" statt reinem Fließtext. */}
               {settings.appVersion && (
-                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                <Badge variant="outline" className="mt-1 w-fit font-mono">
                   Version {settings.appVersion}
-                </p>
+                </Badge>
               )}
             </div>
             {isMaster && (
@@ -228,11 +230,11 @@ export function MasterClientCard({
                 </p>
                 {/* Nutzervorgabe, 2026-08-25: "bei Master auch" – Version
                  * jetzt auch für die verbundenen Mandanten, nicht nur bei
-                 * "Diese Installation". */}
+                 * "Diese Installation" – "immer in einem Badge, überall". */}
                 {website.lastReportedVersion && (
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                  <Badge variant="outline" className="mt-1 w-fit font-mono">
                     Version {website.lastReportedVersion}
-                  </p>
+                  </Badge>
                 )}
               </div>
               <span className="shrink-0 text-xs text-muted-foreground">

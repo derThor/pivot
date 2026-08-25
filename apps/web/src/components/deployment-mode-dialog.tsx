@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { toastEdited } from "@/components/app-toast";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -94,6 +95,13 @@ export function DeploymentModeDialog({
             Master verwaltet ausgelieferte Installationen, Client prüft
             wöchentlich bei einem Master.
           </p>
+          {/* Nutzervorgabe, 2026-08-25: Version auch im Modus-Popup zeigen,
+           * "immer in einem Badge, überall" statt reinem Fließtext. */}
+          {settings.appVersion && (
+            <Badge variant="outline" className="w-fit font-mono">
+              Version {settings.appVersion}
+            </Badge>
+          )}
         </div>
         <DialogFooter>
           <Button

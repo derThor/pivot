@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatRelativeTime } from "@/lib/utils";
 import type { WebsiteListItem } from "@/lib/api-server";
@@ -39,6 +40,13 @@ export function WebsiteCheckDetailsDialog({
                 ? `Zuletzt geprüft ${formatRelativeTime(target.lastWakeupAt)}`
                 : "Noch nicht geprüft."}
             </p>
+            {/* Nutzervorgabe, 2026-08-25: Version "immer in einem Badge,
+             * überall" – auch hier neben der "Version aktuell"-Zeile unten. */}
+            {target.lastReportedVersion && (
+              <Badge variant="outline" className="w-fit font-mono">
+                Version {target.lastReportedVersion}
+              </Badge>
+            )}
             {target.lastCheckChecks && target.lastCheckChecks.length > 0 && (
               <div className="flex flex-col gap-2">
                 {target.lastCheckChecks.map((check, index) => (

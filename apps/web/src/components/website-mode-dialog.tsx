@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { toastEdited } from "@/components/app-toast";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -80,12 +81,21 @@ export function WebsiteModeDialog({
         <DialogHeader>
           <DialogTitle>{target?.name}</DialogTitle>
         </DialogHeader>
-        <SegmentedPicker
-          label="Modus"
-          options={MODE_OPTIONS}
-          value={mode}
-          onChange={setMode}
-        />
+        <div className="flex flex-col gap-4">
+          <SegmentedPicker
+            label="Modus"
+            options={MODE_OPTIONS}
+            value={mode}
+            onChange={setMode}
+          />
+          {/* Nutzervorgabe, 2026-08-25: Version auch im Modus-Popup zeigen,
+           * "immer in einem Badge, überall" statt reinem Fließtext. */}
+          {target?.lastReportedVersion && (
+            <Badge variant="outline" className="w-fit font-mono">
+              Version {target.lastReportedVersion}
+            </Badge>
+          )}
+        </div>
         <DialogFooter>
           <Button
             type="button"

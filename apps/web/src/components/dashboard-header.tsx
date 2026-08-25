@@ -268,15 +268,20 @@ export function DashboardHeader({
                   </DropdownMenuItem>
                 </div>
                 {(user.lastLoginAt || appVersion) && (
-                  <div className="border-t px-4 py-2.5 text-xs text-muted-foreground">
+                  <div className="flex flex-col gap-1.5 border-t px-4 py-2.5 text-xs text-muted-foreground">
                     {user.lastLoginAt && (
                       <p>
                         Letzte Anmeldung: {formatRelativeTime(user.lastLoginAt)}
                       </p>
                     )}
                     {/* Nutzervorgabe, 2026-08-25: Version dieser
-                     * Installation klein unter Abmelden anzeigen. */}
-                    {appVersion && <p>Version {appVersion}</p>}
+                     * Installation klein unter Abmelden anzeigen, "immer in
+                     * einem Badge, überall" statt reinem Fließtext. */}
+                    {appVersion && (
+                      <Badge variant="outline" className="w-fit font-mono">
+                        Version {appVersion}
+                      </Badge>
+                    )}
                   </div>
                 )}
               </DropdownMenuContent>
