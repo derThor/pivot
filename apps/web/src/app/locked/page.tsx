@@ -110,7 +110,7 @@ export default async function LockedPage() {
 
       {hasContact && (
         <div
-          className="flex flex-col gap-4 border-t pt-6 sm:flex-row sm:items-center sm:justify-between"
+          className="flex flex-col items-start gap-4 border-t pt-6 sm:flex-row sm:items-center sm:justify-between"
           style={{ borderColor }}
         >
           <div className="flex flex-wrap gap-8">
