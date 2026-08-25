@@ -16,6 +16,7 @@ import { ApiBearerAuth, ApiConsumes, ApiTags, ApiBody } from '@nestjs/swagger';
 import { MediaService } from './media.service';
 import { CropMediaDto } from './dto/crop-media.dto';
 import { QueryMediaDto } from './dto/query-media.dto';
+import { QueryUnusedMediaDto } from './dto/query-unused-media.dto';
 import { UpdateMediaDto } from './dto/update-media.dto';
 import { multerOptions } from './media.config';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
@@ -49,8 +50,8 @@ export class MediaController {
 
   @RequirePermission('media:read')
   @Get('unused')
-  findUnused() {
-    return this.mediaService.findUnused();
+  findUnused(@Query() query: QueryUnusedMediaDto) {
+    return this.mediaService.findUnused(query.page, query.pageSize);
   }
 
   @RequirePermission('media:read')

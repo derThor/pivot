@@ -6,7 +6,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { copyFile, mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
+import {
+  copyFile,
+  mkdir,
+  readFile,
+  rename,
+  unlink,
+  writeFile,
+} from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
@@ -175,17 +182,22 @@ export class MediaService {
    * `ContentVersion`-Historie) + SEO-Bild + Logo-Einstellungen. Löscht
    * nichts automatisch – markiert nur, die bestehende Mehrfachauswahl im
    * Frontend übernimmt das eigentliche Löschen.
+   *
+   * Performance-Befund, 2026-08-25: lud vorher IMMER die komplette
+   * Medienbibliothek inklusive aller Varianten/Tags/Uploader-Relationen und
+   * gab sie unpaginiert komplett zurück – bei einer großen Bibliothek ein
+   * schwerer, unbegrenzt wachsender Request. Der Content-Scan zum Ermitteln
+   * der referenzierten URLs bleibt (dokumentierter Trade-off oben, jede
+   * URL muss geprüft werden, kein Ausschnitt möglich), aber die teuren
+   * Joins (Varianten/Tags/Uploader) laufen jetzt nur noch für die aktuell
+   * angezeigte Seite statt für die gesamte Bibliothek.
    */
-  async findUnused() {
-    const [allMedia, contents, settings] = await Promise.all([
+  async findUnused(page: number, pageSize: number) {
+    const [allMediaMeta, contents, settings] = await Promise.all([
       this.prisma.media.findMany({
         where: { deletedAt: null },
         orderBy: { createdAt: 'desc' },
-        include: {
-          uploadedBy: { select: { id: true, firstName: true, lastName: true } },
-          variants: true,
-          ...TAGS_INCLUDE,
-        },
+        select: { id: true, url: true },
       }),
       this.prisma.content.findMany({
         where: { deletedAt: null },
@@ -202,10 +214,37 @@ export class MediaService {
     if (settings?.companyLogoUrl)
       referenced.add(normalizeUrl(settings.companyLogoUrl));
 
-    const unused = allMedia.filter(
-      (media) => !referenced.has(normalizeUrl(media.url)),
-    );
-    return { items: unused.map(mapMediaTags) };
+    const unusedIds = allMediaMeta
+      .filter((media) => !referenced.has(normalizeUrl(media.url)))
+      .map((media) => media.id);
+    const total = unusedIds.length;
+    const pageIds = unusedIds.slice((page - 1) * pageSize, page * pageSize);
+
+    const pageItems = await this.prisma.media.findMany({
+      where: { id: { in: pageIds } },
+      include: {
+        uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+        variants: true,
+        ...TAGS_INCLUDE,
+      },
+    });
+    // `findMany({ where: { id: { in } } })` gibt keine garantierte
+    // Reihenfolge zurück – die ursprüngliche `createdAt desc`-Sortierung
+    // von `pageIds` wird hier wiederhergestellt.
+    const byId = new Map(pageItems.map((item) => [item.id, item]));
+    const items = pageIds
+      .map((id) => byId.get(id))
+      .filter((item) => item !== undefined);
+
+    return {
+      items: items.map(mapMediaTags),
+      meta: {
+        page,
+        pageSize,
+        total,
+        pageCount: Math.max(1, Math.ceil(total / pageSize)),
+      },
+    };
   }
 
   /**
@@ -239,12 +278,23 @@ export class MediaService {
   async getUsage(id: string) {
     const media = await this.prisma.media.findUniqueOrThrow({ where: { id } });
     const targetUrl = normalizeUrl(media.url);
-    const contents = await this.prisma.content.findMany({
-      where: { deletedAt: null },
-      select: { data: true, ogImageUrl: true },
-    });
+    // Performance-Befund, 2026-08-25: lud vorher `data` (bei Page-Builder-
+    // Inhalten teils groß) für JEDE nicht gelöschte Seite und parste sie in
+    // Node, nur um am Ende meist "0 Verwendungen" zu finden. Grober
+    // SQL-Vorfilter auf den reinen URL-Text engt die Kandidaten stark ein,
+    // bevor der genaue (JSON-Struktur-bewusste) Abgleich läuft – `LIKE`
+    // matcht dabei bewusst eine Obermenge (auch absolute URLs, die den
+    // relativen Pfad als Teilstring enthalten), verworfen wird trotzdem nur
+    // per exaktem `collectReferencedUrls`-Vergleich danach.
+    const candidates = await this.prisma.$queryRaw<
+      Array<{ data: Prisma.JsonValue; ogImageUrl: string | null }>
+    >(Prisma.sql`
+      SELECT data, "ogImageUrl" FROM contents
+      WHERE "deletedAt" IS NULL
+        AND (data::text LIKE ${'%' + media.url + '%'} OR "ogImageUrl" = ${media.url})
+    `);
     let count = 0;
-    for (const content of contents) {
+    for (const content of candidates) {
       const urls = new Set<string>();
       collectReferencedUrls(content.data, urls);
       if (content.ogImageUrl) urls.add(normalizeUrl(content.ogImageUrl));
@@ -729,7 +779,11 @@ export class MediaService {
    * Dateien (z.B. manuell entfernt) brechen den Vorgang nicht ab – die
    * DB bleibt so oder so die Quelle der Wahrheit für den Papierkorb-Status. */
   private async moveMediaFiles(
-    media: { url: string; thumbnailUrl: string | null; variants: { url: string }[] },
+    media: {
+      url: string;
+      thumbnailUrl: string | null;
+      variants: { url: string }[];
+    },
     fromDir: string,
     toDir: string,
   ) {
@@ -742,9 +796,11 @@ export class MediaService {
     await Promise.all(
       urls.map((url) => {
         const relative = url.replace(/^\/uploads\//, '');
-        return rename(join(fromDir, relative), join(toDir, relative)).catch(() => {
-          // Datei bereits am Zielort oder fehlt.
-        });
+        return rename(join(fromDir, relative), join(toDir, relative)).catch(
+          () => {
+            // Datei bereits am Zielort oder fehlt.
+          },
+        );
       }),
     );
   }

@@ -16,13 +16,20 @@ export default async function ContentPage({
   const { page: pageParam } = await searchParams;
   const page = Number(pageParam) || 1;
 
-  const settings = await getPublicSettings();
-  const [content, published, drafts, scheduled] = await Promise.all([
-    getContentList({ page, pageSize: settings?.defaultPageSize ?? 10 }),
+  // Performance-Befund, 2026-08-25: `getPublicSettings()` lief vorher allein
+  // vor dem `Promise.all()`, obwohl nur der erste `getContentList()`-Aufruf
+  // tatsächlich von `pageSize` abhängt – die drei reinen Zähl-Abfragen
+  // (fixes `pageSize: 1`) mussten unnötig auf dieses eine Bein warten.
+  const [settings, published, drafts, scheduled] = await Promise.all([
+    getPublicSettings(),
     getContentList({ status: "PUBLISHED", pageSize: 1 }),
     getContentList({ status: "DRAFT", pageSize: 1 }),
     getContentList({ status: "SCHEDULED", pageSize: 1 }),
   ]);
+  const content = await getContentList({
+    page,
+    pageSize: settings?.defaultPageSize ?? 10,
+  });
   const entries = content?.items ?? [];
 
   return (

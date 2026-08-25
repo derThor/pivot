@@ -43,15 +43,18 @@ export default async function MediaPage({
   const tagIds = tags ? tags.split(",").filter(Boolean) : undefined;
   const showUnusedOnly = unused === "true";
 
-  const [folders, settings, tagList, storageUsage, mediaCounts] = await Promise.all([
-    getMediaFolders(),
-    getPublicSettings(),
-    getTags({ pageSize: 100 }),
-    getMediaStorageUsage(),
-    getMediaCounts(currentFolderId),
-  ]);
+  const [folders, settings, tagList, storageUsage, mediaCounts] =
+    await Promise.all([
+      getMediaFolders(),
+      getPublicSettings(),
+      getTags({ pageSize: 100 }),
+      getMediaStorageUsage(),
+      getMediaCounts(currentFolderId),
+    ]);
 
-  const unusedMedia = showUnusedOnly ? await getUnusedMedia() : null;
+  const unusedMedia = showUnusedOnly
+    ? await getUnusedMedia({ page, pageSize: settings?.defaultPageSize ?? 10 })
+    : null;
   const media = showUnusedOnly
     ? null
     : await getMediaList({
@@ -87,12 +90,15 @@ export default async function MediaPage({
       <PageContent plain>
         <StorageQuotaBanner usage={storageUsage} />
 
-        <MediaFilters tags={tagList?.items ?? []} counts={mediaCounts ?? null} />
+        <MediaFilters
+          tags={tagList?.items ?? []}
+          counts={mediaCounts ?? null}
+        />
 
         {showUnusedOnly ? (
           <>
             <p className="text-sm text-muted-foreground">
-              {unusedMedia?.items.length ?? 0} Medien, die in keinem aktiven
+              {unusedMedia?.meta.total ?? 0} Medien, die in keinem aktiven
               Inhalt, SEO-Bild oder Logo referenziert werden –
               ordnerübergreifend.
             </p>
@@ -103,6 +109,13 @@ export default async function MediaPage({
               currentFolderId={null}
               hideFolders
             />
+            {unusedMedia && (
+              <PaginationControls
+                page={unusedMedia.meta.page}
+                pageCount={unusedMedia.meta.pageCount}
+                buildHref={(p) => `?unused=true&page=${p}`}
+              />
+            )}
           </>
         ) : (
           <>

@@ -548,8 +548,14 @@ export function getMediaList(params?: {
   return apiFetch<MediaListResponse>(`/media${query ? `?${query}` : ""}`);
 }
 
-export function getUnusedMedia() {
-  return apiFetch<{ items: MediaItem[] }>("/media/unused");
+export function getUnusedMedia(params?: { page?: number; pageSize?: number }) {
+  const search = new URLSearchParams();
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.pageSize) search.set("pageSize", String(params.pageSize));
+  const query = search.toString();
+  return apiFetch<MediaListResponse>(
+    `/media/unused${query ? `?${query}` : ""}`,
+  );
 }
 
 export interface MediaFolder {

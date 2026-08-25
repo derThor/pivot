@@ -928,6 +928,12 @@ model Content {
 
   @@unique([slug, locale])
   @@index([status])
+  // Performance-Befund, 2026-08-25: `deletedAt: null` wird in praktisch
+  // jeder Lese-Abfrage gefiltert (findAll/search/searchCount), `contentTypeId`
+  // ist eine Fremdschlüsselspalte ohne automatischen Postgres-Index – beide
+  // liefen bislang ohne Indexunterstützung.
+  @@index([deletedAt])
+  @@index([contentTypeId])
   @@map("contents")
 }
 

@@ -38,11 +38,16 @@ export default async function UsersPage({
   // Administrator seit der Pivot-Rolle nicht mehr hat und wäre sonst
   // still auf den `?? true`/`?? 10`-Fallback zurückgefallen, obwohl der
   // echte Wert etwas anderes sein könnte (Nutzer-Bugreport, 2026-08-22).
-  const settings = await getPublicSettings();
-  const pageSize = settings?.defaultPageSize ?? 10;
-
+  //
+  // Performance-Befund, 2026-08-25: `getPublicSettings()` lief vorher
+  // ALLEIN vor dem `Promise.all()`, obwohl nur der finale `getUsers()`-
+  // Aufruf tatsächlich von `pageSize` abhängt – die restlichen 7 Requests
+  // (inkl. der fünf reinen Zähl-Abfragen mit fixem `pageSize: 1`) mussten
+  // unnötig auf dieses eine Bein warten. `media/page.tsx` macht es schon
+  // richtig: settings-unabhängige Requests in einem Bein, nur der
+  // abhängige Aufruf danach.
   const [
-    users,
+    settings,
     currentUser,
     roles,
     allCount,
@@ -51,7 +56,7 @@ export default async function UsersPage({
     anonymizedCount,
     deletedCount,
   ] = await Promise.all([
-    getUsers({ page, pageSize, roleId, isActive, anonymized, deleted, q }),
+    getPublicSettings(),
     getCurrentUser(),
     // Volle Rollenliste für Auswahl-Dropdown/Filter – bewusst unpaginiert
     // mit großer fester pageSize statt der echten Pagination der
@@ -63,6 +68,16 @@ export default async function UsersPage({
     getUsers({ page: 1, pageSize: 1, roleId, q, anonymized: true }),
     getUsers({ page: 1, pageSize: 1, roleId, q, deleted: true }),
   ]);
+  const pageSize = settings?.defaultPageSize ?? 10;
+  const users = await getUsers({
+    page,
+    pageSize,
+    roleId,
+    isActive,
+    anonymized,
+    deleted,
+    q,
+  });
 
   return (
     <div className="flex flex-col gap-10">
