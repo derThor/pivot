@@ -6,6 +6,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AccountLockBanner } from "@/components/account-lock-banner";
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
+import { LicenseDevelopmentToast } from "@/components/license-development-toast";
 import { NoDashboardAccess } from "@/components/no-dashboard-access";
 import { SystemMessage } from "@/components/ui/system-message";
 import {
@@ -89,11 +90,7 @@ export default async function DashboardLayout({
           )}
           {licenseState?.mode === "slave" &&
             licenseState.status === "development" && (
-              <SystemMessage
-                variant="warning"
-                title="Entwicklungsinstanz – ungeprüft"
-                description="Diese Installation läuft im Entwicklungsmodus und ist bewusst von der Lizenzprüfung ausgenommen."
-              />
+              <LicenseDevelopmentToast />
             )}
           {licenseState?.mode === "slave" &&
             licenseState.status === "unchecked" && (

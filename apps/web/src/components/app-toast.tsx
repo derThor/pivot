@@ -1,15 +1,20 @@
 "use client";
 
-import { CircleCheck, Pencil, Trash2, X } from "lucide-react";
+import { AlertTriangle, CircleCheck, Pencil, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 
-type ToastVariant = "created" | "edited" | "deleted";
+type ToastVariant = "created" | "edited" | "deleted" | "warning";
 
 const VARIANT_CONFIG: Record<
   ToastVariant,
-  { icon: typeof CircleCheck; border: string; iconBg: string; iconColor: string }
+  {
+    icon: typeof CircleCheck;
+    border: string;
+    iconBg: string;
+    iconColor: string;
+  }
 > = {
   created: {
     icon: CircleCheck,
@@ -28,6 +33,14 @@ const VARIANT_CONFIG: Record<
     border: "border-l-destructive",
     iconBg: "bg-destructive/10",
     iconColor: "text-destructive",
+  },
+  // Gleiche Amber-Töne wie ui/system-message.tsx' "warning"-Variante
+  // (Nutzervorgabe: SystemMessage-Farben sind kanonisch, auch als Toast).
+  warning: {
+    icon: AlertTriangle,
+    border: "border-l-amber-500",
+    iconBg: "bg-amber-100",
+    iconColor: "text-amber-600",
   },
 };
 
@@ -91,18 +104,51 @@ function ActionToast({
  * (z.B. `„Allgemeines“ wurde angelegt.`). */
 export function toastCreated(description = "Der Eintrag wurde angelegt.") {
   toast.custom((id) => (
-    <ActionToast id={id} variant="created" title="Erfolgreich erstellt" description={description} />
+    <ActionToast
+      id={id}
+      variant="created"
+      title="Erfolgreich erstellt"
+      description={description}
+    />
   ));
 }
 
-export function toastEdited(description = "Deine Änderungen wurden gespeichert.") {
+export function toastEdited(
+  description = "Deine Änderungen wurden gespeichert.",
+) {
   toast.custom((id) => (
-    <ActionToast id={id} variant="edited" title="Erfolgreich bearbeitet" description={description} />
+    <ActionToast
+      id={id}
+      variant="edited"
+      title="Erfolgreich bearbeitet"
+      description={description}
+    />
   ));
 }
 
 export function toastDeleted(description = "Der Eintrag wurde entfernt.") {
   toast.custom((id) => (
-    <ActionToast id={id} variant="deleted" title="Erfolgreich gelöscht" description={description} />
+    <ActionToast
+      id={id}
+      variant="deleted"
+      title="Erfolgreich gelöscht"
+      description={description}
+    />
+  ));
+}
+
+// Für dauerhaft geltende, aber bewusst NICHT dauerhaft anzuzeigende Hinweise
+// (Nutzervorgabe, 2026-08-25: "soll sich hier nicht gemerkt werden ... bei
+// jedem neuen Seitenaufruf erneut geladen werden") – im Unterschied zu
+// toastCreated/-Edited/-Deleted mit variablem Titel, da es hier keinen
+// einzelnen "Erfolgreich X"-Standardfall gibt.
+export function toastWarning(title: string, description?: string) {
+  toast.custom((id) => (
+    <ActionToast
+      id={id}
+      variant="warning"
+      title={title}
+      description={description}
+    />
   ));
 }
