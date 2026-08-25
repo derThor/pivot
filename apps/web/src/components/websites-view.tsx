@@ -217,6 +217,7 @@ export function WebsitesView({
                 <Button
                   type="button"
                   variant="outline"
+                  size="sm"
                   className="flex-1 border-[#D4D4D4]"
                   render={
                     <a
@@ -231,6 +232,7 @@ export function WebsitesView({
                 </Button>
                 <Button
                   type="button"
+                  size="sm"
                   className="flex-1"
                   disabled={wakingId === website.id}
                   onClick={() => handleWakeup(website)}
