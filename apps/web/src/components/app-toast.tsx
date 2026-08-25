@@ -141,14 +141,25 @@ export function toastDeleted(description = "Der Eintrag wurde entfernt.") {
 // (Nutzervorgabe, 2026-08-25: "soll sich hier nicht gemerkt werden ... bei
 // jedem neuen Seitenaufruf erneut geladen werden") – im Unterschied zu
 // toastCreated/-Edited/-Deleted mit variablem Titel, da es hier keinen
-// einzelnen "Erfolgreich X"-Standardfall gibt.
-export function toastWarning(title: string, description?: string) {
-  toast.custom((id) => (
-    <ActionToast
-      id={id}
-      variant="warning"
-      title={title}
-      description={description}
-    />
-  ));
+// einzelnen "Erfolgreich X"-Standardfall gibt. `id`/`duration` optional:
+// bei fester `id` aktualisiert ein erneuter Aufruf (z.B. bei jeder
+// Navigation) denselben, noch offenen Toast statt ihn zu duplizieren –
+// erst nach dem Wegklicken erscheint er wieder neu (Nutzervorgabe,
+// 2026-08-25: "soll immer angezeigt werden, nicht ausgeblendet").
+export function toastWarning(
+  title: string,
+  description?: string,
+  options?: { id?: string; duration?: number },
+) {
+  toast.custom(
+    (id) => (
+      <ActionToast
+        id={id}
+        variant="warning"
+        title={title}
+        description={description}
+      />
+    ),
+    options,
+  );
 }
