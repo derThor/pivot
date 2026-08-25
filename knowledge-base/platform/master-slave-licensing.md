@@ -855,3 +855,22 @@ Nutzer meldete den Fehler ein drittes Mal, diesmal für "API-Key anzeigen" UND "
 **Fix:** Kein Code-Fix – Neustart des `apps/web`-Dev-Prozesses hat gereicht, danach lieferten alle drei Routen sofort korrekte Antworten.
 
 **Lehre, ergänzt zur bestehenden "Server neu starten"-Regel:** Bisher galt "nach jeder Prisma-Schema-Änderung beide Apps neu starten". Neu dazu: **auch nach dem Anlegen einer neuen verschachtelten dynamischen Route** (ein neuer Ordner unter einem bereits bestehenden `[param]`-Segment) sollte der betroffene `next dev`-Prozess einmal neu gestartet werden, statt sich auf Turbopacks Hot-Reload zu verlassen – sonst können solche Endpunkte tagelang mit einem irreführenden 404 durchlaufen, das sich als "Server-/Datenfehler" tarnt.
+
+## Update 2026-08-25: Der komplette lokale Master/Slave-Workflow ist reine Entwicklungssimulation – kein echter Deploy-Weg
+
+Nutzerfrage: "die App startet beim Prüfen neu bei strasev? geht sowas auch wie wir es jetzt machen später im Live-Betrieb?" – wichtig genug, um es hier ausdrücklich festzuhalten (siehe auch [ROADMAP.md](../../docs/ROADMAP.md), Abschnitt Master/Slave-Lizenzsystem → "Noch offen").
+
+**Was wir bisher tatsächlich tun, jedes Mal nach einer Code-/Schema-Änderung:**
+1. `taskkill //F //IM node.exe` (alle vier Dev-Prozesse hart beenden)
+2. `prisma db push --accept-data-loss` auf **beiden** Datenbanken (pivot UND strasev, getrennt)
+3. `nest start --watch` bzw. `next dev` für alle vier Prozesse manuell neu starten (pivot-api, pivot-web, strasev-api, strasev-web)
+4. Bei neu angelegten verschachtelten Next.js-Routen zusätzlich einen zweiten Neustart (siehe Abschnitt oben)
+
+**Das ist ausschließlich ein Artefakt der lokalen Simulation** (beide "Installationen" laufen auf demselben Windows-Rechner, `nest start --watch`/`next dev` sind Entwicklungsmodi mit Hot-Reload). Nichts davon ist der Weg, wie ein echter Kunden-Rollout funktionieren würde:
+
+- **Build statt Watch-Modus**: `nest build`/`next build` erzeugen ein festes, kompiliertes Artefakt; Produktivbetrieb läuft über `node dist/main`/`next start` hinter einem Prozessmanager (PM2, systemd, Docker-Container-Orchestrierung), nicht über die Watch-Modi.
+- **Echte Migrationen statt `db push`**: `db push` ist bewusst nur für die lokale Dev-DB gewählt (siehe [feedback_prisma_db_push_not_migrate.md] – dort ging es um das Problem, dass `migrate dev` die abweichende lokale DB zurücksetzen wollte). Ein echter Deploy würde `prisma migrate deploy` mit einer versionierten Migrationshistorie nutzen, nicht das schemafreie Gleichziehen von `db push`.
+- **Automatisierter Restart statt manuellem `taskkill`**: ein Prozessmanager/eine CI/CD-Pipeline würde den alten Prozess kontrolliert beenden und den neuen Build starten (idealerweise mit Zero-Downtime-Strategie), nicht ein hartes `taskkill //F` von Hand.
+- **Mehrere unabhängige Installationen**: im echten Betrieb gibt es nicht nur eine Slave-Installation (strasev) zum Testen, sondern potenziell viele Kunden-Installationen, die alle unabhängig voneinander aktualisiert werden müssten – noch offen, WIE (eigener Server pro Kunde? Docker-Image? Managed Hosting?).
+
+**Kein Code-Fix, rein dokumentarisch** – der aktuelle Workflow bleibt für die weitere lokale Entwicklung genau richtig, er darf nur nicht mit einem Produktivkonzept verwechselt werden.

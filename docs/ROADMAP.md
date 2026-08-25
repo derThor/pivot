@@ -894,8 +894,33 @@ Plan inkl. Token-Design, Sicherheitsüberlegungen und offenen Punkten:
       Domain getestet (bewusst keine unbeteiligte externe Seite angefragt)
 
 **Noch offen:**
-- [ ] strasev-Installation technisch lauffähig machen (`.env`, Datenbank,
-      Port, `pnpm install`) – Nutzervorgabe: "immer erst fragen"
+- [x] strasev-Installation technisch lauffähig machen (`.env`, Datenbank,
+      Port, `pnpm install`) – seit 2026-08-24 lokal lauffähig (Ports
+      3010/3011), seitdem durchgehend als echte zweite Installation für
+      alle Master/Slave-Tests genutzt.
+- [ ] **Echter Deploy-/Produktivbetrieb statt lokaler Simulation**
+      (Nutzerfrage, 2026-08-25: "geht sowas auch wie wir es jetzt machen
+      später im Live-Betrieb?" – Antwort: nein). Bisher laufen Master und
+      jede Slave-Installation (aktuell nur strasev) lokal auf demselben
+      Rechner über `nest start --watch`/`next dev`, Schema-Änderungen per
+      `prisma db push` und manuellem Prozess-Kill+Neustart nach jeder
+      Änderung – das ist ausschließlich ein Entwicklungs-Artefakt.
+      Für einen echten Kunden-Rollout fehlen noch:
+      - Ein echter Build-Schritt (`nest build`/`next build`) statt der
+        Watch-Modi, ausgeführt von einem Prozessmanager (PM2, systemd,
+        Docker) statt manuell.
+      - Echte Prisma-Migrationen (`prisma migrate deploy`) als Teil eines
+        Deploy-Schritts statt `db push` von Hand (siehe auch
+        [feedback_prisma_db_push_not_migrate.md] – gilt nur für die
+        lokale Dev-DB, nicht als Aussage über den Produktivweg).
+      - Eine tatsächliche CI/CD-Pipeline, die Build+Migration+Neustart für
+        Master UND jede Slave-Installation automatisiert (überschneidet
+        sich mit dem allgemeinen "CI/CD-Pipeline"-Punkt oben, ist hier aber
+        Master/Slave-spezifisch: mehrere unabhängige Installationen statt
+        nur einer App).
+      - Ein Konzept, WIE eine neue Slave-Installation beim Kunden
+        überhaupt bereitgestellt wird (eigener Server? Docker-Image?
+        Managed Hosting?) – noch nicht entschieden.
 
 ## Priorisierungsprinzip
 
