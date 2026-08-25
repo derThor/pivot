@@ -114,15 +114,21 @@ export class WebsitesService implements OnModuleInit {
       where: { status: 'development', developmentModeSince: { lte: cutoff } },
       select: { id: true, name: true },
     });
-    for (const site of staleSites) {
-      try {
-        await this.update(site.id, { status: 'locked' });
-      } catch (error) {
-        this.logger.warn(
-          `Automatische Sperre für "${site.name}" fehlgeschlagen: ${(error as Error).message}`,
-        );
-      }
-    }
+    // Performance-Selbstbefund, 2026-08-25: parallel statt sequenziell,
+    // gleiches Muster wie checkAllWebsites() – sonst würde eine einzelne
+    // unerreichbare Installation (10s Timeout im Wecken-Versuch) alle
+    // nachfolgenden fälligen Sperren unnötig verzögern.
+    await Promise.all(
+      staleSites.map(async (site) => {
+        try {
+          await this.update(site.id, { status: 'locked' });
+        } catch (error) {
+          this.logger.warn(
+            `Automatische Sperre für "${site.name}" fehlgeschlagen: ${(error as Error).message}`,
+          );
+        }
+      }),
+    );
     await this.prisma.scheduledJob.upsert({
       where: { id: DEVELOPMENT_MODE_AUTOLOCK_JOB_ID },
       create: {

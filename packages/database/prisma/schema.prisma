@@ -1281,6 +1281,10 @@ model Website {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Performance-Selbstbefund, 2026-08-25: von autoLockStaleDevelopmentSites()
+  // gefiltert – bei der aktuellen/realistischen Tabellengröße (Anzahl
+  // Kundeninstallationen) irrelevant, aber kostenlos nachgerüstet.
+  @@index([status])
   @@map("websites")
 }
 
