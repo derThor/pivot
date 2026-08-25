@@ -105,6 +105,17 @@ export class WebsitesService {
     return { ...website, apiKey };
   }
 
+  /** Nutzer-Bugreport, 2026-08-25: "Seite wird nicht in den Wartungsmodus
+   * gesetzt" – Status ändern (z.B. auf "Gesperrt") schrieb bisher nur die
+   * Master-eigene `Website.status`-Spalte, ohne die Installation davon zu
+   * unterrichten. Die Änderung wurde dadurch erst beim nächsten
+   * eigenständigen Check der Installation wirksam (Stunden bis eine Woche
+   * später) – und bis dahin zeigte die Kachel weiterhin den alten, jetzt
+   * widersprüchlich wirkenden "OK"-Stand aus `lastWakeup*` an ("sagt, alles
+   * passt, obwohl oben Gesperrt steht"). Löst bei einer Status-Änderung
+   * jetzt automatisch ein "Wecken" aus (siehe `wakeup()`), damit die
+   * Änderung sofort wirkt UND die Kachel sofort den echten, aktuellen
+   * Stand zeigt statt einen veralteten. */
   async update(id: string, dto: UpdateWebsiteDto) {
     const website = await this.prisma.website.findUnique({ where: { id } });
     if (!website) {
@@ -113,7 +124,7 @@ export class WebsitesService {
     if (dto.domain) {
       await this.assertDomainFree(dto.domain, id);
     }
-    return this.prisma.website.update({
+    await this.prisma.website.update({
       where: { id },
       data: {
         name: dto.name,
@@ -122,6 +133,12 @@ export class WebsitesService {
         deploymentMode: dto.deploymentMode,
         testUrl: dto.testUrl,
       },
+    });
+    if (dto.status && dto.status !== website.status) {
+      await this.wakeup(id);
+    }
+    return this.prisma.website.findUniqueOrThrow({
+      where: { id },
       select: PUBLIC_SELECT,
     });
   }
