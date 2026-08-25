@@ -218,7 +218,7 @@ export function WebsitesView({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="flex-1 border-[#D4D4D4]"
+                  className="flex-1 rounded-md border-[#D4D4D4]"
                   render={
                     <a
                       href={`https://${website.domain}/login`}
@@ -233,7 +233,7 @@ export function WebsitesView({
                 <Button
                   type="button"
                   size="sm"
-                  className="flex-1"
+                  className="flex-1 rounded-md"
                   disabled={wakingId === website.id}
                   onClick={() => handleWakeup(website)}
                 >
