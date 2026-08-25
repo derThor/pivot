@@ -226,6 +226,14 @@ export function MasterClientCard({
                 <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
                   {website.domain}
                 </p>
+                {/* Nutzervorgabe, 2026-08-25: "bei Master auch" – Version
+                 * jetzt auch für die verbundenen Mandanten, nicht nur bei
+                 * "Diese Installation". */}
+                {website.lastReportedVersion && (
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                    Version {website.lastReportedVersion}
+                  </p>
+                )}
               </div>
               <span className="shrink-0 text-xs text-muted-foreground">
                 {website.lastCheckInAt
