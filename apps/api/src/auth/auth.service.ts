@@ -258,25 +258,55 @@ export class AuthService {
         dto.code,
       ));
 
-    if (isValidTotpCode) {
-      await this.touchLastLogin(user.id, user.lastLoginAt);
-      return this.issueTokens(user.id, user.email, meta);
-    }
+    // Fallback: einer der einmalig einlösbaren Recovery-Codes – nur prüfen,
+    // wenn der TOTP-Code nicht schon gepasst hat.
+    const recoveryMatchIndex = isValidTotpCode
+      ? -1
+      : await this.twoFactor.matchRecoveryCode(
+          user.twoFactorRecoveryCodes,
+          dto.code,
+        );
+    const isValidCode = isValidTotpCode || recoveryMatchIndex !== -1;
 
-    // Fallback: einer der einmalig einlösbaren Recovery-Codes.
-    const matchIndex = await this.twoFactor.matchRecoveryCode(
-      user.twoFactorRecoveryCodes,
-      dto.code,
-    );
-    if (matchIndex === -1) {
+    // Sicherheitsbefund, 2026-08-25: bislang gab es für den 2FA-Schritt
+    // selbst keine eigene Versuchssperre (nur die globale, endpunkt-
+    // übergreifende Rate-Limit) – ein falscher Code zählt jetzt auf
+    // denselben Zähler/dieselbe Sperrschwelle wie ein falsches Passwort
+    // (siehe login() oben), statt eine zweite, separate Sperrlogik
+    // einzuführen. Das kurzlebige Challenge-Token (5 Min., s.o.) begrenzte
+    // das Risiko zwar schon vorher spürbar, ein hartes Limit ist trotzdem
+    // die richtige Verteidigung in der Tiefe.
+    if (!isValidCode) {
+      const settings = await this.settings.get();
+      const failedLoginAttempts = user.failedLoginAttempts + 1;
+      const shouldLock =
+        settings.failedLoginLockoutThreshold != null &&
+        failedLoginAttempts >= settings.failedLoginLockoutThreshold;
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failedLoginAttempts,
+          ...(shouldLock && { isActive: false }),
+        },
+      });
       throw new UnauthorizedException('Ungültiger Code.');
     }
+
     const remainingRecoveryCodes = [...user.twoFactorRecoveryCodes];
-    remainingRecoveryCodes.splice(matchIndex, 1);
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { twoFactorRecoveryCodes: remainingRecoveryCodes },
-    });
+    if (recoveryMatchIndex !== -1) {
+      remainingRecoveryCodes.splice(recoveryMatchIndex, 1);
+    }
+    if (recoveryMatchIndex !== -1 || user.failedLoginAttempts > 0) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          ...(recoveryMatchIndex !== -1 && {
+            twoFactorRecoveryCodes: remainingRecoveryCodes,
+          }),
+          ...(user.failedLoginAttempts > 0 && { failedLoginAttempts: 0 }),
+        },
+      });
+    }
     await this.touchLastLogin(user.id, user.lastLoginAt);
     return this.issueTokens(user.id, user.email, meta);
   }

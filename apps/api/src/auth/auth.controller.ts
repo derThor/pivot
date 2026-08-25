@@ -15,6 +15,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -68,8 +69,16 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
+  // Sicherheitsbefund, 2026-08-25: bislang nur die globale, endpunkt-
+  // übergreifende Rate-Limit (100/Min pro IP, siehe app.module.ts) – erlaubt
+  // fast beliebig schnelles Credential-Stuffing über viele Konten hinweg
+  // von derselben IP. Engeres, eigenes Limit speziell hier statt einer
+  // Einstellung: ein Rate-Limit-Wert ist Sicherheitskonfiguration, kein
+  // Feature-Schalter – über die UI versehentlich (oder böswillig) hochsetzbar
+  // zu machen wiegt schwerer als der Komfortgewinn einer Einstellung.
   @Public()
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('login')
   login(@Body() dto: LoginDto, @Req() req: Request) {
     return this.authService.login(dto, requestMeta(req));
@@ -134,8 +143,11 @@ export class AuthController {
     return this.authService.changePassword(user.sub, dto);
   }
 
+  // Engeres Limit (siehe Kommentar bei login() oben) – verhindert
+  // Massen-Enumeration/E-Mail-Spam über diesen Endpunkt.
   @Public()
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
   @Post('forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.requestPasswordReset(dto);
@@ -196,8 +208,11 @@ export class AuthController {
 
   // Public: der Client hat an dieser Stelle noch keinen Bearer-Token, nur
   // das Challenge-Token aus der mfaRequired-Antwort von /auth/login.
+  // Engeres Limit (siehe Kommentar bei login() oben) – zusätzlich zur
+  // eigenen Versuchssperre in loginWithTwoFactor() selbst.
   @Public()
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('2fa/login-verify')
   loginVerify(@Body() dto: TwoFactorLoginVerifyDto, @Req() req: Request) {
     return this.authService.loginWithTwoFactor(dto, requestMeta(req));
