@@ -13,6 +13,8 @@ import {
   Users,
 } from "lucide-react";
 
+import { toast } from "sonner";
+
 import { toastDeleted, toastEdited } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -195,7 +197,11 @@ export function RolesExplorer({
           permissions: [...permissions],
         }),
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.message ?? "Rolle konnte nicht gespeichert werden.");
+        return;
+      }
       toastEdited(`„${selectedRole.name}“ wurde gespeichert.`);
       router.refresh();
     } finally {
@@ -203,9 +209,19 @@ export function RolesExplorer({
     }
   }
 
+  // Sicherheits-/Korrektheits-Befund, 2026-08-25: prüfte `res.ok` bisher gar
+  // nicht - ein fehlgeschlagenes Löschen (z.B. weil die Rolle noch
+  // zugewiesen ist) zeigte trotzdem "erfolgreich gelöscht" an.
   async function handleDelete() {
     if (!selectedRole) return;
-    await fetch(`/api/roles/${selectedRole.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/roles/${selectedRole.id}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      toast.error(data?.message ?? "Rolle konnte nicht gelöscht werden.");
+      return;
+    }
     toastDeleted(`„${selectedRole.name}“ wurde gelöscht.`);
     router.push("/dashboard/roles");
   }
@@ -222,7 +238,11 @@ export function RolesExplorer({
         permissions: selectedRole.permissions,
       }),
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      toast.error(data?.message ?? "Rolle konnte nicht dupliziert werden.");
+      return;
+    }
     const created = (await res.json()) as Role;
     toastEdited(`„${created.name}“ wurde als Kopie angelegt.`);
     router.push(`/dashboard/roles?role=${created.id}`);

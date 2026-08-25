@@ -23,23 +23,8 @@ import { SystemMessage } from "@/components/ui/system-message";
 import { WebsiteCheckDetailsDialog } from "@/components/website-check-details-dialog";
 import { WebsiteDialog } from "@/components/website-dialog";
 import { formatRelativeTime } from "@/lib/utils";
-import type {
-  WebsiteCheckAllResult,
-  WebsiteListItem,
-  WebsiteStatus,
-} from "@/lib/api-server";
-
-const STATUS_BADGE: Record<
-  WebsiteStatus,
-  { label: string; className: string }
-> = {
-  live: { label: "Live", className: "bg-green-100 text-green-700" },
-  development: {
-    label: "Entwicklung",
-    className: "bg-slate-200 text-slate-700",
-  },
-  locked: { label: "Gesperrt", className: "bg-red-100 text-red-700" },
-};
+import { WEBSITE_STATUS_BADGE } from "@/lib/website-status";
+import type { WebsiteCheckAllResult, WebsiteListItem } from "@/lib/api-server";
 
 /** Eigene Seite `/dashboard/websites` (Nutzervorgabe, 2026-08-24: "einzelne
  * Kacheln", "Hauptbg weiß weg" – kein umschließender Card-Kasten mehr,
@@ -154,7 +139,7 @@ export function WebsitesView({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((website) => {
-          const badge = STATUS_BADGE[website.status];
+          const badge = WEBSITE_STATUS_BADGE[website.status];
           return (
             <div
               key={website.id}
@@ -166,7 +151,7 @@ export function WebsitesView({
                 </span>
                 <div className="flex shrink-0 items-center gap-1.5">
                   <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${badge.className}`}
+                    className={`rounded-md px-2.5 py-1 text-xs font-medium ${badge.className}`}
                   >
                     {badge.label}
                   </span>

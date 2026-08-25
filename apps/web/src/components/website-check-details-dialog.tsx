@@ -15,8 +15,9 @@ import { formatRelativeTime } from "@/lib/utils";
 import type { WebsiteListItem, WebsiteStatus } from "@/lib/api-server";
 
 // Nutzervorgabe, 2026-08-25: "hier die entsprechenden Badges nehmen.
-// Entwicklung in gelb" – gleiche Statuswerte wie STATUS_BADGE in
-// websites-view.tsx, aber "Entwicklung" bewusst gelb statt grau.
+// Entwicklung in gelb" (später korrigiert zu lila) – gleiche Statuswerte
+// wie STATUS_BADGE in websites-view.tsx, aber "Entwicklung" bewusst
+// abweichend gefärbt.
 const LICENSE_STATUS_BADGE: Record<
   WebsiteStatus,
   { label: string; className: string }
@@ -24,7 +25,7 @@ const LICENSE_STATUS_BADGE: Record<
   live: { label: "Live", className: "bg-green-100 text-green-700" },
   development: {
     label: "Entwicklung",
-    className: "bg-amber-100 text-amber-700",
+    className: "bg-purple-100 text-purple-700",
   },
   locked: { label: "Gesperrt", className: "bg-red-100 text-red-700" },
 };

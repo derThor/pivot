@@ -52,6 +52,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { DEPLOYMENT_MODE_BADGE } from "@/lib/deployment-mode-badge";
 import { cn } from "@/lib/utils";
 import type { CurrentUser } from "@/lib/api-server";
 
@@ -384,9 +385,8 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
                   <span
                     className={cn(
                       "absolute -top-1 -right-1 hidden size-3.5 items-center justify-center rounded-full text-[8px] font-semibold group-data-[collapsible=icon]:flex",
-                      isMaster
-                        ? "bg-yellow-400 text-black"
-                        : "bg-slate-400 text-white",
+                      DEPLOYMENT_MODE_BADGE[isMaster ? "master" : "slave"]
+                        .className,
                     )}
                   />
                 }
@@ -394,7 +394,7 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
                 {isMaster ? "M" : "C"}
               </TooltipTrigger>
               <TooltipContent side="right">
-                {isMaster ? "Master" : "Client"}
+                {DEPLOYMENT_MODE_BADGE[isMaster ? "master" : "slave"].label}
               </TooltipContent>
             </Tooltip>
           </div>
@@ -415,10 +415,11 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
                 variant="secondary"
                 className={cn(
                   "absolute top-0 -right-3 h-3.5 gap-0 rounded-md px-1 py-0 text-[9px] leading-3",
-                  isMaster && "bg-yellow-400 text-black",
+                  DEPLOYMENT_MODE_BADGE[isMaster ? "master" : "slave"]
+                    .className,
                 )}
               >
-                {isMaster ? "Master" : "Client"}
+                {DEPLOYMENT_MODE_BADGE[isMaster ? "master" : "slave"].label}
               </Badge>
             </span>
           </span>

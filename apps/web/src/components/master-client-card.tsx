@@ -20,13 +20,14 @@ import { DeploymentModeDialog } from "@/components/deployment-mode-dialog";
 import { LicenseApiKeyDialog } from "@/components/license-api-key-dialog";
 import { PaginationControls } from "@/components/pagination-controls";
 import { WebsiteModeDialog } from "@/components/website-mode-dialog";
+import { DEPLOYMENT_MODE_BADGE } from "@/lib/deployment-mode-badge";
 import { formatRelativeTime } from "@/lib/utils";
+import { WEBSITE_STATUS_BADGE } from "@/lib/website-status";
 import type {
   AppSettings,
   LicenseRecheckResult,
   WebsiteListItem,
   WebsiteListResponse,
-  WebsiteStatus,
 } from "@/lib/api-server";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -35,18 +36,6 @@ const STATUS_LABEL: Record<string, string> = {
   unchecked: "Ungeprüft",
   pending: "Karenzzeit",
   locked: "Gesperrt",
-};
-
-const STATUS_BADGE: Record<
-  WebsiteStatus,
-  { label: string; className: string }
-> = {
-  live: { label: "Live", className: "bg-green-100 text-green-700" },
-  development: {
-    label: "Entwicklung",
-    className: "bg-slate-200 text-slate-700",
-  },
-  locked: { label: "Gesperrt", className: "bg-red-100 text-red-700" },
 };
 
 /** Einstellungen → Master-Client (Nutzervorgabe, 2026-08-24, mehrfach
@@ -158,13 +147,9 @@ export function MasterClientCard({
               <div className="flex flex-wrap items-center gap-2">
                 <p className="truncate font-semibold">Diese Installation</p>
                 <span
-                  className={
-                    isMaster
-                      ? "shrink-0 rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground"
-                      : "shrink-0 rounded-full bg-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700"
-                  }
+                  className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-medium ${DEPLOYMENT_MODE_BADGE[isMaster ? "master" : "slave"].className}`}
                 >
-                  {isMaster ? "Master" : "Client"}
+                  {DEPLOYMENT_MODE_BADGE[isMaster ? "master" : "slave"].label}
                 </span>
               </div>
               {/* Nutzervorgabe, 2026-08-25: Version dieser Installation
@@ -198,7 +183,7 @@ export function MasterClientCard({
         </div>
 
         {websites.items.map((website) => {
-          const badge = STATUS_BADGE[website.status];
+          const badge = WEBSITE_STATUS_BADGE[website.status];
           return (
             <button
               key={website.id}
@@ -214,16 +199,12 @@ export function MasterClientCard({
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="truncate font-semibold">{website.name}</p>
                   <span
-                    className={
-                      website.deploymentMode === "master"
-                        ? "shrink-0 rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground"
-                        : "shrink-0 rounded-full bg-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700"
-                    }
+                    className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-medium ${DEPLOYMENT_MODE_BADGE[website.deploymentMode].className}`}
                   >
-                    {website.deploymentMode === "master" ? "Master" : "Client"}
+                    {DEPLOYMENT_MODE_BADGE[website.deploymentMode].label}
                   </span>
                   <span
-                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${badge.className}`}
+                    className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-medium ${badge.className}`}
                   >
                     {badge.label}
                   </span>
