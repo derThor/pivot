@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  AlertTriangle,
   BellRing,
+  CheckCircle2,
   ExternalLink,
   Globe,
   Pencil,
@@ -207,34 +209,56 @@ export function WebsitesView({
                  * ist" – Momentaufnahme vom letzten "Wecken"/"Prüfen",
                  * bewusst mit Zeitstempel, statt einen dauerhaft aktuellen
                  * Live-Status vorzutäuschen ("mit dem Hinweis, dass es
-                 * verzögert ist"). */}
+                 * verzögert ist"). Nutzervorgabe, 2026-08-25 (Bildvorlage):
+                 * Icon + fett hervorgehobenes Label statt reinem Fließtext –
+                 * gleiche Grün-/Amber-Töne wie system-message.tsx. */}
                 {website.lastWakeupAt && (
-                  <p
-                    className={`truncate text-xs ${website.lastWakeupOk ? "text-muted-foreground" : "text-destructive"}`}
-                  >
-                    {website.lastWakeupOk ? "OK" : "Problem"} beim letzten Check
-                    ({formatRelativeTime(website.lastWakeupAt)})
-                    {website.lastWakeupMessage
-                      ? `: ${website.lastWakeupMessage}`
-                      : ""}
-                  </p>
+                  <div className="mt-1.5 flex items-start gap-1.5">
+                    {website.lastWakeupOk ? (
+                      <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-green-600" />
+                    ) : (
+                      <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600" />
+                    )}
+                    <p
+                      className={`text-xs ${website.lastWakeupOk ? "text-green-700" : "text-amber-700"}`}
+                    >
+                      <span className="font-semibold">
+                        {website.lastWakeupOk ? "OK" : "Hinweis"}
+                      </span>{" "}
+                      beim letzten Check (
+                      {formatRelativeTime(website.lastWakeupAt)})
+                      {website.lastWakeupMessage
+                        ? `: ${website.lastWakeupMessage}`
+                        : ""}
+                    </p>
+                  </div>
                 )}
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="border-[#D4D4D4]"
-                render={
-                  <a
-                    href={`https://${website.domain}/login`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  />
-                }
-              >
-                <ExternalLink />
-                Öffnen
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 border-[#D4D4D4]"
+                  render={
+                    <a
+                      href={`https://${website.domain}/login`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    />
+                  }
+                >
+                  <ExternalLink />
+                  Öffnen
+                </Button>
+                <Button
+                  type="button"
+                  className="flex-1"
+                  disabled={wakingId === website.id}
+                  onClick={() => handleWakeup(website)}
+                >
+                  {wakingId === website.id ? "Prüft…" : "Prüfen"}
+                </Button>
+              </div>
             </div>
           );
         })}
