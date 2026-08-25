@@ -836,6 +836,12 @@ Nutzer-Bugreport: "Seite wird nicht in den Wartungsmodus gesetzt" + Screenshot, 
 
 **Fix:** `update()` löst bei einer tatsächlichen Statusänderung (`dto.status !== website.status`) jetzt automatisch `wakeup(id)` aus – Sperren/Entsperren über den Bearbeiten-Dialog wirkt dadurch sofort, UND die Kachel zeigt danach sofort den frischen, echten Stand statt eines veralteten.
 
-**Zwei Nebenbefunde beim Debuggen, kein Bug:**
-- "Kann keinen neuen API-Key mehr erzeugen" (Screenshot mit Fehlermeldung im Dialog) – direkt mit frischem Token nachgestellt: `regenerateApiKey()` funktioniert einwandfrei (HTTP 201). Sehr wahrscheinliche Ursache: abgelaufenes Zugriffstoken (15 Min. Gültigkeit) bei einem länger offenen Bearbeiten-Dialog – kein Server-Fehler.
+**Zwei Nebenbefunde beim Debuggen:**
 - "API-Keys sind unterschiedlich, aber es tut so, als ob alles passt" – zum Zeitpunkt der Prüfung stimmten die Keys tatsächlich überein (direkter DB-Vergleich auf beiden Seiten); die gefühlte Diskrepanz kam von genau derselben Stale-Daten-Anzeige, die der Update-Fix oben behebt (alter "OK"-Stand neben neuem, abweichendem Status).
+- "Kann keinen neuen API-Key mehr erzeugen" – zunächst als abgelaufenes Zugriffstoken abgetan (mit frischem Token direkt nachgestellt: funktioniert einwandfrei). Nutzer meldete denselben Fehler danach noch einmal – siehe nächster Abschnitt, das war tatsächlich ein echter, systemweiter Bug.
+
+## Update 2026-08-25: Abgelaufenes Zugriffstoken bei client-seitigen Aktionen wurde nie erneuert
+
+Nutzer bestand darauf, dass "Key erzeugen" weiterhin fehlschlägt, trotz der Live-Bestätigung oben – zu Recht. Ursache gefunden: `middleware.ts` erneuert ein abgelaufenes Zugriffstoken (15 Min. Gültigkeit) über das Refresh-Cookie nur bei echten Seitenaufrufen (ihr Matcher deckt `/dashboard/:path*`/`/login`/`/register` ab). Ein länger geöffneter Dialog (z.B. "Website bearbeiten") löst aber nur `fetch()`-Aufrufe auf `/api/*`-Routen aus – die laufen NIE durch die Middleware, sondern direkt in die jeweilige Next.js-Route. `bff-proxy.ts`s `proxyToApi()` (Kern hinter praktisch jeder mutierenden Aktion in der App) las das Zugriffstoken-Cookie und reichte ein `401` bei Ablauf einfach roh durch, ohne je einen Refresh zu versuchen – unabhängig vom Feature, betraf potenziell jede Aktion in der gesamten App nach 15 Minuten offener Seite.
+
+**Fix:** `proxyToApi()` versucht bei einem `401` vom Backend jetzt einmal automatisch, das Zugriffstoken über das Refresh-Cookie zu erneuern (`POST /auth/refresh`, gleiches Prinzip wie `middleware.ts`s `tryRefresh()`, hier aber in der Node- statt Edge-Runtime) und wiederholt die Anfrage mit dem neuen Token. Bei Erfolg werden die neuen Cookies auch an den Browser zurückgegeben (`response.cookies.set(...)`), damit die Erneuerung dauerhaft greift, nicht nur für diese eine Anfrage. Kein websites-/lizenzspezifischer Fix – behebt dieselbe Klasse Fehler für die gesamte App.
