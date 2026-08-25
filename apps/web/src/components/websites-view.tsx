@@ -3,9 +3,6 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  AlertTriangle,
-  BellRing,
-  CheckCircle2,
   ExternalLink,
   Globe,
   Pencil,
@@ -21,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
 import { PaginationControls } from "@/components/pagination-controls";
+import { SystemMessage } from "@/components/ui/system-message";
 import { WebsiteDialog } from "@/components/website-dialog";
 import { formatRelativeTime } from "@/lib/utils";
 import type {
@@ -172,16 +170,6 @@ export function WebsitesView({
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    aria-label={`„${website.domain}“ wecken`}
-                    disabled={wakingId === website.id}
-                    onClick={() => handleWakeup(website)}
-                  >
-                    <BellRing />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
                     aria-label={`„${website.domain}“ bearbeiten`}
                     onClick={() => setDialogTarget(website)}
                   >
@@ -205,35 +193,26 @@ export function WebsitesView({
                     ? `Zuletzt selbst gemeldet ${formatRelativeTime(website.lastCheckInAt)}`
                     : "Hat sich noch nie selbst gemeldet"}
                 </p>
-                {/* Nutzervorgabe, 2026-08-24: "Status ausgeben, der gerade
-                 * ist" – Momentaufnahme vom letzten "Wecken"/"Prüfen",
-                 * bewusst mit Zeitstempel, statt einen dauerhaft aktuellen
-                 * Live-Status vorzutäuschen ("mit dem Hinweis, dass es
-                 * verzögert ist"). Nutzervorgabe, 2026-08-25 (Bildvorlage):
-                 * Icon + fett hervorgehobenes Label statt reinem Fließtext –
-                 * gleiche Grün-/Amber-Töne wie system-message.tsx. */}
-                {website.lastWakeupAt && (
-                  <div className="mt-1.5 flex items-start gap-1.5">
-                    {website.lastWakeupOk ? (
-                      <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-green-600" />
-                    ) : (
-                      <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600" />
-                    )}
-                    <p
-                      className={`text-xs ${website.lastWakeupOk ? "text-green-700" : "text-amber-700"}`}
-                    >
-                      <span className="font-semibold">
-                        {website.lastWakeupOk ? "OK" : "Hinweis"}
-                      </span>{" "}
-                      beim letzten Check (
-                      {formatRelativeTime(website.lastWakeupAt)})
-                      {website.lastWakeupMessage
-                        ? `: ${website.lastWakeupMessage}`
-                        : ""}
-                    </p>
-                  </div>
-                )}
               </div>
+              {/* Nutzervorgabe, 2026-08-24: "Status ausgeben, der gerade
+               * ist" – Momentaufnahme vom letzten "Wecken"/"Prüfen", bewusst
+               * mit Zeitstempel, statt einen dauerhaft aktuellen Live-Status
+               * vorzutäuschen ("mit dem Hinweis, dass es verzögert ist").
+               * Nutzervorgabe, 2026-08-25: "in einem Alert-Format, orientiere
+               * dich an unserem Standard" – app-weite `SystemMessage` statt
+               * eigenem Icon+Text-Aufbau, siehe knowledge-base-Regel
+               * "SystemMessage-Farben sind kanonisch". */}
+              {website.lastWakeupAt && (
+                <SystemMessage
+                  variant={website.lastWakeupOk ? "success" : "warning"}
+                  title={
+                    website.lastWakeupOk
+                      ? "OK beim letzten Check"
+                      : "Hinweis beim letzten Check"
+                  }
+                  description={`${formatRelativeTime(website.lastWakeupAt)}${website.lastWakeupMessage ? ` – ${website.lastWakeupMessage}` : ""}`}
+                />
+              )}
               <div className="flex gap-2">
                 <Button
                   type="button"
