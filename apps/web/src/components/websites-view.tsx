@@ -213,26 +213,28 @@ export function WebsitesView({
                * stecken nur noch im Popup, siehe
                * website-check-details-dialog.tsx. */}
               {website.lastWakeupAt && (
-                <SystemMessage
-                  variant={website.lastWakeupOk ? "success" : "warning"}
-                  title={
-                    website.lastWakeupOk
-                      ? "Prüfung OK"
-                      : "Prüfung mit Hinweisen"
-                  }
-                  description={`Zuletzt geprüft ${formatRelativeTime(website.lastWakeupAt)}`}
-                  actions={
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon-xs"
-                      aria-label="Prüfdetails anzeigen"
-                      onClick={() => setCheckDetailsTarget(website)}
-                    >
-                      <Info />
-                    </Button>
-                  }
-                />
+                <div className="relative">
+                  <SystemMessage
+                    variant={website.lastWakeupOk ? "success" : "warning"}
+                    title={
+                      website.lastWakeupOk
+                        ? "Prüfung OK"
+                        : "Prüfung mit Hinweisen"
+                    }
+                    description={`Zuletzt geprüft ${formatRelativeTime(website.lastWakeupAt)}`}
+                    className="pr-11"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon-xs"
+                    aria-label="Prüfdetails anzeigen"
+                    className="absolute top-3 right-3"
+                    onClick={() => setCheckDetailsTarget(website)}
+                  >
+                    <Info />
+                  </Button>
+                </div>
               )}
               <div className="flex gap-2">
                 <Button
