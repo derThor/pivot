@@ -232,7 +232,15 @@ export function findBestMatchingUrl(
   let best: string | null = null;
   let bestLength = -1;
   for (const url of urls) {
-    const matches = pathname === url || pathname.startsWith(`${url}/`);
+    // "/dashboard" ist die Startseite, kein Container für andere Dashboard-
+    // Routen – ohne diese Ausnahme würde Präfix-Matching z.B. auch
+    // "/dashboard/settings" (kein eigenes Sidebar-Item, siehe separater
+    // Fußzeilen-Button) fälschlich zusätzlich "Dashboard" markieren
+    // (Nutzervorgabe, 2026-08-25: "wenn ich auf Einstellungen bin, soll
+    // Dashboard nicht aktiv sein").
+    const matches =
+      pathname === url ||
+      (url !== "/dashboard" && pathname.startsWith(`${url}/`));
     if (matches && url.length > bestLength) {
       best = url;
       bestLength = url.length;
