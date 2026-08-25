@@ -36,7 +36,7 @@ export function LicenseDevelopmentToast({
       : null;
     toastWarning(
       "Entwicklungsinstanz – ungeprüft",
-      `Diese Installation läuft im Entwicklungsmodus und ist bewusst von der Lizenzprüfung ausgenommen. Ohne Reaktivierung wird sie spätestens nach 3 Tagen automatisch gesperrt${deadline ? ` (am ${deadline})` : ""}.`,
+      `Diese Installation läuft im Entwicklungsmodus. Ohne Reaktivierung wird sie spätestens nach 3 Tagen automatisch gesperrt${deadline ? ` (am ${deadline})` : ""}.`,
       { id: TOAST_ID, duration: Infinity },
     );
   }, [pathname, autoLockAt]);
