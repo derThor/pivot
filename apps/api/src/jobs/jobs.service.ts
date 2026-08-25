@@ -20,6 +20,7 @@ import { DeletionRequestReminderSchedulerService } from '../deletion-requests/de
 import { PrivacyReportSchedulerService } from '../privacy/privacy-report-scheduler.service';
 import { LICENSE_CHECK_JOB_ID } from '../license-client/license-client.service';
 import { WEBSITE_MONITOR_JOB_ID } from '../websites/website-monitor.service';
+import { DEVELOPMENT_MODE_AUTOLOCK_JOB_ID } from '../websites/websites.service';
 import { UpdateJobDto } from './dto/update-job.dto';
 
 // Nur für die Anzeige in "Letzte Läufe" (siehe findRecentRuns()) – bewusst
@@ -31,6 +32,8 @@ import { UpdateJobDto } from './dto/update-job.dto';
 const READ_ONLY_JOB_TITLES: Record<string, string> = {
   [LICENSE_CHECK_JOB_ID]: 'Lizenzprüfung (Client)',
   [WEBSITE_MONITOR_JOB_ID]: 'Live-Überwachung gesperrter Websites (Master)',
+  [DEVELOPMENT_MODE_AUTOLOCK_JOB_ID]:
+    'Automatische Sperre nach 3 Tagen Entwicklungsmodus (Master)',
 };
 
 interface JobDefinition {

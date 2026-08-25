@@ -1239,6 +1239,16 @@ model Website {
   lastWakeupOk      Boolean?
   lastWakeupMessage String?
 
+  // Nutzervorgabe, 2026-08-25: "Entwicklermodus wird nach spätestens 3
+  // Tagen automatisch gesperrt, bis zur Reaktivierung" – Zeitpunkt, seit
+  // dem `status` ununterbrochen "development" ist. Nur bei einem echten
+  // Wechsel IN den Entwicklungsmodus gesetzt (siehe WebsitesService.
+  // update()), nicht bei jeder beliebigen Feldänderung – sonst würde ein
+  // Wecken/Prüfen die Frist versehentlich immer wieder zurücksetzen.
+  // `null`, sobald der Status wieder verlässt. Siehe
+  // WebsitesService.autoLockStaleDevelopmentSites().
+  developmentModeSince DateTime?
+
   // Von der Installation selbst gemeldete Version (Semver+Commit-Hash,
   // siehe common/utils/app-version.ts), zuletzt beim "Wecken"/"Prüfen"
   // eingeholt (Nutzervorgabe, 2026-08-25: "damit man den aktuellen Stand
@@ -1298,6 +1308,13 @@ model LicenseState {
   // master-slave-licensing.md).
   lastCheckInAt      DateTime?
   lastCheckAttemptAt DateTime?
+
+  // Vom Master signalisiert (siehe LicenseTokenPayload.developmentModeSince)
+  // – seit wann diese Installation ununterbrochen im Entwicklungsmodus
+  // läuft, für die "wird automatisch gesperrt am ..."-Anzeige im Toast
+  // (Nutzervorgabe, 2026-08-25). `null`, wenn `status` nicht "development"
+  // ist oder der Master (noch) keine Version mit diesem Feld ausliefert.
+  developmentModeSince DateTime?
 
   // Schutz gegen Zeitmanipulation: höchster bisher beobachteter
   // Zeitpunkt. Springt die Systemzeit spürbar zurück, darf das nicht

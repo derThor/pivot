@@ -22,6 +22,12 @@ export interface LicenseTokenPayload {
   issuedAt: number;
   expiresAt: number;
   seq: number;
+  // Nutzervorgabe, 2026-08-25: "Entwicklermodus wird nach spätestens 3
+  // Tagen automatisch gesperrt" – Epoch-ms seit wann `status` ununter-
+  // brochen "development" ist (nur relevant, wenn status==="development"),
+  // damit der Client seinerseits anzeigen kann, wann die automatische
+  // Sperre droht (siehe LicenseClientService/license-development-toast.tsx).
+  developmentModeSince: number | null;
 }
 
 function base64url(buffer: Buffer): string {

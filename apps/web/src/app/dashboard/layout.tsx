@@ -90,7 +90,7 @@ export default async function DashboardLayout({
           )}
           {licenseState?.mode === "slave" &&
             licenseState.status === "development" && (
-              <LicenseDevelopmentToast />
+              <LicenseDevelopmentToast autoLockAt={licenseState.autoLockAt} />
             )}
           {licenseState?.mode === "slave" &&
             licenseState.status === "unchecked" && (

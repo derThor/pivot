@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { verifyLicenseToken } from '../websites/license-token.util';
 import { decryptSecret } from '../common/utils/secret-encryption';
+import { DEVELOPMENT_MODE_MAX_DAYS } from '../websites/websites.service';
 
 // Karenzzeit nach Ablauf, bevor eine nicht erreichbare/fehlgeschlagene
 // erneute Prüfung tatsächlich zur Sperre führt (siehe
@@ -44,7 +45,17 @@ export interface LockedPageBranding {
 
 export type EffectiveLicenseStatus =
   | { mode: 'master' }
-  | { mode: 'slave'; status: 'live' | 'development' | 'unchecked' }
+  | { mode: 'slave'; status: 'live' | 'unchecked' }
+  | {
+      mode: 'slave';
+      status: 'development';
+      // Nutzervorgabe, 2026-08-25: "Entwicklermodus wird nach spätestens 3
+      // Tagen automatisch gesperrt" – für die "wird gesperrt am ..."-
+      // Anzeige im Toast. `null` bei einer sehr frischen Installation, die
+      // noch keinen Check mit diesem Feld hinter sich hat.
+      developmentModeSince: Date | null;
+      autoLockAt: Date | null;
+    }
   | { mode: 'slave'; status: 'pending'; expiresAt: Date }
   | ({ mode: 'slave'; status: 'locked' } & LockedPageBranding);
 
@@ -255,6 +266,9 @@ export class LicenseClientService implements OnModuleInit {
         return { status: 'error', message };
       }
 
+      const developmentModeSince = payload.developmentModeSince
+        ? new Date(payload.developmentModeSince)
+        : null;
       await this.prisma.licenseState.upsert({
         where: { id: 'singleton' },
         create: {
@@ -267,6 +281,7 @@ export class LicenseClientService implements OnModuleInit {
           lastCheckInAt: now,
           lastCheckAttemptAt: now,
           lastObservedAt: now,
+          developmentModeSince,
         },
         update: {
           token: data.token,
@@ -277,6 +292,7 @@ export class LicenseClientService implements OnModuleInit {
           lastCheckInAt: now,
           lastCheckAttemptAt: now,
           lastObservedAt: now,
+          developmentModeSince,
         },
       });
       const message = `Status: ${payload.status}.`;
@@ -310,7 +326,18 @@ export class LicenseClientService implements OnModuleInit {
     }
 
     if (state.status === 'development') {
-      return { mode: 'slave', status: 'development' };
+      const autoLockAt = state.developmentModeSince
+        ? new Date(
+            state.developmentModeSince.getTime() +
+              DEVELOPMENT_MODE_MAX_DAYS * 24 * 60 * 60 * 1000,
+          )
+        : null;
+      return {
+        mode: 'slave',
+        status: 'development',
+        developmentModeSince: state.developmentModeSince,
+        autoLockAt,
+      };
     }
     if (state.status === 'locked') {
       return {

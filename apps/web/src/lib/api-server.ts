@@ -977,7 +977,16 @@ export interface LockedPageBranding {
 
 export type LicenseState =
   | { mode: "master" }
-  | { mode: "slave"; status: "live" | "development" | "unchecked" }
+  | { mode: "slave"; status: "live" | "unchecked" }
+  | {
+      mode: "slave";
+      status: "development";
+      // Nutzervorgabe, 2026-08-25: "Entwicklermodus wird nach spätestens 3
+      // Tagen automatisch gesperrt" – für die "wird gesperrt am ..."-
+      // Anzeige im Toast (siehe license-development-toast.tsx).
+      developmentModeSince: string | null;
+      autoLockAt: string | null;
+    }
   | { mode: "slave"; status: "pending"; expiresAt: string }
   | ({ mode: "slave"; status: "locked" } & LockedPageBranding);
 

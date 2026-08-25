@@ -1,9 +1,12 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
+  OnModuleInit,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@pivot/database';
@@ -31,6 +34,22 @@ export interface WebsiteCheckItem {
 // knowledge-base/platform/master-slave-licensing.md).
 const TOKEN_VALIDITY_MS = 14 * 24 * 60 * 60 * 1000;
 
+// Nutzervorgabe, 2026-08-25: "Entwicklermodus wird nach spätestens 3 Tagen
+// automatisch gesperrt, bis zur Reaktivierung" – siehe
+// autoLockStaleDevelopmentSites() unten. Exportiert, damit
+// LicenseClientService.getEffectiveStatus() denselben Wert für die
+// "wird gesperrt am ..."-Anzeige im Client-Toast verwenden kann, statt
+// die Frist ein zweites Mal fest zu verdrahten.
+export const DEVELOPMENT_MODE_MAX_DAYS = 3;
+
+// `JobRun.jobId` für autoLockStaleDevelopmentSites() – taucht in "Letzte
+// Läufe" auf, aber bewusst NICHT in JobsService.definitions: dieser Job
+// setzt eine Sicherheitsgrenze durch (verhindert dauerhaft von der
+// Lizenzprüfung ausgenommene Installationen), ein pausierbarer/umplanbarer
+// Eintrag würde genau das untergraben – gleiches Prinzip wie
+// LICENSE_CHECK_JOB_ID/WEBSITE_MONITOR_JOB_ID.
+export const DEVELOPMENT_MODE_AUTOLOCK_JOB_ID = 'development-mode-autolock';
+
 function generateApiKey(): string {
   return randomBytes(32).toString('hex');
 }
@@ -57,11 +76,75 @@ const PUBLIC_SELECT = {
 } as const;
 
 @Injectable()
-export class WebsitesService {
+export class WebsitesService implements OnModuleInit {
+  private readonly logger = new Logger(WebsitesService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
   ) {}
+
+  /** Backfill für Installationen, die schon vor diesem Feature im
+   * Entwicklungsmodus liefen (Nutzervorgabe, 2026-08-25) – ohne diesen
+   * Lauf hätten sie `developmentModeSince: null` und würden dadurch NIE
+   * automatisch gesperrt (der Cron-Job unten filtert nur auf gesetzte,
+   * abgelaufene Zeitstempel). Startet die 3-Tage-Frist für sie ab jetzt,
+   * statt sie rückwirkend zu bestrafen oder dauerhaft zu verschonen. */
+  async onModuleInit() {
+    await this.prisma.website.updateMany({
+      where: { status: 'development', developmentModeSince: null },
+      data: { developmentModeSince: new Date() },
+    });
+  }
+
+  /** Nutzervorgabe, 2026-08-25: "baue es so, dass Entwicklermodus immer
+   * nach spätestens 3 Tagen gesperrt wird, bis zur Reaktivierung" – der
+   * Entwicklungsmodus ist bewusst von der Lizenzprüfung ausgenommen (siehe
+   * LicenseClientService.getEffectiveStatus()), soll aber kein dauerhafter,
+   * vergessbarer Freifahrtschein werden. Läuft täglich, sperrt über
+   * `update()` (löst automatisch das Wecken/die Client-Benachrichtigung
+   * aus, siehe dortiger Kommentar) statt eines rohen `updateMany()`. */
+  @Cron('0 3 * * *')
+  async autoLockStaleDevelopmentSites() {
+    const startedAt = new Date();
+    const cutoff = new Date(
+      startedAt.getTime() - DEVELOPMENT_MODE_MAX_DAYS * 24 * 60 * 60 * 1000,
+    );
+    const staleSites = await this.prisma.website.findMany({
+      where: { status: 'development', developmentModeSince: { lte: cutoff } },
+      select: { id: true, name: true },
+    });
+    for (const site of staleSites) {
+      try {
+        await this.update(site.id, { status: 'locked' });
+      } catch (error) {
+        this.logger.warn(
+          `Automatische Sperre für "${site.name}" fehlgeschlagen: ${(error as Error).message}`,
+        );
+      }
+    }
+    await this.prisma.scheduledJob.upsert({
+      where: { id: DEVELOPMENT_MODE_AUTOLOCK_JOB_ID },
+      create: {
+        id: DEVELOPMENT_MODE_AUTOLOCK_JOB_ID,
+        cronExpression: '0 3 * * *',
+        isCritical: true,
+      },
+      update: {},
+    });
+    await this.prisma.jobRun.create({
+      data: {
+        jobId: DEVELOPMENT_MODE_AUTOLOCK_JOB_ID,
+        startedAt,
+        durationMs: Date.now() - startedAt.getTime(),
+        status: 'success',
+        message:
+          staleSites.length === 0
+            ? 'Keine Installation über der 3-Tage-Frist im Entwicklungsmodus.'
+            : `${staleSites.length} Installation(en) automatisch gesperrt: ${staleSites.map((s) => s.name).join(', ')}.`,
+      },
+    });
+  }
 
   // Gleicher app-weiter AES-256-GCM-Schlüssel wie TOTP-Secrets/SMTP-
   // Passwort (siehe common/utils/secret-encryption.ts).
@@ -134,6 +217,17 @@ export class WebsitesService {
     if (dto.domain) {
       await this.assertDomainFree(dto.domain, id);
     }
+    // Nutzervorgabe, 2026-08-25: "Entwicklermodus wird nach spätestens 3
+    // Tagen automatisch gesperrt" – der Zeitstempel startet nur bei einem
+    // echten Wechsel IN "development" neu und wird beim Verlassen wieder
+    // gelöscht, siehe autoLockStaleDevelopmentSites() und der Kommentar am
+    // Feld in schema.prisma.
+    const enteringDevelopment =
+      dto.status === 'development' && website.status !== 'development';
+    const leavingDevelopment =
+      dto.status &&
+      dto.status !== 'development' &&
+      website.status === 'development';
     await this.prisma.website.update({
       where: { id },
       data: {
@@ -142,6 +236,8 @@ export class WebsitesService {
         status: dto.status,
         deploymentMode: dto.deploymentMode,
         testUrl: dto.testUrl,
+        ...(enteringDevelopment && { developmentModeSince: new Date() }),
+        ...(leavingDevelopment && { developmentModeSince: null }),
       },
     });
     if (dto.status && dto.status !== website.status) {
@@ -468,6 +564,7 @@ export class WebsitesService {
       issuedAt,
       expiresAt: issuedAt + TOKEN_VALIDITY_MS,
       seq,
+      developmentModeSince: website.developmentModeSince?.getTime() ?? null,
     };
     const token = signLicenseToken(payload);
 
