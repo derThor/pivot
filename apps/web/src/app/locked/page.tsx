@@ -155,7 +155,7 @@ export default async function LockedPage() {
             <img
               src={mediaUrl({ url: companyLogoUrl })}
               alt={companyName}
-              className="h-6 w-auto object-contain sm:h-7"
+              className="h-[35px] w-auto object-contain sm:h-7"
             />
           ) : (
             <p className="text-sm" style={{ color: mutedColor }}>
