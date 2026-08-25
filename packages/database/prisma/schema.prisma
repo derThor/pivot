@@ -1239,6 +1239,13 @@ model Website {
   // ermitteln kann"). Rein informativ, keine Auswirkung auf den Status.
   lastReportedVersion String?
 
+  // Vom Client zuletzt selbst bestätigter Lizenzstatus (Nutzervorgabe,
+  // 2026-08-25: "hier die entsprechenden Badges nehmen" im Prüfdetails-
+  // Popup) – nur gesetzt, wenn die Prüfung wirklich erfolgreich war, sonst
+  // bleibt der zuletzt bekannte Stand erhalten (gleiches Prinzip wie
+  // `lastReportedVersion`).
+  lastReportedLicenseStatus String?
+
   // Einzelne Teilergebnisse des letzten "Wecken"-Durchlaufs (Nutzervorgabe,
   // 2026-08-25: "schreibe alle Prüfungen untereinander, die OK sind mit
   // Haken, die nicht OK mit X") – JSON-Array `{label, ok}[]`, siehe

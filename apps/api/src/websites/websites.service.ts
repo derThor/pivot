@@ -50,6 +50,7 @@ const PUBLIC_SELECT = {
   lastWakeupOk: true,
   lastWakeupMessage: true,
   lastReportedVersion: true,
+  lastReportedLicenseStatus: true,
   lastCheckChecks: true,
   createdAt: true,
   updatedAt: true,
@@ -217,6 +218,7 @@ export class WebsitesService {
     ok: boolean;
     message: string;
     version: string | null;
+    licenseStatus: string | null;
     checks: WebsiteCheckItem[];
   }> {
     const website = await this.prisma.website.findUnique({ where: { id } });
@@ -231,10 +233,13 @@ export class WebsitesService {
         lastWakeupOk: result.ok,
         lastWakeupMessage: result.message,
         lastCheckChecks: result.checks as unknown as Prisma.InputJsonValue,
-        // Nur überschreiben, wenn tatsächlich eine Version gemeldet wurde –
-        // ein Fehlschlag (Timeout, falscher Key) soll die zuletzt bekannte
-        // Version nicht auf "unbekannt" zurücksetzen.
+        // Nur überschreiben, wenn tatsächlich etwas gemeldet wurde – ein
+        // Fehlschlag (Timeout, falscher Key) soll den zuletzt bekannten
+        // Stand nicht auf "unbekannt" zurücksetzen.
         ...(result.version ? { lastReportedVersion: result.version } : {}),
+        ...(result.licenseStatus
+          ? { lastReportedLicenseStatus: result.licenseStatus }
+          : {}),
       },
     });
     return result;
@@ -256,6 +261,7 @@ export class WebsitesService {
     ok: boolean;
     message: string;
     version: string | null;
+    licenseStatus: string | null;
     checks: WebsiteCheckItem[];
   }> {
     if (!website.apiKeyEncrypted) {
@@ -263,6 +269,7 @@ export class WebsitesService {
         ok: false,
         message: 'Kein API-Key hinterlegt.',
         version: null,
+        licenseStatus: null,
         checks: [{ label: 'API-Key hinterlegt', ok: false }],
       };
     }
@@ -289,6 +296,7 @@ export class WebsitesService {
           message:
             'Der bei der Installation hinterlegte API-Key stimmt nicht mehr mit dem hier gespeicherten überein.',
           version: null,
+          licenseStatus: null,
           checks: [
             { label: 'Erreichbar', ok: true },
             { label: 'API-Key korrekt', ok: false },
@@ -300,6 +308,7 @@ export class WebsitesService {
           ok: false,
           message: `Installation antwortete mit HTTP ${res.status}.`,
           version: null,
+          licenseStatus: null,
           checks: [
             { label: 'Erreichbar', ok: true },
             { label: 'Antwort erhalten', ok: false },
@@ -307,10 +316,15 @@ export class WebsitesService {
         };
       }
       const data = (await res.json().catch(() => null)) as {
-        outcome?: { status: 'success' | 'error'; message: string };
+        outcome?: {
+          status: 'success' | 'error';
+          message: string;
+          licenseStatus?: 'live' | 'development' | 'locked';
+        };
         version?: string;
       } | null;
       const version = data?.version ?? null;
+      const licenseStatus = data?.outcome?.licenseStatus ?? null;
       const checks: WebsiteCheckItem[] = [
         { label: 'Erreichbar', ok: true },
         { label: 'API-Key korrekt', ok: true },
@@ -330,18 +344,18 @@ export class WebsitesService {
           ok: version === getAppVersion(),
         });
       }
-      if (data?.outcome) {
-        return {
-          ok: data.outcome.status === 'success',
-          message: data.outcome.message,
-          version,
-          checks,
-        };
-      }
+      // Nutzervorgabe, 2026-08-25: "wenn eines der Checks nicht OK ist, soll
+      // Hinweis-Alert kommen, OK nur, wenn alles passt" – das Gesamtergebnis
+      // ist NICHT mehr nur der Erfolg des Prüfungslaufs selbst
+      // (`outcome.status`), sondern ehrlich UND aus allen Teilergebnissen,
+      // damit die Kachel (die nur `ok` sieht, siehe websites-view.tsx) nicht
+      // "OK" zeigt, während im Detail-Popup ein "X" steht.
+      const ok = checks.every((check) => check.ok);
       return {
-        ok: true,
-        message: 'Installation wurde geweckt.',
+        ok,
+        message: data?.outcome?.message ?? 'Installation wurde geweckt.',
         version,
+        licenseStatus,
         checks,
       };
     } catch {
@@ -349,6 +363,7 @@ export class WebsitesService {
         ok: false,
         message: 'Installation nicht erreichbar.',
         version: null,
+        licenseStatus: null,
         checks: [{ label: 'Erreichbar', ok: false }],
       };
     } finally {
@@ -371,6 +386,7 @@ export class WebsitesService {
       ok: boolean;
       message: string;
       version: string | null;
+      licenseStatus: string | null;
       checks: WebsiteCheckItem[];
     }[];
   }> {
@@ -395,6 +411,9 @@ export class WebsitesService {
             lastWakeupMessage: result.message,
             lastCheckChecks: result.checks as unknown as Prisma.InputJsonValue,
             ...(result.version ? { lastReportedVersion: result.version } : {}),
+            ...(result.licenseStatus
+              ? { lastReportedLicenseStatus: result.licenseStatus }
+              : {}),
           },
         });
         return {
@@ -404,6 +423,7 @@ export class WebsitesService {
           ok: result.ok,
           message: result.message,
           version: result.version,
+          licenseStatus: result.licenseStatus,
           checks: result.checks,
         };
       }),

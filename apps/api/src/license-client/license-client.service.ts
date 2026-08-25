@@ -24,6 +24,11 @@ export const LICENSE_CHECK_JOB_ID = 'license-check';
 export interface JobOutcome {
   status: 'success' | 'error';
   message: string;
+  // Nur bei erfolgreicher Prüfung gesetzt (Nutzervorgabe, 2026-08-25:
+  // "hier die entsprechenden Badges nehmen" – der Master soll den echten
+  // Lizenzstatus als Badge zeigen können, statt ihn aus dem Freitext der
+  // `message` herauszulesen).
+  licenseStatus?: 'live' | 'development' | 'locked';
 }
 
 export interface LockedPageBranding {
@@ -276,7 +281,7 @@ export class LicenseClientService implements OnModuleInit {
       });
       const message = `Status: ${payload.status}.`;
       this.logger.log(`Lizenzprüfung erfolgreich – ${message}`);
-      return { status: 'success', message };
+      return { status: 'success', message, licenseStatus: payload.status };
     } catch (error) {
       const message = `Lizenzprüfung fehlgeschlagen: ${(error as Error).message}`;
       this.logger.warn(message);

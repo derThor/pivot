@@ -1397,6 +1397,10 @@ export interface WebsiteListItem {
   // zuletzt beim "Wecken"/"Prüfen" eingeholt (Nutzervorgabe, 2026-08-25:
   // "damit man den aktuellen Stand ermitteln kann").
   lastReportedVersion: string | null;
+  // Vom Client zuletzt selbst bestätigter Lizenzstatus (Nutzervorgabe,
+  // 2026-08-25: "hier die entsprechenden Badges nehmen") – nur bei
+  // erfolgreicher Prüfung gesetzt, sonst bleibt der letzte bekannte Stand.
+  lastReportedLicenseStatus: WebsiteStatus | null;
   // Detail-Aufschlüsselung des letzten Checks für das Info-Popup (siehe
   // website-check-details-dialog.tsx) – `null`, solange noch nie geprüft.
   lastCheckChecks: WebsiteCheckItem[] | null;
@@ -1418,6 +1422,7 @@ export interface WebsiteCheckAllResult {
     ok: boolean;
     message: string;
     version: string | null;
+    licenseStatus: WebsiteStatus | null;
     checks: WebsiteCheckItem[];
   }[];
 }

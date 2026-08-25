@@ -12,7 +12,22 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatRelativeTime } from "@/lib/utils";
-import type { WebsiteListItem } from "@/lib/api-server";
+import type { WebsiteListItem, WebsiteStatus } from "@/lib/api-server";
+
+// Nutzervorgabe, 2026-08-25: "hier die entsprechenden Badges nehmen.
+// Entwicklung in gelb" – gleiche Statuswerte wie STATUS_BADGE in
+// websites-view.tsx, aber "Entwicklung" bewusst gelb statt grau.
+const LICENSE_STATUS_BADGE: Record<
+  WebsiteStatus,
+  { label: string; className: string }
+> = {
+  live: { label: "Live", className: "bg-green-100 text-green-700" },
+  development: {
+    label: "Entwicklung",
+    className: "bg-amber-100 text-amber-700",
+  },
+  locked: { label: "Gesperrt", className: "bg-red-100 text-red-700" },
+};
 
 /** Info-Popup zum "Prüfen"-Ergebnis einer Website (Nutzervorgabe,
  * 2026-08-25: "machst in der Kachel selber nur einen Alert, das Prüfung OK
@@ -64,10 +79,27 @@ export function WebsiteCheckDetailsDialog({
                 ))}
               </div>
             )}
-            {target.lastWakeupMessage && (
-              <p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">
-                {target.lastWakeupMessage}
-              </p>
+            {/* Nutzervorgabe, 2026-08-25: statt des rohen "Status: live."-
+             * Freitexts einen echten Status-Badge zeigen. Die Rohmeldung
+             * bleibt nur sichtbar, wenn (noch) kein bestätigter Status
+             * vorliegt (z.B. bei einem Fehlschlag). */}
+            {target.lastReportedLicenseStatus ? (
+              <Badge
+                variant="secondary"
+                className={
+                  LICENSE_STATUS_BADGE[target.lastReportedLicenseStatus]
+                    .className
+                }
+              >
+                Status:{" "}
+                {LICENSE_STATUS_BADGE[target.lastReportedLicenseStatus].label}
+              </Badge>
+            ) : (
+              target.lastWakeupMessage && (
+                <p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">
+                  {target.lastWakeupMessage}
+                </p>
+              )
             )}
           </div>
         )}
