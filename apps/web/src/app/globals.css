@@ -179,14 +179,35 @@
 }
 @media (width >= 40rem) {
   .block-spacing {
-    padding-top: var(--block-padding-top-desktop, var(--block-padding-top-mobile));
-    padding-right: var(--block-padding-right-desktop, var(--block-padding-right-mobile));
-    padding-bottom: var(--block-padding-bottom-desktop, var(--block-padding-bottom-mobile));
-    padding-left: var(--block-padding-left-desktop, var(--block-padding-left-mobile));
+    padding-top: var(
+      --block-padding-top-desktop,
+      var(--block-padding-top-mobile)
+    );
+    padding-right: var(
+      --block-padding-right-desktop,
+      var(--block-padding-right-mobile)
+    );
+    padding-bottom: var(
+      --block-padding-bottom-desktop,
+      var(--block-padding-bottom-mobile)
+    );
+    padding-left: var(
+      --block-padding-left-desktop,
+      var(--block-padding-left-mobile)
+    );
     margin-top: var(--block-margin-top-desktop, var(--block-margin-top-mobile));
-    margin-right: var(--block-margin-right-desktop, var(--block-margin-right-mobile));
-    margin-bottom: var(--block-margin-bottom-desktop, var(--block-margin-bottom-mobile));
-    margin-left: var(--block-margin-left-desktop, var(--block-margin-left-mobile));
+    margin-right: var(
+      --block-margin-right-desktop,
+      var(--block-margin-right-mobile)
+    );
+    margin-bottom: var(
+      --block-margin-bottom-desktop,
+      var(--block-margin-bottom-mobile)
+    );
+    margin-left: var(
+      --block-margin-left-desktop,
+      var(--block-margin-left-mobile)
+    );
   }
 }
 
@@ -237,4 +258,44 @@
   animation-duration: 0.001ms !important;
   animation-iteration-count: 1 !important;
   scroll-behavior: auto !important;
+}
+
+/* Nutzervorgabe, 2026-08-25: einheitlicher Scrollbalken für die Sidebar
+   (ui/sidebar.tsx SidebarContent) – "soll in jedem Browser gleich aussehen,
+   nur wenn Inhalt zu viel wird". `overflow-y: auto` auf dem Container sorgt
+   bereits von selbst dafür, dass der Balken nur bei Überlauf erscheint;
+   hier wird nur sein Aussehen vereinheitlicht statt des zuvor komplett
+   unbehandelten (und je nach Browser/OS unterschiedlichen) Standard-
+   Balkens. Firefox über `scrollbar-width`/`-color`, Chrome/Edge/Safari über
+   die `::-webkit-scrollbar-*`-Pseudoelemente – `color-mix()` mit
+   `--sidebar-foreground` passt sich automatisch an Light-/Dark-Mode an. */
+.themed-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(
+      in oklch,
+      var(--sidebar-foreground) 25%,
+      transparent
+    )
+    transparent;
+}
+.themed-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.themed-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.themed-scrollbar::-webkit-scrollbar-thumb {
+  background-color: color-mix(
+    in oklch,
+    var(--sidebar-foreground) 25%,
+    transparent
+  );
+  border-radius: 9999px;
+}
+.themed-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(
+    in oklch,
+    var(--sidebar-foreground) 45%,
+    transparent
+  );
 }
