@@ -1,23 +1,6 @@
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
-import { ACCESS_TOKEN_COOKIE } from "@/lib/auth";
-
-const API_URL = process.env.API_URL ?? "http://localhost:3001/v1";
+import { proxyToApi } from "@/lib/bff-proxy";
 
 export async function POST(request: Request) {
-  const accessToken = (await cookies()).get(ACCESS_TOKEN_COOKIE)?.value;
-  if (!accessToken) {
-    return NextResponse.json({ message: "Nicht angemeldet." }, { status: 401 });
-  }
-
   const formData = await request.formData();
-
-  const backendRes = await fetch(`${API_URL}/auth/me/avatar`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}` },
-    body: formData,
-  });
-
-  const data = await backendRes.json().catch(() => null);
-  return NextResponse.json(data, { status: backendRes.status });
+  return proxyToApi("POST", "/auth/me/avatar", formData);
 }

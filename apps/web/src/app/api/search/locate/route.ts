@@ -1,8 +1,5 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { ACCESS_TOKEN_COOKIE } from "@/lib/auth";
-
-const API_URL = process.env.API_URL ?? "http://localhost:3001/v1";
+import { proxyToApi } from "@/lib/bff-proxy";
 
 // Bildet einen globalen Such-Treffertyp auf den passenden
 // "auf welcher Seite liegt dieser Eintrag"-Endpoint im Backend ab. Nur für
@@ -19,11 +16,6 @@ const backendPath: Record<string, (id: string) => string> = {
 };
 
 export async function GET(request: Request) {
-  const accessToken = (await cookies()).get(ACCESS_TOKEN_COOKIE)?.value;
-  if (!accessToken) {
-    return NextResponse.json({ message: "Nicht angemeldet." }, { status: 401 });
-  }
-
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type") ?? "";
   const id = searchParams.get("id");
@@ -37,14 +29,8 @@ export async function GET(request: Request) {
     );
   }
 
-  const backendRes = await fetch(
-    `${API_URL}${buildPath(id)}?pageSize=${encodeURIComponent(pageSize)}`,
-    {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      cache: "no-store",
-    },
+  return proxyToApi(
+    "GET",
+    `${buildPath(id)}?pageSize=${encodeURIComponent(pageSize)}`,
   );
-
-  const data = await backendRes.json().catch(() => null);
-  return NextResponse.json(data, { status: backendRes.status });
 }

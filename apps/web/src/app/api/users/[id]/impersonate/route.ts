@@ -6,6 +6,7 @@ import {
   ADMIN_REFRESH_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
 } from "@/lib/auth";
+import { resolveAccessToken } from "@/lib/bff-proxy";
 
 const API_URL = process.env.API_URL ?? "http://localhost:3001/v1";
 const isProd = process.env.NODE_ENV === "production";
@@ -27,11 +28,11 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const cookieStore = await cookies();
-  const accessToken = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
-  const refreshToken = cookieStore.get(REFRESH_TOKEN_COOKIE)?.value;
-  if (!accessToken) {
+  const resolved = await resolveAccessToken(cookieStore);
+  if (!resolved) {
     return NextResponse.json({ message: "Nicht angemeldet." }, { status: 401 });
   }
+  const { accessToken, refreshTokenCookie } = resolved;
 
   const { id } = await params;
 
@@ -48,8 +49,12 @@ export async function POST(
   const { accessToken: impersonationToken } = await backendRes.json();
 
   cookieStore.set(ADMIN_ACCESS_TOKEN_COOKIE, accessToken, cookieOptions);
-  if (refreshToken) {
-    cookieStore.set(ADMIN_REFRESH_TOKEN_COOKIE, refreshToken, cookieOptions);
+  if (refreshTokenCookie) {
+    cookieStore.set(
+      ADMIN_REFRESH_TOKEN_COOKIE,
+      refreshTokenCookie,
+      cookieOptions,
+    );
   }
   cookieStore.set(ACCESS_TOKEN_COOKIE, impersonationToken, {
     ...cookieOptions,

@@ -33,6 +33,48 @@ async function tryRefresh(refreshToken: string): Promise<TokenPair | null> {
   }
 }
 
+export interface ResolvedAccessToken {
+  accessToken: string;
+  // Der gerade gültige Refresh-Token-Wert (Original-Cookie, oder der neu
+  // ausgestellte, falls gerade erneuert wurde) – für Routen, die ihn selbst
+  // weiterreichen müssen (z.B. `x-current-refresh-token`-Header bei
+  // "andere Sitzungen abmelden", oder zum Spiegeln in die admin_*-Cookies
+  // bei der Impersonation).
+  refreshTokenCookie: string | undefined;
+  // Nur gesetzt, wenn gerade tatsächlich erneuert wurde – Aufrufer sollen
+  // dann `buildAuthCookies(refreshed)` auf ihre Antwort anwenden, damit die
+  // Erneuerung auch im Browser ankommt.
+  refreshed: TokenPair | null;
+}
+
+/** Für die wenigen Routen mit Sonderlogik, die `proxyToApi()` nicht nutzen
+ * können (Cookie-Swaps wie Impersonation, zusätzliche Header wie oben) –
+ * liefert ein gültiges Zugriffstoken, erneuert bei Bedarf über das
+ * Refresh-Cookie (gleiches Prinzip wie `proxyToApi()` selbst, siehe dessen
+ * Kommentar zum "nach längerer Pause nicht angemeldet"-Bugreport).
+ * `null` = nicht angemeldet (weder Zugriffs- noch gültiges Refresh-Token). */
+export async function resolveAccessToken(
+  cookieStore: Awaited<ReturnType<typeof cookies>>,
+): Promise<ResolvedAccessToken | null> {
+  const accessToken = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
+  const currentRefreshToken = cookieStore.get(REFRESH_TOKEN_COOKIE)?.value;
+  if (accessToken) {
+    return {
+      accessToken,
+      refreshTokenCookie: currentRefreshToken,
+      refreshed: null,
+    };
+  }
+  if (!currentRefreshToken) return null;
+  const refreshed = await tryRefresh(currentRefreshToken);
+  if (!refreshed) return null;
+  return {
+    accessToken: refreshed.accessToken,
+    refreshTokenCookie: refreshed.refreshToken,
+    refreshed,
+  };
+}
+
 /** Gemeinsamer Kern für die BFF-Proxy-Routen der Datenschutz-Seite
  * (Nutzervorgabe, 2026-08-18) – bei ~20 fast identischen Routen (5 einfache
  * CRUD-Ressourcen + 4x Papierkorb-Unterrouten + Retention/Report) lohnt sich
@@ -43,32 +85,63 @@ async function tryRefresh(refreshToken: string): Promise<TokenPair | null> {
  * Update 2026-08-25: bei einem abgelaufenen Zugriffstoken (401 vom Backend)
  * wird jetzt einmal automatisch per Refresh-Cookie erneuert und die Anfrage
  * wiederholt, statt den rohen 401 direkt durchzureichen – siehe
- * `tryRefresh()` oben. */
+ * `tryRefresh()` oben.
+ *
+ * Update 2026-08-25, Nutzer-Bugreport ("nach längerer Pause 'nicht
+ * angemeldet', F5 behebt es ohne erneutes Einloggen"): das Zugriffstoken-
+ * Cookie hat nur 15 Min. `maxAge` und wird vom BROWSER nach Ablauf
+ * komplett entfernt (nicht nur der JWT-Inhalt ungültig) – das Cookie fehlt
+ * dann schon HIER, bevor überhaupt ein Backend-Aufruf versucht wird. Der
+ * obige 401-Retry griff deshalb nie, weil der Code vorher schon mit
+ * "Nicht angemeldet." abgebrochen ist, obwohl das Refresh-Cookie (30 Tage)
+ * noch gültig war. F5 half nur, weil middleware.ts bei echten
+ * Seitenaufrufen selbst erneuert – bei einem reinen `fetch()` auf `/api/*`
+ * (keine Seitennavigation) lief das nie. Jetzt wird auch bei fehlendem
+ * Zugriffstoken zuerst ein Refresh versucht, bevor aufgegeben wird. */
 export async function proxyToApi(
   method: string,
   path: string,
-  body?: unknown,
+  body?: unknown | FormData,
 ): Promise<NextResponse> {
   const cookieStore = await cookies();
-  const accessToken = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
+  let accessToken = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
+  let refreshed: TokenPair | null = null;
+
   if (!accessToken) {
-    return NextResponse.json({ message: "Nicht angemeldet." }, { status: 401 });
+    const refreshToken = cookieStore.get(REFRESH_TOKEN_COOKIE)?.value;
+    if (refreshToken) {
+      refreshed = await tryRefresh(refreshToken);
+      if (refreshed) accessToken = refreshed.accessToken;
+    }
+    if (!accessToken) {
+      return NextResponse.json(
+        { message: "Nicht angemeldet." },
+        { status: 401 },
+      );
+    }
   }
 
+  // FormData (Datei-Uploads) unverändert durchreichen – fetch/undici setzt
+  // dafür selbst den passenden multipart-Boundary-Header; nur echte
+  // JSON-Bodies werden stringifiziert und mit Content-Type versehen.
+  const isFormData = body instanceof FormData;
   const doFetch = (token: string) =>
     fetch(`${API_URL}${path}`, {
       method,
       headers: {
         Authorization: `Bearer ${token}`,
-        ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+        ...(body !== undefined && !isFormData
+          ? { "Content-Type": "application/json" }
+          : {}),
       },
-      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      ...(body !== undefined
+        ? { body: isFormData ? body : JSON.stringify(body) }
+        : {}),
       cache: "no-store",
     });
 
   let backendRes = await doFetch(accessToken);
-  let refreshed: TokenPair | null = null;
-  if (backendRes.status === 401) {
+  if (backendRes.status === 401 && !refreshed) {
     const refreshToken = cookieStore.get(REFRESH_TOKEN_COOKIE)?.value;
     if (refreshToken) {
       refreshed = await tryRefresh(refreshToken);

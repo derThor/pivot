@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "@/lib/auth";
+import { buildAuthCookies } from "@/lib/auth";
+import { resolveAccessToken } from "@/lib/bff-proxy";
 
 const API_URL = process.env.API_URL ?? "http://localhost:3001/v1";
 
@@ -9,11 +10,11 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const cookieStore = await cookies();
-  const accessToken = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
-  if (!accessToken) {
+  const resolved = await resolveAccessToken(cookieStore);
+  if (!resolved) {
     return NextResponse.json({ message: "Nicht angemeldet." }, { status: 401 });
   }
-  const refreshToken = cookieStore.get(REFRESH_TOKEN_COOKIE)?.value;
+  const { accessToken, refreshTokenCookie, refreshed } = resolved;
 
   const { id } = await params;
 
@@ -23,14 +24,23 @@ export async function POST(
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        ...(refreshToken && { "x-current-refresh-token": refreshToken }),
+        ...(refreshTokenCookie && {
+          "x-current-refresh-token": refreshTokenCookie,
+        }),
       },
     },
   );
 
-  if (backendRes.status === 204) {
-    return new NextResponse(null, { status: 204 });
+  const response =
+    backendRes.status === 204
+      ? new NextResponse(null, { status: 204 })
+      : NextResponse.json(await backendRes.json().catch(() => null), {
+          status: backendRes.status,
+        });
+  if (refreshed) {
+    for (const cookie of buildAuthCookies(refreshed)) {
+      response.cookies.set(cookie.name, cookie.value, cookie.options);
+    }
   }
-  const data = await backendRes.json().catch(() => null);
-  return NextResponse.json(data, { status: backendRes.status });
+  return response;
 }

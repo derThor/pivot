@@ -5,7 +5,10 @@ const API_URL = process.env.API_URL ?? "http://localhost:3001/v1";
 export async function GET(request: Request) {
   const token = new URL(request.url).searchParams.get("token");
   if (!token) {
-    return NextResponse.json({ message: "Kein Token übergeben." }, { status: 400 });
+    return NextResponse.json(
+      { message: "Kein Token übergeben." },
+      { status: 400 },
+    );
   }
 
   const backendRes = await fetch(

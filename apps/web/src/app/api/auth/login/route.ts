@@ -17,8 +17,7 @@ export async function POST(request: Request) {
   // Gerät" statt z.B. "Windows · Chrome".
   const userAgent = request.headers.get("user-agent");
   const forwardedFor =
-    request.headers.get("x-forwarded-for") ??
-    request.headers.get("x-real-ip");
+    request.headers.get("x-forwarded-for") ?? request.headers.get("x-real-ip");
 
   const backendRes = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
