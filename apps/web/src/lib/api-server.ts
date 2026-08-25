@@ -1371,6 +1371,14 @@ export function getMailTemplates() {
 
 export type WebsiteStatus = "live" | "development" | "locked";
 
+// Einzelnes Teilergebnis eines "Wecken"-Durchlaufs (Nutzervorgabe,
+// 2026-08-25: "schreibe alle Prüfungen untereinander, die OK sind mit
+// Haken, die nicht OK mit X").
+export interface WebsiteCheckItem {
+  label: string;
+  ok: boolean;
+}
+
 export interface WebsiteListItem {
   id: string;
   name: string;
@@ -1389,6 +1397,9 @@ export interface WebsiteListItem {
   // zuletzt beim "Wecken"/"Prüfen" eingeholt (Nutzervorgabe, 2026-08-25:
   // "damit man den aktuellen Stand ermitteln kann").
   lastReportedVersion: string | null;
+  // Detail-Aufschlüsselung des letzten Checks für das Info-Popup (siehe
+  // website-check-details-dialog.tsx) – `null`, solange noch nie geprüft.
+  lastCheckChecks: WebsiteCheckItem[] | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1407,6 +1418,7 @@ export interface WebsiteCheckAllResult {
     ok: boolean;
     message: string;
     version: string | null;
+    checks: WebsiteCheckItem[];
   }[];
 }
 

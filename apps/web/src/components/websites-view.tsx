@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   ExternalLink,
   Globe,
+  Info,
   Pencil,
   Plus,
   RotateCcw,
@@ -19,6 +20,7 @@ import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
 import { PaginationControls } from "@/components/pagination-controls";
 import { SystemMessage } from "@/components/ui/system-message";
+import { WebsiteCheckDetailsDialog } from "@/components/website-check-details-dialog";
 import { WebsiteDialog } from "@/components/website-dialog";
 import { formatRelativeTime } from "@/lib/utils";
 import type {
@@ -65,6 +67,8 @@ export function WebsitesView({
   );
   const [isChecking, setIsChecking] = useState(false);
   const [wakingId, setWakingId] = useState<string | null>(null);
+  const [checkDetailsTarget, setCheckDetailsTarget] =
+    useState<WebsiteListItem | null>(null);
 
   // Nutzer-Feedback, 2026-08-24: "diese Prüfung sagt nichts aus ... alle
   // Webseiten einmal durchlaufen und den Status ausgeben, der gerade ist"
@@ -201,24 +205,33 @@ export function WebsitesView({
                * Nutzervorgabe, 2026-08-25: "in einem Alert-Format, orientiere
                * dich an unserem Standard" – app-weite `SystemMessage` statt
                * eigenem Icon+Text-Aufbau, siehe knowledge-base-Regel
-               * "SystemMessage-Farben sind kanonisch". */}
+               * "SystemMessage-Farben sind kanonisch". Update 2026-08-25:
+               * "machst in der Kachel selber nur einen Alert, das Prüfung OK
+               * oder nicht OK ... dann ein Info-Icon, wo man ein Popup
+               * aufrufen kann mit der eigentlichen Prüfung" – die einzelnen
+               * Teilergebnisse (`lastCheckChecks`, inkl. Versionsabgleich)
+               * stecken nur noch im Popup, siehe
+               * website-check-details-dialog.tsx. */}
               {website.lastWakeupAt && (
                 <SystemMessage
                   variant={website.lastWakeupOk ? "success" : "warning"}
                   title={
                     website.lastWakeupOk
-                      ? "OK beim letzten Check"
-                      : "Hinweis beim letzten Check"
+                      ? "Prüfung OK"
+                      : "Prüfung mit Hinweisen"
                   }
-                  description={`${formatRelativeTime(website.lastWakeupAt)}${website.lastWakeupMessage ? ` – ${website.lastWakeupMessage}` : ""}${
-                    // Nutzervorgabe, 2026-08-25: "Versionierung ... soll
-                    // beim Prüfen eingeholt werden, so dass man den
-                    // aktuellen Stand ermitteln kann" – zuletzt von der
-                    // Installation selbst gemeldete Version.
-                    website.lastReportedVersion
-                      ? ` · Version ${website.lastReportedVersion}`
-                      : ""
-                  }`}
+                  description={`Zuletzt geprüft ${formatRelativeTime(website.lastWakeupAt)}`}
+                  actions={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-xs"
+                      aria-label="Prüfdetails anzeigen"
+                      onClick={() => setCheckDetailsTarget(website)}
+                    >
+                      <Info />
+                    </Button>
+                  }
                 />
               )}
               <div className="flex gap-2">
@@ -291,6 +304,11 @@ export function WebsitesView({
         title={`„${deleteTarget?.name}“ löschen?`}
         description="Der Mandant wird endgültig entfernt. Die entfernte Installation selbst bleibt unberührt, meldet sich aber nicht mehr erfolgreich bei diesem Master."
         onConfirm={handleDelete}
+      />
+
+      <WebsiteCheckDetailsDialog
+        target={checkDetailsTarget}
+        onOpenChange={(open) => !open && setCheckDetailsTarget(null)}
       />
     </div>
   );

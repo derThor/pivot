@@ -1239,6 +1239,14 @@ model Website {
   // ermitteln kann"). Rein informativ, keine Auswirkung auf den Status.
   lastReportedVersion String?
 
+  // Einzelne Teilergebnisse des letzten "Wecken"-Durchlaufs (Nutzervorgabe,
+  // 2026-08-25: "schreibe alle Prüfungen untereinander, die OK sind mit
+  // Haken, die nicht OK mit X") – JSON-Array `{label, ok}[]`, siehe
+  // WebsitesService.performWakeup(). Nicht anwendbare Checks (z.B.
+  // Versionsvergleich ohne gemeldete Version) fehlen einfach im Array,
+  // statt geraten zu werden.
+  lastCheckChecks Json?
+
   // Überschreibt `https://{domain}/` als Ziel für den obigen Live-Check
   // (Nutzervorgabe, 2026-08-24: "ich will auch das lokale Testen hier drin
   // haben") – nur für lokale/Test-Installationen relevant, deren Domain

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
+import { Prisma } from '@pivot/database';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   decryptSecret,
@@ -18,6 +19,12 @@ import {
   signLicenseToken,
   type LicenseTokenPayload,
 } from './license-token.util';
+import { getAppVersion } from '../common/utils/app-version';
+
+export interface WebsiteCheckItem {
+  label: string;
+  ok: boolean;
+}
 
 // 14 Tage Gültigkeit bei wöchentlichem Abruf – 1-2 verpasste Zyklen Puffer,
 // bevor eine Nichterreichbarkeit des Masters überhaupt relevant wird (siehe
@@ -43,6 +50,7 @@ const PUBLIC_SELECT = {
   lastWakeupOk: true,
   lastWakeupMessage: true,
   lastReportedVersion: true,
+  lastCheckChecks: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -205,9 +213,12 @@ export class WebsitesService {
    * mehr mit dem hier gespeicherten überein". Persistiert das Ergebnis auf
    * `lastWakeupAt`/`lastWakeupOk`/`lastWakeupMessage`, damit es auf der
    * Kachel sichtbar bleibt, nicht nur als flüchtiger Toast. */
-  async wakeup(
-    id: string,
-  ): Promise<{ ok: boolean; message: string; version: string | null }> {
+  async wakeup(id: string): Promise<{
+    ok: boolean;
+    message: string;
+    version: string | null;
+    checks: WebsiteCheckItem[];
+  }> {
     const website = await this.prisma.website.findUnique({ where: { id } });
     if (!website) {
       throw new NotFoundException(`Website ${id} nicht gefunden.`);
@@ -219,6 +230,7 @@ export class WebsitesService {
         lastWakeupAt: new Date(),
         lastWakeupOk: result.ok,
         lastWakeupMessage: result.message,
+        lastCheckChecks: result.checks as unknown as Prisma.InputJsonValue,
         // Nur überschreiben, wenn tatsächlich eine Version gemeldet wurde –
         // ein Fehlschlag (Timeout, falscher Key) soll die zuletzt bekannte
         // Version nicht auf "unbekannt" zurücksetzen.
@@ -228,14 +240,31 @@ export class WebsitesService {
     return result;
   }
 
+  /** Nutzervorgabe, 2026-08-25: "gib in der Prüfung an, ob Version aktuell
+   * ist, schreibe alle Prüfungen untereinander, die OK sind mit Haken, die
+   * nicht OK mit X" – liefert statt einer einzelnen Erfolgsmeldung eine
+   * Liste einzelner, ehrlicher Teilergebnisse (Erreichbarkeit, API-Key,
+   * Prüfungslauf, Versionsstand). Nicht anwendbare Folge-Checks (z.B.
+   * Versionsvergleich ohne gemeldete Version) werden ausgelassen statt
+   * geraten. */
   private async performWakeup(website: {
     id: string;
     apiKeyEncrypted: string | null;
     domain: string;
     testUrl: string | null;
-  }): Promise<{ ok: boolean; message: string; version: string | null }> {
+  }): Promise<{
+    ok: boolean;
+    message: string;
+    version: string | null;
+    checks: WebsiteCheckItem[];
+  }> {
     if (!website.apiKeyEncrypted) {
-      return { ok: false, message: 'Kein API-Key hinterlegt.', version: null };
+      return {
+        ok: false,
+        message: 'Kein API-Key hinterlegt.',
+        version: null,
+        checks: [{ label: 'API-Key hinterlegt', ok: false }],
+      };
     }
     const apiKey = decryptSecret(
       website.apiKeyEncrypted,
@@ -260,6 +289,10 @@ export class WebsitesService {
           message:
             'Der bei der Installation hinterlegte API-Key stimmt nicht mehr mit dem hier gespeicherten überein.',
           version: null,
+          checks: [
+            { label: 'Erreichbar', ok: true },
+            { label: 'API-Key korrekt', ok: false },
+          ],
         };
       }
       if (!res.ok) {
@@ -267,6 +300,10 @@ export class WebsitesService {
           ok: false,
           message: `Installation antwortete mit HTTP ${res.status}.`,
           version: null,
+          checks: [
+            { label: 'Erreichbar', ok: true },
+            { label: 'Antwort erhalten', ok: false },
+          ],
         };
       }
       const data = (await res.json().catch(() => null)) as {
@@ -274,19 +311,45 @@ export class WebsitesService {
         version?: string;
       } | null;
       const version = data?.version ?? null;
+      const checks: WebsiteCheckItem[] = [
+        { label: 'Erreichbar', ok: true },
+        { label: 'API-Key korrekt', ok: true },
+      ];
+      if (data?.outcome) {
+        checks.push({
+          label: 'Prüfung erfolgreich',
+          ok: data.outcome.status === 'success',
+        });
+      }
+      // Nur bewertbar, wenn diese Installation überhaupt eine Version
+      // gemeldet hat (ältere Installationen ohne dieses Feld auslassen,
+      // statt fälschlich als "veraltet" zu markieren).
+      if (version) {
+        checks.push({
+          label: 'Version aktuell',
+          ok: version === getAppVersion(),
+        });
+      }
       if (data?.outcome) {
         return {
           ok: data.outcome.status === 'success',
           message: data.outcome.message,
           version,
+          checks,
         };
       }
-      return { ok: true, message: 'Installation wurde geweckt.', version };
+      return {
+        ok: true,
+        message: 'Installation wurde geweckt.',
+        version,
+        checks,
+      };
     } catch {
       return {
         ok: false,
         message: 'Installation nicht erreichbar.',
         version: null,
+        checks: [{ label: 'Erreichbar', ok: false }],
       };
     } finally {
       clearTimeout(timeout);
@@ -308,6 +371,7 @@ export class WebsitesService {
       ok: boolean;
       message: string;
       version: string | null;
+      checks: WebsiteCheckItem[];
     }[];
   }> {
     const sites = await this.prisma.website.findMany({
@@ -329,6 +393,7 @@ export class WebsitesService {
             lastWakeupAt: checkedAt,
             lastWakeupOk: result.ok,
             lastWakeupMessage: result.message,
+            lastCheckChecks: result.checks as unknown as Prisma.InputJsonValue,
             ...(result.version ? { lastReportedVersion: result.version } : {}),
           },
         });
@@ -339,6 +404,7 @@ export class WebsitesService {
           ok: result.ok,
           message: result.message,
           version: result.version,
+          checks: result.checks,
         };
       }),
     );
