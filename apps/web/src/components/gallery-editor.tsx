@@ -8,8 +8,8 @@ import { toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { SwitchRow } from "@/components/switch-row";
 import {
   Select,
   SelectContent,
@@ -20,7 +20,10 @@ import {
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ImagePickerDialog } from "@/components/image-picker-dialog";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
-import { GallerySwiper, type GallerySwiperImage } from "@/components/gallery-swiper";
+import {
+  GallerySwiper,
+  type GallerySwiperImage,
+} from "@/components/gallery-swiper";
 import {
   toRepeaterItems,
   toImageValue,
@@ -42,37 +45,6 @@ const darkTextClassName = "text-[#132033]";
 const cardClassName =
   "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#E6E6E6]";
 
-function SettingsSwitchRow({
-  label,
-  checked,
-  onCheckedChange,
-  id,
-  disabled,
-  hint,
-}: {
-  label: string;
-  checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
-  id: string;
-  disabled?: boolean;
-  hint?: string;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-2">
-        <Switch
-          id={id}
-          checked={checked}
-          onCheckedChange={onCheckedChange}
-          disabled={disabled}
-        />
-        <Label htmlFor={id}>{label}</Label>
-      </div>
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-    </div>
-  );
-}
-
 /** Vollständige Bearbeiten-Seite für eine Bildergalerie statt Popup
  * (Nutzervorgabe, 2026-08-15, 1:1 nach Bildvorlage): Live-Vorschau,
  * Bilder-Grid mit Drag&Drop-Sortierung (natives HTML5-DnD, gleiches
@@ -91,7 +63,8 @@ export function GalleryEditor({
     (f) => f.type === "repeater",
   );
   const subFields = repeaterField?.fields ?? [];
-  const imageFieldName = subFields.find((f) => f.type === "image")?.name ?? "image";
+  const imageFieldName =
+    subFields.find((f) => f.type === "image")?.name ?? "image";
   const captionFieldName = subFields.find((f) => f.type === "text")?.name;
 
   const [items, setItems] = useState<RepeaterItem[]>(() =>
@@ -121,7 +94,9 @@ export function GalleryEditor({
 
   const repeaterFieldName = repeaterField.name;
   const isSingleSlideEffect = SINGLE_SLIDE_EFFECTS.includes(settings.effect);
-  const isLoopIncompatible = LOOP_INCOMPATIBLE_EFFECTS.includes(settings.effect);
+  const isLoopIncompatible = LOOP_INCOMPATIBLE_EFFECTS.includes(
+    settings.effect,
+  );
 
   function setSetting<K extends keyof GallerySettings>(
     key: K,
@@ -170,7 +145,9 @@ export function GalleryEditor({
   function handleDeleteImage(id: string) {
     setItems((prev) => prev.filter((item) => item.id !== id));
     setSelectedId((current) =>
-      current === id ? (items.find((item) => item.id !== id)?.id ?? null) : current,
+      current === id
+        ? (items.find((item) => item.id !== id)?.id ?? null)
+        : current,
     );
   }
 
@@ -193,7 +170,10 @@ export function GalleryEditor({
     setItems((prev) =>
       prev.map((item) =>
         item.id === captionTarget.id
-          ? { ...item, values: { ...item.values, [captionFieldName]: captionDraft } }
+          ? {
+              ...item,
+              values: { ...item.values, [captionFieldName]: captionDraft },
+            }
           : item,
       ),
     );
@@ -249,7 +229,12 @@ export function GalleryEditor({
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h1 className={cn("text-2xl font-semibold tracking-tight break-words", darkTextClassName)}>
+          <h1
+            className={cn(
+              "text-2xl font-semibold tracking-tight break-words",
+              darkTextClassName,
+            )}
+          >
             Galerie · {gallery.name}
           </h1>
           <DashboardBreadcrumbs />
@@ -275,7 +260,11 @@ export function GalleryEditor({
           </div>
           <div className="mt-4">
             {previewImages.length > 0 ? (
-              <GallerySwiper images={previewImages} settings={settings} maxHeight={400} />
+              <GallerySwiper
+                images={previewImages}
+                settings={settings}
+                maxHeight={400}
+              />
             ) : (
               <div className="flex h-[400px] w-full items-center justify-center rounded-md bg-[#F2F2F2] text-sm text-muted-foreground">
                 Noch keine Bilder in dieser Galerie.
@@ -309,7 +298,9 @@ export function GalleryEditor({
                     setDragOverId(item.id);
                   }}
                   onDragLeave={() =>
-                    setDragOverId((current) => (current === item.id ? null : current))
+                    setDragOverId((current) =>
+                      current === item.id ? null : current,
+                    )
                   }
                   onDrop={(e) => {
                     e.preventDefault();
@@ -373,7 +364,10 @@ export function GalleryEditor({
                 handleEffectChange(value as GallerySettings["effect"])
               }
               items={Object.fromEntries(
-                GALLERY_EFFECTS.map((effect) => [effect, GALLERY_EFFECT_LABELS[effect]]),
+                GALLERY_EFFECTS.map((effect) => [
+                  effect,
+                  GALLERY_EFFECT_LABELS[effect],
+                ]),
               )}
             >
               <SelectTrigger className="w-full">
@@ -390,7 +384,9 @@ export function GalleryEditor({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="gallery-editor-slides-per-view">Sichtbar gleichzeitig</Label>
+            <Label htmlFor="gallery-editor-slides-per-view">
+              Sichtbar gleichzeitig
+            </Label>
             <Input
               id="gallery-editor-slides-per-view"
               type="number"
@@ -398,7 +394,9 @@ export function GalleryEditor({
               max={6}
               disabled={isSingleSlideEffect}
               value={settings.slidesPerView}
-              onChange={(e) => setSetting("slidesPerView", Number(e.target.value) || 1)}
+              onChange={(e) =>
+                setSetting("slidesPerView", Number(e.target.value) || 1)
+              }
             />
           </div>
 
@@ -411,12 +409,16 @@ export function GalleryEditor({
               max={100}
               disabled={isSingleSlideEffect}
               value={settings.spaceBetween}
-              onChange={(e) => setSetting("spaceBetween", Number(e.target.value) || 0)}
+              onChange={(e) =>
+                setSetting("spaceBetween", Number(e.target.value) || 0)
+              }
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="gallery-editor-autoplay-delay">Auto-Wechsel (ms)</Label>
+            <Label htmlFor="gallery-editor-autoplay-delay">
+              Auto-Wechsel (ms)
+            </Label>
             <Input
               id="gallery-editor-autoplay-delay"
               type="number"
@@ -424,56 +426,57 @@ export function GalleryEditor({
               step={500}
               disabled={!settings.autoplay}
               value={settings.autoplayDelay}
-              onChange={(e) => setSetting("autoplayDelay", Number(e.target.value) || 500)}
+              onChange={(e) =>
+                setSetting("autoplayDelay", Number(e.target.value) || 500)
+              }
             />
           </div>
 
-          <SettingsSwitchRow
-            id="gallery-editor-navigation"
+          {/* Nutzervorgabe, 2026-08-25: "Schrift zu groß, bitte am Standard
+           * ausrichten" – die vorherige, hier lokal gebaute
+           * SettingsSwitchRow (16px, kein Rahmen) durch die app-weite
+           * `SwitchRow`-Komponente ersetzt (14px, graue Zeile), siehe
+           * switch-row.tsx – gleiches Muster wie z.B. Einstellungen →
+           * Sicherheit/Datenschutzbeauftragter. */}
+          <SwitchRow
             label="Pfeile anzeigen"
             checked={settings.navigation}
             onCheckedChange={(checked) => setSetting("navigation", checked)}
           />
-          <SettingsSwitchRow
-            id="gallery-editor-pagination"
+          <SwitchRow
             label="Punkte anzeigen"
             checked={settings.pagination}
             onCheckedChange={(checked) => setSetting("pagination", checked)}
           />
-          <SettingsSwitchRow
-            id="gallery-editor-autoplay"
+          <SwitchRow
             label="Auto-Wechsel"
             checked={settings.autoplay}
             onCheckedChange={(checked) => setSetting("autoplay", checked)}
           />
-          <SettingsSwitchRow
-            id="gallery-editor-loop"
+          <SwitchRow
             label="Endlosschleife"
             checked={settings.loop}
             onCheckedChange={(checked) => setSetting("loop", checked)}
             disabled={isLoopIncompatible}
-            hint={
+            description={
               isLoopIncompatible
                 ? `Bei „${GALLERY_EFFECT_LABELS[settings.effect]}“ nicht möglich (Navigation würde brechen).`
                 : undefined
             }
           />
           {captionFieldName && (
-            <SettingsSwitchRow
-              id="gallery-editor-show-captions"
+            <SwitchRow
               label="Beschreibung anzeigen"
               checked={settings.showCaptions}
               onCheckedChange={(checked) => setSetting("showCaptions", checked)}
             />
           )}
-          <SettingsSwitchRow
-            id="gallery-editor-scrollbar"
+          <SwitchRow
             label="Scrollbar anzeigen"
             checked={settings.scrollbar}
             onCheckedChange={(checked) => setSetting("scrollbar", checked)}
           />
-          <SettingsSwitchRow
-            id="gallery-editor-thumbnails"
+          <SwitchRow
             label="Vorschaubilder anzeigen"
             checked={settings.thumbnails}
             onCheckedChange={(checked) => setSetting("thumbnails", checked)}
