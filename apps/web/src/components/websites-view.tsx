@@ -210,7 +210,15 @@ export function WebsitesView({
                       ? "OK beim letzten Check"
                       : "Hinweis beim letzten Check"
                   }
-                  description={`${formatRelativeTime(website.lastWakeupAt)}${website.lastWakeupMessage ? ` – ${website.lastWakeupMessage}` : ""}`}
+                  description={`${formatRelativeTime(website.lastWakeupAt)}${website.lastWakeupMessage ? ` – ${website.lastWakeupMessage}` : ""}${
+                    // Nutzervorgabe, 2026-08-25: "Versionierung ... soll
+                    // beim Prüfen eingeholt werden, so dass man den
+                    // aktuellen Stand ermitteln kann" – zuletzt von der
+                    // Installation selbst gemeldete Version.
+                    website.lastReportedVersion
+                      ? ` · Version ${website.lastReportedVersion}`
+                      : ""
+                  }`}
                 />
               )}
               <div className="flex gap-2">

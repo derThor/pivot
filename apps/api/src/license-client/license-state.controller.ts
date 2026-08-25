@@ -10,6 +10,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { LicenseClientService } from './license-client.service';
 import { Public } from '../auth/decorators/public.decorator';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
+import { getAppVersion } from '../common/utils/app-version';
 
 /**
  * Öffentlicher, unauthentifizierter Status-Endpunkt (kein `MasterOnlyGuard`
@@ -89,6 +90,10 @@ export class LicenseStateController {
       throw new UnauthorizedException('Ungültiger Weck-Schlüssel.');
     }
     const outcome = await this.licenseClient.requestWakeup();
-    return { triggered: true, outcome };
+    // Nutzervorgabe, 2026-08-25: "Versionierung ... soll beim Prüfen
+    // eingeholt werden, so dass man den aktuellen Stand ermitteln kann" –
+    // der Master liest das aus der Wecken-Antwort (WebsitesService.
+    // performWakeup()) und persistiert es auf Website.lastReportedVersion.
+    return { triggered: true, outcome, version: getAppVersion() };
   }
 }

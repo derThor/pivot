@@ -122,6 +122,7 @@ export default async function DashboardLayout({
             keyboardShortcutsEnabled={
               settings?.keyboardShortcutsEnabled !== false
             }
+            appVersion={settings?.appVersion}
           />
           <div className="flex min-w-0 flex-1 flex-col gap-6 bg-background px-5 pt-4 pb-5 sm:px-10 sm:pt-6 sm:pb-10">
             {children}

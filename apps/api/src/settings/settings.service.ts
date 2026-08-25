@@ -10,6 +10,7 @@ import { UpdatePrivacyDto } from './dto/update-privacy.dto';
 import { UpdateSmtpSettingsDto } from './dto/update-smtp-settings.dto';
 import { UpdateLicenseClientSettingsDto } from './dto/update-license-client-settings.dto';
 import { encryptSecret } from '../common/utils/secret-encryption';
+import { getAppVersion } from '../common/utils/app-version';
 
 function csvEscape(v: unknown): string {
   return `"${String(v).replace(/"/g, '""')}"`;
@@ -246,6 +247,9 @@ export class SettingsService {
       notifyTrashExpiring: settings.notifyTrashExpiring,
       sccTemplateMediaId: settings.sccTemplateMediaId,
       sccTemplateMedia,
+      // Nutzervorgabe, 2026-08-25: Version dieser Installation klein im
+      // Konto-Menü anzeigen – siehe common/utils/app-version.ts.
+      appVersion: getAppVersion(),
     };
   }
 

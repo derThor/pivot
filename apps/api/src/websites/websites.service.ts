@@ -42,6 +42,7 @@ const PUBLIC_SELECT = {
   lastWakeupAt: true,
   lastWakeupOk: true,
   lastWakeupMessage: true,
+  lastReportedVersion: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -204,7 +205,9 @@ export class WebsitesService {
    * mehr mit dem hier gespeicherten überein". Persistiert das Ergebnis auf
    * `lastWakeupAt`/`lastWakeupOk`/`lastWakeupMessage`, damit es auf der
    * Kachel sichtbar bleibt, nicht nur als flüchtiger Toast. */
-  async wakeup(id: string): Promise<{ ok: boolean; message: string }> {
+  async wakeup(
+    id: string,
+  ): Promise<{ ok: boolean; message: string; version: string | null }> {
     const website = await this.prisma.website.findUnique({ where: { id } });
     if (!website) {
       throw new NotFoundException(`Website ${id} nicht gefunden.`);
@@ -216,6 +219,10 @@ export class WebsitesService {
         lastWakeupAt: new Date(),
         lastWakeupOk: result.ok,
         lastWakeupMessage: result.message,
+        // Nur überschreiben, wenn tatsächlich eine Version gemeldet wurde –
+        // ein Fehlschlag (Timeout, falscher Key) soll die zuletzt bekannte
+        // Version nicht auf "unbekannt" zurücksetzen.
+        ...(result.version ? { lastReportedVersion: result.version } : {}),
       },
     });
     return result;
@@ -226,9 +233,9 @@ export class WebsitesService {
     apiKeyEncrypted: string | null;
     domain: string;
     testUrl: string | null;
-  }): Promise<{ ok: boolean; message: string }> {
+  }): Promise<{ ok: boolean; message: string; version: string | null }> {
     if (!website.apiKeyEncrypted) {
-      return { ok: false, message: 'Kein API-Key hinterlegt.' };
+      return { ok: false, message: 'Kein API-Key hinterlegt.', version: null };
     }
     const apiKey = decryptSecret(
       website.apiKeyEncrypted,
@@ -252,26 +259,35 @@ export class WebsitesService {
           ok: false,
           message:
             'Der bei der Installation hinterlegte API-Key stimmt nicht mehr mit dem hier gespeicherten überein.',
+          version: null,
         };
       }
       if (!res.ok) {
         return {
           ok: false,
           message: `Installation antwortete mit HTTP ${res.status}.`,
+          version: null,
         };
       }
       const data = (await res.json().catch(() => null)) as {
         outcome?: { status: 'success' | 'error'; message: string };
+        version?: string;
       } | null;
+      const version = data?.version ?? null;
       if (data?.outcome) {
         return {
           ok: data.outcome.status === 'success',
           message: data.outcome.message,
+          version,
         };
       }
-      return { ok: true, message: 'Installation wurde geweckt.' };
+      return { ok: true, message: 'Installation wurde geweckt.', version };
     } catch {
-      return { ok: false, message: 'Installation nicht erreichbar.' };
+      return {
+        ok: false,
+        message: 'Installation nicht erreichbar.',
+        version: null,
+      };
     } finally {
       clearTimeout(timeout);
     }
@@ -291,6 +307,7 @@ export class WebsitesService {
       domain: string;
       ok: boolean;
       message: string;
+      version: string | null;
     }[];
   }> {
     const sites = await this.prisma.website.findMany({
@@ -312,6 +329,7 @@ export class WebsitesService {
             lastWakeupAt: checkedAt,
             lastWakeupOk: result.ok,
             lastWakeupMessage: result.message,
+            ...(result.version ? { lastReportedVersion: result.version } : {}),
           },
         });
         return {
@@ -320,6 +338,7 @@ export class WebsitesService {
           domain: site.domain,
           ok: result.ok,
           message: result.message,
+          version: result.version,
         };
       }),
     );

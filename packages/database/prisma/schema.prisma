@@ -1233,6 +1233,12 @@ model Website {
   lastWakeupOk      Boolean?
   lastWakeupMessage String?
 
+  // Von der Installation selbst gemeldete Version (Semver+Commit-Hash,
+  // siehe common/utils/app-version.ts), zuletzt beim "Wecken"/"Prüfen"
+  // eingeholt (Nutzervorgabe, 2026-08-25: "damit man den aktuellen Stand
+  // ermitteln kann"). Rein informativ, keine Auswirkung auf den Status.
+  lastReportedVersion String?
+
   // Überschreibt `https://{domain}/` als Ziel für den obigen Live-Check
   // (Nutzervorgabe, 2026-08-24: "ich will auch das lokale Testen hier drin
   // haben") – nur für lokale/Test-Installationen relevant, deren Domain

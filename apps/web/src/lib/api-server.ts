@@ -761,6 +761,10 @@ export interface AppSettings {
   sccTemplateMediaId: string | null;
   /** Nur bei `getPublicSettings()` (GET /settings/public) vorhanden, nicht bei `getSettings()`. */
   sccTemplateMedia?: { id: string; filename: string; url: string } | null;
+  /** Nur bei `getPublicSettings()` (GET /settings/public) vorhanden – Version
+   * dieser Installation (Nutzervorgabe, 2026-08-25), siehe
+   * apps/api/src/common/utils/app-version.ts. */
+  appVersion?: string;
   updatedAt: string;
 }
 
@@ -1381,6 +1385,10 @@ export interface WebsiteListItem {
   lastWakeupAt: string | null;
   lastWakeupOk: boolean | null;
   lastWakeupMessage: string | null;
+  // Von der Installation selbst gemeldete Version (Semver+Commit-Hash),
+  // zuletzt beim "Wecken"/"Prüfen" eingeholt (Nutzervorgabe, 2026-08-25:
+  // "damit man den aktuellen Stand ermitteln kann").
+  lastReportedVersion: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1398,6 +1406,7 @@ export interface WebsiteCheckAllResult {
     domain: string;
     ok: boolean;
     message: string;
+    version: string | null;
   }[];
 }
 

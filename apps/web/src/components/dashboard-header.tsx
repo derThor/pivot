@@ -38,12 +38,14 @@ export function DashboardHeader({
   systemMessageCount = 0,
   allowTwoFactor = false,
   keyboardShortcutsEnabled = true,
+  appVersion,
 }: {
   user: CurrentUser;
   defaultPageSize: number;
   systemMessageCount?: number;
   allowTwoFactor?: boolean;
   keyboardShortcutsEnabled?: boolean;
+  appVersion?: string;
 }) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -142,7 +144,11 @@ export function DashboardHeader({
                 </span>
                 <ChevronDown className="size-4 text-muted-foreground transition-transform group-data-popup-open:rotate-180" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent side="bottom" align="end" className="w-80 p-0">
+              <DropdownMenuContent
+                side="bottom"
+                align="end"
+                className="w-80 p-0"
+              >
                 <div className="flex items-center gap-3 p-4">
                   <Avatar size="lg" className="size-11">
                     {user.avatarUrl && (
@@ -217,7 +223,9 @@ export function DashboardHeader({
                     </span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    render={<Link href="/dashboard/account?tab=notifications" />}
+                    render={
+                      <Link href="/dashboard/account?tab=notifications" />
+                    }
                     className="h-auto items-start gap-3 py-2.5"
                   >
                     <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
@@ -259,10 +267,17 @@ export function DashboardHeader({
                     {isLoggingOut ? "Wird abgemeldet…" : "Abmelden"}
                   </DropdownMenuItem>
                 </div>
-                {user.lastLoginAt && (
-                  <p className="border-t px-4 py-2.5 text-xs text-muted-foreground">
-                    Letzte Anmeldung: {formatRelativeTime(user.lastLoginAt)}
-                  </p>
+                {(user.lastLoginAt || appVersion) && (
+                  <div className="border-t px-4 py-2.5 text-xs text-muted-foreground">
+                    {user.lastLoginAt && (
+                      <p>
+                        Letzte Anmeldung: {formatRelativeTime(user.lastLoginAt)}
+                      </p>
+                    )}
+                    {/* Nutzervorgabe, 2026-08-25: Version dieser
+                     * Installation klein unter Abmelden anzeigen. */}
+                    {appVersion && <p>Version {appVersion}</p>}
+                  </div>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
