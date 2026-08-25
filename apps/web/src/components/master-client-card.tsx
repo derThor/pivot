@@ -166,6 +166,14 @@ export function MasterClientCard({
                   {isMaster ? "Master" : "Client"}
                 </span>
               </div>
+              {/* Nutzervorgabe, 2026-08-25: Version dieser Installation
+               * unter Einstellungen → Master-Client anzeigen (bisher in der
+               * Sidebar, dort auf Nutzerwunsch wieder entfernt). */}
+              {settings.appVersion && (
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                  Version {settings.appVersion}
+                </p>
+              )}
             </div>
             {isMaster && (
               <ChevronRight className="size-4 shrink-0 text-muted-foreground" />

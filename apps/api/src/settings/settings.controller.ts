@@ -30,6 +30,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CacheService } from '../cache/cache.service';
 import { AuthService } from '../auth/auth.service';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
+import { getAppVersion } from '../common/utils/app-version';
 
 @ApiTags('settings')
 @Controller('settings')
@@ -42,11 +43,16 @@ export class SettingsController {
     private readonly authService: AuthService,
   ) {}
 
+  // Nutzervorgabe, 2026-08-25: Version dieser Installation unter
+  // Einstellungen → Master-Client anzeigen – `appVersion` ist kein
+  // DB-Feld, deshalb hier statt in SettingsService.get() angereichert
+  // (das bleibt der rohe AppSettings-Datensatz, u.a. für update()).
   @ApiBearerAuth()
   @RequirePermission('settings:read')
   @Get()
-  get() {
-    return this.settingsService.get();
+  async get() {
+    const settings = await this.settingsService.get();
+    return { ...settings, appVersion: getAppVersion() };
   }
 
   @Public()

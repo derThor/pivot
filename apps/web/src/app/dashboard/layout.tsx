@@ -83,7 +83,7 @@ export default async function DashboardLayout({
         />
       )}
       <SidebarProvider defaultOpen={defaultOpen}>
-        <AppSidebar user={user} appVersion={settings?.appVersion} />
+        <AppSidebar user={user} />
         <SidebarInset>
           {user.impersonatedBy && (
             <ImpersonationBanner targetName={formatName(user)} />

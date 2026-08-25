@@ -262,13 +262,7 @@ function itemMatchesActive(
   );
 }
 
-export function AppSidebar({
-  user,
-  appVersion,
-}: {
-  user: CurrentUser;
-  appVersion?: string;
-}) {
+export function AppSidebar({ user }: { user: CurrentUser }) {
   const pathname = usePathname();
   const router = useRouter();
   const { state: sidebarState } = useSidebar();
@@ -677,15 +671,6 @@ export function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        {/* Nutzervorgabe, 2026-08-25: Version dieser Installation auch in
-         * der Sidebar unter Abmelden anzeigen (zusätzlich zum Konto-Menü im
-         * Header). Im eingeklappten Zustand kein Platz für Text – dort
-         * ausgeblendet statt abgeschnitten. */}
-        {appVersion && (
-          <p className="px-3 pt-1 pb-0.5 text-xs text-sidebar-foreground/50 group-data-[collapsible=icon]:hidden">
-            Version {appVersion}
-          </p>
-        )}
       </SidebarFooter>
     </Sidebar>
   );
