@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,10 @@ export function MaintenancePageCard({
   async function handleSave() {
     setIsSaving(true);
     try {
-      const res = await fetch("/api/settings", {
+      // Eigene Route statt /api/settings (Nutzer-Bugreport, 2026-08-25):
+      // bleibt auch bei bereits gesperrter Client-Installation erreichbar,
+      // siehe LicenseEnforcementGuard.
+      const res = await fetch("/api/settings/maintenance-page", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -45,7 +49,13 @@ export function MaintenancePageCard({
           maintenancePageMessage: form.message || null,
         }),
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(
+          data?.message ?? "Wartungsseite konnte nicht gespeichert werden.",
+        );
+        return;
+      }
       toastEdited("Wartungsseite gespeichert.");
       router.refresh();
     } finally {

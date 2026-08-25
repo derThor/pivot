@@ -16,6 +16,7 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { SettingsService } from './settings.service';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
+import { UpdateMaintenancePageDto } from './dto/update-maintenance-page.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdatePrivacyDto } from './dto/update-privacy.dto';
 import { QuerySettingsChangesDto } from './dto/query-settings-changes.dto';
@@ -65,6 +66,22 @@ export class SettingsController {
   @RequirePermission('settings:update')
   @Patch()
   update(@Body() dto: UpdateSettingsDto, @CurrentUser() user: JwtPayload) {
+    return this.settingsService.update(dto, user.sub);
+  }
+
+  // Eigene, schmale Route für Titel/Text der Wartungsseite (Nutzer-
+  // Bugreport, 2026-08-25) – bewusst getrennt vom allgemeinen
+  // `PATCH /settings`, weil nur diese Route in LicenseEnforcementGuard
+  // auch im gesperrten Zustand einer Client-Installation erreichbar
+  // bleibt (siehe dortiger Kommentar). Gleiches Recht wie der Rest der
+  // allgemeinen Einstellungen, kein eigenes Recht.
+  @ApiBearerAuth()
+  @RequirePermission('settings:update')
+  @Patch('maintenance-page')
+  updateMaintenancePage(
+    @Body() dto: UpdateMaintenancePageDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
     return this.settingsService.update(dto, user.sub);
   }
 

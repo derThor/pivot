@@ -19,11 +19,17 @@ import { LicenseClientService } from './license-client.service';
 // PermissionsGuard laufen unabhängig von diesem Guard weiter).
 // `/license/wakeup` aus demselben Grund: der Master muss eine gesperrte
 // Installation genau dann wecken können, wenn sie noch gesperrt ist.
+// `/settings/maintenance-page` aus demselben Grund (Nutzer-Bugreport,
+// 2026-08-25: Titel/Text der Wartungsseite ließen sich ausgerechnet dann
+// nicht mehr ändern, wenn die Installation bereits gesperrt war und man
+// die angezeigte Seite anpassen wollte) – bewusst NICHT das allgemeine
+// `/settings`, das bleibt im gesperrten Zustand weiterhin blockiert.
 const ALLOWED_SUFFIXES = [
   '/health',
   '/license/state',
   '/license/recheck',
   '/license/wakeup',
+  '/settings/maintenance-page',
 ];
 
 /**
