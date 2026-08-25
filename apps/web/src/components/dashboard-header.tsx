@@ -8,7 +8,6 @@ import {
   ChevronDown,
   ChevronRight,
   LogOut,
-  Settings,
   ShieldCheck,
   ShieldOff,
   UserCog,
@@ -30,7 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { CurrentUser } from "@/lib/api-server";
 import { mediaUrl } from "@/lib/media";
-import { cn, formatName, formatRelativeTime, initials } from "@/lib/utils";
+import { cn, formatName, initials } from "@/lib/utils";
 
 export function DashboardHeader({
   user,
@@ -38,14 +37,12 @@ export function DashboardHeader({
   systemMessageCount = 0,
   allowTwoFactor = false,
   keyboardShortcutsEnabled = true,
-  appVersion,
 }: {
   user: CurrentUser;
   defaultPageSize: number;
   systemMessageCount?: number;
   allowTwoFactor?: boolean;
   keyboardShortcutsEnabled?: boolean;
-  appVersion?: string;
 }) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -267,26 +264,6 @@ export function DashboardHeader({
                     {isLoggingOut ? "Wird abgemeldet…" : "Abmelden"}
                   </DropdownMenuItem>
                 </div>
-                {(user.lastLoginAt || appVersion) && (
-                  <div className="flex flex-col gap-1.5 border-t px-4 py-2.5 text-xs text-muted-foreground">
-                    {user.lastLoginAt && (
-                      <p>
-                        Letzte Anmeldung: {formatRelativeTime(user.lastLoginAt)}
-                      </p>
-                    )}
-                    {/* Nutzervorgabe, 2026-08-25: Version dieser
-                     * Installation klein unter Abmelden anzeigen, "immer in
-                     * einem Badge, überall" statt reinem Fließtext. */}
-                    {appVersion && (
-                      <Badge
-                        variant="secondary"
-                        className="w-fit bg-amber-100 font-mono text-amber-700"
-                      >
-                        Version {appVersion}
-                      </Badge>
-                    )}
-                  </div>
-                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </>
