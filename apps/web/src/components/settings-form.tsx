@@ -121,6 +121,12 @@ const SECTIONS: {
   icon: LucideIcon;
 }[] = [
   {
+    id: "master-client",
+    title: "Master-Client",
+    subtitle: "Mandanten & Modus",
+    icon: ShieldCheck,
+  },
+  {
     id: "access",
     title: "Zugriff & Funktionen",
     subtitle: "Module ein- und ausschalten",
@@ -161,12 +167,6 @@ const SECTIONS: {
     title: "Webhooks",
     subtitle: "Automatisierte Events",
     icon: Webhook,
-  },
-  {
-    id: "master-client",
-    title: "Master-Client",
-    subtitle: "Mandanten & Modus",
-    icon: ShieldCheck,
   },
   {
     id: "maintenance-page",
