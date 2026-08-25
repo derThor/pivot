@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getLicenseState } from "@/lib/api-server";
+import { mediaUrl } from "@/lib/media";
 
 // Meta-Tag-Marker, den WebsiteMonitorService (Master-seitige Live-
 // Überwachung, siehe knowledge-base/platform/master-slave-licensing.md)
@@ -53,6 +54,7 @@ export default async function LockedPage() {
   const borderColor = isLight ? "rgba(11,18,32,0.15)" : "rgba(255,255,255,0.2)";
 
   const companyName = branding?.companyName || "Pivot";
+  const companyLogoUrl = branding?.companyLogoUrl;
   const companyCity = branding?.companyCity;
   const companyEmail = branding?.companyEmail;
   const companyPhone = branding?.companyPhone;
@@ -145,9 +147,21 @@ export default async function LockedPage() {
               </div>
             )}
           </div>
-          <p className="text-sm" style={{ color: mutedColor }}>
-            {[companyName, companyCity].filter(Boolean).join(" · ")}
-          </p>
+          {/* Nutzervorgabe, 2026-08-25: hinterlegtes Logo aus Einstellungen
+           * → Darstellung nutzen, falls vorhanden – sonst wie bisher der
+           * Firmenname (das Logo oben links bleibt trotzdem immer Pivot). */}
+          {companyLogoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- Server Component, next/image braucht hier keinen Mehrwert
+            <img
+              src={mediaUrl({ url: companyLogoUrl })}
+              alt={companyName}
+              className="h-6 w-auto object-contain sm:h-7"
+            />
+          ) : (
+            <p className="text-sm" style={{ color: mutedColor }}>
+              {[companyName, companyCity].filter(Boolean).join(" · ")}
+            </p>
+          )}
         </div>
       )}
     </div>
