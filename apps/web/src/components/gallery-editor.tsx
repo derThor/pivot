@@ -249,7 +249,7 @@ export function GalleryEditor({
       {saveError && <p className="text-sm text-destructive">{saveError}</p>}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className={cardClassName}>
+        <div className={cn(cardClassName, "h-fit")}>
           <div className="flex items-center justify-between gap-2">
             <h2 className={cn("text-[15px] font-semibold", darkTextClassName)}>
               Live-Vorschau
