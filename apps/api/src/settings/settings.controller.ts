@@ -82,7 +82,7 @@ export class SettingsController {
     @Body() dto: UpdateMaintenancePageDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.settingsService.update(dto, user.sub);
+    return this.settingsService.updateMaintenancePage(dto, user.sub);
   }
 
   // Firma-Stammdaten (Verwaltung → Firma) – eigenes Recht `company:*`,

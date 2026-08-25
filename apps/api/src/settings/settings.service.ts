@@ -5,6 +5,7 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 import { MailerService } from '../mailer/mailer.service';
 import { AuthService } from '../auth/auth.service';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
+import { UpdateMaintenancePageDto } from './dto/update-maintenance-page.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdatePrivacyDto } from './dto/update-privacy.dto';
 import { UpdateSmtpSettingsDto } from './dto/update-smtp-settings.dto';
@@ -140,6 +141,23 @@ export class SettingsService {
     // Nur die Firma-Felder zurückgeben, nicht die komplette Zeile (siehe
     // getCompany() oben – gleicher Grund).
     return this.getCompany();
+  }
+
+  // Eigene, schmale Route für die Wartungsseite (siehe
+  // UpdateMaintenancePageDto/LicenseEnforcementGuard) – gleiches
+  // Rückgabe-Muster wie updateCompany()/updatePrivacy(): nur die zwei
+  // betroffenen Felder, nicht die komplette AppSettings-Zeile inkl.
+  // verschlüsselter Secrets (SMTP-Passwort, Lizenz-API-Key).
+  async updateMaintenancePage(
+    dto: UpdateMaintenancePageDto,
+    actingUserId: string,
+  ) {
+    await this.update(dto, actingUserId);
+    const settings = await this.get();
+    return {
+      maintenancePageTitle: settings.maintenancePageTitle,
+      maintenancePageMessage: settings.maintenancePageMessage,
+    };
   }
 
   // Gleiches Muster wie getCompany()/updateCompany() für `privacy:*`.
