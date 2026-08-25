@@ -174,7 +174,7 @@ export function MasterClientCard({
               {settings.appVersion && (
                 <Badge
                   variant="secondary"
-                  className="mt-1 w-fit bg-slate-200 font-mono text-slate-700"
+                  className="mt-1 w-fit bg-amber-100 font-mono text-amber-700"
                 >
                   Version {settings.appVersion}
                 </Badge>
@@ -237,7 +237,7 @@ export function MasterClientCard({
                 {website.lastReportedVersion && (
                   <Badge
                     variant="secondary"
-                    className="mt-1 w-fit bg-slate-200 font-mono text-slate-700"
+                    className="mt-1 w-fit bg-amber-100 font-mono text-amber-700"
                   >
                     Version {website.lastReportedVersion}
                   </Badge>

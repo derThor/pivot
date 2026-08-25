@@ -93,7 +93,7 @@ export function WebsiteModeDialog({
           {target?.lastReportedVersion && (
             <Badge
               variant="secondary"
-              className="w-fit bg-slate-200 font-mono text-slate-700"
+              className="w-fit bg-amber-100 font-mono text-amber-700"
             >
               Version {target.lastReportedVersion}
             </Badge>

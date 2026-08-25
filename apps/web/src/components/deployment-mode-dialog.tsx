@@ -100,7 +100,7 @@ export function DeploymentModeDialog({
           {settings.appVersion && (
             <Badge
               variant="secondary"
-              className="w-fit bg-slate-200 font-mono text-slate-700"
+              className="w-fit bg-amber-100 font-mono text-amber-700"
             >
               Version {settings.appVersion}
             </Badge>
