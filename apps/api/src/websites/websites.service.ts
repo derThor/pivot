@@ -249,9 +249,11 @@ export class WebsitesService {
    * ist, schreibe alle Prüfungen untereinander, die OK sind mit Haken, die
    * nicht OK mit X" – liefert statt einer einzelnen Erfolgsmeldung eine
    * Liste einzelner, ehrlicher Teilergebnisse (Erreichbarkeit, API-Key,
-   * Prüfungslauf, Versionsstand). Nicht anwendbare Folge-Checks (z.B.
-   * Versionsvergleich ohne gemeldete Version) werden ausgelassen statt
-   * geraten. */
+   * Prüfungslauf, Versionsstand). Nutzervorgabe, 2026-08-25: "immer alle
+   * Punkte angeben ... nicht weglassen, wenn Hinweise da sind" – ALLE vier
+   * Checks stehen immer in der Liste, auch wenn ein früher Fehlschlag
+   * (z.B. Timeout) sie eigentlich gar nicht mehr prüfen konnte. In dem Fall
+   * gilt: nicht zweifelsfrei bestätigt = X, nicht "ausgelassen". */
   private async performWakeup(website: {
     id: string;
     apiKeyEncrypted: string | null;
@@ -264,13 +266,20 @@ export class WebsitesService {
     licenseStatus: string | null;
     checks: WebsiteCheckItem[];
   }> {
+    const checks: WebsiteCheckItem[] = [
+      { label: 'Erreichbar', ok: false },
+      { label: 'API-Key korrekt', ok: false },
+      { label: 'Prüfung erfolgreich', ok: false },
+      { label: 'Version aktuell', ok: false },
+    ];
+
     if (!website.apiKeyEncrypted) {
       return {
         ok: false,
         message: 'Kein API-Key hinterlegt.',
         version: null,
         licenseStatus: null,
-        checks: [{ label: 'API-Key hinterlegt', ok: false }],
+        checks,
       };
     }
     const apiKey = decryptSecret(
@@ -291,28 +300,24 @@ export class WebsitesService {
         signal: controller.signal,
       });
       if (res.status === 401) {
+        checks[0].ok = true;
         return {
           ok: false,
           message:
             'Der bei der Installation hinterlegte API-Key stimmt nicht mehr mit dem hier gespeicherten überein.',
           version: null,
           licenseStatus: null,
-          checks: [
-            { label: 'Erreichbar', ok: true },
-            { label: 'API-Key korrekt', ok: false },
-          ],
+          checks,
         };
       }
       if (!res.ok) {
+        checks[0].ok = true;
         return {
           ok: false,
           message: `Installation antwortete mit HTTP ${res.status}.`,
           version: null,
           licenseStatus: null,
-          checks: [
-            { label: 'Erreichbar', ok: true },
-            { label: 'Antwort erhalten', ok: false },
-          ],
+          checks,
         };
       }
       const data = (await res.json().catch(() => null)) as {
@@ -325,25 +330,12 @@ export class WebsitesService {
       } | null;
       const version = data?.version ?? null;
       const licenseStatus = data?.outcome?.licenseStatus ?? null;
-      const checks: WebsiteCheckItem[] = [
-        { label: 'Erreichbar', ok: true },
-        { label: 'API-Key korrekt', ok: true },
-      ];
-      if (data?.outcome) {
-        checks.push({
-          label: 'Prüfung erfolgreich',
-          ok: data.outcome.status === 'success',
-        });
-      }
-      // Nur bewertbar, wenn diese Installation überhaupt eine Version
-      // gemeldet hat (ältere Installationen ohne dieses Feld auslassen,
-      // statt fälschlich als "veraltet" zu markieren).
-      if (version) {
-        checks.push({
-          label: 'Version aktuell',
-          ok: version === getAppVersion(),
-        });
-      }
+      checks[0].ok = true;
+      checks[1].ok = true;
+      checks[2].ok = data?.outcome?.status === 'success';
+      // Ohne gemeldete Version (z.B. ältere Installation ohne dieses Feld)
+      // gilt "nicht bestätigt aktuell" = X statt eines beschönigten Haken.
+      checks[3].ok = version !== null && version === getAppVersion();
       // Nutzervorgabe, 2026-08-25: "wenn eines der Checks nicht OK ist, soll
       // Hinweis-Alert kommen, OK nur, wenn alles passt" – das Gesamtergebnis
       // ist NICHT mehr nur der Erfolg des Prüfungslaufs selbst
@@ -364,7 +356,7 @@ export class WebsitesService {
         message: 'Installation nicht erreichbar.',
         version: null,
         licenseStatus: null,
-        checks: [{ label: 'Erreichbar', ok: false }],
+        checks,
       };
     } finally {
       clearTimeout(timeout);
