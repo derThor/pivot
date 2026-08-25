@@ -43,7 +43,10 @@ export function WebsiteCheckDetailsDialog({
             {/* Nutzervorgabe, 2026-08-25: Version "immer in einem Badge,
              * überall" – auch hier neben der "Version aktuell"-Zeile unten. */}
             {target.lastReportedVersion && (
-              <Badge variant="outline" className="w-fit font-mono">
+              <Badge
+                variant="secondary"
+                className="w-fit bg-slate-200 font-mono text-slate-700"
+              >
                 Version {target.lastReportedVersion}
               </Badge>
             )}

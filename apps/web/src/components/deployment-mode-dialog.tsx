@@ -98,7 +98,10 @@ export function DeploymentModeDialog({
           {/* Nutzervorgabe, 2026-08-25: Version auch im Modus-Popup zeigen,
            * "immer in einem Badge, überall" statt reinem Fließtext. */}
           {settings.appVersion && (
-            <Badge variant="outline" className="w-fit font-mono">
+            <Badge
+              variant="secondary"
+              className="w-fit bg-slate-200 font-mono text-slate-700"
+            >
               Version {settings.appVersion}
             </Badge>
           )}

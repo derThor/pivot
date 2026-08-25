@@ -172,7 +172,10 @@ export function MasterClientCard({
                * Sidebar, dort auf Nutzerwunsch wieder entfernt) – "immer in
                * einem Badge, überall" statt reinem Fließtext. */}
               {settings.appVersion && (
-                <Badge variant="outline" className="mt-1 w-fit font-mono">
+                <Badge
+                  variant="secondary"
+                  className="mt-1 w-fit bg-slate-200 font-mono text-slate-700"
+                >
                   Version {settings.appVersion}
                 </Badge>
               )}
@@ -232,7 +235,10 @@ export function MasterClientCard({
                  * jetzt auch für die verbundenen Mandanten, nicht nur bei
                  * "Diese Installation" – "immer in einem Badge, überall". */}
                 {website.lastReportedVersion && (
-                  <Badge variant="outline" className="mt-1 w-fit font-mono">
+                  <Badge
+                    variant="secondary"
+                    className="mt-1 w-fit bg-slate-200 font-mono text-slate-700"
+                  >
                     Version {website.lastReportedVersion}
                   </Badge>
                 )}

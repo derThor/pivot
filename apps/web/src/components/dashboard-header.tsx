@@ -278,7 +278,10 @@ export function DashboardHeader({
                      * Installation klein unter Abmelden anzeigen, "immer in
                      * einem Badge, überall" statt reinem Fließtext. */}
                     {appVersion && (
-                      <Badge variant="outline" className="w-fit font-mono">
+                      <Badge
+                        variant="secondary"
+                        className="w-fit bg-slate-200 font-mono text-slate-700"
+                      >
                         Version {appVersion}
                       </Badge>
                     )}
