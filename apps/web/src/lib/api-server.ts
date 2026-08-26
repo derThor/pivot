@@ -988,7 +988,15 @@ export type LicenseState =
       autoLockAt: string | null;
     }
   | { mode: "slave"; status: "pending"; expiresAt: string }
-  | ({ mode: "slave"; status: "locked" } & LockedPageBranding);
+  | ({
+      mode: "slave";
+      status: "locked";
+      // Nutzervorgabe, 2026-08-26: "Login mit Lizenzeingabe darf nur
+      // kommen, wenn der Schlüssel ungültig ist" – siehe ausführlicher
+      // Kommentar bei `EffectiveLicenseStatus` im Backend
+      // (license-client.service.ts).
+      keySuspect: boolean;
+    } & LockedPageBranding);
 
 // Ergebnis des GERADE eben durchgeführten Prüf-Versuchs (Nutzer-Bugreport,
 // 2026-08-24: "Key erneuert, dann ohne was anzupassen geprüft, und alles

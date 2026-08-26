@@ -81,7 +81,21 @@ export type EffectiveLicenseStatus =
       autoLockAt: Date | null;
     }
   | { mode: 'slave'; status: 'pending'; expiresAt: Date }
-  | ({ mode: 'slave'; status: 'locked' } & LockedPageBranding);
+  | ({
+      mode: 'slave';
+      status: 'locked';
+      // Nutzervorgabe, 2026-08-26: "Login mit Lizenzeingabe darf nur
+      // kommen, wenn der Schlüssel ungültig ist" – unterscheidet, WARUM
+      // gesperrt wurde: `false` = der Master hat beim letzten erfolgreichen
+      // Abgleich selbst "locked" signiert (z.B. Kunde zahlt nicht) – der
+      // Key ist dabei nachweislich noch korrekt, ein neuer Key würde nichts
+      // ändern. `true` = die letzte bekannte, erfolgreich verifizierte
+      // Vorgabe war NICHT "locked", die Installation ist erst durch
+      // wiederholt fehlgeschlagene Abgleiche über die Karenzzeit gerutscht
+      // (typischste Ursache: ein nicht mehr passender Key) – hier macht das
+      // Wiederherstellungs-Popup tatsächlich Sinn.
+      keySuspect: boolean;
+    } & LockedPageBranding);
 
 /**
  * Slave-seitiger Lizenz-Client (siehe
@@ -369,6 +383,7 @@ export class LicenseClientService implements OnModuleInit {
       return {
         mode: 'slave',
         status: 'locked',
+        keySuspect: false,
         ...(await this.getMaintenanceContent()),
       };
     }
@@ -395,6 +410,7 @@ export class LicenseClientService implements OnModuleInit {
     return {
       mode: 'slave',
       status: 'locked',
+      keySuspect: true,
       ...(await this.getMaintenanceContent()),
     };
   }

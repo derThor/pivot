@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties, type FormEvent } from "react";
-import { KeyRound } from "lucide-react";
+import { useState, type FormEvent, type ReactNode } from "react";
 
 import {
   Dialog,
@@ -27,14 +26,15 @@ type Step = "credentials" | "key" | "done";
  * apps/api/src/license-client/license-enforcement.guard.ts). Zwei echte
  * Backend-Schritte: `recovery/verify` prüft Passwort + `settings:update`-
  * Recht und liefert ein 5-Minuten-Token, `recovery/apply-key` nimmt Token +
- * neuen Key entgegen, speichert ihn und löst sofort einen Re-Check aus. */
-export function LicenseRecoveryDialog({
-  triggerClassName,
-  triggerStyle,
-}: {
-  triggerClassName?: string;
-  triggerStyle?: CSSProperties;
-}) {
+ * neuen Key entgegen, speichert ihn und löst sofort einen Re-Check aus.
+ *
+ * Nutzervorgabe, 2026-08-26: "KEIN SCHLÜSSELSYMBOL. SONDERN ÜBER KLICK AUF
+ * DAS LOGO" – kein eigenes, sichtbares Icon, das die Existenz dieser
+ * Funktion verrät. Stattdessen macht diese Komponente ihr `children` (Logo
+ * oder Firmenname aus locked/page.tsx) selbst zum unsichtbaren Klick-
+ * Auslöser. Schritt 1 zeigt bewusst NICHTS von "Lizenz"/"Key" – wer keinen
+ * Zugriff hat, soll aus dem Popup nicht mal erkennen können, wofür es ist. */
+export function LicenseRecoveryDialog({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>("credentials");
   const [email, setEmail] = useState("");
@@ -106,16 +106,8 @@ export function LicenseRecoveryDialog({
 
   return (
     <>
-      <button
-        type="button"
-        aria-label="Lizenz-Key korrigieren"
-        onClick={() => setOpen(true)}
-        className={
-          triggerClassName ?? "opacity-60 transition-opacity hover:opacity-100"
-        }
-        style={triggerStyle}
-      >
-        <KeyRound className="size-4" />
+      <button type="button" onClick={() => setOpen(true)} className="contents">
+        {children}
       </button>
 
       <Dialog
@@ -129,12 +121,7 @@ export function LicenseRecoveryDialog({
           {step === "credentials" && (
             <form onSubmit={handleVerify} className="flex flex-col gap-4">
               <DialogHeader>
-                <DialogTitle>Lizenz-Key korrigieren</DialogTitle>
-                <DialogDescription>
-                  Zur Bestätigung mit einem Konto anmelden, das Einstellungen
-                  bearbeiten darf. Das ist keine normale Anmeldung — du gelangst
-                  dadurch nicht ins Dashboard.
-                </DialogDescription>
+                <DialogTitle>Anmelden</DialogTitle>
               </DialogHeader>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="recovery-email">E-Mail</Label>

@@ -61,6 +61,22 @@ export default async function LockedPage() {
   const companyPhone = branding?.companyPhone;
   const hasContact = Boolean(companyEmail || companyPhone || companyCity);
 
+  // Nutzervorgabe, 2026-08-25: hinterlegtes Logo aus Einstellungen →
+  // Darstellung nutzen, falls vorhanden – sonst wie bisher der Firmenname
+  // (das Logo oben links bleibt trotzdem immer Pivot).
+  const logo = companyLogoUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element -- Server Component, next/image braucht hier keinen Mehrwert
+    <img
+      src={mediaUrl({ url: companyLogoUrl })}
+      alt={companyName}
+      className="h-[35px] w-auto object-contain sm:h-7"
+    />
+  ) : (
+    <p className="text-sm" style={{ color: mutedColor }}>
+      {[companyName, companyCity].filter(Boolean).join(" · ")}
+    </p>
+  );
+
   return (
     <div
       className="flex min-h-screen flex-col px-6 py-6 sm:px-12 sm:py-8"
@@ -149,28 +165,20 @@ export default async function LockedPage() {
             )}
           </div>
         )}
-        <div className="flex items-center gap-3">
-          {/* Nutzervorgabe, 2026-08-25: hinterlegtes Logo aus Einstellungen
-           * → Darstellung nutzen, falls vorhanden – sonst wie bisher der
-           * Firmenname (das Logo oben links bleibt trotzdem immer Pivot). */}
-          {companyLogoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- Server Component, next/image braucht hier keinen Mehrwert
-            <img
-              src={mediaUrl({ url: companyLogoUrl })}
-              alt={companyName}
-              className="h-[35px] w-auto object-contain sm:h-7"
-            />
-          ) : (
-            <p className="text-sm" style={{ color: mutedColor }}>
-              {[companyName, companyCity].filter(Boolean).join(" · ")}
-            </p>
-          )}
-          {/* Nutzervorgabe, 2026-08-26: Wiederherstellungs-Popup für einen
-           * falsch eingetragenen Lizenz-Key – bewusst unauffällig direkt
-           * neben dem Firmen-Logo im Footer, kein eigener Login auf die
-           * Seite (siehe license-recovery-dialog.tsx). */}
-          <LicenseRecoveryDialog triggerStyle={{ color: mutedColor }} />
-        </div>
+        {/* Nutzervorgabe, 2026-08-26: "KEIN SCHLÜSSELSYMBOL. SONDERN ÜBER
+         * KLICK AUF DAS LOGO entweder Bild oder Text" – kein eigenes,
+         * sichtbares Icon, das die Existenz des Wiederherstellungswegs
+         * verrät. Logo/Firmenname selbst ist der Klick-Auslöser (siehe
+         * license-recovery-dialog.tsx), optisch unverändert. Nutzervorgabe:
+         * "darf nur kommen, wenn der Schlüssel ungültig ist" – bei einer
+         * bewusst vom Master gesetzten Sperre (`keySuspect: false`) ist der
+         * Key nachweislich noch korrekt, dann bleibt das Logo ein normales,
+         * nicht klickbares Bild/Wort. */}
+        {branding?.keySuspect ? (
+          <LicenseRecoveryDialog>{logo}</LicenseRecoveryDialog>
+        ) : (
+          logo
+        )}
       </div>
     </div>
   );
