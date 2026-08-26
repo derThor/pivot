@@ -115,8 +115,20 @@ let lockedCache: { locked: boolean; checkedAt: number } | null = null;
 const LOCKED_CACHE_TTL_MS = 30_000;
 
 async function isInstanceLocked(): Promise<boolean> {
-  if (lockedCache && Date.now() - lockedCache.checkedAt < LOCKED_CACHE_TTL_MS) {
-    return lockedCache.locked;
+  // Nutzer-Bugreport, 2026-08-26: "nach korrektem Schlüssel eingeben und
+  // prüfen, wird man auf locked weitergeleitet" – der TTL-Cache hielt eine
+  // Sperre bis zu 30s lang fest, auch direkt nachdem sie gerade behoben
+  // wurde. Nur das GÜNSTIGE Ergebnis (nicht gesperrt) wird noch
+  // zwischengespeichert – das ist der Normalfall bei praktisch jeder
+  // Anfrage und lohnt sich. Eine bestehende Sperre ist dagegen selten genug,
+  // dass ein frischer Check bei jeder Anfrage keine spürbare Last
+  // verursacht, ermöglicht dafür ein sofortiges Entsperren ohne Wartezeit.
+  if (
+    lockedCache &&
+    !lockedCache.locked &&
+    Date.now() - lockedCache.checkedAt < LOCKED_CACHE_TTL_MS
+  ) {
+    return false;
   }
   try {
     const res = await fetch(`${API_URL}/license/state`, { cache: "no-store" });
