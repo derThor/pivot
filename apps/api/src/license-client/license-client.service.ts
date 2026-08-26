@@ -365,6 +365,25 @@ export class LicenseClientService implements OnModuleInit {
       return { mode: 'slave', status: 'unchecked' };
     }
 
+    // Nutzervorgabe, 2026-08-26: "Login mit Lizenzeingabe darf nur kommen,
+    // wenn der Schlüssel ungültig ist" – ob der KEY das Problem ist, hängt
+    // nicht daran, WARUM `state.status` gerade "locked" ist (das könnte ein
+    // längst vergangener, damals noch mit korrektem Key erhaltener Stand
+    // sein), sondern ausschließlich daran, ob der ZULETZT tatsächlich
+    // unternommene Versuch erfolgreich war: `recordAttempt()` schreibt bei
+    // jedem Versuch `lastCheckAttemptAt`, aber nur ein Erfolg aktualisiert
+    // zusätzlich `lastCheckInAt` auf denselben Zeitpunkt – liegt
+    // `lastCheckAttemptAt` danach spürbar VOR dem nächsten Versuch, ohne
+    // dass `lastCheckInAt` mitgezogen wurde, ist genau das der Fall (z.B.
+    // nachträglich falsch eingetragener Key, der Status war vorher schon
+    // "locked"). Alte, inzwischen durch neuere Versuche überholte
+    // Erfolge zählen nicht mehr mit.
+    const keySuspect = !!(
+      state.lastCheckAttemptAt &&
+      (!state.lastCheckInAt ||
+        state.lastCheckAttemptAt.getTime() > state.lastCheckInAt.getTime())
+    );
+
     if (state.status === 'development') {
       const autoLockAt = state.developmentModeSince
         ? new Date(
@@ -383,7 +402,7 @@ export class LicenseClientService implements OnModuleInit {
       return {
         mode: 'slave',
         status: 'locked',
-        keySuspect: false,
+        keySuspect,
         ...(await this.getMaintenanceContent()),
       };
     }
@@ -410,7 +429,7 @@ export class LicenseClientService implements OnModuleInit {
     return {
       mode: 'slave',
       status: 'locked',
-      keySuspect: true,
+      keySuspect,
       ...(await this.getMaintenanceContent()),
     };
   }
