@@ -49,34 +49,40 @@ export function PreviewLinksTable({
   items: PreviewLinkWithContent[];
 }) {
   const router = useRouter();
-  const { activeId, query: highlightQuery } = useHighlightParam(
-    "preview-link-row",
-  );
+  const { activeId, query: highlightQuery } =
+    useHighlightParam("preview-link-row");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [editOpenId, setEditOpenId] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<PreviewLinkWithContent | null>(
-    null,
-  );
+  const [deleteTarget, setDeleteTarget] =
+    useState<PreviewLinkWithContent | null>(null);
 
   async function handleCopy(link: PreviewLinkWithContent) {
     await navigator.clipboard.writeText(previewUrl(link.token));
     setCopiedId(link.id);
-    setTimeout(() => setCopiedId((current) => (current === link.id ? null : current)), 2000);
+    setTimeout(
+      () => setCopiedId((current) => (current === link.id ? null : current)),
+      2000,
+    );
   }
 
   async function handleRevoke() {
     if (!deleteTarget) return;
-    await fetch(`/api/content/${deleteTarget.content.id}/preview-links/${deleteTarget.id}`, {
-      method: "DELETE",
-    });
-    toastDeleted(`Vorschau-Link für „${deleteTarget.content.title}“ wurde widerrufen.`);
+    await fetch(
+      `/api/content/${deleteTarget.content.id}/preview-links/${deleteTarget.id}`,
+      {
+        method: "DELETE",
+      },
+    );
+    toastDeleted(
+      `Vorschau-Link für „${deleteTarget.content.title}“ wurde widerrufen.`,
+    );
     router.refresh();
   }
 
   return (
     <div className="overflow-hidden rounded-[10px] bg-card shadow-[0_1px_3px_0_rgba(0,0,0,0.1),0_1px_2px_-1px_rgba(0,0,0,0.1),0_-1px_2px_0_rgba(0,0,0,0.05)]">
       <Table>
-        <TableHeader className="bg-background">
+        <TableHeader>
           <TableRow>
             <TableHead>Titel</TableHead>
             <TableHead>Token</TableHead>
@@ -122,9 +128,7 @@ export function PreviewLinksTable({
                     {isExpired ? (
                       <Badge variant="secondary">Abgelaufen</Badge>
                     ) : (
-                      <Badge variant="secondary" className="bg-green-100 text-green-700">
-                        Aktiv
-                      </Badge>
+                      <Badge className="badge--green border-0">Aktiv</Badge>
                     )}
                   </TableCell>
                   <TableCell>
@@ -139,7 +143,7 @@ export function PreviewLinksTable({
                             type="button"
                             variant="outline"
                             size="icon"
-                            className="rounded-lg border-[#D4D4D4]"
+                            className="rounded-lg border-border"
                             onClick={() => handleCopy(link)}
                             aria-label={`Link für „${link.content.title}“ kopieren`}
                           >

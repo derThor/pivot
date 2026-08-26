@@ -86,16 +86,18 @@ export function PrivacyIncidentDialog({
         description: form.description || undefined,
         severity: form.severity,
         status: form.status,
-        occurredAt:
-          form.occurredAt ? new Date(form.occurredAt).toISOString() : undefined,
-        affectedCount:
-          form.affectedCount.trim() ? Number(form.affectedCount) : undefined,
+        occurredAt: form.occurredAt
+          ? new Date(form.occurredAt).toISOString()
+          : undefined,
+        affectedCount: form.affectedCount.trim()
+          ? Number(form.affectedCount)
+          : undefined,
         measuresDocumented: form.measuresDocumented || undefined,
       };
       const res = await fetch(
-        isEdit ?
-          `/api/privacy-incidents/${(target as PrivacyIncident).id}`
-        : "/api/privacy-incidents",
+        isEdit
+          ? `/api/privacy-incidents/${(target as PrivacyIncident).id}`
+          : "/api/privacy-incidents",
         {
           method: isEdit ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
@@ -122,16 +124,22 @@ export function PrivacyIncidentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Vorfall bearbeiten" : "Vorfall erfassen"}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? "Vorfall bearbeiten" : "Vorfall erfassen"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
-            <Label htmlFor="pi-title" required>Titel</Label>
+            <Label htmlFor="pi-title" required>
+              Titel
+            </Label>
             <Input
               id="pi-title"
               autoFocus
               value={form.title}
-              onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, title: e.target.value }))
+              }
             />
           </div>
           <div className="flex flex-col gap-1">
@@ -161,7 +169,11 @@ export function PrivacyIncidentDialog({
               >
                 {Object.entries(PRIVACY_INCIDENT_SEVERITY_LABELS).map(
                   ([value, label]) => (
-                    <option key={value} value={value}>
+                    <option
+                      key={value}
+                      value={value}
+                      className="bg-background text-foreground"
+                    >
                       {label}
                     </option>
                   ),
@@ -181,8 +193,15 @@ export function PrivacyIncidentDialog({
                   }))
                 }
               >
-                <option value="open">Offen</option>
-                <option value="resolved">Behoben</option>
+                <option value="open" className="bg-background text-foreground">
+                  Offen
+                </option>
+                <option
+                  value="resolved"
+                  className="bg-background text-foreground"
+                >
+                  Behoben
+                </option>
               </select>
             </div>
             <div className="flex flex-col gap-1">
@@ -225,7 +244,7 @@ export function PrivacyIncidentDialog({
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={() => onOpenChange(false)}
             >
               Abbrechen

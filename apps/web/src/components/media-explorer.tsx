@@ -67,7 +67,8 @@ function useMasonryColumns(items: MediaItem[]) {
     const heights = Array<number>(columnCount).fill(0);
     const cols: MediaItem[][] = Array.from({ length: columnCount }, () => []);
     for (const item of items) {
-      const aspectRatio = item.width && item.height ? item.height / item.width : 1;
+      const aspectRatio =
+        item.width && item.height ? item.height / item.width : 1;
       let shortest = 0;
       for (let i = 1; i < heights.length; i++) {
         if (heights[i] < heights[shortest]) shortest = i;
@@ -103,7 +104,8 @@ function MediaTile({
   isSelected: boolean;
   onClick: () => void;
 }) {
-  const showAsImage = mediaCategory(item.mimeType) === "image" && !isSvg(item.mimeType);
+  const showAsImage =
+    mediaCategory(item.mimeType) === "image" && !isSvg(item.mimeType);
   return (
     <button
       id={`media-item-${item.id}`}
@@ -133,12 +135,17 @@ function MediaTile({
             const { fg } = mediaTypeStyle(item.mimeType);
             return <Icon className={cn("size-8", fg)} />;
           })()}
-          <span className={cn("text-xs font-medium", mediaTypeStyle(item.mimeType).fg)}>
+          <span
+            className={cn(
+              "text-xs font-medium",
+              mediaTypeStyle(item.mimeType).fg,
+            )}
+          >
             {fileExtensionLabel(item.filename, item.mimeType)}
           </span>
         </div>
       )}
-      <span className="absolute top-2 left-2 rounded-md bg-[#132033]/80 px-2 py-0.5 text-[11px] font-medium text-white">
+      <span className="absolute top-2 left-2 rounded-md bg-dark-surface/80 px-2 py-0.5 text-[11px] font-medium text-dark-surface-foreground">
         {fileExtensionLabel(item.filename, item.mimeType)}
       </span>
 
@@ -150,20 +157,27 @@ function MediaTile({
         download
         onClick={(e) => e.stopPropagation()}
         aria-label={`${item.filename} herunterladen`}
-        className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-white/90 text-[#132033] opacity-0 shadow-sm transition-opacity group-hover:opacity-100 hover:bg-white"
+        className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-white/90 text-dark-surface opacity-0 shadow-sm transition-opacity group-hover:opacity-100 hover:bg-white"
       >
         <Download className="size-3.5" />
       </a>
-      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1.5 bg-gradient-to-t from-[#132033]/90 via-[#132033]/50 to-transparent px-3 pt-8 pb-2.5 text-left opacity-0 transition-opacity group-hover:opacity-100">
-        <span className="truncate text-xs font-medium text-white">{item.filename}</span>
+      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1.5 bg-gradient-to-t from-dark-surface/90 via-dark-surface/50 to-transparent px-3 pt-8 pb-2.5 text-left opacity-0 transition-opacity group-hover:opacity-100">
+        <span className="truncate text-xs font-medium text-white">
+          {item.filename}
+        </span>
         {item.tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {item.tags.map((tag) => (
               <span
                 key={tag.id}
-                className="flex items-center gap-1 rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-medium text-[#132033]"
+                className="flex items-center gap-1 rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-medium text-dark-surface"
               >
-                <span className={cn("size-1.5 shrink-0 rounded-full", tagDotColor(tag.id))} />
+                <span
+                  className={cn(
+                    "size-1.5 shrink-0 rounded-full",
+                    tagDotColor(tag.id),
+                  )}
+                />
                 {tag.name}
               </span>
             ))}
@@ -209,8 +223,12 @@ export function MediaExplorer({
     setSyncedActiveId(activeId);
     if (activeId) setSelectedId(activeId);
   }
-  const breadcrumb = hideFolders ? [] : getFolderBreadcrumb(folders, currentFolderId);
-  const childFolders = hideFolders ? [] : getFolderChildren(folders, currentFolderId);
+  const breadcrumb = hideFolders
+    ? []
+    : getFolderBreadcrumb(folders, currentFolderId);
+  const childFolders = hideFolders
+    ? []
+    : getFolderChildren(folders, currentFolderId);
   const selectedItem = items.find((item) => item.id === selectedId) ?? null;
   const { containerRef, columns } = useMasonryColumns(items);
 
@@ -235,7 +253,9 @@ export function MediaExplorer({
                     ? "font-medium text-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 }
-                aria-current={folder.id === currentFolderId ? "page" : undefined}
+                aria-current={
+                  folder.id === currentFolderId ? "page" : undefined
+                }
               >
                 {folder.name}
               </Link>
@@ -255,7 +275,11 @@ export function MediaExplorer({
                 href={`/dashboard/media?folder=${folder.id}`}
                 className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/15"
               >
-                <Folder className="size-5 text-primary" fill="currentColor" strokeWidth={1.5} />
+                <Folder
+                  className="size-5 text-primary"
+                  fill="currentColor"
+                  strokeWidth={1.5}
+                />
               </Link>
               <div className="min-w-0 flex-1">
                 <Link
@@ -266,7 +290,8 @@ export function MediaExplorer({
                   {folder.name}
                 </Link>
                 <p className="text-xs whitespace-nowrap text-muted-foreground">
-                  {folder.mediaCount} {folder.mediaCount === 1 ? "Datei" : "Dateien"}
+                  {folder.mediaCount}{" "}
+                  {folder.mediaCount === 1 ? "Datei" : "Dateien"}
                 </p>
               </div>
               <FolderTileMenu folder={folder} />

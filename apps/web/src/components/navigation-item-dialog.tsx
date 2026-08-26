@@ -161,9 +161,10 @@ function ContentPicker({
         placeholder="Inhalt suchen oder aus der Liste wählen …"
       />
       <ComboboxContent>
-        {isSearching && isLoading ?
+        {isSearching && isLoading ? (
           <ComboboxStatus>Suche…</ComboboxStatus>
-        : <>
+        ) : (
+          <>
             <ComboboxEmpty>Keine Treffer.</ComboboxEmpty>
             <ComboboxList>
               {(item: ContentPickerItem) => (
@@ -178,7 +179,7 @@ function ContentPicker({
               )}
             </ComboboxList>
           </>
-        }
+        )}
       </ComboboxContent>
     </Combobox>
   );
@@ -215,9 +216,7 @@ export function NavigationItemDialog({
   );
   const [contentId, setContentId] = useState(item?.contentId ?? "");
   const [externalUrl, setExternalUrl] = useState(item?.externalUrl ?? "");
-  const [openInNewTab, setOpenInNewTab] = useState(
-    item?.openInNewTab ?? false,
-  );
+  const [openInNewTab, setOpenInNewTab] = useState(item?.openInNewTab ?? false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -296,7 +295,9 @@ export function NavigationItemDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="nav-item-label" required>Label</Label>
+            <Label htmlFor="nav-item-label" required>
+              Label
+            </Label>
             <Input
               id="nav-item-label"
               value={label}
@@ -341,7 +342,9 @@ export function NavigationItemDialog({
             </div>
           ) : (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="nav-item-url" required>Externe URL</Label>
+              <Label htmlFor="nav-item-url" required>
+                Externe URL
+              </Label>
               <Input
                 id="nav-item-url"
                 type="url"
@@ -368,7 +371,7 @@ export function NavigationItemDialog({
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={() => setOpen(false)}
             >
               Abbrechen

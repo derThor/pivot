@@ -1,8 +1,15 @@
 import { RoleFormDialog } from "@/components/role-form-dialog";
-import { RolesExplorer, RolesExplorerExportButton } from "@/components/roles-explorer";
+import {
+  RolesExplorer,
+  RolesExplorerExportButton,
+} from "@/components/roles-explorer";
 import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
-import { getCurrentUser, getPermissionsCatalog, getRoles } from "@/lib/api-server";
+import {
+  getCurrentUser,
+  getPermissionsCatalog,
+  getRoles,
+} from "@/lib/api-server";
 
 export default async function RolesPage({
   searchParams,

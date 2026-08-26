@@ -7,10 +7,7 @@ export default async function RegisterPage() {
   const allowRegistration = settings?.allowRegistration ?? true;
 
   return (
-    <AuthShell
-      title="Konto erstellen"
-      description="Bitte gib deine Daten ein."
-    >
+    <AuthShell title="Konto erstellen" description="Bitte gib deine Daten ein.">
       {allowRegistration ? (
         <RegisterForm
           passwordPolicy={

@@ -22,7 +22,7 @@ export function AuthShell({
             <img
               src="/brand/logo-expanded.png"
               alt="pivot CMS"
-              className="h-8 w-auto object-contain"
+              className="pivot-logo h-8 w-auto object-contain"
             />
           </Link>
           <div className="flex flex-col gap-1">
@@ -57,8 +57,8 @@ export function AuthShell({
             Bereich<span className="text-primary">.</span>
           </h2>
           <p className="mt-3 max-w-sm text-sm text-white/70">
-            Der zentrale Punkt, um den sich alles dreht — eine Websoftware,
-            die sich jedem Team, jeder Branche und jedem Workflow anpasst.
+            Der zentrale Punkt, um den sich alles dreht — eine Websoftware, die
+            sich jedem Team, jeder Branche und jedem Workflow anpasst.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             {[

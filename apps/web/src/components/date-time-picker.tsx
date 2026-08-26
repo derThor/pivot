@@ -12,7 +12,10 @@ const PANEL_WIDTH = 384; // px, entspricht in etwa max-w-sm
 const VIEWPORT_MARGIN = 8;
 
 const PRESETS = [
-  { label: "In 1 Stunde", getDate: () => new Date(Date.now() + 60 * 60 * 1000) },
+  {
+    label: "In 1 Stunde",
+    getDate: () => new Date(Date.now() + 60 * 60 * 1000),
+  },
   {
     label: "Morgen, 9 Uhr",
     getDate: () => {
@@ -187,7 +190,6 @@ export function DateTimePicker({
       window.removeEventListener("resize", handleReflow);
       window.removeEventListener("scroll", handleScroll, true);
     };
-     
   }, [open]);
 
   function openPicker() {
@@ -208,7 +210,9 @@ export function DateTimePicker({
   }
 
   function changeMonth(delta: number) {
-    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
+    setViewDate(
+      (prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1),
+    );
   }
 
   function handleApply() {
@@ -239,7 +243,9 @@ export function DateTimePicker({
         )}
       >
         <CalendarDays className="size-4 shrink-0 text-muted-foreground" />
-        {parsedValue ? displayFormatter.format(parsedValue) : "Datum & Uhrzeit wählen"}
+        {parsedValue
+          ? displayFormatter.format(parsedValue)
+          : "Datum & Uhrzeit wählen"}
       </button>
 
       {mounted &&

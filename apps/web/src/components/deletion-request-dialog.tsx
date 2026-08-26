@@ -120,16 +120,16 @@ export function DeletionRequestDialog({
         reason: form.reason || undefined,
         source: form.source || undefined,
         affectedRecordsCount:
-          form.affectedRecordsCount !== "" ?
-            Number(form.affectedRecordsCount)
-          : undefined,
+          form.affectedRecordsCount !== ""
+            ? Number(form.affectedRecordsCount)
+            : undefined,
         status: form.status,
         dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : undefined,
       };
       const res = await fetch(
-        isEdit ?
-          `/api/deletion-requests/${(target as DeletionRequest).id}`
-        : "/api/deletion-requests",
+        isEdit
+          ? `/api/deletion-requests/${(target as DeletionRequest).id}`
+          : "/api/deletion-requests",
         {
           method: isEdit ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
@@ -141,7 +141,8 @@ export function DeletionRequestDialog({
         setError(data?.message ?? "Konnte nicht gespeichert werden.");
         return;
       }
-      if (isEdit) toastEdited(`Anfrage von „${form.requesterName}“ wurde aktualisiert.`);
+      if (isEdit)
+        toastEdited(`Anfrage von „${form.requesterName}“ wurde aktualisiert.`);
       else toastCreated(`Anfrage von „${form.requesterName}“ wurde angelegt.`);
       onSaved(data as DeletionRequest);
       onOpenChange(false);
@@ -178,7 +179,11 @@ export function DeletionRequestDialog({
             >
               {Object.entries(DATA_SUBJECT_REQUEST_TYPE_LABELS).map(
                 ([value, label]) => (
-                  <option key={value} value={value}>
+                  <option
+                    key={value}
+                    value={value}
+                    className="bg-background text-foreground"
+                  >
                     {label}
                   </option>
                 ),
@@ -216,7 +221,9 @@ export function DeletionRequestDialog({
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1">
-              <Label htmlFor="dr-name" required>Name</Label>
+              <Label htmlFor="dr-name" required>
+                Name
+              </Label>
               <Input
                 id="dr-name"
                 autoFocus
@@ -227,7 +234,9 @@ export function DeletionRequestDialog({
               />
             </div>
             <div className="flex flex-col gap-1">
-              <Label htmlFor="dr-email" required>E-Mail</Label>
+              <Label htmlFor="dr-email" required>
+                E-Mail
+              </Label>
               <Input
                 id="dr-email"
                 type="email"
@@ -272,7 +281,9 @@ export function DeletionRequestDialog({
               id="dr-reason"
               rows={3}
               value={form.reason}
-              onChange={(e) => setForm((p) => ({ ...p, reason: e.target.value }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, reason: e.target.value }))
+              }
             />
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -291,7 +302,11 @@ export function DeletionRequestDialog({
               >
                 {Object.entries(DELETION_REQUEST_STATUS_LABELS).map(
                   ([value, label]) => (
-                    <option key={value} value={value}>
+                    <option
+                      key={value}
+                      value={value}
+                      className="bg-background text-foreground"
+                    >
                       {label}
                     </option>
                   ),
@@ -304,7 +319,9 @@ export function DeletionRequestDialog({
                 id="dr-due"
                 type="date"
                 value={form.dueAt}
-                onChange={(e) => setForm((p) => ({ ...p, dueAt: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, dueAt: e.target.value }))
+                }
               />
               <p className="text-xs text-muted-foreground">
                 Leer = 1 Monat ab Eingang (Art. 12(3) DSGVO).
@@ -316,7 +333,7 @@ export function DeletionRequestDialog({
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={() => onOpenChange(false)}
             >
               Abbrechen

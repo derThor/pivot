@@ -83,9 +83,9 @@ export function MediaCropDialog({
           <DialogTitle>„{item.filename}“ zuschneiden</DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">
-          Der Zuschnitt wird als neues, eigenständiges Medium gespeichert –
-          das Original bleibt unverändert und überall dort erhalten, wo es
-          bereits verwendet wird.
+          Der Zuschnitt wird als neues, eigenständiges Medium gespeichert – das
+          Original bleibt unverändert und überall dort erhalten, wo es bereits
+          verwendet wird.
         </p>
         <div className="flex max-h-[65vh] justify-center overflow-auto rounded-lg border bg-muted/30 p-2">
           <ReactCrop crop={crop} onChange={(c) => setCrop(c)}>
@@ -103,7 +103,7 @@ export function MediaCropDialog({
           <Button
             type="button"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             onClick={() => onOpenChange(false)}
           >
             Abbrechen

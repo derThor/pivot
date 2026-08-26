@@ -74,9 +74,10 @@ export function SmtpSettingsDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [testEmailTo, setTestEmailTo] = useState("");
   const [isSendingTestMail, setIsSendingTestMail] = useState(false);
-  const [testMailResult, setTestMailResult] = useState<
-    { ok: boolean; error?: string } | null
-  >(null);
+  const [testMailResult, setTestMailResult] = useState<{
+    ok: boolean;
+    error?: string;
+  } | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -133,7 +134,10 @@ export function SmtpSettingsDialog({
 
   async function handleSendTestEmail() {
     if (!testEmailTo.trim()) {
-      setTestMailResult({ ok: false, error: "Bitte eine Zieladresse angeben." });
+      setTestMailResult({
+        ok: false,
+        error: "Bitte eine Zieladresse angeben.",
+      });
       return;
     }
     setIsSendingTestMail(true);
@@ -146,9 +150,9 @@ export function SmtpSettingsDialog({
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        const message = Array.isArray(data?.message) ?
-          data.message.join(" ")
-        : (data?.message ?? data?.error ?? "Unbekannter Fehler.");
+        const message = Array.isArray(data?.message)
+          ? data.message.join(" ")
+          : (data?.message ?? data?.error ?? "Unbekannter Fehler.");
         setTestMailResult({ ok: false, error: message });
       } else {
         setTestMailResult(data ?? { ok: false, error: "Unbekannter Fehler." });
@@ -169,17 +173,23 @@ export function SmtpSettingsDialog({
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto]">
             <div className="flex flex-col gap-1">
-              <Label htmlFor="smtp-host" required>Host</Label>
+              <Label htmlFor="smtp-host" required>
+                Host
+              </Label>
               <Input
                 id="smtp-host"
                 autoFocus
                 placeholder="z.B. mail.example.de"
                 value={form.host}
-                onChange={(e) => setForm((p) => ({ ...p, host: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, host: e.target.value }))
+                }
               />
             </div>
             <div className="flex flex-col gap-1">
-              <Label htmlFor="smtp-port" required>Port</Label>
+              <Label htmlFor="smtp-port" required>
+                Port
+              </Label>
               <Input
                 id="smtp-port"
                 type="number"
@@ -187,7 +197,9 @@ export function SmtpSettingsDialog({
                 max={65535}
                 className="w-24"
                 value={form.port}
-                onChange={(e) => setForm((p) => ({ ...p, port: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, port: e.target.value }))
+                }
               />
             </div>
           </div>
@@ -197,7 +209,9 @@ export function SmtpSettingsDialog({
               <Input
                 id="smtp-username"
                 value={form.username}
-                onChange={(e) => setForm((p) => ({ ...p, username: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, username: e.target.value }))
+                }
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -205,9 +219,13 @@ export function SmtpSettingsDialog({
               <Input
                 id="smtp-password"
                 type="password"
-                placeholder={settings.hasPassword ? "•••••• (unverändert lassen)" : ""}
+                placeholder={
+                  settings.hasPassword ? "•••••• (unverändert lassen)" : ""
+                }
                 value={form.password}
-                onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, password: e.target.value }))
+                }
               />
             </div>
           </div>
@@ -230,7 +248,9 @@ export function SmtpSettingsDialog({
                 id="smtp-from-name"
                 placeholder="z.B. Pivot CMS"
                 value={form.fromName}
-                onChange={(e) => setForm((p) => ({ ...p, fromName: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, fromName: e.target.value }))
+                }
               />
             </div>
           </div>
@@ -266,10 +286,8 @@ export function SmtpSettingsDialog({
           )}
 
           {settings.configured && (
-            <div className="flex flex-col gap-2 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-3">
-              <Label htmlFor="smtp-test-email">
-                Testmail senden an
-              </Label>
+            <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted p-3">
+              <Label htmlFor="smtp-test-email">Testmail senden an</Label>
               <div className="flex gap-2">
                 <Input
                   id="smtp-test-email"
@@ -281,7 +299,7 @@ export function SmtpSettingsDialog({
                 <Button
                   type="button"
                   variant="outline"
-                  className="shrink-0 border-[#D4D4D4]"
+                  className="shrink-0 border-border"
                   disabled={isSendingTestMail}
                   onClick={handleSendTestEmail}
                 >
@@ -296,9 +314,9 @@ export function SmtpSettingsDialog({
                 <SystemMessage
                   variant={testMailResult.ok ? "success" : "error"}
                   title={
-                    testMailResult.ok ?
-                      "Testmail wurde versendet"
-                    : "Testmail fehlgeschlagen"
+                    testMailResult.ok
+                      ? "Testmail wurde versendet"
+                      : "Testmail fehlgeschlagen"
                   }
                   description={testMailResult.error}
                 />
@@ -310,7 +328,7 @@ export function SmtpSettingsDialog({
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={() => onOpenChange(false)}
             >
               Abbrechen

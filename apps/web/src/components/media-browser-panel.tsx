@@ -1,15 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronRight, Folder, FolderTree, Home, Image as ImageIcon } from "lucide-react";
+import {
+  ChevronRight,
+  Folder,
+  FolderTree,
+  Home,
+  Image as ImageIcon,
+} from "lucide-react";
 
 import { mediaUrl, resolveImageSrc } from "@/lib/media";
 import { mediaCategory, mediaTypeIcon } from "@/lib/media-type";
-import {
-  getFolderBreadcrumb,
-  getFolderChildren,
-} from "@/lib/media-folders";
-import type { MediaFolder, MediaItem, MediaListResponse } from "@/lib/api-server";
+import { getFolderBreadcrumb, getFolderChildren } from "@/lib/media-folders";
+import type {
+  MediaFolder,
+  MediaItem,
+  MediaListResponse,
+} from "@/lib/api-server";
 
 // Gemeinsame Browsing-Logik (Ordner-Navigation + Grid) für
 // `ImagePickerDialog` (nur Bilder) und `FilePickerDialog` (alle
@@ -68,10 +75,13 @@ export function MediaBrowserPanel({
 
   const breadcrumb = getFolderBreadcrumb(folders, currentFolderId);
   const childFolders = getFolderChildren(folders, currentFolderId);
-  const visibleItems = items?.filter((item) => item.folderId === currentFolderId);
+  const visibleItems = items?.filter(
+    (item) => item.folderId === currentFolderId,
+  );
 
   if (loadError) return <p className="text-sm text-destructive">{loadError}</p>;
-  if (items === null) return <p className="text-sm text-muted-foreground">Lädt…</p>;
+  if (items === null)
+    return <p className="text-sm text-muted-foreground">Lädt…</p>;
 
   return (
     <>
@@ -111,7 +121,11 @@ export function MediaBrowserPanel({
               className="flex w-16 flex-col items-center gap-1"
             >
               <span className="relative flex size-14 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm">
-                <Folder className="size-7 text-white" fill="currentColor" strokeWidth={1.5} />
+                <Folder
+                  className="size-7 text-white"
+                  fill="currentColor"
+                  strokeWidth={1.5}
+                />
                 {folder.mediaCount > 0 && (
                   <span className="absolute -bottom-1.5 -left-1.5 flex h-4 min-w-4 items-center justify-center gap-0.5 rounded-full border-2 border-background bg-secondary px-1 text-[9px] font-semibold text-secondary-foreground">
                     <ImageIcon className="size-2.5" />
@@ -125,7 +139,9 @@ export function MediaBrowserPanel({
                   </span>
                 )}
               </span>
-              <span className="w-full truncate text-center text-xs">{folder.name}</span>
+              <span className="w-full truncate text-center text-xs">
+                {folder.name}
+              </span>
             </button>
           ))}
         </div>
@@ -148,7 +164,11 @@ export function MediaBrowserPanel({
                 {isImage ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={item.thumbnailUrl ? resolveImageSrc(item.thumbnailUrl) : mediaUrl(item)}
+                    src={
+                      item.thumbnailUrl
+                        ? resolveImageSrc(item.thumbnailUrl)
+                        : mediaUrl(item)
+                    }
                     alt={item.alt ?? item.filename}
                     className="h-full w-full object-cover"
                   />

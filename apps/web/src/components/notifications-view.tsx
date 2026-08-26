@@ -21,7 +21,11 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { StatCard } from "@/components/stat-card";
 import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn, formatRelativeTime, truncateMiddle } from "@/lib/utils";
 import type { AppNotification, NotificationCategory } from "@/lib/api-server";
 
@@ -39,25 +43,29 @@ const CATEGORY_ICONS: Record<NotificationCategory, LucideIcon> = {
   accounts: UserCog,
 };
 
+// Nutzervorgabe, 2026-08-26: nur noch die feste Badge-Palette (siehe
+// ui/badge.tsx) – keine Ad-hoc-Tailwind-Töne mehr. "security" und
+// "dringend" (siehe weiter unten) bewusst "red" (Nutzervorgabe: "bei
+// dringend und Sicherheit rot nehmen").
 const CATEGORY_ICON_BOX: Record<NotificationCategory, string> = {
-  system: "bg-blue-100 text-blue-600",
-  security: "bg-red-100 text-red-600",
-  privacy: "bg-amber-100 text-amber-600",
-  accounts: "bg-violet-100 text-violet-600",
+  system: "badge--blue",
+  security: "badge--red",
+  privacy: "badge--amber",
+  accounts: "badge--slate",
 };
 
 const CATEGORY_BADGE: Record<NotificationCategory, string> = {
-  system: "bg-blue-100 text-blue-700 hover:bg-blue-100",
-  security: "bg-red-100 text-red-700 hover:bg-red-100",
-  privacy: "bg-amber-100 text-amber-800 hover:bg-amber-100",
-  accounts: "bg-violet-100 text-violet-700 hover:bg-violet-100",
+  system: "badge--blue border-0",
+  security: "badge--red border-0",
+  privacy: "badge--amber border-0",
+  accounts: "badge--slate border-0",
 };
 
 const CATEGORY_DOT: Record<NotificationCategory, string> = {
-  system: "bg-blue-500",
-  security: "bg-red-500",
-  privacy: "bg-amber-500",
-  accounts: "bg-violet-500",
+  system: "bg-[#1d4ed8]",
+  security: "bg-[#dc2626]",
+  privacy: "bg-[#b45309]",
+  accounts: "bg-[#526074]",
 };
 
 function startOfDay(d: Date) {
@@ -120,10 +128,7 @@ export function NotificationsView({
   const unread = notifications.filter((n) => !n.isRead);
   const urgentOpen = notifications.filter((n) => n.isUrgent && !n.isResolved);
   const resolvedToday = notifications.filter(
-    (n) =>
-      n.isResolved &&
-      n.resolvedAt &&
-      dayGroup(n.resolvedAt) === "heute",
+    (n) => n.isResolved && n.resolvedAt && dayGroup(n.resolvedAt) === "heute",
   );
 
   const categoryCounts = useMemo(() => {
@@ -154,13 +159,15 @@ export function NotificationsView({
     return true;
   });
 
-  const groups: { key: "heute" | "gestern" | "aelter"; items: AppNotification[] }[] =
-    (["heute", "gestern", "aelter"] as const)
-      .map((key) => ({
-        key,
-        items: visible.filter((n) => dayGroup(n.createdAt) === key),
-      }))
-      .filter((g) => g.items.length > 0);
+  const groups: {
+    key: "heute" | "gestern" | "aelter";
+    items: AppNotification[];
+  }[] = (["heute", "gestern", "aelter"] as const)
+    .map((key) => ({
+      key,
+      items: visible.filter((n) => dayGroup(n.createdAt) === key),
+    }))
+    .filter((g) => g.items.length > 0);
 
   // `router.refresh()` nach jeder Zustandsänderung: die Glocke im Header
   // ist ein Server Component (`dashboard/layout.tsx`), das bei reiner
@@ -220,7 +227,7 @@ export function NotificationsView({
           <Button
             type="button"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             disabled={unread.length === 0}
             onClick={handleMarkAllRead}
           >
@@ -267,7 +274,7 @@ export function NotificationsView({
               <AlertTriangle className="size-[18px]" />
             </span>
             <p className="text-sm">
-              <span className="font-semibold text-[#132033]">
+              <span className="font-semibold text-pivot-navy">
                 {urgentOpen.length} Meldung{urgentOpen.length === 1 ? "" : "en"}{" "}
                 mit Frist oder Sicherheitsbezug.
               </span>{" "}
@@ -280,7 +287,7 @@ export function NotificationsView({
             type="button"
             variant={onlyUrgent ? "default" : "outline"}
             size="sm"
-            className={onlyUrgent ? undefined : "border-[#D4D4D4]"}
+            className={onlyUrgent ? undefined : "border-border"}
             onClick={() => setOnlyUrgent((v) => !v)}
           >
             {onlyUrgent ? "Alle zeigen" : "Nur diese zeigen"}
@@ -319,8 +326,10 @@ export function NotificationsView({
                       <div
                         key={n.id}
                         className={cn(
-                          "flex items-start gap-3 border-l-4 border-t border-t-[#F0F0F0] p-4 transition-colors first:border-t-0",
-                          !n.isRead && n.isUrgent && "border-l-red-500 bg-red-50/40",
+                          "flex items-start gap-3 border-l-4 border-t border-t-border p-4 transition-colors first:border-t-0",
+                          !n.isRead &&
+                            n.isUrgent &&
+                            "border-l-red-500 bg-red-50/40 dark:bg-red-950/40",
                           !n.isRead &&
                             !n.isUrgent &&
                             "border-l-primary bg-primary/10",
@@ -355,7 +364,7 @@ export function NotificationsView({
                                 {CATEGORY_LABELS[n.category]}
                               </Badge>
                               {n.isUrgent && (
-                                <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
+                                <Badge className="badge--red border-0">
                                   dringend
                                 </Badge>
                               )}
@@ -371,7 +380,7 @@ export function NotificationsView({
                               type="button"
                               variant="outline"
                               size="sm"
-                              className="border-[#D4D4D4]"
+                              className="border-border"
                               onClick={() => handleActionClick(n.id)}
                               render={<Link href={n.actionUrl} />}
                             >
@@ -385,31 +394,33 @@ export function NotificationsView({
                                   type="button"
                                   variant="outline"
                                   size="icon-sm"
-                                  className="border-[#D4D4D4]"
+                                  className="border-border"
                                   aria-label={
-                                    n.isRead ?
-                                      "Als ungelesen markieren"
-                                    : "Als gelesen markieren"
+                                    n.isRead
+                                      ? "Als ungelesen markieren"
+                                      : "Als gelesen markieren"
                                   }
                                   onClick={() => toggleRead(n)}
                                 />
                               }
                             >
-                              {n.isRead ?
+                              {n.isRead ? (
                                 <Check className="size-4" />
-                              : <Eye className="size-4" />}
+                              ) : (
+                                <Eye className="size-4" />
+                              )}
                             </TooltipTrigger>
                             <TooltipContent>
-                              {n.isRead ?
-                                "Als ungelesen markieren"
-                              : "Als gelesen markieren"}
+                              {n.isRead
+                                ? "Als ungelesen markieren"
+                                : "Als gelesen markieren"}
                             </TooltipContent>
                           </Tooltip>
                           <Button
                             type="button"
                             variant="outline"
                             size="icon-sm"
-                            className="rounded-lg border-[#D4D4D4] text-destructive hover:bg-destructive/5"
+                            className="rounded-lg border-border text-destructive hover:bg-destructive/5"
                             aria-label={`„${n.title}“ löschen`}
                             onClick={() => setDeleteTarget(n)}
                           >
@@ -436,16 +447,19 @@ export function NotificationsView({
                 onClick={() => setCategoryFilter("all")}
                 className={cn(
                   "flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors",
-                  categoryFilter === "all" ?
-                    "bg-primary/15 font-medium"
-                  : "hover:bg-muted/50",
+                  categoryFilter === "all"
+                    ? "bg-primary/15 font-medium"
+                    : "hover:bg-muted/50",
                 )}
               >
                 <span className="flex items-center gap-2">
                   <span className="size-2 rounded-full bg-muted-foreground/40" />
                   Alle Kategorien
                 </span>
-                <Badge variant="secondary" className="bg-muted text-muted-foreground">
+                <Badge
+                  variant="secondary"
+                  className="bg-muted text-muted-foreground"
+                >
                   {notifications.length}
                 </Badge>
               </button>
@@ -457,16 +471,21 @@ export function NotificationsView({
                     onClick={() => setCategoryFilter(cat)}
                     className={cn(
                       "flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors",
-                      categoryFilter === cat ?
-                        "bg-primary/15 font-medium"
-                      : "hover:bg-muted/50",
+                      categoryFilter === cat
+                        ? "bg-primary/15 font-medium"
+                        : "hover:bg-muted/50",
                     )}
                   >
                     <span className="flex items-center gap-2">
-                      <span className={cn("size-2 rounded-full", CATEGORY_DOT[cat])} />
+                      <span
+                        className={cn("size-2 rounded-full", CATEGORY_DOT[cat])}
+                      />
                       {CATEGORY_LABELS[cat]}
                     </span>
-                    <Badge variant="secondary" className="bg-muted text-muted-foreground">
+                    <Badge
+                      variant="secondary"
+                      className="bg-muted text-muted-foreground"
+                    >
                       {categoryCounts[cat]}
                     </Badge>
                   </button>

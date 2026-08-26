@@ -37,7 +37,13 @@ import type {
   UserSession,
 } from "@/lib/api-server";
 import { mediaUrl } from "@/lib/media";
-import { cn, formatName, formatRelativeTime, initials, truncateMiddle } from "@/lib/utils";
+import {
+  cn,
+  formatName,
+  formatRelativeTime,
+  initials,
+  truncateMiddle,
+} from "@/lib/utils";
 
 const profileSchema = z.object({
   firstName: z.string().optional(),
@@ -154,7 +160,9 @@ export function UserEditView({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        setError(body?.message ?? "Änderungen konnten nicht gespeichert werden.");
+        setError(
+          body?.message ?? "Änderungen konnten nicht gespeichert werden.",
+        );
         return;
       }
       toastEdited(`„${name}“ wurde gespeichert.`);
@@ -221,7 +229,9 @@ export function UserEditView({
         method: "POST",
       });
       if (res.ok) {
-        toastEdited(`Zwei-Faktor-Authentifizierung für „${name}“ wurde deaktiviert.`);
+        toastEdited(
+          `Zwei-Faktor-Authentifizierung für „${name}“ wurde deaktiviert.`,
+        );
         router.refresh();
       }
     } finally {
@@ -287,7 +297,7 @@ export function UserEditView({
           <Button
             type="button"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             onClick={() => router.push("/dashboard/users")}
           >
             ‹ Zurück
@@ -296,7 +306,7 @@ export function UserEditView({
           <Button
             type="button"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             disabled={isResetting}
             onClick={handleResetPassword}
           >
@@ -314,7 +324,7 @@ export function UserEditView({
             {user.avatarUrl && (
               <AvatarImage src={mediaUrl({ url: user.avatarUrl })} />
             )}
-            <AvatarFallback className="bg-neutral-900 text-lg font-medium text-white">
+            <AvatarFallback className="bg-dark-surface text-lg font-medium text-white">
               {initials(user)}
             </AvatarFallback>
           </Avatar>
@@ -324,9 +334,7 @@ export function UserEditView({
               <Badge
                 variant="secondary"
                 className={
-                  isActive
-                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
-                    : "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
+                  isActive ? "badge--green border-0" : "badge--ink border-0"
                 }
               >
                 {isActive ? "Aktiv" : "Gesperrt"}
@@ -336,8 +344,8 @@ export function UserEditView({
                   variant="secondary"
                   className={
                     user.twoFactorEnabled
-                      ? "gap-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
-                      : "gap-1 bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
+                      ? "badge--green gap-1 border-0"
+                      : "badge--ink gap-1 border-0"
                   }
                 >
                   {user.twoFactorEnabled ? (
@@ -351,7 +359,9 @@ export function UserEditView({
             </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
               <span>{user.email}</span>
-              <span>Rolle: {user.roles.map((role) => role.name).join(", ")}</span>
+              <span>
+                Rolle: {user.roles.map((role) => role.name).join(", ")}
+              </span>
               <span>Dabei seit {formatDate(user.createdAt)}</span>
               <span>
                 {user.lastLoginAt
@@ -366,7 +376,7 @@ export function UserEditView({
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               disabled={isImpersonating}
               onClick={handleImpersonate}
             >
@@ -381,7 +391,7 @@ export function UserEditView({
                   <Button
                     type="button"
                     variant="outline"
-                    className="border-[#D4D4D4] text-destructive"
+                    className="border-border text-destructive"
                   >
                     Sperren
                   </Button>
@@ -396,7 +406,7 @@ export function UserEditView({
               <Button
                 type="button"
                 variant="outline"
-                className="border-[#D4D4D4]"
+                className="border-border"
                 disabled={isTogglingActive}
                 onClick={handleUnlock}
               >
@@ -574,7 +584,7 @@ export function UserEditView({
                                   "flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm",
                                   checked
                                     ? "border-primary bg-primary/10"
-                                    : "border-[#E5E5E5]",
+                                    : "border-border",
                                   disabled && "cursor-not-allowed opacity-50",
                                 )}
                               >
@@ -646,14 +656,13 @@ export function UserEditView({
                       <p className="text-sm text-muted-foreground">
                         Der Nutzer wird aus der Benutzerliste entfernt und
                         erscheint stattdessen unter Datenschutz → „Benutzer“.
-                        Die endgültige Anonymisierung erfolgt erst von dort
-                        aus.
+                        Die endgültige Anonymisierung erfolgt erst von dort aus.
                       </p>
                       <ConfirmDeleteDialog
                         trigger={
                           <Button
                             variant="outline"
-                            className="w-full border-[#D4D4D4] text-destructive"
+                            className="w-full border-border text-destructive"
                           >
                             Benutzer löschen
                           </Button>
@@ -676,7 +685,7 @@ export function UserEditView({
                   <div className="flex flex-col gap-4 rounded-xl bg-card shadow-sm p-6">
                     <h2 className="font-semibold">Anmeldung</h2>
                     <div className="flex flex-col gap-2">
-                      <div className="flex items-center justify-between rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+                      <div className="flex items-center justify-between rounded-lg border border-border bg-muted p-4">
                         <div>
                           <p className="text-sm font-medium">
                             Zwei-Faktor-Authentifizierung
@@ -695,7 +704,7 @@ export function UserEditView({
                               <Button
                                 type="button"
                                 variant="outline"
-                                className="border-[#D4D4D4]"
+                                className="border-border"
                                 disabled={isDisablingTwoFactor}
                               >
                                 Deaktivieren
@@ -715,7 +724,7 @@ export function UserEditView({
                         control={form.control}
                         name="mustChangePassword"
                         render={({ field }) => (
-                          <div className="flex items-center justify-between rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+                          <div className="flex items-center justify-between rounded-lg border border-border bg-muted p-4">
                             <p className="text-sm font-medium">
                               Passwortwechsel bei nächster Anmeldung erzwingen
                             </p>
@@ -740,7 +749,7 @@ export function UserEditView({
                         {visibleSessions.map((session) => (
                           <div
                             key={session.id}
-                            className="flex items-center justify-between rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4"
+                            className="flex items-center justify-between rounded-lg border border-border bg-muted p-4"
                           >
                             <div className="flex items-center gap-3">
                               <Monitor className="size-4 shrink-0 text-muted-foreground" />
@@ -757,7 +766,7 @@ export function UserEditView({
                             {session.isCurrent ? (
                               <Badge
                                 variant="secondary"
-                                className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
+                                className="badge--green border-0"
                               >
                                 aktiv
                               </Badge>
@@ -766,10 +775,8 @@ export function UserEditView({
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                className="border-[#D4D4D4] bg-card"
-                                onClick={() =>
-                                  handleRevokeSession(session.id)
-                                }
+                                className="border-border bg-card"
+                                onClick={() => handleRevokeSession(session.id)}
                               >
                                 Abmelden
                               </Button>
@@ -786,7 +793,7 @@ export function UserEditView({
                     {sessionsState.some((s) => !s.isCurrent) && (
                       <button
                         type="button"
-                        className="self-start rounded-xl border border-[#E5E5E5] bg-transparent px-3 py-2 text-[12.5px] font-medium text-destructive transition-colors duration-150 hover:bg-destructive/5"
+                        className="self-start rounded-xl border border-border bg-transparent px-3 py-2 text-[12.5px] font-medium text-destructive transition-colors duration-150 hover:bg-destructive/5"
                         onClick={handleRevokeOthers}
                       >
                         Alle anderen Sitzungen beenden
@@ -799,11 +806,9 @@ export function UserEditView({
                   <h3 className="text-xs font-medium text-muted-foreground uppercase">
                     Konto
                   </h3>
-                  <div className="mt-3 flex flex-col divide-y divide-[#F0F0F0] text-sm">
+                  <div className="mt-3 flex flex-col divide-y divide-border text-sm">
                     <div className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
-                      <span className="text-muted-foreground">
-                        Benutzer-ID
-                      </span>
+                      <span className="text-muted-foreground">Benutzer-ID</span>
                       <span className="font-mono text-xs">{user.id}</span>
                     </div>
                     <div className="flex items-center justify-between py-2 first:pt-0 last:pb-0">

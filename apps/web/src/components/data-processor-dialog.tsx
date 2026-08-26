@@ -129,8 +129,9 @@ export function DataProcessorDialog({
         name: form.name,
         purpose: form.purpose || undefined,
         hasContract: form.hasContract,
-        contractDate:
-          form.contractDate ? new Date(form.contractDate).toISOString() : undefined,
+        contractDate: form.contractDate
+          ? new Date(form.contractDate).toISOString()
+          : undefined,
         contractMediaId: form.contractMediaId,
         location: form.location || undefined,
         complianceNote: form.complianceNote || undefined,
@@ -138,9 +139,9 @@ export function DataProcessorDialog({
         contactEmail: form.contactEmail || undefined,
       };
       const res = await fetch(
-        isEdit ?
-          `/api/data-processors/${(target as DataProcessor).id}`
-        : "/api/data-processors",
+        isEdit
+          ? `/api/data-processors/${(target as DataProcessor).id}`
+          : "/api/data-processors",
         {
           method: isEdit ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
@@ -168,12 +169,16 @@ export function DataProcessorDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? "Auftragsverarbeiter bearbeiten" : "Auftragsverarbeiter anlegen"}
+            {isEdit
+              ? "Auftragsverarbeiter bearbeiten"
+              : "Auftragsverarbeiter anlegen"}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
-            <Label htmlFor="dp-name" required>Name</Label>
+            <Label htmlFor="dp-name" required>
+              Name
+            </Label>
             <Input
               id="dp-name"
               autoFocus
@@ -187,7 +192,9 @@ export function DataProcessorDialog({
             <Input
               id="dp-purpose"
               value={form.purpose}
-              onChange={(e) => setForm((p) => ({ ...p, purpose: e.target.value }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, purpose: e.target.value }))
+              }
             />
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -305,7 +312,7 @@ export function DataProcessorDialog({
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={() => onOpenChange(false)}
             >
               Abbrechen

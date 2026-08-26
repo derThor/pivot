@@ -110,12 +110,12 @@ export function GallerySwiper({
         // Swipers eigenen offiziellen Demo-Presets, keine erfundene
         // Konfiguration.
         creativeEffect={
-          settings.effect === "creative" ?
-            {
-              prev: { shadow: true, translate: ["-20%", 0, -1] },
-              next: { translate: ["100%", 0, 0] },
-            }
-          : undefined
+          settings.effect === "creative"
+            ? {
+                prev: { shadow: true, translate: ["-20%", 0, -1] },
+                next: { translate: ["100%", 0, 0] },
+              }
+            : undefined
         }
         slidesPerView={isSingleSlideEffect ? 1 : settings.slidesPerView}
         spaceBetween={isSingleSlideEffect ? 0 : settings.spaceBetween}

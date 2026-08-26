@@ -117,7 +117,7 @@ export function MasterClientCard({
           <Button
             type="button"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             disabled={isRechecking}
             onClick={handleRecheck}
           >
@@ -127,17 +127,17 @@ export function MasterClientCard({
         )}
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <div className="flex items-center gap-3 rounded-xl bg-[#FAFAFA] p-3">
+        <div className="flex items-center gap-3 rounded-xl bg-muted p-3">
           <button
             type="button"
             disabled={!isMaster}
             onClick={() => setSelfDialogOpen(true)}
-            className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left transition-colors disabled:cursor-default enabled:hover:bg-[#F0F0F0]"
+            className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left transition-colors disabled:cursor-default enabled:hover:bg-border"
           >
             <span
               className={
                 isMaster
-                  ? "flex size-10 shrink-0 items-center justify-center rounded-lg bg-lime-100 text-lime-700"
+                  ? "flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground"
                   : "flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"
               }
             >
@@ -159,7 +159,7 @@ export function MasterClientCard({
               {settings.appVersion && (
                 <Badge
                   variant="secondary"
-                  className="mt-1 w-fit bg-amber-100 font-mono text-amber-700"
+                  className="badge--amber mt-1 w-fit border-0 font-mono"
                 >
                   Version {settings.appVersion}
                 </Badge>
@@ -190,7 +190,7 @@ export function MasterClientCard({
               type="button"
               disabled={!isMaster}
               onClick={() => setWebsiteDialogTarget(website)}
-              className="flex items-center gap-3 rounded-xl bg-[#FAFAFA] p-3 text-left transition-colors disabled:cursor-default enabled:hover:bg-[#F0F0F0]"
+              className="flex items-center gap-3 rounded-xl bg-muted p-3 text-left transition-colors disabled:cursor-default enabled:hover:bg-border"
             >
               <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                 <Globe className="size-4.5" />
@@ -218,7 +218,7 @@ export function MasterClientCard({
                 {website.lastReportedVersion && (
                   <Badge
                     variant="secondary"
-                    className="mt-1 w-fit bg-amber-100 font-mono text-amber-700"
+                    className="badge--amber mt-1 w-fit border-0 font-mono"
                   >
                     Version {website.lastReportedVersion}
                   </Badge>

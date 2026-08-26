@@ -74,10 +74,10 @@ const CONTENT_STATUS_LABELS: Record<string, string> = {
   ARCHIVED: "Archiviert",
 };
 const CONTENT_STATUS_BADGE_CLASSNAMES: Record<string, string> = {
-  DRAFT: "bg-slate-200 text-slate-700 hover:bg-slate-200",
-  PUBLISHED: "bg-emerald-100 text-emerald-700 hover:bg-emerald-100",
-  SCHEDULED: "bg-blue-100 text-blue-700 hover:bg-blue-100",
-  ARCHIVED: "bg-gray-100 text-gray-600 hover:bg-gray-100",
+  DRAFT: "badge--slate border-0",
+  PUBLISHED: "badge--green border-0",
+  SCHEDULED: "badge--blue border-0",
+  ARCHIVED: "badge--slate border-0",
 };
 
 // Rechtstexte-Tab, Karte "Pflichtangaben-Check" (Nutzervorgabe, 2026-08-20,
@@ -142,7 +142,7 @@ function RetentionDueList({
   const [confirmAll, setConfirmAll] = useState(false);
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-3">
+    <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted p-3">
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-medium">{title}</span>
         {items.length > 0 && (
@@ -150,7 +150,12 @@ function RetentionDueList({
             open={confirmAll}
             onOpenChange={setConfirmAll}
             trigger={
-              <Button type="button" variant="outline" size="sm" className="border-[#D4D4D4]">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="border-border"
+              >
                 Alles löschen
               </Button>
             }
@@ -160,9 +165,10 @@ function RetentionDueList({
           />
         )}
       </div>
-      {items.length === 0 ?
+      {items.length === 0 ? (
         <p className="text-xs text-muted-foreground">{emptyLabel}</p>
-      : <ul className="flex flex-col divide-y divide-[#F0F0F0]">
+      ) : (
+        <ul className="flex flex-col divide-y divide-border">
           {items.map((item) => (
             <li
               key={item.id}
@@ -192,7 +198,7 @@ function RetentionDueList({
             </li>
           ))}
         </ul>
-      }
+      )}
     </div>
   );
 }
@@ -240,17 +246,21 @@ export function PrivacyView({
     "nutzer",
   ];
   const initialTab =
-    tabParam && (TAB_IDS as string[]).includes(tabParam) ?
-      (tabParam as TabId)
-    : "rechtstexte";
+    tabParam && (TAB_IDS as string[]).includes(tabParam)
+      ? (tabParam as TabId)
+      : "rechtstexte";
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const tabsRef = useRef<HTMLDivElement>(null);
 
   const [legalDocuments, setLegalDocuments] = useState(initialLegalDocuments);
   const [regeneratingKey, setRegeneratingKey] = useState<string | null>(null);
-  const [legalDocumentError, setLegalDocumentError] = useState<string | null>(null);
+  const [legalDocumentError, setLegalDocumentError] = useState<string | null>(
+    null,
+  );
 
-  const [deletionRequests, setDeletionRequests] = useState(initialDeletionRequests);
+  const [deletionRequests, setDeletionRequests] = useState(
+    initialDeletionRequests,
+  );
 
   const [processingActivities, setProcessingActivities] = useState(
     initialProcessingActivities,
@@ -380,22 +390,34 @@ export function PrivacyView({
   const [dsbFormStoreSubmissionIp, setDsbFormStoreSubmissionIp] = useState(
     settings.dsbFormStoreSubmissionIp,
   );
-  const [subjectAccessRequestOpen, setSubjectAccessRequestOpen] = useState(false);
+  const [subjectAccessRequestOpen, setSubjectAccessRequestOpen] =
+    useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
   const sortedLegalDocuments = [...legalDocuments].sort(
-    (a, b) => LEGAL_DOCUMENT_ORDER.indexOf(a.key) - LEGAL_DOCUMENT_ORDER.indexOf(b.key),
+    (a, b) =>
+      LEGAL_DOCUMENT_ORDER.indexOf(a.key) - LEGAL_DOCUMENT_ORDER.indexOf(b.key),
   );
   const staleCount = legalDocuments.filter((d) => d.status === "stale").length;
-  const missingCount = legalDocuments.filter((d) => d.status === "missing").length;
-  const openDeletionRequests = deletionRequests.filter((r) => r.status === "open");
+  const missingCount = legalDocuments.filter(
+    (d) => d.status === "missing",
+  ).length;
+  const openDeletionRequests = deletionRequests.filter(
+    (r) => r.status === "open",
+  );
   const dueSoon = openDeletionRequests
     .filter((r) => r.dueAt)
-    .sort((a, b) => new Date(a.dueAt!).getTime() - new Date(b.dueAt!).getTime())[0];
+    .sort(
+      (a, b) => new Date(a.dueAt!).getTime() - new Date(b.dueAt!).getTime(),
+    )[0];
   const incidentsWithRisk = incidents.filter((i) => i.severity !== "low");
-  const dataProcessorsWithContract = dataProcessors.filter((p) => p.hasContract).length;
-  const dataProcessorsMissingContract = dataProcessors.filter((p) => !p.hasContract);
+  const dataProcessorsWithContract = dataProcessors.filter(
+    (p) => p.hasContract,
+  ).length;
+  const dataProcessorsMissingContract = dataProcessors.filter(
+    (p) => !p.hasContract,
+  );
   const dataProcessorsOutsideEu = dataProcessors.filter((p) => p.outsideEu);
   // "AV-Verträge herunterladen" nur zeigen, wenn tatsächlich eine Datei
   // zum Herunterladen da ist – getrennt vom manuellen `hasContract`-Haken
@@ -434,7 +456,9 @@ export function PrivacyView({
         );
       }
     } catch {
-      setLegalDocumentError("Server nicht erreichbar. Bitte später erneut versuchen.");
+      setLegalDocumentError(
+        "Server nicht erreichbar. Bitte später erneut versuchen.",
+      );
     } finally {
       setRegeneratingKey(null);
     }
@@ -515,7 +539,7 @@ export function PrivacyView({
           <Button
             type="button"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             onClick={handleExportReport}
             disabled={isExporting}
           >
@@ -532,7 +556,11 @@ export function PrivacyView({
         <StatCard
           label="Offene Anfragen"
           value={String(openDeletionRequests.length)}
-          sublabel={dueSoon ? `kürzeste Frist: ${formatDate(dueSoon.dueAt)}` : "Löschanfragen"}
+          sublabel={
+            dueSoon
+              ? `kürzeste Frist: ${formatDate(dueSoon.dueAt)}`
+              : "Löschanfragen"
+          }
         />
         <StatCard
           label="Rechtstexte offen"
@@ -553,13 +581,16 @@ export function PrivacyView({
 
       {(staleCount > 0 || missingCount > 0) && (
         <div className="flex flex-col items-start gap-3 rounded-xl bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:gap-4">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+          <span className="flex size-9 shrink-0 items-center justify-center badge--amber rounded-full">
             <AlertTriangle className="size-[18px]" />
           </span>
           <p className="flex-1 text-sm">
-            <span className="font-semibold text-[#132033]">
+            <span className="font-semibold text-pivot-navy">
               {staleCount + missingCount}{" "}
-              {staleCount + missingCount === 1 ? "Rechtstext braucht" : "Rechtstexte brauchen"} Aufmerksamkeit.
+              {staleCount + missingCount === 1
+                ? "Rechtstext braucht"
+                : "Rechtstexte brauchen"}{" "}
+              Aufmerksamkeit.
             </span>{" "}
             <span className="text-muted-foreground">
               {missingCount > 0 && staleCount > 0
@@ -575,7 +606,10 @@ export function PrivacyView({
             className="shrink-0"
             onClick={() => {
               setActiveTab("rechtstexte");
-              tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+              tabsRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
             }}
           >
             Prüfen
@@ -589,20 +623,40 @@ export function PrivacyView({
         onValueChange={(value) => setActiveTab(value as TabId)}
         className="gap-4"
       >
-        <TabsList className="!h-auto w-fit max-w-full flex-wrap justify-start gap-1 !overflow-visible bg-[#F4F4F5] p-1">
+        <TabsList className="!h-auto w-fit max-w-full flex-wrap justify-start gap-1 !overflow-visible bg-secondary p-1">
           {(
             [
-              ["rechtstexte", "Rechtstexte", `${staleCount + missingCount} offen`],
-              ["loeschanfragen", "Anfragen", `${openDeletionRequests.length} offen`],
-              ["verarbeitungen", "Verarbeitungen", `${processingActivities.length} Zwecke`],
+              [
+                "rechtstexte",
+                "Rechtstexte",
+                `${staleCount + missingCount} offen`,
+              ],
+              [
+                "loeschanfragen",
+                "Anfragen",
+                `${openDeletionRequests.length} offen`,
+              ],
+              [
+                "verarbeitungen",
+                "Verarbeitungen",
+                `${processingActivities.length} Zwecke`,
+              ],
               [
                 "auftragsverarbeiter",
                 "Auftragsverarbeiter",
                 `${dataProcessorsWithContract} von ${dataProcessors.length} mit AV`,
               ],
               ["vorfaelle", "Vorfälle", `${incidents.length} erfasst`],
-              ["dsb", "Datenschutzbeauftragter", dpo.dpoIsExternal ? "extern benannt" : "intern benannt"],
-              ["nutzer", "Benutzer", `${deactivatedAccountsDue.length} zu entfernen`],
+              [
+                "dsb",
+                "Datenschutzbeauftragter",
+                dpo.dpoIsExternal ? "extern benannt" : "intern benannt",
+              ],
+              [
+                "nutzer",
+                "Benutzer",
+                `${deactivatedAccountsDue.length} zu entfernen`,
+              ],
             ] as const
           ).map(([id, label, subtitle]) => (
             <TabsTrigger
@@ -620,291 +674,349 @@ export function PrivacyView({
 
         <TabsContent value="rechtstexte">
           <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_360px]">
-          <div className="flex flex-col gap-4">
-            <Card className="rounded-xl shadow-sm">
-              <CardHeader>
-                <CardTitle>Rechtstexte</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Aus den Stammdaten erzeugt — manuelle Ergänzungen bleiben erhalten.
-                </p>
-                {legalDocumentError && (
-                  <p className="text-sm text-destructive">{legalDocumentError}</p>
-                )}
-              </CardHeader>
-              <CardContent className="flex flex-col divide-y divide-[#F0F0F0] p-0">
-                {sortedLegalDocuments.map((doc) => (
-                  <div
-                    key={doc.key}
-                    className="flex flex-wrap items-center justify-between gap-3 px-6 py-4"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div>
-                        <p className="font-medium">{doc.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {doc.slug} · Stand {formatDate(doc.lastGeneratedAt)}
-                        </p>
+            <div className="flex flex-col gap-4">
+              <Card className="rounded-xl shadow-sm">
+                <CardHeader>
+                  <CardTitle>Rechtstexte</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Aus den Stammdaten erzeugt — manuelle Ergänzungen bleiben
+                    erhalten.
+                  </p>
+                  {legalDocumentError && (
+                    <p className="text-sm text-destructive">
+                      {legalDocumentError}
+                    </p>
+                  )}
+                </CardHeader>
+                <CardContent className="flex flex-col divide-y divide-border p-0">
+                  {sortedLegalDocuments.map((doc) => (
+                    <div
+                      key={doc.key}
+                      className="flex flex-wrap items-center justify-between gap-3 px-6 py-4"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div>
+                          <p className="font-medium">{doc.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {doc.slug} · Stand {formatDate(doc.lastGeneratedAt)}
+                          </p>
+                        </div>
+                        {doc.contentStatus && (
+                          <Badge
+                            variant="secondary"
+                            className={
+                              CONTENT_STATUS_BADGE_CLASSNAMES[doc.contentStatus]
+                            }
+                          >
+                            {CONTENT_STATUS_LABELS[doc.contentStatus]}
+                          </Badge>
+                        )}
                       </div>
-                      {doc.contentStatus && (
-                        <Badge
-                          variant="secondary"
-                          className={CONTENT_STATUS_BADGE_CLASSNAMES[doc.contentStatus]}
-                        >
-                          {CONTENT_STATUS_LABELS[doc.contentStatus]}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-                      {doc.status === "current" && (
-                        <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
-                          aktuell
-                        </Badge>
-                      )}
-                      {doc.status === "stale" && (
-                        <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
-                          Firmendaten geändert
-                        </Badge>
-                      )}
-                      {doc.status === "missing" && (
-                        <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
-                          fehlt
-                        </Badge>
-                      )}
-                      {doc.contentId && (
+                      <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                        {doc.status === "current" && (
+                          <Badge className="badge--green border-0">
+                            aktuell
+                          </Badge>
+                        )}
+                        {doc.status === "stale" && (
+                          <Badge className="badge--amber border-0">
+                            Firmendaten geändert
+                          </Badge>
+                        )}
+                        {doc.status === "missing" && (
+                          <Badge className="badge--amber border-0">fehlt</Badge>
+                        )}
+                        {doc.contentId && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon-sm"
+                            className="border-border"
+                            aria-label={`„${doc.title}“-Seite öffnen`}
+                            render={
+                              <Link
+                                href={`/dashboard/content/${doc.contentId}/edit`}
+                              />
+                            }
+                          >
+                            <ExternalLink />
+                          </Button>
+                        )}
                         <Button
                           type="button"
                           variant="outline"
-                          size="icon-sm"
-                          className="border-[#D4D4D4]"
-                          aria-label={`„${doc.title}“-Seite öffnen`}
-                          render={<Link href={`/dashboard/content/${doc.contentId}/edit`} />}
+                          size="sm"
+                          className="border-border"
+                          disabled={regeneratingKey === doc.key}
+                          onClick={() => handleRegenerate(doc.key)}
                         >
-                          <ExternalLink />
+                          <RefreshCw className="size-3.5" />
+                          {doc.status === "missing"
+                            ? "Erzeugen"
+                            : "Neu erzeugen"}
                         </Button>
-                      )}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="border-[#D4D4D4]"
-                        disabled={regeneratingKey === doc.key}
-                        onClick={() => handleRegenerate(doc.key)}
-                      >
-                        <RefreshCw className="size-3.5" />
-                        {doc.status === "missing" ? "Erzeugen" : "Neu erzeugen"}
-                      </Button>
+                      </div>
                     </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-xl shadow-sm">
+                <CardHeader>
+                  <CardTitle>Betroffenenrechte</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Auskunft und Löschung nach Art. 15 und 17 DSGVO.
+                  </p>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3">
+                  <SwitchRow
+                    label="Selbstauskunft im Formular-Footer anbieten"
+                    checked={dsbFormSelfServiceDisclosure}
+                    onCheckedChange={setDsbFormSelfServiceDisclosure}
+                  />
+                  <SwitchRow
+                    label="IP-Adressen bei Einsendungen speichern"
+                    description="Nur für Spam-Abwehr, 7 Tage"
+                    checked={dsbFormStoreSubmissionIp}
+                    onCheckedChange={setDsbFormStoreSubmissionIp}
+                  />
+                  <p className="-mt-1 text-xs text-muted-foreground">
+                    Kein Formular-Modul vorhanden — beide Schalter werden für
+                    ein späteres Formular-Feature vorgehalten.
+                  </p>
+                  <Separator className="my-1" />
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-border"
+                      onClick={() => setSubjectAccessRequestOpen(true)}
+                    >
+                      Auskunft erstellen
+                    </Button>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
 
-            <Card className="rounded-xl shadow-sm">
-              <CardHeader>
-                <CardTitle>Betroffenenrechte</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Auskunft und Löschung nach Art. 15 und 17 DSGVO.
-                </p>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-3">
-                <SwitchRow
-                  label="Selbstauskunft im Formular-Footer anbieten"
-                  checked={dsbFormSelfServiceDisclosure}
-                  onCheckedChange={setDsbFormSelfServiceDisclosure}
-                />
-                <SwitchRow
-                  label="IP-Adressen bei Einsendungen speichern"
-                  description="Nur für Spam-Abwehr, 7 Tage"
-                  checked={dsbFormStoreSubmissionIp}
-                  onCheckedChange={setDsbFormStoreSubmissionIp}
-                />
-                <p className="-mt-1 text-xs text-muted-foreground">
-                  Kein Formular-Modul vorhanden — beide Schalter werden für
-                  ein späteres Formular-Feature vorgehalten.
-                </p>
-                <Separator className="my-1" />
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="border-[#D4D4D4]"
-                    onClick={() => setSubjectAccessRequestOpen(true)}
-                  >
-                    Auskunft erstellen
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+            <div className="flex flex-col gap-4">
+              <Card className="rounded-xl shadow-sm">
+                <CardHeader>
+                  <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Pflichtangaben-Check
+                  </p>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <ul className="flex flex-col gap-2.5 text-sm">
+                    {PFLICHTANGABEN_CHECK_ITEMS.map((item) => {
+                      const ok = item.filled(settings);
+                      return (
+                        <li
+                          key={item.label}
+                          className="flex items-center gap-2"
+                        >
+                          {ok ? (
+                            <Check className="size-4 shrink-0 text-primary" />
+                          ) : (
+                            <X className="size-4 shrink-0 text-muted-foreground" />
+                          )}
+                          <span
+                            className={ok ? undefined : "text-muted-foreground"}
+                          >
+                            {item.label}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <Separator />
+                  <p className="text-xs text-muted-foreground">
+                    Kein Rechtsrat — die Prüfung deckt nur die Vollständigkeit
+                    der Felder ab.
+                  </p>
+                </CardContent>
+              </Card>
 
-          <div className="flex flex-col gap-4">
-            <Card className="rounded-xl shadow-sm">
-              <CardHeader>
-                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                  Pflichtangaben-Check
-                </p>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4">
-                <ul className="flex flex-col gap-2.5 text-sm">
-                  {PFLICHTANGABEN_CHECK_ITEMS.map((item) => {
-                    const ok = item.filled(settings);
-                    return (
-                      <li key={item.label} className="flex items-center gap-2">
-                        {ok ?
-                          <Check className="size-4 shrink-0 text-primary" />
-                        : <X className="size-4 shrink-0 text-muted-foreground" />}
-                        <span className={ok ? undefined : "text-muted-foreground"}>
-                          {item.label}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-                <Separator />
-                <p className="text-xs text-muted-foreground">
-                  Kein Rechtsrat — die Prüfung deckt nur die Vollständigkeit der
-                  Felder ab.
-                </p>
-              </CardContent>
-            </Card>
+              <Card className="rounded-xl shadow-sm">
+                <CardHeader>
+                  <CardTitle>Aufbewahrung</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Nach Ablauf wird die Wiederherstellung gesperrt — endgültig
+                    gelöscht wird erst nach manueller Bestätigung, nie
+                    automatisch.
+                  </p>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <SegmentedPicker
+                    label="Formular-Einsendungen"
+                    value={retentionFormSubmissionsDays ?? -1}
+                    onChange={(v) =>
+                      setRetentionFormSubmissionsDays(v === -1 ? null : v)
+                    }
+                    options={[
+                      { label: "30 Tage", value: 30 },
+                      { label: "90 Tage", value: 90 },
+                      { label: "1 Jahr", value: 365 },
+                      { label: "unbegrenzt", value: -1 },
+                    ]}
+                  />
+                  <p className="-mt-2 text-xs text-muted-foreground">
+                    Kein Formular-Modul vorhanden — Wert wird für ein späteres
+                    Formular-Feature vorgehalten.
+                  </p>
 
-            <Card className="rounded-xl shadow-sm">
-              <CardHeader>
-                <CardTitle>Aufbewahrung</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Nach Ablauf wird die Wiederherstellung gesperrt — endgültig
-                  gelöscht wird erst nach manueller Bestätigung, nie automatisch.
-                </p>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4">
-                <SegmentedPicker
-                  label="Formular-Einsendungen"
-                  value={retentionFormSubmissionsDays ?? -1}
-                  onChange={(v) =>
-                    setRetentionFormSubmissionsDays(v === -1 ? null : v)
-                  }
-                  options={[
-                    { label: "30 Tage", value: 30 },
-                    { label: "90 Tage", value: 90 },
-                    { label: "1 Jahr", value: 365 },
-                    { label: "unbegrenzt", value: -1 },
-                  ]}
-                />
-                <p className="-mt-2 text-xs text-muted-foreground">
-                  Kein Formular-Modul vorhanden — Wert wird für ein späteres
-                  Formular-Feature vorgehalten.
-                </p>
+                  <SegmentedPicker
+                    label="Zugriffsprotokoll (Monate)"
+                    value={retentionAccessLogMonths}
+                    onChange={setRetentionAccessLogMonths}
+                    options={[
+                      { label: "3 Monate", value: 3 },
+                      { label: "6 Monate", value: 6 },
+                      { label: "12 Monate", value: 12 },
+                      { label: "24 Monate", value: 24 },
+                    ]}
+                  />
+                  <p className="-mt-2 text-xs text-muted-foreground">
+                    Nach Ablauf wird der Eintrag gesperrt und kann nicht mehr
+                    wiederhergestellt werden – keine automatische Löschung.
+                  </p>
+                  <RetentionDueList
+                    title="Fällig zur Löschung"
+                    emptyLabel="Nichts fällig."
+                    items={accessLogDue.map((e) => ({
+                      id: e.id,
+                      label: e.action,
+                      date: formatDate(e.createdAt),
+                    }))}
+                    onDeleteOne={async (id) => {
+                      await fetch(`/api/privacy/retention/access-log/${id}`, {
+                        method: "DELETE",
+                      });
+                      setAccessLogDue((prev) =>
+                        prev.filter((e) => e.id !== id),
+                      );
+                      toastDeleted("Eintrag wurde gelöscht.");
+                    }}
+                    onDeleteAll={async () => {
+                      await fetch("/api/privacy/retention/access-log", {
+                        method: "DELETE",
+                      });
+                      setAccessLogDue([]);
+                      toastDeleted("Einträge wurden gelöscht.");
+                    }}
+                  />
 
-                <SegmentedPicker
-                  label="Zugriffsprotokoll (Monate)"
-                  value={retentionAccessLogMonths}
-                  onChange={setRetentionAccessLogMonths}
-                  options={[
-                    { label: "3 Monate", value: 3 },
-                    { label: "6 Monate", value: 6 },
-                    { label: "12 Monate", value: 12 },
-                    { label: "24 Monate", value: 24 },
-                  ]}
-                />
-                <p className="-mt-2 text-xs text-muted-foreground">
-                  Nach Ablauf wird der Eintrag gesperrt und kann nicht mehr
-                  wiederhergestellt werden – keine automatische Löschung.
-                </p>
-                <RetentionDueList
-                  title="Fällig zur Löschung"
-                  emptyLabel="Nichts fällig."
-                  items={accessLogDue.map((e) => ({
-                    id: e.id,
-                    label: e.action,
-                    date: formatDate(e.createdAt),
-                  }))}
-                  onDeleteOne={async (id) => {
-                    await fetch(`/api/privacy/retention/access-log/${id}`, {
-                      method: "DELETE",
-                    });
-                    setAccessLogDue((prev) => prev.filter((e) => e.id !== id));
-                    toastDeleted("Eintrag wurde gelöscht.");
-                  }}
-                  onDeleteAll={async () => {
-                    await fetch("/api/privacy/retention/access-log", {
-                      method: "DELETE",
-                    });
-                    setAccessLogDue([]);
-                    toastDeleted("Einträge wurden gelöscht.");
-                  }}
-                />
+                  <SegmentedPicker
+                    label="Deaktivierte Konten (Monate)"
+                    value={retentionDeactivatedAccountsMonths}
+                    onChange={setRetentionDeactivatedAccountsMonths}
+                    options={[
+                      { label: "3 Monate", value: 3 },
+                      { label: "6 Monate", value: 6 },
+                      { label: "12 Monate", value: 12 },
+                      { label: "24 Monate", value: 24 },
+                    ]}
+                  />
+                  <p className="-mt-2 text-xs text-muted-foreground">
+                    Nach Ablauf wird der Eintrag gesperrt und kann nicht mehr
+                    wiederhergestellt werden – keine automatische Löschung.
+                    Fällige Konten stehen im Tab „Benutzer“.
+                  </p>
 
-                <SegmentedPicker
-                  label="Deaktivierte Konten (Monate)"
-                  value={retentionDeactivatedAccountsMonths}
-                  onChange={setRetentionDeactivatedAccountsMonths}
-                  options={[
-                    { label: "3 Monate", value: 3 },
-                    { label: "6 Monate", value: 6 },
-                    { label: "12 Monate", value: 12 },
-                    { label: "24 Monate", value: 24 },
-                  ]}
-                />
-                <p className="-mt-2 text-xs text-muted-foreground">
-                  Nach Ablauf wird der Eintrag gesperrt und kann nicht mehr
-                  wiederhergestellt werden – keine automatische Löschung.
-                  Fällige Konten stehen im Tab „Benutzer“.
-                </p>
-
-                <SegmentedPicker
-                  label="Papierkorb (Tage)"
-                  value={retentionTrashDays}
-                  onChange={setRetentionTrashDays}
-                  options={[
-                    { label: "7 Tage", value: 7 },
-                    { label: "30 Tage", value: 30 },
-                    { label: "90 Tage", value: 90 },
-                    { label: "180 Tage", value: 180 },
-                  ]}
-                />
-                <p className="-mt-2 text-xs text-muted-foreground">
-                  Nach Ablauf wird der Eintrag im Papierkorb gesperrt und kann
-                  nicht mehr wiederhergestellt werden – keine automatische
-                  Löschung.
-                </p>
-                <RetentionDueList
-                  title="Fällig zur endgültigen Löschung"
-                  emptyLabel="Papierkorb ist leer."
-                  items={[
-                    ...trashDue.content.map((i) => ({ ...i, type: "content" as const })),
-                    ...trashDue.media.map((i) => ({ ...i, type: "media" as const })),
-                    ...trashDue.categories.map((i) => ({ ...i, type: "categories" as const })),
-                    ...trashDue.tags.map((i) => ({ ...i, type: "tags" as const })),
-                  ].map((i) => ({ id: `${i.type}:${i.id}`, label: i.label, date: formatDate(i.deletedAt) }))}
-                  onDeleteOne={async (compositeId) => {
-                    const [type, id] = compositeId.split(":");
-                    await fetch(`/api/${type}/${id}/permanent`, { method: "DELETE" });
-                    setTrashDue((prev) => ({
-                      ...prev,
-                      [type]: (prev[type as keyof RetentionTrashDue] as { id: string }[]).filter(
-                        (i) => i.id !== id,
-                      ),
-                    }));
-                    toastDeleted("Eintrag wurde endgültig gelöscht.");
-                  }}
-                  onDeleteAll={async () => {
-                    const all = [
-                      ...trashDue.content.map((i) => ({ type: "content", id: i.id })),
-                      ...trashDue.media.map((i) => ({ type: "media", id: i.id })),
-                      ...trashDue.categories.map((i) => ({ type: "categories", id: i.id })),
-                      ...trashDue.tags.map((i) => ({ type: "tags", id: i.id })),
-                    ];
-                    await Promise.all(
-                      all.map((i) =>
-                        fetch(`/api/${i.type}/${i.id}/permanent`, { method: "DELETE" }),
-                      ),
-                    );
-                    setTrashDue({ content: [], media: [], categories: [], tags: [] });
-                    toastDeleted("Papierkorb wurde geleert.");
-                  }}
-                />
-              </CardContent>
-            </Card>
-          </div>
+                  <SegmentedPicker
+                    label="Papierkorb (Tage)"
+                    value={retentionTrashDays}
+                    onChange={setRetentionTrashDays}
+                    options={[
+                      { label: "7 Tage", value: 7 },
+                      { label: "30 Tage", value: 30 },
+                      { label: "90 Tage", value: 90 },
+                      { label: "180 Tage", value: 180 },
+                    ]}
+                  />
+                  <p className="-mt-2 text-xs text-muted-foreground">
+                    Nach Ablauf wird der Eintrag im Papierkorb gesperrt und kann
+                    nicht mehr wiederhergestellt werden – keine automatische
+                    Löschung.
+                  </p>
+                  <RetentionDueList
+                    title="Fällig zur endgültigen Löschung"
+                    emptyLabel="Papierkorb ist leer."
+                    items={[
+                      ...trashDue.content.map((i) => ({
+                        ...i,
+                        type: "content" as const,
+                      })),
+                      ...trashDue.media.map((i) => ({
+                        ...i,
+                        type: "media" as const,
+                      })),
+                      ...trashDue.categories.map((i) => ({
+                        ...i,
+                        type: "categories" as const,
+                      })),
+                      ...trashDue.tags.map((i) => ({
+                        ...i,
+                        type: "tags" as const,
+                      })),
+                    ].map((i) => ({
+                      id: `${i.type}:${i.id}`,
+                      label: i.label,
+                      date: formatDate(i.deletedAt),
+                    }))}
+                    onDeleteOne={async (compositeId) => {
+                      const [type, id] = compositeId.split(":");
+                      await fetch(`/api/${type}/${id}/permanent`, {
+                        method: "DELETE",
+                      });
+                      setTrashDue((prev) => ({
+                        ...prev,
+                        [type]: (
+                          prev[type as keyof RetentionTrashDue] as {
+                            id: string;
+                          }[]
+                        ).filter((i) => i.id !== id),
+                      }));
+                      toastDeleted("Eintrag wurde endgültig gelöscht.");
+                    }}
+                    onDeleteAll={async () => {
+                      const all = [
+                        ...trashDue.content.map((i) => ({
+                          type: "content",
+                          id: i.id,
+                        })),
+                        ...trashDue.media.map((i) => ({
+                          type: "media",
+                          id: i.id,
+                        })),
+                        ...trashDue.categories.map((i) => ({
+                          type: "categories",
+                          id: i.id,
+                        })),
+                        ...trashDue.tags.map((i) => ({
+                          type: "tags",
+                          id: i.id,
+                        })),
+                      ];
+                      await Promise.all(
+                        all.map((i) =>
+                          fetch(`/api/${i.type}/${i.id}/permanent`, {
+                            method: "DELETE",
+                          }),
+                        ),
+                      );
+                      setTrashDue({
+                        content: [],
+                        media: [],
+                        categories: [],
+                        tags: [],
+                      });
+                      toastDeleted("Papierkorb wurde geleert.");
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
 
@@ -919,37 +1031,45 @@ export function PrivacyView({
 
         <TabsContent value="verarbeitungen">
           <div className="overflow-hidden rounded-xl bg-card shadow-sm">
-            <div className="border-b border-[#F0F0F0] px-6 py-3">
+            <div className="border-b border-border px-6 py-3">
               <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                 Verzeichnis der Verarbeitungstätigkeiten
               </p>
             </div>
-            {processingActivities.length === 0 ?
+            {processingActivities.length === 0 ? (
               <p className="px-6 py-6 text-sm text-muted-foreground">
                 Noch keine Verarbeitungstätigkeiten erfasst.
               </p>
-            : <div className="flex flex-col divide-y divide-[#F0F0F0]">
+            ) : (
+              <div className="flex flex-col divide-y divide-border">
                 {processingActivities.map((row) => (
                   <div
                     key={row.id}
                     className="grid grid-cols-[1fr_110px_1fr_100px_130px_auto] items-center gap-4 px-6 py-4"
                   >
                     <p className="truncate font-medium">{row.purpose}</p>
-                    <p className="truncate font-mono text-xs text-blue-700">
+                    <p className="truncate font-mono text-xs text-blue-700 dark:text-blue-500">
                       {row.legalBasis || "–"}
                     </p>
                     <p className="truncate text-sm text-muted-foreground">
                       {row.dataCategories || "–"}
                     </p>
-                    <p className="truncate font-mono text-xs text-amber-700">
+                    <p className="truncate font-mono text-xs text-amber-700 dark:text-amber-500">
                       {row.retentionPeriod || "–"}
                     </p>
                     <div className="flex justify-end">
-                      {row.recipients ?
-                        <Badge variant="secondary" className="bg-muted text-muted-foreground">
+                      {row.recipients ? (
+                        <Badge
+                          variant="secondary"
+                          className="bg-muted text-muted-foreground"
+                        >
                           {row.recipients}
                         </Badge>
-                      : <span className="text-xs text-muted-foreground">intern</span>}
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          intern
+                        </span>
+                      )}
                     </div>
                     <RowActionButtons
                       size="icon-sm"
@@ -959,11 +1079,11 @@ export function PrivacyView({
                   </div>
                 ))}
               </div>
-            }
+            )}
             <button
               type="button"
               onClick={() => setProcessingActivityTarget("new")}
-              className="flex w-full items-center gap-2 border-t border-[#F0F0F0] px-6 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+              className="flex w-full items-center gap-2 border-t border-border px-6 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
             >
               <Plus className="size-4" />
               Verarbeitung ergänzen
@@ -974,18 +1094,20 @@ export function PrivacyView({
         <TabsContent value="auftragsverarbeiter">
           <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_360px]">
             <div className="overflow-hidden rounded-xl bg-card shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F0F0F0] px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
                 <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                   Dienstleister mit Datenzugriff · {dataProcessors.length}
                 </p>
-                <span className="text-xs text-muted-foreground">Art. 28 DSGVO</span>
+                <span className="text-xs text-muted-foreground">
+                  Art. 28 DSGVO
+                </span>
               </div>
               {dataProcessors.length === 0 && (
                 <p className="px-4 py-6 text-sm text-muted-foreground">
                   Noch keine Auftragsverarbeiter erfasst.
                 </p>
               )}
-              <div className="flex flex-col divide-y divide-[#F0F0F0]">
+              <div className="flex flex-col divide-y divide-border">
                 {dataProcessors.map((row) => (
                   <div
                     key={row.id}
@@ -994,7 +1116,8 @@ export function PrivacyView({
                     <div className="min-w-0 sm:w-48 sm:shrink-0">
                       <p className="truncate font-semibold">{row.name}</p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {row.contractDate && `seit ${formatDate(row.contractDate)}`}
+                        {row.contractDate &&
+                          `seit ${formatDate(row.contractDate)}`}
                         {row.contractDate && row.complianceNote && " · "}
                         {row.complianceNote}
                       </p>
@@ -1011,9 +1134,9 @@ export function PrivacyView({
                       )}
                       <Badge
                         className={
-                          row.hasContract ?
-                            "bg-green-100 text-green-700 hover:bg-green-100"
-                          : "bg-amber-100 text-amber-800 hover:bg-amber-100"
+                          row.hasContract
+                            ? "badge--green border-0"
+                            : "badge--amber border-0"
                         }
                       >
                         {row.hasContract ? "AV-Vertrag" : "AV fehlt"}
@@ -1040,7 +1163,7 @@ export function PrivacyView({
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="border-[#D4D4D4]"
+                      className="border-border"
                       render={<a href="/api/data-processors/contracts.zip" />}
                     >
                       AV-Verträge herunterladen
@@ -1066,11 +1189,13 @@ export function PrivacyView({
                     dataProcessorsMissingContract.map((processor) => (
                       <div key={processor.id} className="flex flex-col gap-2">
                         <p className="text-sm text-amber-700">
-                          <span className="font-semibold">{processor.name}</span> —
-                          {" "}
-                          AV-Vertrag
-                          {processor.outsideEu && " und Standardvertragsklauseln"}
-                          {" "}fehlen
+                          <span className="font-semibold">
+                            {processor.name}
+                          </span>{" "}
+                          — AV-Vertrag
+                          {processor.outsideEu &&
+                            " und Standardvertragsklauseln"}{" "}
+                          fehlen
                         </p>
                         <Button
                           type="button"
@@ -1078,9 +1203,9 @@ export function PrivacyView({
                           disabled={requestingContractFor === processor.id}
                           onClick={() => handleRequestContract(processor)}
                         >
-                          {requestingContractFor === processor.id ?
-                            "Sendet…"
-                          : "AV-Vertrag anfordern"}
+                          {requestingContractFor === processor.id
+                            ? "Sendet…"
+                            : "AV-Vertrag anfordern"}
                         </Button>
                       </div>
                     ))
@@ -1101,10 +1226,10 @@ export function PrivacyView({
                     </p>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      {dataProcessorsOutsideEu.length === 1 ?
-                        `${dataProcessorsOutsideEu[0].name} verarbeitet`
-                      : `${dataProcessorsOutsideEu.length} Dienstleister verarbeiten`}
-                      {" "}Daten außerhalb der EU. Nötig sind
+                      {dataProcessorsOutsideEu.length === 1
+                        ? `${dataProcessorsOutsideEu[0].name} verarbeitet`
+                        : `${dataProcessorsOutsideEu.length} Dienstleister verarbeiten`}{" "}
+                      Daten außerhalb der EU. Nötig sind
                       Standardvertragsklauseln plus Transfer-Folgenabschätzung.
                     </p>
                   )}
@@ -1113,7 +1238,7 @@ export function PrivacyView({
                       <Button
                         type="button"
                         variant="outline"
-                        className="border-[#D4D4D4]"
+                        className="border-border"
                         render={
                           <a href={mediaUrl(sccTemplateMedia)} download />
                         }
@@ -1133,8 +1258,10 @@ export function PrivacyView({
                     </div>
                   ) : (
                     <div className="flex flex-col gap-1.5">
-                      <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-[#D4D4D4] px-5 py-3.5 text-sm font-semibold transition-colors hover:bg-muted">
-                        {isUploadingSccTemplate ? "Lädt hoch…" : "Vorlage hochladen"}
+                      <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-border px-5 py-3.5 text-sm font-semibold transition-colors hover:bg-muted">
+                        {isUploadingSccTemplate
+                          ? "Lädt hoch…"
+                          : "Vorlage hochladen"}
                         <input
                           type="file"
                           className="hidden"
@@ -1157,7 +1284,10 @@ export function PrivacyView({
         </TabsContent>
 
         <TabsContent value="vorfaelle">
-          <PrivacyIncidentsPanel incidents={incidents} onIncidentsChange={setIncidents} />
+          <PrivacyIncidentsPanel
+            incidents={incidents}
+            onIncidentsChange={setIncidents}
+          />
         </TabsContent>
 
         <TabsContent value="dsb">
@@ -1172,7 +1302,7 @@ export function PrivacyView({
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
                 {(dpo.dpoName || dpo.dpoEmail) && (
-                  <div className="flex flex-wrap items-center gap-3 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+                  <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-muted p-4">
                     <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-semibold text-background">
                       {dpoInitials || "?"}
                     </span>
@@ -1181,7 +1311,10 @@ export function PrivacyView({
                         <span className="font-semibold">
                           {dpo.dpoName || "Ohne Namen"}
                         </span>
-                        <Badge variant="secondary" className="bg-muted text-muted-foreground">
+                        <Badge
+                          variant="secondary"
+                          className="bg-muted text-muted-foreground"
+                        >
                           {dpo.dpoIsExternal ? "extern" : "intern"}
                         </Badge>
                       </div>
@@ -1189,7 +1322,12 @@ export function PrivacyView({
                         {dpo.dpoEmail && <span>{dpo.dpoEmail}</span>}
                         {dpo.dpoPhone && <span>{dpo.dpoPhone}</span>}
                         {dpo.dpoAppointedAt && (
-                          <span>benannt seit {formatDate(new Date(dpo.dpoAppointedAt).toISOString())}</span>
+                          <span>
+                            benannt seit{" "}
+                            {formatDate(
+                              new Date(dpo.dpoAppointedAt).toISOString(),
+                            )}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -1211,17 +1349,23 @@ export function PrivacyView({
                     <Input
                       id="dsb-name"
                       value={dpo.dpoName}
-                      onChange={(e) => setDpo((p) => ({ ...p, dpoName: e.target.value }))}
+                      onChange={(e) =>
+                        setDpo((p) => ({ ...p, dpoName: e.target.value }))
+                      }
                     />
                   </div>
                   <div className="flex flex-col gap-1">
                     <Label htmlFor="dsb-company">
-                      {dpo.dpoIsExternal ? "Kanzlei / Unternehmen" : "Abteilung"}
+                      {dpo.dpoIsExternal
+                        ? "Kanzlei / Unternehmen"
+                        : "Abteilung"}
                     </Label>
                     <Input
                       id="dsb-company"
                       value={dpo.dpoCompany}
-                      onChange={(e) => setDpo((p) => ({ ...p, dpoCompany: e.target.value }))}
+                      onChange={(e) =>
+                        setDpo((p) => ({ ...p, dpoCompany: e.target.value }))
+                      }
                     />
                   </div>
                   <div className="flex flex-col gap-1">
@@ -1230,7 +1374,9 @@ export function PrivacyView({
                       id="dsb-email"
                       type="email"
                       value={dpo.dpoEmail}
-                      onChange={(e) => setDpo((p) => ({ ...p, dpoEmail: e.target.value }))}
+                      onChange={(e) =>
+                        setDpo((p) => ({ ...p, dpoEmail: e.target.value }))
+                      }
                     />
                   </div>
                   <div className="flex flex-col gap-1">
@@ -1238,7 +1384,9 @@ export function PrivacyView({
                     <Input
                       id="dsb-phone"
                       value={dpo.dpoPhone}
-                      onChange={(e) => setDpo((p) => ({ ...p, dpoPhone: e.target.value }))}
+                      onChange={(e) =>
+                        setDpo((p) => ({ ...p, dpoPhone: e.target.value }))
+                      }
                     />
                   </div>
                   <div className="flex flex-col gap-1">
@@ -1248,12 +1396,17 @@ export function PrivacyView({
                       type="date"
                       value={dpo.dpoAppointedAt}
                       onChange={(e) =>
-                        setDpo((p) => ({ ...p, dpoAppointedAt: e.target.value }))
+                        setDpo((p) => ({
+                          ...p,
+                          dpoAppointedAt: e.target.value,
+                        }))
                       }
                     />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <Label htmlFor="dsb-reported">Meldung an Aufsichtsbehörde</Label>
+                    <Label htmlFor="dsb-reported">
+                      Meldung an Aufsichtsbehörde
+                    </Label>
                     <Input
                       id="dsb-reported"
                       type="date"
@@ -1315,32 +1468,49 @@ export function PrivacyView({
                     aria-label="Aufsichtsbehörde"
                     value={dpo.dpoSupervisoryAuthority}
                     onChange={(e) =>
-                      setDpo((p) => ({ ...p, dpoSupervisoryAuthority: e.target.value }))
+                      setDpo((p) => ({
+                        ...p,
+                        dpoSupervisoryAuthority: e.target.value,
+                      }))
                     }
                     placeholder="z.B. Landesbeauftragte für Datenschutz…"
                   />
-                  <div className="flex flex-col divide-y divide-[#F0F0F0] text-sm">
+                  <div className="flex flex-col divide-y divide-border text-sm">
                     <div className="flex items-center justify-between py-2 first:pt-0">
-                      <span className="text-muted-foreground">Benennung gemeldet</span>
+                      <span className="text-muted-foreground">
+                        Benennung gemeldet
+                      </span>
                       <span>
-                        {dpo.dpoReportedAt ?
-                          formatDate(new Date(dpo.dpoReportedAt).toISOString())
-                        : "–"}
+                        {dpo.dpoReportedAt
+                          ? formatDate(
+                              new Date(dpo.dpoReportedAt).toISOString(),
+                            )
+                          : "–"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between py-2 last:pb-0">
-                      <span className="text-muted-foreground">Letzter Kontakt</span>
+                      <span className="text-muted-foreground">
+                        Letzter Kontakt
+                      </span>
                       <Input
                         type="date"
                         className="h-7 w-32 text-right"
                         value={dpo.dpoLastContactAt}
                         onChange={(e) =>
-                          setDpo((p) => ({ ...p, dpoLastContactAt: e.target.value }))
+                          setDpo((p) => ({
+                            ...p,
+                            dpoLastContactAt: e.target.value,
+                          }))
                         }
                       />
                     </div>
                   </div>
-                  <Button type="button" variant="outline" className="border-[#D4D4D4]" disabled>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-border"
+                    disabled
+                  >
                     Meldeformular öffnen
                   </Button>
                 </CardContent>
@@ -1353,7 +1523,7 @@ export function PrivacyView({
                   </p>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3">
-                  <div className="flex flex-col divide-y divide-[#F0F0F0] text-sm">
+                  <div className="flex flex-col divide-y divide-border text-sm">
                     <div className="flex items-center justify-between py-2 first:pt-0">
                       <span className="text-muted-foreground">Adresse</span>
                       <span className="truncate">{dpo.dpoEmail || "–"}</span>
@@ -1362,7 +1532,9 @@ export function PrivacyView({
                       <span className="text-muted-foreground">
                         Anfragen {currentYear}
                       </span>
-                      <span className="font-medium">{deletionRequestsThisYear}</span>
+                      <span className="font-medium">
+                        {deletionRequestsThisYear}
+                      </span>
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -1377,7 +1549,7 @@ export function PrivacyView({
 
         <TabsContent value="nutzer">
           <div className="overflow-hidden rounded-xl bg-card shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F0F0F0] px-6 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-6 py-3">
               <div>
                 <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                   Gelöschte Nutzer · {deactivatedAccountsDue.length}
@@ -1391,11 +1563,13 @@ export function PrivacyView({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="border-[#D4D4D4]"
+                  className="border-border"
                   onClick={async () => {
                     await Promise.all(
                       deactivatedAccountsDue.map((u) =>
-                        fetch(`/api/users/${u.id}/anonymize`, { method: "POST" }),
+                        fetch(`/api/users/${u.id}/anonymize`, {
+                          method: "POST",
+                        }),
                       ),
                     );
                     setDeactivatedAccountsDue([]);
@@ -1406,11 +1580,12 @@ export function PrivacyView({
                 </Button>
               )}
             </div>
-            {deactivatedAccountsDue.length === 0 ?
+            {deactivatedAccountsDue.length === 0 ? (
               <p className="px-6 py-6 text-sm text-muted-foreground">
                 Keine gelöschten Nutzer.
               </p>
-            : <div className="flex flex-col divide-y divide-[#F0F0F0]">
+            ) : (
+              <div className="flex flex-col divide-y divide-border">
                 {deactivatedAccountsDue.map((u) => (
                   <div
                     key={u.id}
@@ -1422,12 +1597,14 @@ export function PrivacyView({
                       </span>
                       <div>
                         <p className="font-medium">{formatName(u)}</p>
-                        <p className="text-xs text-muted-foreground">{u.email}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {u.email}
+                        </p>
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                       {u.overdue && (
-                        <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                        <Badge className="badge--amber border-0">
                           überfällig
                         </Badge>
                       )}
@@ -1447,7 +1624,7 @@ export function PrivacyView({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="border-[#D4D4D4] text-destructive"
+                        className="border-border text-destructive"
                         onClick={() => setAnonymizeTarget(u)}
                       >
                         Anonymisieren
@@ -1456,11 +1633,10 @@ export function PrivacyView({
                   </div>
                 ))}
               </div>
-            }
+            )}
           </div>
         </TabsContent>
       </Tabs>
-
 
       <ProcessingActivityDialog
         target={processingActivityTarget}
@@ -1468,20 +1644,27 @@ export function PrivacyView({
         onSaved={(row) =>
           setProcessingActivities((prev) => {
             const exists = prev.some((r) => r.id === row.id);
-            return exists ? prev.map((r) => (r.id === row.id ? row : r)) : [row, ...prev];
+            return exists
+              ? prev.map((r) => (r.id === row.id ? row : r))
+              : [row, ...prev];
           })
         }
       />
       <ConfirmDeleteDialog
         open={processingActivityDeleteTarget !== null}
-        onOpenChange={(open) => !open && setProcessingActivityDeleteTarget(null)}
+        onOpenChange={(open) =>
+          !open && setProcessingActivityDeleteTarget(null)
+        }
         title="Verarbeitungstätigkeit entfernen?"
         description="Diese Aktion kann nicht rückgängig gemacht werden."
         onConfirm={async () => {
           if (!processingActivityDeleteTarget) return;
-          await fetch(`/api/processing-activities/${processingActivityDeleteTarget.id}`, {
-            method: "DELETE",
-          });
+          await fetch(
+            `/api/processing-activities/${processingActivityDeleteTarget.id}`,
+            {
+              method: "DELETE",
+            },
+          );
           setProcessingActivities((prev) =>
             prev.filter((r) => r.id !== processingActivityDeleteTarget.id),
           );
@@ -1497,7 +1680,9 @@ export function PrivacyView({
         onSaved={(row) =>
           setDataProcessors((prev) => {
             const exists = prev.some((r) => r.id === row.id);
-            return exists ? prev.map((r) => (r.id === row.id ? row : r)) : [row, ...prev];
+            return exists
+              ? prev.map((r) => (r.id === row.id ? row : r))
+              : [row, ...prev];
           })
         }
       />
@@ -1534,7 +1719,9 @@ export function PrivacyView({
         confirmingLabel="Anonymisiert…"
         onConfirm={async () => {
           if (!anonymizeTarget) return;
-          await fetch(`/api/users/${anonymizeTarget.id}/anonymize`, { method: "POST" });
+          await fetch(`/api/users/${anonymizeTarget.id}/anonymize`, {
+            method: "POST",
+          });
           setDeactivatedAccountsDue((prev) =>
             prev.filter((p) => p.id !== anonymizeTarget.id),
           );

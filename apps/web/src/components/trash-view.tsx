@@ -63,14 +63,17 @@ const TYPE_LABELS: Record<TrashType, string> = {
 // Farbschema pro Typ (Icon-Box + Badge neben dem Titel) – eigene, in sich
 // konsistente Palette, da es dafür noch keine app-weite Konvention gab
 // (anders als z.B. Content-Status-Badges).
-const TYPE_STYLES: Record<TrashType, { icon: typeof FileText; className: string }> = {
-  content: { icon: FileText, className: "bg-blue-100 text-blue-700" },
-  media: { icon: ImageIcon, className: "bg-slate-200 text-slate-700" },
-  categories: { icon: FolderTree, className: "bg-teal-100 text-teal-700" },
-  tags: { icon: TagIcon, className: "bg-purple-100 text-purple-700" },
-  gallery: { icon: Images, className: "bg-green-100 text-green-700" },
-  faq: { icon: HelpCircle, className: "bg-amber-100 text-amber-700" },
-  forms: { icon: ClipboardList, className: "bg-indigo-100 text-indigo-700" },
+const TYPE_STYLES: Record<
+  TrashType,
+  { icon: typeof FileText; className: string }
+> = {
+  content: { icon: FileText, className: "badge--blue" },
+  media: { icon: ImageIcon, className: "badge--slate" },
+  categories: { icon: FolderTree, className: "badge--green" },
+  tags: { icon: TagIcon, className: "badge--ink" },
+  gallery: { icon: Images, className: "badge--lime" },
+  faq: { icon: HelpCircle, className: "badge--amber" },
+  forms: { icon: ClipboardList, className: "badge--slate" },
 };
 
 const dateFormatter = new Intl.DateTimeFormat("de-DE", {
@@ -92,8 +95,15 @@ export function TrashView({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(activeQuery);
-  const { selected, toggle, toggleAll, clear, allSelected, someSelected, count } =
-    useSelection(items.map((item) => `${item.type}:${item.id}`));
+  const {
+    selected,
+    toggle,
+    toggleAll,
+    clear,
+    allSelected,
+    someSelected,
+    count,
+  } = useSelection(items.map((item) => `${item.type}:${item.id}`));
 
   function updateParams(updates: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -110,7 +120,9 @@ export function TrashView({
   }
 
   async function handleRestore(item: TrashItem) {
-    await fetch(`/api/trash/${item.type}/${item.id}/restore`, { method: "POST" });
+    await fetch(`/api/trash/${item.type}/${item.id}/restore`, {
+      method: "POST",
+    });
     toastEdited(`„${item.title}“ wurde wiederhergestellt.`);
     router.refresh();
   }
@@ -122,7 +134,9 @@ export function TrashView({
   }
 
   async function handleBulkDelete() {
-    const targets = items.filter((item) => selected.has(`${item.type}:${item.id}`));
+    const targets = items.filter((item) =>
+      selected.has(`${item.type}:${item.id}`),
+    );
     await Promise.all(
       targets.map((item) =>
         fetch(`/api/trash/${item.type}/${item.id}`, { method: "DELETE" }),
@@ -160,7 +174,7 @@ export function TrashView({
           <Button
             type="button"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             render={<Link href="/dashboard/privacy" />}
           >
             <Settings2 className="size-4" />
@@ -168,7 +182,11 @@ export function TrashView({
           </Button>
           <ConfirmDeleteDialog
             trigger={
-              <Button type="button" variant="outline" disabled={stats.total === 0}>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={stats.total === 0}
+              >
                 <Trash2 className="size-4" />
                 Papierkorb leeren
               </Button>
@@ -205,27 +223,34 @@ export function TrashView({
 
       {stats.expiringSoonCount > 0 && (
         <div className="flex flex-col items-start gap-3 rounded-xl bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:gap-4">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+          <span className="flex size-9 shrink-0 items-center justify-center badge--amber rounded-full">
             <Clock className="size-[18px]" />
           </span>
           <p className="flex-1 text-sm">
-            <span className="font-semibold text-[#132033]">
+            <span className="font-semibold text-pivot-navy">
               {stats.expiringSoonCount}{" "}
-              {stats.expiringSoonCount === 1 ? "Eintrag verfällt" : "Einträge verfallen"} in
-              den nächsten 7 Tagen.
+              {stats.expiringSoonCount === 1
+                ? "Eintrag verfällt"
+                : "Einträge verfallen"}{" "}
+              in den nächsten 7 Tagen.
             </span>{" "}
             <span className="text-muted-foreground">
               Danach sind sie nicht wiederherstellbar.
             </span>
           </p>
-          <Button type="button" size="sm" className="shrink-0" onClick={handleRestoreExpiring}>
+          <Button
+            type="button"
+            size="sm"
+            className="shrink-0"
+            onClick={handleRestoreExpiring}
+          >
             Alle wiederherstellen
           </Button>
         </div>
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex flex-wrap items-center gap-1 rounded-xl bg-[#F4F4F5] p-1">
+        <div className="flex flex-wrap items-center gap-1 rounded-xl bg-secondary p-1">
           {TYPE_FILTERS.map((filter) => {
             const active = activeType === filter.value;
             const filterCount = filter.value
@@ -239,17 +264,19 @@ export function TrashView({
                 className={cn(
                   "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors",
                   active
-                    ? "bg-white text-foreground shadow-sm"
+                    ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 {filter.label}
-                <span className="text-xs text-muted-foreground">{filterCount}</span>
+                <span className="text-xs text-muted-foreground">
+                  {filterCount}
+                </span>
               </button>
             );
           })}
         </div>
-        <div className="flex h-9 min-w-56 flex-1 items-center gap-2 rounded-xl border border-[#D4D4D4] bg-card px-4 sm:flex-none">
+        <div className="flex h-9 min-w-56 flex-1 items-center gap-2 rounded-xl border border-border bg-card px-4 sm:flex-none">
           <Search className="size-4 shrink-0 text-muted-foreground" />
           <Input
             value={query}
@@ -272,7 +299,7 @@ export function TrashView({
         />
         <div className="overflow-hidden rounded-xl bg-card shadow-sm">
           <Table>
-            <TableHeader className="bg-background">
+            <TableHeader>
               <TableRow>
                 <TableHead className="w-10">
                   <Checkbox
@@ -291,7 +318,10 @@ export function TrashView({
             <TableBody>
               {items.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={5}
+                    className="h-24 text-center text-muted-foreground"
+                  >
                     Papierkorb ist leer.
                   </TableCell>
                 </TableRow>
@@ -302,7 +332,10 @@ export function TrashView({
                     ? 0
                     : Math.max(
                         0,
-                        Math.min(100, (item.daysLeft / stats.retentionDays) * 100),
+                        Math.min(
+                          100,
+                          (item.daysLeft / stats.retentionDays) * 100,
+                        ),
                       );
                   const style = TYPE_STYLES[item.type];
                   const TypeIcon = style.icon;
@@ -327,10 +360,12 @@ export function TrashView({
                           </span>
                           <div className="flex min-w-0 flex-col gap-0.5">
                             <span className="flex items-center gap-2">
-                              <span className="font-semibold">{item.title}</span>
+                              <span className="font-semibold">
+                                {item.title}
+                              </span>
                               <span
                                 className={cn(
-                                  "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
+                                  "shrink-0 rounded-[5px] px-2 py-0.5 text-[11px] font-medium",
                                   style.className,
                                 )}
                               >
@@ -364,13 +399,17 @@ export function TrashView({
                         ) : (
                           <div className="flex flex-col items-end gap-1">
                             <span className="text-sm font-medium">
-                              {item.daysLeft === 0 ? "heute" : `in ${item.daysLeft} T.`}
+                              {item.daysLeft === 0
+                                ? "heute"
+                                : `in ${item.daysLeft} T.`}
                             </span>
                             <div className="h-1.5 w-full rounded-full bg-muted">
                               <div
                                 className={cn(
                                   "h-full rounded-full",
-                                  item.daysLeft <= 7 ? "bg-amber-500" : "bg-primary",
+                                  item.daysLeft <= 7
+                                    ? "bg-amber-500"
+                                    : "bg-primary",
                                 )}
                                 style={{ width: `${pct}%` }}
                               />
@@ -383,7 +422,7 @@ export function TrashView({
                           <Button
                             type="button"
                             variant="outline"
-                            className="h-8 gap-1.5 rounded-lg border-[#D4D4D4] px-3 py-0"
+                            className="h-8 gap-1.5 rounded-lg border-border px-3 py-0"
                             disabled={item.expired}
                             title={
                               item.expired

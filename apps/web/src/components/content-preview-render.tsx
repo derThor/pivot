@@ -97,15 +97,27 @@ export function ContentPreviewRender({
             return (
               <div key={field} className="flow-root space-y-6">
                 {value.map((instance) => {
-                  const resolved = resolveInstanceValues(instance, globalModules ?? []);
+                  const resolved = resolveInstanceValues(
+                    instance,
+                    globalModules ?? [],
+                  );
                   const moduleType = moduleTypeById.get(resolved.moduleTypeId);
                   if (!moduleType) return null;
-                  const contentFields = moduleType.schema.fields.filter((f) => !f.option);
-                  const layout = resolveBlockLayout(contentFields, resolved.values, instance.layout);
+                  const contentFields = moduleType.schema.fields.filter(
+                    (f) => !f.option,
+                  );
+                  const layout = resolveBlockLayout(
+                    contentFields,
+                    resolved.values,
+                    instance.layout,
+                  );
                   return (
                     <div
                       key={instance.id}
-                      className={cn("block-layout", blockLayoutClasses(layout.align, layout.width))}
+                      className={cn(
+                        "block-layout",
+                        blockLayoutClasses(layout.align, layout.width),
+                      )}
                       style={{ width: `${layout.width}%` }}
                     >
                       <BlockSpacingWrapper layout={instance.layout}>
@@ -130,7 +142,9 @@ export function ContentPreviewRender({
                                 value={resolved.values[moduleField.name]}
                                 applyOwnLayout={contentFields.length > 1}
                                 interactive
-                                gallerySettings={toGallerySettings(resolved.settings)}
+                                gallerySettings={toGallerySettings(
+                                  resolved.settings,
+                                )}
                               />
                             ))}
                           </div>

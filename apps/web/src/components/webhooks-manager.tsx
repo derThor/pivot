@@ -84,8 +84,7 @@ export function WebhooksManager({ items }: { items: Webhook[] }) {
                 <TableCell>
                   {webhook.lastDeliveryStatus === "failure" ? (
                     <Badge
-                      variant="secondary"
-                      className="bg-destructive/10 text-destructive"
+                      className="badge--ink border-0"
                       title={webhook.lastDeliveryError ?? undefined}
                     >
                       {webhook.consecutiveFailures}×{" "}
@@ -94,9 +93,7 @@ export function WebhooksManager({ items }: { items: Webhook[] }) {
                         : "fehlgeschlagen in Folge"}
                     </Badge>
                   ) : webhook.lastDeliveryStatus === "success" ? (
-                    <Badge variant="secondary" className="bg-green-100 text-green-700">
-                      Erfolgreich
-                    </Badge>
+                    <Badge className="badge--green border-0">Erfolgreich</Badge>
                   ) : (
                     <span className="text-sm text-muted-foreground">
                       Noch keine Zustellung

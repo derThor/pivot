@@ -237,7 +237,10 @@ export class NotificationsService {
         candidates.push({
           category: 'accounts',
           dedupeKey: 'pending-activations',
-          title: `${counts.pendingActivation} Konto${counts.pendingActivation === 1 ? '' : 'en'} warten auf Freischaltung`,
+          title:
+            counts.pendingActivation === 1
+              ? '1 Konto wartet auf Freischaltung'
+              : `${counts.pendingActivation} Konten warten auf Freischaltung`,
           description:
             'Neu registrierte Konten benötigen eine Admin-Freischaltung.',
           isUrgent: false,
@@ -249,7 +252,10 @@ export class NotificationsService {
         candidates.push({
           category: 'security',
           dedupeKey: 'failed-logins',
-          title: `${counts.failedLogins} Konto${counts.failedLogins === 1 ? '' : 'en'} mit auffälligen Fehlversuchen`,
+          title:
+            counts.failedLogins === 1
+              ? '1 Konto mit auffälligen Fehlversuchen'
+              : `${counts.failedLogins} Konten mit auffälligen Fehlversuchen`,
           description:
             'Ungewöhnlich viele fehlgeschlagene Login-Versuche in Folge.',
           isUrgent: true,
@@ -264,7 +270,10 @@ export class NotificationsService {
         candidates.push({
           category: 'security',
           dedupeKey: 'pending-password-changes',
-          title: `${counts.pendingPasswordChange} Konto${counts.pendingPasswordChange === 1 ? '' : 'en'} müssen das Passwort ändern`,
+          title:
+            counts.pendingPasswordChange === 1
+              ? '1 Konto muss das Passwort ändern'
+              : `${counts.pendingPasswordChange} Konten müssen das Passwort ändern`,
           description: 'Passwortwechsel steht beim nächsten Login an.',
           isUrgent: false,
           actionLabel: 'Benutzer öffnen',

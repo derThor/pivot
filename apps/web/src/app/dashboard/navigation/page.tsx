@@ -2,7 +2,11 @@ import { NavigationDialog } from "@/components/navigation-dialog";
 import { NavigationExplorer } from "@/components/navigation-explorer";
 import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
-import { getContentList, getNavigation, getNavigations } from "@/lib/api-server";
+import {
+  getContentList,
+  getNavigation,
+  getNavigations,
+} from "@/lib/api-server";
 
 export default async function NavigationPage({
   searchParams,
@@ -18,7 +22,9 @@ export default async function NavigationPage({
   const menus = navigations?.items ?? [];
   const selectedMenuId =
     menu && menus.some((m) => m.id === menu) ? menu : (menus[0]?.id ?? null);
-  const navigation = selectedMenuId ? await getNavigation(selectedMenuId) : null;
+  const navigation = selectedMenuId
+    ? await getNavigation(selectedMenuId)
+    : null;
 
   return (
     <div className="flex flex-col gap-10">

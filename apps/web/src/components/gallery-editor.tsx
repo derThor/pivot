@@ -41,9 +41,8 @@ import { resolveImageSrc } from "@/lib/media";
 import { cn } from "@/lib/utils";
 import type { GlobalModule, ModuleType } from "@/lib/api-server";
 
-const darkTextClassName = "text-[#132033]";
-const cardClassName =
-  "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#E6E6E6]";
+const darkTextClassName = "text-pivot-navy";
+const cardClassName = "rounded-2xl bg-card p-5 shadow-sm ring-1 ring-border";
 
 /** Vollständige Bearbeiten-Seite für eine Bildergalerie statt Popup
  * (Nutzervorgabe, 2026-08-15, 1:1 nach Bildvorlage): Live-Vorschau,
@@ -254,7 +253,7 @@ export function GalleryEditor({
             <h2 className={cn("text-[15px] font-semibold", darkTextClassName)}>
               Live-Vorschau
             </h2>
-            <span className="shrink-0 rounded-md bg-[#ECECEC] px-2 py-0.5 text-[11px] font-medium text-[#526074]">
+            <span className="shrink-0 rounded-md bg-pivot-sub3 px-2 py-0.5 text-[11px] font-medium text-pivot-g-body">
               Effekt: {GALLERY_EFFECT_LABELS[settings.effect]}
             </span>
           </div>
@@ -266,7 +265,7 @@ export function GalleryEditor({
                 maxHeight={400}
               />
             ) : (
-              <div className="flex h-[400px] w-full items-center justify-center rounded-md bg-[#F2F2F2] text-sm text-muted-foreground">
+              <div className="flex h-[400px] w-full items-center justify-center rounded-md bg-secondary text-sm text-muted-foreground">
                 Noch keine Bilder in dieser Galerie.
               </div>
             )}
@@ -308,11 +307,11 @@ export function GalleryEditor({
                   }}
                   onClick={() => openCaptionEditor(item)}
                   className={cn(
-                    "group relative aspect-square cursor-grab overflow-hidden rounded-xl bg-[#F2F2F2] ring-1 ring-[#E6E6E6] active:cursor-grabbing",
-                    selectedId === item.id && "ring-2 ring-[#BCE64D]",
+                    "group relative aspect-square cursor-grab overflow-hidden rounded-xl bg-secondary ring-1 ring-border active:cursor-grabbing",
+                    selectedId === item.id && "ring-2 ring-primary",
                     dragOverId === item.id &&
                       draggedId !== item.id &&
-                      "ring-2 ring-[#BCE64D]",
+                      "ring-2 ring-primary",
                   )}
                 >
                   {img.url && (
@@ -344,7 +343,7 @@ export function GalleryEditor({
               type="button"
               onClick={() => setPickerOpen(true)}
               aria-label="Bild hinzufügen"
-              className="flex aspect-square items-center justify-center rounded-xl border border-dashed border-[#D5D5D5] text-[#8C8C8C] transition-colors hover:border-[#BCE64D] hover:text-[#132033]"
+              className="flex aspect-square items-center justify-center rounded-xl border border-dashed border-border text-muted-foreground transition-colors hover:border-primary hover:text-pivot-navy"
             >
               <Plus className="size-5" />
             </button>
@@ -510,7 +509,7 @@ export function GalleryEditor({
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={() => setCaptionTarget(null)}
             >
               Abbrechen

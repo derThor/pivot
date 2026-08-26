@@ -42,7 +42,9 @@ export function RegisterForm({
         .object({
           firstName: z.string().min(1, "Vorname ist erforderlich."),
           lastName: z.string().min(1, "Nachname ist erforderlich."),
-          email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben."),
+          email: z
+            .string()
+            .email("Bitte eine gültige E-Mail-Adresse eingeben."),
           password: z
             .string()
             .refine((value) => isPasswordValid(value, passwordPolicy), {
@@ -143,7 +145,11 @@ export function RegisterForm({
             </p>
           </>
         )}
-        <Button render={<Link href={result.pendingActivation ? "/login" : "/dashboard"} />}>
+        <Button
+          render={
+            <Link href={result.pendingActivation ? "/login" : "/dashboard"} />
+          }
+        >
           {result.pendingActivation ? "Zum Login" : "Zum Dashboard"}
         </Button>
       </div>
@@ -206,7 +212,10 @@ export function RegisterForm({
               <FormControl>
                 <PasswordInput {...field} />
               </FormControl>
-              <PasswordPolicyChecklist password={password} policy={passwordPolicy} />
+              <PasswordPolicyChecklist
+                password={password}
+                policy={passwordPolicy}
+              />
               <FormMessage />
             </FormItem>
           )}

@@ -16,7 +16,10 @@ import {
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { PaginationControls } from "@/components/pagination-controls";
 import { formatName } from "@/lib/utils";
-import type { SettingsChangeEntry, SettingsChangesResponse } from "@/lib/api-server";
+import type {
+  SettingsChangeEntry,
+  SettingsChangesResponse,
+} from "@/lib/api-server";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("de-DE", {
@@ -72,8 +75,7 @@ const FIELD_LABELS: Record<string, string> = {
   notifyLocalDrafts: "Benachrichtigung „Lokale Entwürfe“",
   notifyPendingActivations: "Benachrichtigung „Wartende Freischaltungen“",
   notifyFailedLogins: "Benachrichtigung „Auffällige Fehlversuche“",
-  notifyPendingPasswordChanges:
-    "Benachrichtigung „Anstehende Passwortwechsel“",
+  notifyPendingPasswordChanges: "Benachrichtigung „Anstehende Passwortwechsel“",
   notifyCompanyIncomplete: "Benachrichtigung „Unvollständige Firmendaten“",
   notifyLegalDocuments: "Benachrichtigung „Veraltete/fehlende Rechtstexte“",
   notifyDeletionRequests: "Benachrichtigung „Offene Betroffenenanfragen“",
@@ -160,7 +162,7 @@ export function SettingsProtocolCard({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="border-[#D4D4D4]"
+                className="border-border"
                 disabled={items.length === 0}
               >
                 Alle löschen
@@ -195,9 +197,7 @@ export function SettingsProtocolCard({
                           : "mt-1.5 size-2 shrink-0 rounded-full bg-muted-foreground/30"
                       }
                     />
-                    {!isLast && (
-                      <span className="w-px flex-1 bg-neutral-300" />
-                    )}
+                    {!isLast && <span className="w-px flex-1 bg-pivot-line2" />}
                   </div>
                   <div
                     className={`flex flex-1 items-start justify-between gap-2 ${isLast ? "pb-0" : "pb-4"}`}
@@ -213,7 +213,7 @@ export function SettingsProtocolCard({
                       type="button"
                       variant="outline"
                       size="icon-sm"
-                      className="rounded-lg border-[#D4D4D4] text-destructive hover:bg-destructive/5"
+                      className="rounded-lg border-border text-destructive hover:bg-destructive/5"
                       aria-label="Eintrag löschen"
                       onClick={() => setDeleteTarget(change)}
                     >

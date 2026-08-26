@@ -61,5 +61,7 @@ export const RHYTHM_PRESETS: { label: string; cron: string }[] = [
 export const CUSTOM_RHYTHM = "custom";
 
 export function rhythmLabelForCron(cron: string): string {
-  return RHYTHM_PRESETS.find((p) => p.cron === cron)?.label ?? "Benutzerdefiniert";
+  return (
+    RHYTHM_PRESETS.find((p) => p.cron === cron)?.label ?? "Benutzerdefiniert"
+  );
 }

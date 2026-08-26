@@ -66,9 +66,9 @@ function formatDeadline(
 }
 
 const TYPE_BADGE_CLASSNAME: Record<DataSubjectRequestType, string> = {
-  deletion: "bg-[#132033] text-white hover:bg-[#132033]",
-  access: "bg-muted text-muted-foreground hover:bg-muted",
-  rectification: "bg-muted text-muted-foreground hover:bg-muted",
+  deletion: "badge--ink border-0",
+  access: "badge--slate border-0",
+  rectification: "badge--slate border-0",
 };
 
 // Eigene, kompaktere Zeile statt der globalen `SwitchRow` (die nutzt
@@ -92,7 +92,7 @@ function CompactSwitchRow({
   disabled?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+    <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted p-4">
       <div className="flex flex-col gap-0.5">
         <span
           className={cn(
@@ -167,9 +167,8 @@ export function DataSubjectRequestsPanel({
   const [selectedId, setSelectedId] = useState<string | null>(
     requests[0]?.id ?? null,
   );
-  const [infoPopupTarget, setInfoPopupTarget] = useState<DeletionRequest | null>(
-    null,
-  );
+  const [infoPopupTarget, setInfoPopupTarget] =
+    useState<DeletionRequest | null>(null);
   const [dialogTarget, setDialogTarget] = useState<
     DeletionRequest | null | "new"
   >(null);
@@ -195,7 +194,9 @@ export function DataSubjectRequestsPanel({
   function upsert(row: DeletionRequest) {
     onRequestsChange((prev) => {
       const exists = prev.some((r) => r.id === row.id);
-      return exists ? prev.map((r) => (r.id === row.id ? row : r)) : [row, ...prev];
+      return exists
+        ? prev.map((r) => (r.id === row.id ? row : r))
+        : [row, ...prev];
     });
     setSelectedId(row.id);
     // Glocken-Badge im Header (`dashboard/layout.tsx`) wird serverseitig
@@ -226,11 +227,15 @@ export function DataSubjectRequestsPanel({
         );
         return;
       }
-      toastEdited(`Rückfrage wurde an ${followUpTarget.requesterEmail} gesendet.`);
+      toastEdited(
+        `Rückfrage wurde an ${followUpTarget.requesterEmail} gesendet.`,
+      );
       setFollowUpTarget(null);
       setFollowUpMessage("");
     } catch {
-      setFollowUpError("Server nicht erreichbar. Bitte später erneut versuchen.");
+      setFollowUpError(
+        "Server nicht erreichbar. Bitte später erneut versuchen.",
+      );
     } finally {
       setIsSendingFollowUp(false);
     }
@@ -257,7 +262,9 @@ export function DataSubjectRequestsPanel({
     const data = await res.json().catch(() => null);
     if (res.ok && data) {
       upsert(data as DeletionRequest);
-      toastEdited(`„${completeTarget.requesterName}“ wurde als erledigt markiert.`);
+      toastEdited(
+        `„${completeTarget.requesterName}“ wurde als erledigt markiert.`,
+      );
     }
     setCompleteTarget(null);
   }
@@ -283,7 +290,7 @@ export function DataSubjectRequestsPanel({
   return (
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_360px]">
       <div className="overflow-hidden rounded-xl bg-card shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F0F0F0] px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
           <div className="flex items-center gap-3">
             <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               Anfragen · {requests.length}
@@ -296,7 +303,7 @@ export function DataSubjectRequestsPanel({
             type="button"
             size="sm"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             onClick={() => setDialogTarget("new")}
           >
             <Plus className="size-4" />
@@ -308,7 +315,7 @@ export function DataSubjectRequestsPanel({
             Noch keine Anfragen erfasst.
           </p>
         ) : (
-          <div className="flex flex-col divide-y divide-[#F0F0F0]">
+          <div className="flex flex-col divide-y divide-border">
             {requests.map((row) => {
               const isSelected = row.id === selectedId;
               const deadline = formatDeadline(row.dueAt, row.status);
@@ -317,9 +324,9 @@ export function DataSubjectRequestsPanel({
                   key={row.id}
                   className={cn(
                     "flex flex-col gap-2 border-l-4 px-4 py-4 transition-colors sm:flex-row sm:items-center sm:justify-between",
-                    isSelected ?
-                      "border-l-primary bg-primary/15"
-                    : "border-l-transparent hover:bg-muted/50",
+                    isSelected
+                      ? "border-l-primary bg-primary/15"
+                      : "border-l-transparent hover:bg-muted/50",
                   )}
                 >
                   <button
@@ -330,15 +337,17 @@ export function DataSubjectRequestsPanel({
                     <span
                       className={cn(
                         "flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
-                        isSelected ?
-                          "bg-primary/25 text-foreground"
-                        : "bg-[#F4F4F5] text-muted-foreground",
+                        isSelected
+                          ? "bg-primary/25 text-foreground"
+                          : "bg-secondary text-muted-foreground",
                       )}
                     >
                       {initialsFromName(row.requesterName)}
                     </span>
                     <div className="min-w-0">
-                      <p className="truncate font-semibold">{row.requesterName}</p>
+                      <p className="truncate font-semibold">
+                        {row.requesterName}
+                      </p>
                       <p className="truncate text-xs text-muted-foreground">
                         {row.dsrId} · {row.requesterEmail}
                       </p>
@@ -351,23 +360,23 @@ export function DataSubjectRequestsPanel({
                     <span
                       className={cn(
                         "w-16 text-xs",
-                        deadline.urgent ?
-                          "font-medium text-red-600"
-                        : "text-muted-foreground",
+                        deadline.urgent
+                          ? "font-medium text-red-600"
+                          : "text-muted-foreground",
                       )}
                     >
                       {deadline.text}
                     </span>
                     <Badge
                       className={
-                        row.status === "completed" || row.status === "rejected" ?
-                          "bg-green-100 text-green-700 hover:bg-green-100"
-                        : "bg-amber-100 text-amber-800 hover:bg-amber-100"
+                        row.status === "completed" || row.status === "rejected"
+                          ? "bg-green-100 text-green-700 hover:bg-green-100"
+                          : "bg-amber-100 text-amber-800 hover:bg-amber-100"
                       }
                     >
-                      {row.status === "completed" || row.status === "rejected" ?
-                        "Erledigt"
-                      : "Offen"}
+                      {row.status === "completed" || row.status === "rejected"
+                        ? "Erledigt"
+                        : "Offen"}
                     </Badge>
                     <button
                       type="button"
@@ -406,16 +415,21 @@ export function DataSubjectRequestsPanel({
               </p>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              <div className="flex flex-col divide-y divide-[#F0F0F0] text-sm">
+              <div className="flex flex-col divide-y divide-border text-sm">
                 <DetailRow
                   label="Art"
                   value={DATA_SUBJECT_REQUEST_TYPE_LABELS[selected.type]}
                 />
-                <DetailRow label="Eingang" value={formatDate(selected.createdAt)} />
+                <DetailRow
+                  label="Eingang"
+                  value={formatDate(selected.createdAt)}
+                />
                 <DetailRow
                   label="Frist"
                   value={formatDeadline(selected.dueAt, selected.status).text}
-                  urgent={formatDeadline(selected.dueAt, selected.status).urgent}
+                  urgent={
+                    formatDeadline(selected.dueAt, selected.status).urgent
+                  }
                 />
                 {selected.source && (
                   <DetailRow label="Quelle" value={selected.source} />
@@ -431,7 +445,9 @@ export function DataSubjectRequestsPanel({
                 type="button"
                 className="w-full"
                 render={
-                  <a href={`/api/deletion-requests/${selected.id}/data-extract`} />
+                  <a
+                    href={`/api/deletion-requests/${selected.id}/data-extract`}
+                  />
                 }
               >
                 Datenauszug erstellen
@@ -439,20 +455,22 @@ export function DataSubjectRequestsPanel({
               <Button
                 type="button"
                 variant="outline"
-                className="w-full border-[#D4D4D4] text-destructive hover:bg-destructive/5"
+                className="w-full border-border text-destructive hover:bg-destructive/5"
                 disabled={
-                  selected.status === "completed" || selected.status === "rejected"
+                  selected.status === "completed" ||
+                  selected.status === "rejected"
                 }
                 onClick={() => setCompleteTarget(selected)}
               >
-                {selected.status === "completed" || selected.status === "rejected" ?
-                  "Bereits erledigt"
-                : "Daten endgültig löschen"}
+                {selected.status === "completed" ||
+                selected.status === "rejected"
+                  ? "Bereits erledigt"
+                  : "Daten endgültig löschen"}
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                className="w-full border-[#D4D4D4]"
+                className="w-full border-border"
                 onClick={() => setFollowUpTarget(selected)}
               >
                 Rückfrage an Absender
@@ -531,7 +549,9 @@ export function DataSubjectRequestsPanel({
       >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Rückfrage an {followUpTarget?.requesterName}</DialogTitle>
+            <DialogTitle>
+              Rückfrage an {followUpTarget?.requesterName}
+            </DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="dr-followup-message" required>
@@ -556,7 +576,7 @@ export function DataSubjectRequestsPanel({
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={() => {
                 setFollowUpTarget(null);
                 setFollowUpMessage("");
@@ -585,7 +605,7 @@ export function DataSubjectRequestsPanel({
             <DialogTitle>{infoPopupTarget?.requesterName}</DialogTitle>
           </DialogHeader>
           {infoPopupTarget && (
-            <div className="flex flex-col divide-y divide-[#F0F0F0] text-sm">
+            <div className="flex flex-col divide-y divide-border text-sm">
               <DetailRow label="DSR-ID" value={infoPopupTarget.dsrId} />
               <DetailRow
                 label="Art"
@@ -595,15 +615,12 @@ export function DataSubjectRequestsPanel({
                 label="Status"
                 value={
                   infoPopupTarget.status === "completed" ||
-                  infoPopupTarget.status === "rejected" ?
-                    "Erledigt"
-                  : "Offen"
+                  infoPopupTarget.status === "rejected"
+                    ? "Erledigt"
+                    : "Offen"
                 }
               />
-              <DetailRow
-                label="Name"
-                value={infoPopupTarget.requesterName}
-              />
+              <DetailRow label="Name" value={infoPopupTarget.requesterName} />
               <DetailRow
                 label="E-Mail"
                 value={infoPopupTarget.requesterEmail}
@@ -642,7 +659,7 @@ export function DataSubjectRequestsPanel({
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={() => setInfoPopupTarget(null)}
             >
               Schließen

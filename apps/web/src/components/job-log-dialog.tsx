@@ -67,7 +67,7 @@ export function JobLogDialog({
             data.items.map((run) => (
               <div
                 key={run.id}
-                className="flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-3"
+                className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted p-3"
               >
                 <div className="flex items-start gap-2.5">
                   <span
@@ -95,7 +95,7 @@ export function JobLogDialog({
               type="button"
               variant="outline"
               size="sm"
-              className="border-[#D4D4D4]"
+              className="border-border"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
@@ -108,7 +108,7 @@ export function JobLogDialog({
               type="button"
               variant="outline"
               size="sm"
-              className="border-[#D4D4D4]"
+              className="border-border"
               disabled={page >= data.meta.pageCount}
               onClick={() => setPage((p) => p + 1)}
             >

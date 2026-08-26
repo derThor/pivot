@@ -71,9 +71,9 @@ export function ProcessingActivityDialog({
         recipients: form.recipients || undefined,
       };
       const res = await fetch(
-        isEdit ?
-          `/api/processing-activities/${(target as ProcessingActivity).id}`
-        : "/api/processing-activities",
+        isEdit
+          ? `/api/processing-activities/${(target as ProcessingActivity).id}`
+          : "/api/processing-activities",
         {
           method: isEdit ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
@@ -101,17 +101,23 @@ export function ProcessingActivityDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? "Verarbeitungstätigkeit bearbeiten" : "Verarbeitungstätigkeit anlegen"}
+            {isEdit
+              ? "Verarbeitungstätigkeit bearbeiten"
+              : "Verarbeitungstätigkeit anlegen"}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
-            <Label htmlFor="pa-purpose" required>Zweck</Label>
+            <Label htmlFor="pa-purpose" required>
+              Zweck
+            </Label>
             <Input
               id="pa-purpose"
               autoFocus
               value={form.purpose}
-              onChange={(e) => setForm((p) => ({ ...p, purpose: e.target.value }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, purpose: e.target.value }))
+              }
               placeholder="z.B. Newsletter-Versand"
             />
           </div>
@@ -164,7 +170,7 @@ export function ProcessingActivityDialog({
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={() => onOpenChange(false)}
             >
               Abbrechen

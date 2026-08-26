@@ -39,8 +39,10 @@ export function ContentRowActions({
             type="button"
             variant="outline"
             size="icon"
-            className="rounded-lg border-[#D4D4D4]"
-            render={<Link href={`/dashboard/content/${id}/preview`} target="_blank" />}
+            className="rounded-lg border-border"
+            render={
+              <Link href={`/dashboard/content/${id}/preview`} target="_blank" />
+            }
             aria-label={`Vorschau von „${title}“ öffnen`}
           >
             <Eye />

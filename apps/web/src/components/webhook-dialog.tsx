@@ -91,7 +91,9 @@ export function WebhookDialog() {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="webhook-url" required>Ziel-URL</Label>
+            <Label htmlFor="webhook-url" required>
+              Ziel-URL
+            </Label>
             <Input
               id="webhook-url"
               type="url"
@@ -123,7 +125,7 @@ export function WebhookDialog() {
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={() => setOpen(false)}
             >
               Abbrechen

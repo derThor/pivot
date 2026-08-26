@@ -42,8 +42,7 @@ function isLikelyId(segment: string) {
 
 function humanizeSegment(segment: string) {
   return (
-    ACTION_LABELS[segment] ??
-    segment.charAt(0).toUpperCase() + segment.slice(1)
+    ACTION_LABELS[segment] ?? segment.charAt(0).toUpperCase() + segment.slice(1)
   );
 }
 

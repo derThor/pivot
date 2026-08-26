@@ -100,7 +100,7 @@ export function DeploymentModeDialog({
           {settings.appVersion && (
             <Badge
               variant="secondary"
-              className="w-fit bg-amber-100 font-mono text-amber-700"
+              className="badge--amber w-fit border-0 font-mono"
             >
               Version {settings.appVersion}
             </Badge>
@@ -110,7 +110,7 @@ export function DeploymentModeDialog({
           <Button
             type="button"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             onClick={() => onOpenChange(false)}
           >
             Abbrechen

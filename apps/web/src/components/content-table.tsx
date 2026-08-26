@@ -23,20 +23,17 @@ const statusLabel: Record<ContentStatus, string> = {
 };
 
 const statusClassName: Record<ContentStatus, string> = {
-  PUBLISHED:
-    "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400",
-  DRAFT:
-    "bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300",
-  SCHEDULED:
-    "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",
-  ARCHIVED: "bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-400",
+  PUBLISHED: "badge--green border-0",
+  DRAFT: "badge--slate border-0",
+  SCHEDULED: "badge--amber border-0",
+  ARCHIVED: "badge--blue border-0",
 };
 
 export function ContentTable({ entries }: { entries: ContentListItem[] }) {
   return (
     <div className="overflow-hidden rounded-xl bg-card shadow-sm">
       <Table>
-        <TableHeader className="bg-background">
+        <TableHeader>
           <TableRow>
             <TableHead>Titel</TableHead>
             <TableHead>Pfad</TableHead>

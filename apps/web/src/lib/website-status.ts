@@ -5,14 +5,19 @@ import type { WebsiteStatus } from "@/lib/api-server";
 // zeigte "Entwicklung" je nach Stelle grau oder gelb statt überall
 // gleich). Genutzt von websites-view.tsx, master-client-card.tsx und
 // website-check-details-dialog.tsx.
+// Nutzervorgabe, 2026-08-26: feste Badge-Palette (siehe ui/badge.tsx) statt
+// Ad-hoc-Tailwind-Tönen – "Entwicklung" bewusst lila (Nutzervorgabe:
+// "in lila", nutzt dieselben Werte wie `.badge--chefred`), "Gesperrt"
+// bewusst "ink" (kein "Fehler"-Rot in der vorgegebenen Palette, "ink" ist
+// dort die einzige stark-negative Farbe).
 export const WEBSITE_STATUS_BADGE: Record<
   WebsiteStatus,
   { label: string; className: string }
 > = {
-  live: { label: "Live", className: "bg-green-100 text-green-700" },
+  live: { label: "Live", className: "badge--green border-0" },
   development: {
     label: "Entwicklung",
-    className: "bg-purple-100 text-purple-700",
+    className: "badge--chefred border-0",
   },
-  locked: { label: "Gesperrt", className: "bg-red-100 text-red-700" },
+  locked: { label: "Gesperrt", className: "badge--ink border-0" },
 };

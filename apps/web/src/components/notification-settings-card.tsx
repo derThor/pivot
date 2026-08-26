@@ -27,12 +27,14 @@ const ROWS: { key: NotifyKey; label: string; description: string }[] = [
   {
     key: "notifyMaintenanceMode",
     label: "Wartungsmodus",
-    description: "Zeigt einen Hinweis im Dashboard, dass die Website aktuell im Wartungsmodus ist.",
+    description:
+      "Zeigt einen Hinweis im Dashboard, dass die Website aktuell im Wartungsmodus ist.",
   },
   {
     key: "notifyStorageQuota",
     label: "Speicherplatz fast voll",
-    description: "Warnt, wenn das Speicherkontingent für Medien fast ausgeschöpft ist.",
+    description:
+      "Warnt, wenn das Speicherkontingent für Medien fast ausgeschöpft ist.",
   },
   {
     key: "notifyWebhookFailures",
@@ -42,12 +44,14 @@ const ROWS: { key: NotifyKey; label: string; description: string }[] = [
   {
     key: "notifyPendingActivations",
     label: "Wartende Freischaltungen",
-    description: "Zeigt an, wenn neu registrierte Konten auf eine Admin-Freischaltung warten.",
+    description:
+      "Zeigt an, wenn neu registrierte Konten auf eine Admin-Freischaltung warten.",
   },
   {
     key: "notifyFailedLogins",
     label: "Auffällige Fehlversuche",
-    description: "Warnt bei auffällig vielen fehlgeschlagenen Login-Versuchen in Folge.",
+    description:
+      "Warnt bei auffällig vielen fehlgeschlagenen Login-Versuchen in Folge.",
   },
   {
     key: "notifyPendingPasswordChanges",
@@ -57,7 +61,8 @@ const ROWS: { key: NotifyKey; label: string; description: string }[] = [
   {
     key: "notifyCompanyIncomplete",
     label: "Unvollständige Firmendaten",
-    description: "Weist auf fehlende Pflichtangaben in den Firmen-Stammdaten hin.",
+    description:
+      "Weist auf fehlende Pflichtangaben in den Firmen-Stammdaten hin.",
   },
   {
     key: "notifyLegalDocuments",
@@ -67,12 +72,14 @@ const ROWS: { key: NotifyKey; label: string; description: string }[] = [
   {
     key: "notifyDeletionRequests",
     label: "Offene Betroffenenanfragen",
-    description: "Zeigt offene DSGVO-Anfragen (Löschung/Auskunft/Berichtigung) an.",
+    description:
+      "Zeigt offene DSGVO-Anfragen (Löschung/Auskunft/Berichtigung) an.",
   },
   {
     key: "notifyTrashExpiring",
     label: "Papierkorb-Einträge laufen ab",
-    description: "Warnt, wenn Papierkorb-Einträge bald für die Wiederherstellung gesperrt werden.",
+    description:
+      "Warnt, wenn Papierkorb-Einträge bald für die Wiederherstellung gesperrt werden.",
   },
 ];
 
@@ -150,7 +157,7 @@ export function NotificationSettingsCard({
         </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2 border-b border-[#F0F0F0] pb-4">
+        <div className="flex flex-col gap-2 border-b border-border pb-4">
           <Label htmlFor="notification-recipient">
             Benachrichtigungsempfänger
           </Label>
@@ -165,7 +172,7 @@ export function NotificationSettingsCard({
             <Button
               type="button"
               variant="outline"
-              className="shrink-0 border-[#D4D4D4]"
+              className="shrink-0 border-border"
               disabled={
                 isSavingRecipient || recipientEmail === savedRecipientEmail
               }
@@ -175,10 +182,10 @@ export function NotificationSettingsCard({
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Aktivierte Kategorien unten werden zusätzlich sofort bei jedem
-            neuen Vorfall an diese Adresse gemailt (setzt einen eingerichteten
-            Dienst unter Integrationen → Dienste voraus). Leer lassen für
-            keine E-Mail-Zustellung.
+            Aktivierte Kategorien unten werden zusätzlich sofort bei jedem neuen
+            Vorfall an diese Adresse gemailt (setzt einen eingerichteten Dienst
+            unter Integrationen → Dienste voraus). Leer lassen für keine
+            E-Mail-Zustellung.
           </p>
         </div>
         {ROWS.map((row) => (

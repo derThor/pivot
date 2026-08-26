@@ -163,12 +163,10 @@ export function TwoFactorSetupCard({
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {enabled ? (
-            <div
-              className="flex items-center justify-between gap-4 rounded-lg bg-[rgba(188,230,77,0.14)] p-4 shadow-[inset_0_0_0_1px_rgba(120,150,60,0.35)]"
-            >
+            <div className="flex items-center justify-between gap-4 rounded-lg bg-[rgba(188,230,77,0.14)] p-4 shadow-[inset_0_0_0_1px_rgba(120,150,60,0.35)]">
               <div className="flex items-center gap-3">
-                <ShieldCheck className="size-5 shrink-0 text-[#78963c]" />
-                <p className="text-sm font-medium text-[#1c2b3a]">
+                <ShieldCheck className="size-5 shrink-0 text-accent-foreground" />
+                <p className="text-sm font-medium text-foreground">
                   Authenticator-App eingerichtet
                   {enabledAt && ` am ${formatDate(enabledAt)}`}
                 </p>
@@ -177,7 +175,7 @@ export function TwoFactorSetupCard({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="shrink-0 border-[rgba(120,150,60,0.35)] bg-[rgba(188,230,77,0.14)] text-[#1c2b3a] hover:bg-[rgba(188,230,77,0.24)]"
+                className="shrink-0 border-[rgba(120,150,60,0.35)] bg-[rgba(188,230,77,0.14)] text-foreground hover:bg-[rgba(188,230,77,0.24)]"
                 onClick={startSetup}
                 disabled={isSubmitting}
               >
@@ -185,7 +183,7 @@ export function TwoFactorSetupCard({
               </Button>
             </div>
           ) : (
-            <div className="flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+            <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted p-4">
               <div className="flex items-center gap-3">
                 <ShieldOff className="size-5 shrink-0 text-muted-foreground" />
                 <div>
@@ -195,7 +193,11 @@ export function TwoFactorSetupCard({
                   </p>
                 </div>
               </div>
-              <Button type="button" onClick={startSetup} disabled={isSubmitting}>
+              <Button
+                type="button"
+                onClick={startSetup}
+                disabled={isSubmitting}
+              >
                 {isSubmitting ? "Wird vorbereitet…" : "Aktivieren"}
               </Button>
             </div>
@@ -205,7 +207,7 @@ export function TwoFactorSetupCard({
             <>
               <button
                 type="button"
-                className="self-start rounded-[8px] bg-[#F4F4F5] px-3 py-2 text-[12.5px] font-medium text-[#6E6E6E] shadow-[inset_0_0_0_1px_#E6E6E6] transition-colors duration-150 hover:bg-[#ECECEE] disabled:pointer-events-none disabled:opacity-50"
+                className="self-start rounded-[8px] bg-secondary px-3 py-2 text-[12.5px] font-medium text-pivot-g-body shadow-[inset_0_0_0_1px_var(--pivot-line)] transition-colors duration-150 hover:bg-pivot-sub3 disabled:pointer-events-none disabled:opacity-50"
                 onClick={regenerateCodes}
                 disabled={isRegenerating}
               >
@@ -216,7 +218,7 @@ export function TwoFactorSetupCard({
               )}
               <button
                 type="button"
-                className="self-start rounded-xl border border-[#E5E5E5] bg-transparent px-3 py-2 text-[12.5px] font-medium text-destructive transition-colors duration-150 hover:bg-destructive/5"
+                className="self-start rounded-xl border border-border bg-transparent px-3 py-2 text-[12.5px] font-medium text-destructive transition-colors duration-150 hover:bg-destructive/5"
                 onClick={() => setDisableOpen(true)}
               >
                 Zwei-Faktor-Authentifizierung deaktivieren
@@ -231,7 +233,9 @@ export function TwoFactorSetupCard({
           {setupStep === "qr" ? (
             <>
               <DialogHeader>
-                <DialogTitle>Zwei-Faktor-Authentifizierung einrichten</DialogTitle>
+                <DialogTitle>
+                  Zwei-Faktor-Authentifizierung einrichten
+                </DialogTitle>
               </DialogHeader>
               <form onSubmit={confirmSetup} className="flex flex-col gap-4">
                 <p className="text-sm text-muted-foreground">
@@ -244,17 +248,19 @@ export function TwoFactorSetupCard({
                   <img
                     src={qrCodeDataUrl}
                     alt="QR-Code für die Authenticator-App"
-                    className="mx-auto size-48 rounded-lg border border-[#F0F0F0]"
+                    className="mx-auto size-48 rounded-lg border border-border"
                   />
                 )}
                 <div className="flex flex-col gap-1">
                   <Label>Secret (manuelle Eingabe)</Label>
-                  <p className="break-all rounded-md bg-[#FAFAFA] p-2 font-mono text-xs">
+                  <p className="break-all rounded-md bg-muted p-2 font-mono text-xs">
                     {secret}
                   </p>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <Label htmlFor="setup-code" required>Bestätigungscode</Label>
+                  <Label htmlFor="setup-code" required>
+                    Bestätigungscode
+                  </Label>
                   <Input
                     id="setup-code"
                     inputMode="numeric"
@@ -270,7 +276,7 @@ export function TwoFactorSetupCard({
                   <Button
                     type="button"
                     variant="outline"
-                    className="border-[#D4D4D4]"
+                    className="border-border"
                     onClick={() => setSetupOpen(false)}
                   >
                     Abbrechen
@@ -292,11 +298,11 @@ export function TwoFactorSetupCard({
               <div className="flex flex-col gap-4">
                 <p className="text-sm text-muted-foreground">
                   Bewahre diese Codes sicher auf. Jeder Code funktioniert
-                  einmalig als Ersatz für den 6-stelligen Code, falls du
-                  keinen Zugriff mehr auf deine Authenticator-App hast. Sie
-                  werden dir nur dieses eine Mal angezeigt.
+                  einmalig als Ersatz für den 6-stelligen Code, falls du keinen
+                  Zugriff mehr auf deine Authenticator-App hast. Sie werden dir
+                  nur dieses eine Mal angezeigt.
                 </p>
-                <div className="grid grid-cols-2 gap-2 rounded-md bg-[#FAFAFA] p-4 font-mono text-sm">
+                <div className="grid grid-cols-2 gap-2 rounded-md bg-muted p-4 font-mono text-sm">
                   {recoveryCodes.map((rc) => (
                     <span key={rc}>{rc}</span>
                   ))}
@@ -324,11 +330,15 @@ export function TwoFactorSetupCard({
       >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Zwei-Faktor-Authentifizierung deaktivieren</DialogTitle>
+            <DialogTitle>
+              Zwei-Faktor-Authentifizierung deaktivieren
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={confirmDisable} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <Label htmlFor="disable-password" required>Passwort bestätigen</Label>
+              <Label htmlFor="disable-password" required>
+                Passwort bestätigen
+              </Label>
               <PasswordInput
                 id="disable-password"
                 autoFocus
@@ -343,7 +353,7 @@ export function TwoFactorSetupCard({
               <Button
                 type="button"
                 variant="outline"
-                className="border-[#D4D4D4]"
+                className="border-border"
                 onClick={() => setDisableOpen(false)}
               >
                 Abbrechen
@@ -370,7 +380,7 @@ export function TwoFactorSetupCard({
               Bewahre diese Codes sicher auf. Deine bisherigen Codes wurden
               damit ungültig. Sie werden dir nur dieses eine Mal angezeigt.
             </p>
-            <div className="grid grid-cols-2 gap-2 rounded-md bg-[#FAFAFA] p-4 font-mono text-sm">
+            <div className="grid grid-cols-2 gap-2 rounded-md bg-muted p-4 font-mono text-sm">
               {newRecoveryCodes.map((rc) => (
                 <span key={rc}>{rc}</span>
               ))}

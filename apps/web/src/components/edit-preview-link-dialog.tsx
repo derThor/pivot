@@ -51,14 +51,11 @@ export function EditPreviewLinkDialog({
   async function handleSave() {
     setIsSaving(true);
     try {
-      await fetch(
-        `/api/content/${link.content.id}/preview-links/${link.id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ expiresInHours: Number(expiresInHours) }),
-        },
-      );
+      await fetch(`/api/content/${link.content.id}/preview-links/${link.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expiresInHours: Number(expiresInHours) }),
+      });
       setOpen(false);
       toastEdited("Die Gültigkeitsdauer wurde aktualisiert.");
       router.refresh();
@@ -118,7 +115,7 @@ export function EditPreviewLinkDialog({
           <Button
             type="button"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             onClick={() => setOpen(false)}
           >
             Abbrechen

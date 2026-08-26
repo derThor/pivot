@@ -107,7 +107,9 @@ export function toGallerySettings(raw: unknown): GallerySettings {
   if (!raw || typeof raw !== "object") return DEFAULT_GALLERY_SETTINGS;
   const obj = raw as Record<string, unknown>;
   return {
-    effect: isGalleryEffect(obj.effect) ? obj.effect : DEFAULT_GALLERY_SETTINGS.effect,
+    effect: isGalleryEffect(obj.effect)
+      ? obj.effect
+      : DEFAULT_GALLERY_SETTINGS.effect,
     slidesPerView:
       typeof obj.slidesPerView === "number" && obj.slidesPerView > 0
         ? obj.slidesPerView
@@ -116,17 +118,24 @@ export function toGallerySettings(raw: unknown): GallerySettings {
       typeof obj.spaceBetween === "number" && obj.spaceBetween >= 0
         ? obj.spaceBetween
         : DEFAULT_GALLERY_SETTINGS.spaceBetween,
-    loop: typeof obj.loop === "boolean" ? obj.loop : DEFAULT_GALLERY_SETTINGS.loop,
+    loop:
+      typeof obj.loop === "boolean" ? obj.loop : DEFAULT_GALLERY_SETTINGS.loop,
     autoplay:
-      typeof obj.autoplay === "boolean" ? obj.autoplay : DEFAULT_GALLERY_SETTINGS.autoplay,
+      typeof obj.autoplay === "boolean"
+        ? obj.autoplay
+        : DEFAULT_GALLERY_SETTINGS.autoplay,
     autoplayDelay:
       typeof obj.autoplayDelay === "number" && obj.autoplayDelay > 0
         ? obj.autoplayDelay
         : DEFAULT_GALLERY_SETTINGS.autoplayDelay,
     navigation:
-      typeof obj.navigation === "boolean" ? obj.navigation : DEFAULT_GALLERY_SETTINGS.navigation,
+      typeof obj.navigation === "boolean"
+        ? obj.navigation
+        : DEFAULT_GALLERY_SETTINGS.navigation,
     pagination:
-      typeof obj.pagination === "boolean" ? obj.pagination : DEFAULT_GALLERY_SETTINGS.pagination,
+      typeof obj.pagination === "boolean"
+        ? obj.pagination
+        : DEFAULT_GALLERY_SETTINGS.pagination,
     showCaptions:
       typeof obj.showCaptions === "boolean"
         ? obj.showCaptions

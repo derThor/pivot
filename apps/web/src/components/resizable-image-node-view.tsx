@@ -67,7 +67,10 @@ export function ResizableImageNodeView({
         // Auswahl-Rahmen) exakt auf die tatsächliche Bildgröße, statt
         // wegen eines prozentual breiten Kindes auf die volle Deckel-
         // Breite aufzublähen.
-        !width && (align === "left" || align === "right" ? "max-w-[50%]" : "max-w-full"),
+        !width &&
+          (align === "left" || align === "right"
+            ? "max-w-[50%]"
+            : "max-w-full"),
         align === "left" && "float-left mr-3 inline-block",
         align === "right" && "float-right ml-3 inline-block",
         (!align || align === "center") && "block w-fit mx-auto",

@@ -371,7 +371,7 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
               <img
                 src="/brand/logo-collapsed.png"
                 alt="pivot CMS"
-                className="size-full object-contain"
+                className="pivot-logo size-full object-contain"
               />
             </div>
             {/* Master/Client-Indikator (Nutzervorgabe, 2026-08-24: "Slave"
@@ -404,7 +404,7 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
               <img
                 src="/brand/logo-expanded.png"
                 alt="pivot CMS"
-                className="h-11 w-auto max-w-full object-contain"
+                className="pivot-logo h-11 w-auto max-w-full object-contain"
               />
               {/* Ausgeklappt: voll ausgeschriebener Name statt nur des
                   Anfangsbuchstabens (Nutzervorgabe: "m und c nur bei

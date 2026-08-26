@@ -74,17 +74,21 @@ export const actionLabels: Record<string, string> = {
   revoke: "Widerrufen",
 };
 
-export const categoryLabels: Record<PermissionDescriptor["category"], string> = {
-  core: "Kern",
-  extensions: "Erweiterungen",
-  administration: "Verwaltung",
-  system: "System",
-};
+export const categoryLabels: Record<PermissionDescriptor["category"], string> =
+  {
+    core: "Kern",
+    extensions: "Erweiterungen",
+    administration: "Verwaltung",
+    system: "System",
+  };
 
 // Abschnitts-Überschriften über den Rechte-Karten-Gruppen im Detail-Panel –
 // bewusst eigene Labels statt `categoryLabels` (1:1 nach Bildvorlage: "Kern"
 // wird dort zu "Kern-Module", die anderen beiden bleiben gleich).
-export const categorySectionLabels: Record<PermissionDescriptor["category"], string> = {
+export const categorySectionLabels: Record<
+  PermissionDescriptor["category"],
+  string
+> = {
   core: "Kern-Module",
   extensions: "Erweiterungen",
   administration: "Verwaltung",

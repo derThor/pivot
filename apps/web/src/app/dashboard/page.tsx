@@ -43,9 +43,9 @@ const statusLabel: Record<ContentStatus, string> = {
 
 const statusBadgeClassName: Record<ContentStatus, string> = {
   PUBLISHED: "bg-emerald-100 text-emerald-700",
-  DRAFT: "bg-slate-200 text-slate-700",
+  DRAFT: "bg-secondary text-secondary-foreground",
   SCHEDULED: "bg-blue-100 text-blue-700",
-  ARCHIVED: "bg-gray-100 text-gray-600",
+  ARCHIVED: "bg-secondary text-secondary-foreground",
 };
 
 // Donut-/Legenden-Farben der Statusverteilung – bewusst eigene, feste
@@ -60,9 +60,9 @@ const statusChartColor: Record<ContentStatus, string> = {
 
 const statusDotClassName: Record<ContentStatus, string> = {
   PUBLISHED: "bg-emerald-500",
-  DRAFT: "bg-slate-400",
+  DRAFT: "bg-muted-foreground",
   SCHEDULED: "bg-blue-500",
-  ARCHIVED: "bg-gray-300",
+  ARCHIVED: "bg-pivot-g-dim",
 };
 
 const dateFormatter = new Intl.DateTimeFormat("de-DE", {
@@ -138,15 +138,19 @@ function HeroChart() {
       >
         <defs>
           <linearGradient id="heroChartGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#C8EE44" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#C8EE44" stopOpacity="0" />
+            <stop
+              offset="0%"
+              stopColor="var(--pivot-lime)"
+              stopOpacity="0.35"
+            />
+            <stop offset="100%" stopColor="var(--pivot-lime)" stopOpacity="0" />
           </linearGradient>
         </defs>
         <path d={areaPath} fill="url(#heroChartGradient)" />
         <path
           d={linePath}
           fill="none"
-          stroke="#C8EE44"
+          stroke="var(--pivot-lime)"
           strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"

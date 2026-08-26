@@ -141,12 +141,14 @@ export function ScheduledJobsCard({
               type="button"
               variant="outline"
               size="icon-sm"
-              className="rounded-lg border-[#D4D4D4]"
+              className="rounded-lg border-border"
               aria-label="Aktualisieren"
               disabled={isRefreshing}
               onClick={handleRefresh}
             >
-              <RefreshCw className={isRefreshing ? "size-4 animate-spin" : "size-4"} />
+              <RefreshCw
+                className={isRefreshing ? "size-4 animate-spin" : "size-4"}
+              />
             </Button>
           </CardAction>
         </CardHeader>
@@ -157,9 +159,9 @@ export function ScheduledJobsCard({
               <div
                 key={job.id}
                 className={
-                  expanded ?
-                    "rounded-xl border-2 border-primary bg-primary/10 p-3"
-                  : "rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-3"
+                  expanded
+                    ? "rounded-xl border-2 border-primary bg-primary/10 p-3"
+                    : "rounded-lg border border-border bg-muted p-3"
                 }
               >
                 <div className="flex items-center gap-4">
@@ -200,11 +202,10 @@ export function ScheduledJobsCard({
                     </div>
                   </button>
                   <Badge
-                    variant="secondary"
                     className={
-                      job.effectivelyPaused ?
-                        "bg-muted text-muted-foreground"
-                      : "bg-green-100 text-green-700"
+                      job.effectivelyPaused
+                        ? "badge--slate border-0"
+                        : "badge--green border-0"
                     }
                   >
                     {job.effectivelyPaused ? "pausiert" : "aktiv"}
@@ -227,9 +228,9 @@ export function ScheduledJobsCard({
                         </Label>
                         <Select
                           value={
-                            RHYTHM_PRESETS.some((p) => p.cron === cronDraft) ?
-                              cronDraft
-                            : CUSTOM_RHYTHM
+                            RHYTHM_PRESETS.some((p) => p.cron === cronDraft)
+                              ? cronDraft
+                              : CUSTOM_RHYTHM
                           }
                           onValueChange={(value) => {
                             if (!value || value === CUSTOM_RHYTHM) return;
@@ -238,7 +239,7 @@ export function ScheduledJobsCard({
                           }}
                           items={RHYTHM_ITEMS}
                         >
-                          <SelectTrigger className="w-full bg-white">
+                          <SelectTrigger className="w-full">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -258,7 +259,7 @@ export function ScheduledJobsCard({
                           Cron-Ausdruck
                         </Label>
                         <Input
-                          className="bg-white font-mono"
+                          className="font-mono"
                           value={cronDraft}
                           onChange={(e) => setCronDraft(e.target.value)}
                           onBlur={() => handleCronBlur(job)}
@@ -276,7 +277,7 @@ export function ScheduledJobsCard({
                       onCheckedChange={(checked) =>
                         patchJob(job.id, { notifyOnFailure: checked })
                       }
-                      className="border-[#F0F0F0] bg-white"
+                      className="border-border bg-white"
                     />
                     <SwitchRow
                       label="Als kritisch markieren"
@@ -285,7 +286,7 @@ export function ScheduledJobsCard({
                       onCheckedChange={(checked) =>
                         patchJob(job.id, { isCritical: checked })
                       }
-                      className="border-[#F0F0F0] bg-white"
+                      className="border-border bg-white"
                     />
 
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -300,7 +301,7 @@ export function ScheduledJobsCard({
                         <Button
                           type="button"
                           variant="outline"
-                          className="border-[#D4D4D4]"
+                          className="border-border"
                           onClick={() => setLogDialogJob(job)}
                         >
                           Letztes Protokoll

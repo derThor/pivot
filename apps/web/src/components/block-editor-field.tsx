@@ -408,8 +408,8 @@ function SpacingBoxEditor({
         className={cn(
           "flex size-7 shrink-0 items-center justify-center rounded-md border bg-card transition-colors",
           active
-            ? "border-primary bg-primary/25 text-[#132033]"
-            : "border-[#E5E5E5] text-muted-foreground hover:text-foreground",
+            ? "border-primary bg-primary/25 text-pivot-navy"
+            : "border-border text-muted-foreground hover:text-foreground",
         )}
       >
         <Link2 className="size-3.5" />
@@ -425,7 +425,7 @@ function SpacingBoxEditor({
     // (Nutzer-Bugreport, 2026-08-18: Footer-/Presets-Text wurde
     // rechts abgeschnitten).
     <div className="overflow-x-auto">
-      <div className="w-fit min-w-full rounded-xl border border-[#E5E5E5] bg-[#FAFAFA] p-3">
+      <div className="w-fit min-w-full rounded-xl border border-border bg-muted p-3">
         <div className="mb-3 flex items-center justify-between gap-2">
           <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
             Außenabstand{" "}
@@ -478,7 +478,7 @@ function SpacingBoxEditor({
                     value={padding?.left}
                     onChange={(v) => setPaddingSide("left", v)}
                   />
-                  <div className="flex h-12 min-w-20 items-center justify-center rounded-lg border border-[#D4D4D4] bg-card px-3 text-sm text-muted-foreground">
+                  <div className="flex h-12 min-w-20 items-center justify-center rounded-lg border border-border bg-card px-3 text-sm text-muted-foreground">
                     Inhalt
                   </div>
                   <SpacingSideInput
@@ -892,11 +892,11 @@ export function BlockEditorField({
                   }}
                   onDragEnd={() => setDraggingPaletteId(null)}
                   className={cn(
-                    "flex cursor-grab flex-col items-center gap-1.5 rounded-lg border border-[#D4D4D4] bg-card p-3 text-center transition-colors hover:border-primary active:cursor-grabbing",
+                    "flex cursor-grab flex-col items-center gap-1.5 rounded-lg border border-border bg-card p-3 text-center transition-colors hover:border-primary active:cursor-grabbing",
                     draggingPaletteId === moduleType.id && "opacity-50",
                   )}
                 >
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/25 text-[#132033]">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/25 text-pivot-navy">
                     <Icon className="size-4" />
                   </span>
                   <span className="text-xs font-medium">{moduleType.name}</span>
@@ -1517,14 +1517,14 @@ export function BlockEditorField({
           </DialogHeader>
           {spacingInstance && (
             <div className="flex flex-col gap-4 overflow-y-auto">
-              <div className="flex gap-1 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-1">
+              <div className="flex gap-1 rounded-lg border border-border bg-muted p-1">
                 <button
                   type="button"
                   onClick={() => setSpacingTab("mobile")}
                   className={cn(
                     "flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors",
                     spacingTab === "mobile"
-                      ? "border-primary bg-white shadow-sm"
+                      ? "border-primary bg-card shadow-sm"
                       : "border-transparent text-muted-foreground hover:text-foreground",
                   )}
                 >
@@ -1537,7 +1537,7 @@ export function BlockEditorField({
                   className={cn(
                     "flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors",
                     spacingTab === "desktop"
-                      ? "border-primary bg-white shadow-sm"
+                      ? "border-primary bg-card shadow-sm"
                       : "border-transparent text-muted-foreground hover:text-foreground",
                   )}
                 >

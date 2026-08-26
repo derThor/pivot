@@ -46,7 +46,7 @@ export function RowActionButtons({
           type="button"
           variant="outline"
           size={size}
-          className="rounded-lg border-[#D4D4D4]"
+          className="rounded-lg border-border"
           onClick={onEdit}
           aria-label={editLabel}
         >

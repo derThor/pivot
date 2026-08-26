@@ -89,8 +89,15 @@ export function TaxonomyManager({
 }) {
   const router = useRouter();
   const { activeId, query: highlightQuery } = useHighlightParam("taxonomy-row");
-  const { selected, toggle, toggleAll, clear, allSelected, someSelected, count } =
-    useSelection(items.map((item) => item.id));
+  const {
+    selected,
+    toggle,
+    toggleAll,
+    clear,
+    allSelected,
+    someSelected,
+    count,
+  } = useSelection(items.map((item) => item.id));
 
   async function handleDelete(id: string) {
     const item = items.find((i) => i.id === id);

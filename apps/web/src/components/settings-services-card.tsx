@@ -21,9 +21,8 @@ export function SettingsServicesCard({ smtp }: { smtp: SmtpSettings }) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const isActive = current.configured && !!current.verifiedAt;
-  const subtitle =
-    current.configured ?
-      `${current.host} · ${current.verifiedAt ? "verbunden" : "nicht verbunden"}`
+  const subtitle = current.configured
+    ? `${current.host} · ${current.verifiedAt ? "verbunden" : "nicht verbunden"}`
     : "Nicht eingerichtet";
 
   return (
@@ -32,18 +31,15 @@ export function SettingsServicesCard({ smtp }: { smtp: SmtpSettings }) {
         <CardTitle>Dienste</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted p-4">
           <div className="flex flex-col gap-0.5">
             <p className="text-sm font-medium">E-Mail-Versand (SMTP)</p>
             <p className="text-sm text-muted-foreground">{subtitle}</p>
           </div>
           <div className="flex items-center gap-3">
             <Badge
-              variant="secondary"
               className={
-                isActive ? "bg-green-100 text-green-700" : (
-                  "bg-amber-100 text-amber-700"
-                )
+                isActive ? "badge--green border-0" : "badge--amber border-0"
               }
             >
               {isActive ? "aktiv" : "offen"}
@@ -52,7 +48,7 @@ export function SettingsServicesCard({ smtp }: { smtp: SmtpSettings }) {
               type="button"
               variant="outline"
               size="sm"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={() => setDialogOpen(true)}
             >
               Einrichten

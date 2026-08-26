@@ -12,7 +12,11 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { toastCreated, toastDeleted, toastEdited } from "@/components/app-toast";
+import {
+  toastCreated,
+  toastDeleted,
+  toastEdited,
+} from "@/components/app-toast";
 import { focalObjectPosition } from "@/components/block-field-output";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,7 +48,7 @@ const dateFormatter = new Intl.DateTimeFormat("de-DE", {
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-2 border-b border-[#F0F0F0] pb-2 text-sm">
+    <div className="flex items-start justify-between gap-2 border-b border-border pb-2 text-sm">
       <span className="shrink-0 whitespace-nowrap text-muted-foreground">
         {label}
       </span>
@@ -71,7 +75,8 @@ export function MediaDetailPanel({
   onClose: () => void;
 }) {
   const router = useRouter();
-  const showAsImage = mediaCategory(item.mimeType) === "image" && !isSvg(item.mimeType);
+  const showAsImage =
+    mediaCategory(item.mimeType) === "image" && !isSvg(item.mimeType);
   const [usageCount, setUsageCount] = useState<number | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [tagsOpen, setTagsOpen] = useState(false);
@@ -82,7 +87,9 @@ export function MediaDetailPanel({
     setUsageCount(null);
     fetch(`/api/media/${item.id}/usage`)
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setUsageCount(typeof data?.count === "number" ? data.count : 0))
+      .then((data) =>
+        setUsageCount(typeof data?.count === "number" ? data.count : 0),
+      )
       .catch(() => setUsageCount(0));
   }, [item.id]);
 
@@ -135,7 +142,12 @@ export function MediaDetailPanel({
             {createElement(mediaTypeIcon(item.mimeType), {
               className: cn("size-10", mediaTypeStyle(item.mimeType).fg),
             })}
-            <span className={cn("text-xs font-medium", mediaTypeStyle(item.mimeType).fg)}>
+            <span
+              className={cn(
+                "text-xs font-medium",
+                mediaTypeStyle(item.mimeType).fg,
+              )}
+            >
               {mediaTypeLabel(item.mimeType)}
             </span>
           </div>
@@ -155,7 +167,10 @@ export function MediaDetailPanel({
             <MoreVertical />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem disabled={isDuplicating} onClick={handleDuplicate}>
+            <DropdownMenuItem
+              disabled={isDuplicating}
+              onClick={handleDuplicate}
+            >
               <Copy />
               Duplizieren
             </DropdownMenuItem>
@@ -173,12 +188,18 @@ export function MediaDetailPanel({
       <p className="truncate text-sm font-semibold">{item.filename}</p>
 
       <div className="flex flex-col gap-2 border-t pt-3">
-        <InfoRow label="Format" value={item.mimeType.split("/")[1]?.toUpperCase() ?? item.mimeType} />
+        <InfoRow
+          label="Format"
+          value={item.mimeType.split("/")[1]?.toUpperCase() ?? item.mimeType}
+        />
         {item.width && item.height && (
           <InfoRow label="Maße" value={`${item.width}×${item.height}`} />
         )}
         <InfoRow label="Größe" value={formatBytes(item.size)} />
-        <InfoRow label="Hochgeladen" value={dateFormatter.format(new Date(item.createdAt))} />
+        <InfoRow
+          label="Hochgeladen"
+          value={dateFormatter.format(new Date(item.createdAt))}
+        />
         <InfoRow label="Alt-Text" value={item.alt || "—"} />
         <InfoRow
           label="Verwendet"
@@ -200,7 +221,12 @@ export function MediaDetailPanel({
               key={tag.id}
               className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium"
             >
-              <span className={cn("size-1.5 shrink-0 rounded-full", tagDotColor(tag.id))} />
+              <span
+                className={cn(
+                  "size-1.5 shrink-0 rounded-full",
+                  tagDotColor(tag.id),
+                )}
+              />
               {tag.name}
             </span>
           ))}

@@ -1,7 +1,10 @@
 "use client";
 
 import { Check, X } from "lucide-react";
-import { checkPasswordPolicy, type PasswordPolicy } from "@/lib/password-policy";
+import {
+  checkPasswordPolicy,
+  type PasswordPolicy,
+} from "@/lib/password-policy";
 import { cn } from "@/lib/utils";
 
 export function PasswordPolicyChecklist({

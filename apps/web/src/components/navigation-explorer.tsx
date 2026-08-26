@@ -118,7 +118,9 @@ export function NavigationExplorer({
       setDraggedId(null);
       return;
     }
-    const siblings = siblingsOf(target.parentId).filter((n) => n.id !== draggedId);
+    const siblings = siblingsOf(target.parentId).filter(
+      (n) => n.id !== draggedId,
+    );
     const targetIndex = siblings.findIndex((n) => n.id === target.id);
     const insertIndex = position === "before" ? targetIndex : targetIndex + 1;
     siblings.splice(insertIndex, 0, draggedNode);
@@ -189,7 +191,8 @@ export function NavigationExplorer({
             e.preventDefault();
             const rect = e.currentTarget.getBoundingClientRect();
             const ratio = (e.clientY - rect.top) / rect.height;
-            const position = ratio < 0.25 ? "before" : ratio > 0.75 ? "after" : "nest";
+            const position =
+              ratio < 0.25 ? "before" : ratio > 0.75 ? "after" : "nest";
             setDragOverId(node.id);
             setDragOverPosition(position);
           }}
@@ -203,7 +206,7 @@ export function NavigationExplorer({
             else void handleDropOnSibling(node, position);
           }}
           className={cn(
-            "flex items-center gap-3 rounded-xl border border-[#F0F0F0] bg-[#FAFAFA] px-4 py-3 transition-colors",
+            "flex items-center gap-3 rounded-xl border border-border bg-muted px-4 py-3 transition-colors",
             isDragOver &&
               dragOverPosition === "before" &&
               "border-t-2 border-t-primary",
@@ -243,7 +246,7 @@ export function NavigationExplorer({
                     type="button"
                     variant="outline"
                     size="icon-sm"
-                    className="rounded-lg border-[#D4D4D4]"
+                    className="rounded-lg border-border"
                     aria-label={`Untereintrag zu „${node.label}“ hinzufügen`}
                   >
                     <Plus />
@@ -259,7 +262,7 @@ export function NavigationExplorer({
                   type="button"
                   variant="outline"
                   size="icon-sm"
-                  className="rounded-lg border-[#D4D4D4] sm:hidden"
+                  className="rounded-lg border-border sm:hidden"
                   aria-label={`Aktionen für „${node.label}“`}
                 />
               }
@@ -326,10 +329,10 @@ export function NavigationExplorer({
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
       <div className="overflow-hidden rounded-[10px] bg-card shadow-sm lg:w-72 lg:shrink-0 lg:self-start">
-        <p className="border-b border-[#F0F0F0] py-5 pr-4 pl-6 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        <p className="border-b border-border py-5 pr-4 pl-6 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           Menüs · {menus.length}
         </p>
-        <div className="flex flex-col divide-y divide-[#F0F0F0]">
+        <div className="flex flex-col divide-y divide-border">
           {menus.length === 0 ? (
             <p className="px-4 py-5 text-sm text-muted-foreground">
               Noch keine Menüs vorhanden.
@@ -411,7 +414,7 @@ export function NavigationExplorer({
               trigger={
                 <button
                   type="button"
-                  className="flex w-fit items-center gap-2 rounded-xl border border-dashed border-[#D5D5D5] px-4 py-2.5 text-[12.5px] font-medium text-[#6E6E6E] transition hover:border-primary hover:text-foreground"
+                  className="flex w-fit items-center gap-2 rounded-xl border border-dashed border-border px-4 py-2.5 text-[12.5px] font-medium text-pivot-g-body transition hover:border-primary hover:text-foreground"
                 >
                   <Plus className="size-4" />
                   Eintrag hinzufügen

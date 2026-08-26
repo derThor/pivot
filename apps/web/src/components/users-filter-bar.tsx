@@ -67,7 +67,7 @@ export function UsersFilterBar({
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <div className="flex h-9 items-center gap-1 rounded-xl bg-[#F4F4F5] p-1">
+      <div className="flex h-9 items-center gap-1 rounded-xl bg-secondary p-1">
         {statusPills.map((pill) => (
           <button
             key={pill.value}
@@ -106,7 +106,7 @@ export function UsersFilterBar({
         </SelectContent>
       </Select>
 
-      <div className="flex h-9 min-w-56 items-center gap-2 rounded-xl border border-[#D4D4D4] bg-card px-4">
+      <div className="flex h-9 min-w-56 items-center gap-2 rounded-xl border border-border bg-card px-4">
         <Search className="size-4 shrink-0 text-muted-foreground" />
         <Input
           value={query}

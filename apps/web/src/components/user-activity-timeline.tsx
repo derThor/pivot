@@ -55,13 +55,13 @@ function describeActivity(entry: ActivityLogEntry) {
       return {
         title: "Konto erstellt",
         category:
-          metadata.method === "self_registered" ?
-            "Selbst registriert"
-          : `Angelegt von ${actorName}`,
+          metadata.method === "self_registered"
+            ? "Selbst registriert"
+            : `Angelegt von ${actorName}`,
       };
     case "user.role_changed": {
-      const roleNames = Array.isArray(metadata.roleNames) ?
-          (metadata.roleNames as string[]).join(", ")
+      const roleNames = Array.isArray(metadata.roleNames)
+        ? (metadata.roleNames as string[]).join(", ")
         : "";
       return {
         title: `Rolle geändert zu ${roleNames}`,
@@ -79,9 +79,7 @@ function describeActivity(entry: ActivityLogEntry) {
       return {
         title: "Zwei-Faktor-Authentifizierung deaktiviert",
         category:
-          entry.user.id === entry.entityId ? "Sicherheit" : (
-            `von ${actorName}`
-          ),
+          entry.user.id === entry.entityId ? "Sicherheit" : `von ${actorName}`,
       };
     case "media.uploaded":
       return {
@@ -95,7 +93,8 @@ function describeActivity(entry: ActivityLogEntry) {
       };
     case "company.field_updated": {
       const fieldLabel =
-        COMPANY_FIELD_LABELS[metadata.field as string] ?? String(metadata.field);
+        COMPANY_FIELD_LABELS[metadata.field as string] ??
+        String(metadata.field);
       const verb = metadata.wasEmpty ? "ergänzt" : "aktualisiert";
       return {
         title: `${fieldLabel} ${verb}`,
@@ -104,10 +103,9 @@ function describeActivity(entry: ActivityLogEntry) {
     }
     case "content.published":
       return {
-        title:
-          metadata.title ? `„${metadata.title}“ veröffentlicht` : (
-            "Inhalt veröffentlicht"
-          ),
+        title: metadata.title
+          ? `„${metadata.title}“ veröffentlicht`
+          : "Inhalt veröffentlicht",
         category: "Inhalte",
       };
     default:
@@ -152,9 +150,9 @@ export function UserActivityTimeline({
     <div className="flex flex-col gap-4">
       <ol
         className={
-          isLoading ? "flex flex-col opacity-50 transition-opacity" : (
-            "flex flex-col transition-opacity"
-          )
+          isLoading
+            ? "flex flex-col opacity-50 transition-opacity"
+            : "flex flex-col transition-opacity"
         }
       >
         {data.items.map((entry, index) => {
@@ -166,12 +164,12 @@ export function UserActivityTimeline({
               <div className="flex flex-col items-center">
                 <span
                   className={
-                    isLatest ?
-                      "mt-1.5 size-2.5 shrink-0 rounded-full bg-primary"
-                    : "mt-1.5 size-2.5 shrink-0 rounded-full bg-muted-foreground/30"
+                    isLatest
+                      ? "mt-1.5 size-2.5 shrink-0 rounded-full bg-primary"
+                      : "mt-1.5 size-2.5 shrink-0 rounded-full bg-muted-foreground/30"
                   }
                 />
-                {!isLast && <span className="w-px flex-1 bg-neutral-300" />}
+                {!isLast && <span className="w-px flex-1 bg-pivot-line2" />}
               </div>
               <div className={isLast ? "pb-0" : "pb-6"}>
                 <p className="text-sm font-medium">{title}</p>

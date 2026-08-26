@@ -62,7 +62,7 @@ import type {
 // Klick darauf setzt `accentColor` zurück auf `null` (Standard) statt den
 // Hex-Wert explizit zu speichern.
 const ACCENT_PRESETS = [
-  { label: "Lime (Standard)", hex: "#C8EE44" },
+  { label: "Lime (Standard)", hex: "#BCE64D" },
   { label: "Blau", hex: "#93B7EE" },
   { label: "Orange", hex: "#E8A33D" },
   { label: "Navy", hex: "#151E2E" },
@@ -393,7 +393,7 @@ export function SettingsForm({
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={handleDiscard}
               disabled={isSubmitting}
             >
@@ -409,7 +409,7 @@ export function SettingsForm({
 
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
           <div className="overflow-hidden rounded-xl bg-card shadow-sm lg:w-80 lg:shrink-0">
-            <div className="flex flex-col divide-y divide-[#F0F0F0]">
+            <div className="flex flex-col divide-y divide-border">
               {SECTIONS.map((section) => {
                 const isActive = section.id === activeSection;
                 const Icon = section.icon;
@@ -430,7 +430,7 @@ export function SettingsForm({
                         "flex size-9 shrink-0 items-center justify-center rounded-lg",
                         isActive
                           ? "bg-primary/25 text-foreground"
-                          : "bg-[#F4F4F5] text-muted-foreground",
+                          : "bg-secondary text-muted-foreground",
                       )}
                     >
                       <Icon className="size-4" />
@@ -557,7 +557,7 @@ export function SettingsForm({
                       </FormItem>
                     )}
                   />
-                  <div className="flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+                  <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted p-4">
                     <div className="flex flex-col gap-0.5">
                       <Label htmlFor="mediaStorageQuotaMb" className="text-sm">
                         Medien-Speicherkontingent (MB)
@@ -577,7 +577,7 @@ export function SettingsForm({
                       placeholder="Unbegrenzt"
                     />
                   </div>
-                  <div className="flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+                  <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted p-4">
                     <div className="flex flex-col gap-0.5">
                       <Label htmlFor="maxUploadSizeMb" className="text-sm">
                         Maximale Dateigröße pro Upload (MB)
@@ -599,7 +599,7 @@ export function SettingsForm({
                       placeholder="Unbegrenzt"
                     />
                   </div>
-                  <div className="flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+                  <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted p-4">
                     <div className="flex flex-col gap-0.5">
                       <Label className="text-sm">Cache</Label>
                       <p className="text-sm text-muted-foreground">
@@ -612,7 +612,7 @@ export function SettingsForm({
                     <Button
                       type="button"
                       variant="outline"
-                      className="border-[#D4D4D4]"
+                      className="border-border"
                       disabled={isClearingCache}
                       onClick={handleClearCache}
                     >
@@ -851,13 +851,13 @@ export function SettingsForm({
                       )}
                     />
 
-                    <div className="mt-1 flex flex-col gap-3 border-t border-[#F0F0F0] pt-4 sm:flex-row">
+                    <div className="mt-1 flex flex-col gap-3 border-t border-border pt-4 sm:flex-row">
                       <ConfirmDeleteDialog
                         trigger={
                           <Button
                             type="button"
                             variant="outline"
-                            className="border-[#D4D4D4]"
+                            className="border-border"
                             disabled={isRevokingAllSessions}
                           >
                             {isRevokingAllSessions
@@ -877,7 +877,7 @@ export function SettingsForm({
                           <Button
                             type="button"
                             variant="outline"
-                            className="border-[#D4D4D4] text-destructive hover:text-destructive"
+                            className="border-border text-destructive hover:text-destructive"
                             disabled={isForcingPasswordResetAll}
                           >
                             {isForcingPasswordResetAll
@@ -911,7 +911,7 @@ export function SettingsForm({
                       <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                         Logo
                       </span>
-                      <div className="rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+                      <div className="rounded-lg border border-border bg-muted p-4">
                         <LogoUploadField
                           field="companyLogoUrl"
                           label="Firmenlogo"
@@ -944,7 +944,7 @@ export function SettingsForm({
                               <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                                 Akzentfarbe
                               </span>
-                              <div className="flex items-center gap-3 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+                              <div className="flex items-center gap-3 rounded-lg border border-border bg-muted p-4">
                                 <div className="flex items-center gap-2">
                                   {ACCENT_PRESETS.map((preset) => {
                                     const isSelected =
@@ -1045,7 +1045,7 @@ export function SettingsForm({
                       name="defaultPageSize"
                       render={({ field }) => (
                         <FormItem>
-                          <div className="flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+                          <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted p-4">
                             <Label
                               htmlFor="defaultPageSize"
                               className="text-sm"

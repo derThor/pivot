@@ -35,11 +35,17 @@ function summarize(
   values: Record<string, unknown>,
   fields: FormFieldOption[] | undefined,
 ): string {
-  const relevant = fields?.slice(0, 2) ?? Object.keys(values).slice(0, 2).map((id) => ({ id, label: id }) as FormFieldOption);
-  return relevant
-    .map((f) => formatValue(values[f.id]))
-    .filter((v) => v !== "–")
-    .join(" · ") || "–";
+  const relevant =
+    fields?.slice(0, 2) ??
+    Object.keys(values)
+      .slice(0, 2)
+      .map((id) => ({ id, label: id }) as FormFieldOption);
+  return (
+    relevant
+      .map((f) => formatValue(values[f.id]))
+      .filter((v) => v !== "–")
+      .join(" · ") || "–"
+  );
 }
 
 /** Tabelle für Formular-Einsendungen – gemeinsam für die pro-Formular-
@@ -82,9 +88,7 @@ export function SubmissionsTable({
       },
     );
     toastEdited(
-      submission.isRead
-        ? "Als ungelesen markiert."
-        : "Als gelesen markiert.",
+      submission.isRead ? "Als ungelesen markiert." : "Als gelesen markiert.",
     );
     router.refresh();
   }
@@ -102,7 +106,7 @@ export function SubmissionsTable({
     <div className="flex flex-col gap-3">
       <div className="overflow-hidden rounded-xl bg-card shadow-sm">
         <Table>
-          <TableHeader className="bg-background">
+          <TableHeader>
             <TableRow>
               <TableHead className="w-8" />
               {showForm && <TableHead>Formular</TableHead>}
@@ -151,7 +155,10 @@ export function SubmissionsTable({
                     </TableCell>
                   )}
                   <TableCell className="max-w-md text-sm">
-                    {summarize(submission.values, fields ?? submission.form?.fields)}
+                    {summarize(
+                      submission.values,
+                      fields ?? submission.form?.fields,
+                    )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
@@ -159,7 +166,7 @@ export function SubmissionsTable({
                       {retentionDays != null &&
                         now - new Date(submission.createdAt).getTime() >
                           retentionDays * 24 * 60 * 60 * 1000 && (
-                          <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700">
+                          <span className="badge--amber rounded-[5px] px-1.5 py-0.5 text-[11px] font-medium">
                             Abgelaufen
                           </span>
                         )}
@@ -171,7 +178,7 @@ export function SubmissionsTable({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="border-[#D4D4D4]"
+                        className="border-border"
                         onClick={() => toggleRead(submission)}
                       >
                         {submission.isRead ? "Ungelesen" : "Gelesen"}

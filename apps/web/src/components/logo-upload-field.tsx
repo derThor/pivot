@@ -40,11 +40,11 @@ export function LogoUploadField({
   /** Findet den Medien-Eintrag im Logo-Ordner, der aktuell unter dieser URL hinterlegt ist. */
   async function findMediaIdByUrl(url: string): Promise<string | null> {
     if (!folderId) return null;
-    const res = await fetch(
-      `/api/media?folderId=${folderId}&pageSize=100`,
-    );
+    const res = await fetch(`/api/media?folderId=${folderId}&pageSize=100`);
     if (!res.ok) return null;
-    const data = (await res.json().catch(() => null)) as MediaListResponse | null;
+    const data = (await res
+      .json()
+      .catch(() => null)) as MediaListResponse | null;
     return data?.items.find((item) => item.url === url)?.id ?? null;
   }
 
@@ -118,14 +118,16 @@ export function LogoUploadField({
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <span className="flex h-8 w-full flex-1 items-center justify-start overflow-hidden rounded-md border bg-background px-2">
-          {currentUrl ?
+          {currentUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={mediaUrl({ url: currentUrl })}
               alt={label}
               className="h-full w-auto object-contain"
             />
-          : <ImageIcon className="size-4 text-muted-foreground" />}
+          ) : (
+            <ImageIcon className="size-4 text-muted-foreground" />
+          )}
         </span>
         <label className="has-disabled:pointer-events-none has-disabled:opacity-50">
           <input
@@ -139,12 +141,12 @@ export function LogoUploadField({
               if (nextFile) void handleUpload(nextFile);
             }}
           />
-          <span className="inline-flex h-8 cursor-pointer items-center rounded-md border border-[#D4D4D4] bg-background px-3 text-sm font-medium transition-colors hover:bg-muted">
-            {isUploading ?
-              "Lädt hoch…"
-            : currentUrl ?
-              "Ersetzen"
-            : "Hinzufügen"}
+          <span className="inline-flex h-8 cursor-pointer items-center rounded-md border border-border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted">
+            {isUploading
+              ? "Lädt hoch…"
+              : currentUrl
+                ? "Ersetzen"
+                : "Hinzufügen"}
           </span>
         </label>
         {currentUrl && (

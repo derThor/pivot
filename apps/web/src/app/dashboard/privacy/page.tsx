@@ -61,9 +61,7 @@ export default async function PrivacyPage() {
     return (
       <div className="flex flex-col gap-10">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Datenschutz
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Datenschutz</h1>
         </div>
         <p className="text-sm text-muted-foreground">
           Keine Berechtigung, den Datenschutz-Bereich zu verwalten.
@@ -82,7 +80,9 @@ export default async function PrivacyPage() {
       incidents={incidents ?? []}
       accessLogDue={accessLogDue ?? []}
       deactivatedAccountsDue={deactivatedAccountsDue ?? []}
-      trashDue={trashDue ?? { content: [], media: [], categories: [], tags: [] }}
+      trashDue={
+        trashDue ?? { content: [], media: [], categories: [], tags: [] }
+      }
       users={users?.items ?? []}
       avsFolderId={avsFolderId}
       sccTemplateMedia={publicSettings?.sccTemplateMedia ?? null}

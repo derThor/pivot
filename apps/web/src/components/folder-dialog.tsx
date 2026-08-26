@@ -120,7 +120,9 @@ export function FolderDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="folder-name" required>Name</Label>
+            <Label htmlFor="folder-name" required>
+              Name
+            </Label>
             <Input
               id="folder-name"
               value={name}
@@ -134,7 +136,7 @@ export function FolderDialog({
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={() => setOpen(false)}
             >
               Abbrechen

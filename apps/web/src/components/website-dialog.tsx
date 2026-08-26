@@ -435,7 +435,7 @@ export function WebsiteDialog({
                   <Button
                     type="button"
                     variant="outline"
-                    className="border-[#D4D4D4]"
+                    className="border-border"
                     disabled={isLoadingExistingKey}
                     onClick={handleRevealExisting}
                   >
@@ -448,7 +448,7 @@ export function WebsiteDialog({
                 <Button
                   type="button"
                   variant="outline"
-                  className="border-[#D4D4D4]"
+                  className="border-border"
                   disabled={isRegenerating}
                   onClick={handleRegenerate}
                 >
@@ -469,7 +469,7 @@ export function WebsiteDialog({
               <Button
                 type="button"
                 variant="outline"
-                className="border-[#D4D4D4]"
+                className="border-border"
                 onClick={() => handleOpenChange(false)}
               >
                 Abbrechen

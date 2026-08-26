@@ -46,7 +46,7 @@ export function UserRestoreButton({
       type="button"
       variant="outline"
       size="icon"
-      className="rounded-lg border-[#D4D4D4]"
+      className="rounded-lg border-border"
       aria-label={`„${name}“ wiederherstellen`}
       disabled={isRestoring}
       onClick={handleRestore}

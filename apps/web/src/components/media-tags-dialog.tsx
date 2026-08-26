@@ -74,7 +74,8 @@ export function MediaTagsDialog({
         </DialogHeader>
         {availableTags.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Noch keine Tags vorhanden. Lege welche unter „Tags“ in der Navigation an.
+            Noch keine Tags vorhanden. Lege welche unter „Tags“ in der
+            Navigation an.
           </p>
         ) : (
           <div className="flex max-h-64 flex-col gap-2 overflow-y-auto">
@@ -99,7 +100,7 @@ export function MediaTagsDialog({
           <Button
             type="button"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             onClick={() => onOpenChange(false)}
           >
             Abbrechen

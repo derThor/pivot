@@ -35,7 +35,7 @@ export function UsersTable({
   return (
     <div className="overflow-hidden">
       <Table>
-        <TableHeader className="bg-background">
+        <TableHeader>
           <TableRow>
             <TableHead>Benutzer</TableHead>
             <TableHead>2FA</TableHead>
@@ -63,7 +63,9 @@ export function UsersTable({
                     <div className="flex items-center gap-3">
                       <Avatar size="lg">
                         {user.avatarUrl && (
-                          <AvatarImage src={mediaUrl({ url: user.avatarUrl })} />
+                          <AvatarImage
+                            src={mediaUrl({ url: user.avatarUrl })}
+                          />
                         )}
                         <AvatarFallback>{initials(user)}</AvatarFallback>
                       </Avatar>
@@ -95,8 +97,8 @@ export function UsersTable({
                       variant="secondary"
                       className={
                         allowTwoFactor && user.twoFactorEnabled
-                          ? "gap-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
-                          : "gap-1 bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
+                          ? "badge--green gap-1 border-0"
+                          : "badge--ink gap-1 border-0"
                       }
                     >
                       {allowTwoFactor && user.twoFactorEnabled ? (
@@ -110,28 +112,23 @@ export function UsersTable({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {user.anonymizedAt ?
-                      <Badge
-                        variant="secondary"
-                        className="bg-muted text-muted-foreground"
-                      >
+                    {user.anonymizedAt ? (
+                      <Badge className="badge--slate border-0">
                         Anonymisiert
                       </Badge>
-                    : user.deletedAt ?
-                      <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
-                        Gelöscht
-                      </Badge>
-                    : <Badge
-                        variant="secondary"
+                    ) : user.deletedAt ? (
+                      <Badge className="badge--amber border-0">Gelöscht</Badge>
+                    ) : (
+                      <Badge
                         className={
                           user.isActive
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
-                            : "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
+                            ? "badge--green border-0"
+                            : "badge--ink border-0"
                         }
                       >
                         {user.isActive ? "Aktiv" : "Deaktiviert"}
                       </Badge>
-                    }
+                    )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {user.lastLoginAt
@@ -143,15 +140,16 @@ export function UsersTable({
                         mehr zu bearbeiten. Gelöschte (noch nicht
                         anonymisierte) Konten lassen sich nur noch
                         wiederherstellen. */}
-                    {user.anonymizedAt ? null
-                    : user.deletedAt ?
+                    {user.anonymizedAt ? null : user.deletedAt ? (
                       <div className="flex justify-center">
                         <UserRestoreButton
                           userId={user.id}
                           name={formatName(user)}
                         />
                       </div>
-                    : <UserRowActions user={user} isSelf={isSelf} />}
+                    ) : (
+                      <UserRowActions user={user} isSelf={isSelf} />
+                    )}
                   </TableCell>
                 </TableRow>
               );

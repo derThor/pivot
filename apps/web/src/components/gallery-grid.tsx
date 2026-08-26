@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Image as ImageIcon, MoreVertical, Plus, Trash2 } from "lucide-react";
+import {
+  ChevronRight,
+  Image as ImageIcon,
+  MoreVertical,
+  Plus,
+  Trash2,
+} from "lucide-react";
 
 import { toastDeleted } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
@@ -14,12 +20,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { toRepeaterItems, toImageValue } from "@/components/block-field-output";
-import { toGallerySettings, GALLERY_EFFECT_LABELS } from "@/lib/gallery-settings";
+import {
+  toGallerySettings,
+  GALLERY_EFFECT_LABELS,
+} from "@/lib/gallery-settings";
 import { resolveImageSrc } from "@/lib/media";
 import { cn, truncateMiddle } from "@/lib/utils";
 import type { GlobalModule, ModuleType } from "@/lib/api-server";
 
-const darkTextClassName = "text-[#132033]";
+const darkTextClassName = "text-pivot-navy";
 // Höchstens 3 Bild-Kacheln pro Galerie-Karte (Nutzervorgabe, 2026-08-15) –
 // die letzte sichtbare Kachel bekommt die "X Bilder"-Badge mit der
 // tatsächlichen Gesamtzahl, auch wenn davon nur 3 (oder weniger) angezeigt
@@ -53,7 +62,9 @@ export function GalleryGrid({
 
   async function handleDelete() {
     if (!deleteGallery) return;
-    await fetch(`/api/global-modules/${deleteGallery.id}`, { method: "DELETE" });
+    await fetch(`/api/global-modules/${deleteGallery.id}`, {
+      method: "DELETE",
+    });
     toastDeleted(`„${deleteGallery.name}“ wurde gelöscht.`);
     router.refresh();
   }
@@ -75,21 +86,23 @@ export function GalleryGrid({
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((gallery) => {
-            const allImages = toRepeaterItems(gallery.values[repeaterField.name]);
+            const allImages = toRepeaterItems(
+              gallery.values[repeaterField.name],
+            );
             const visibleImages = allImages.slice(0, MAX_PREVIEW_TILES);
             const effect = toGallerySettings(gallery.settings).effect;
 
             return (
               <div
                 key={gallery.id}
-                className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-[#E6E6E6]"
+                className="overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border"
               >
-                <div className="relative flex h-24 w-full gap-1 bg-[#F2F2F2]">
+                <div className="relative flex h-24 w-full gap-1 bg-secondary">
                   {visibleImages.length === 0 ? (
                     <button
                       type="button"
                       onClick={() => openEditor(gallery)}
-                      className="flex size-full flex-col items-center justify-center gap-1 text-[12.5px] font-medium text-[#6E6E6E] transition hover:text-[#132033]"
+                      className="flex size-full flex-col items-center justify-center gap-1 text-[12.5px] font-medium text-pivot-g-body transition hover:text-pivot-navy"
                     >
                       <Plus className="size-5" />
                       Bilder hinzufügen
@@ -108,8 +121,8 @@ export function GalleryGrid({
                               className="size-full object-cover"
                             />
                           ) : (
-                            <div className="flex size-full items-center justify-center bg-[#F2F2F2]">
-                              <ImageIcon className="size-5 text-[#8C8C8C]" />
+                            <div className="flex size-full items-center justify-center bg-secondary">
+                              <ImageIcon className="size-5 text-muted-foreground" />
                             </div>
                           )}
                           {isLast && (
@@ -117,7 +130,8 @@ export function GalleryGrid({
                               className="absolute top-2 right-2 rounded-md px-2 py-0.5 text-[11px] font-medium text-white"
                               style={{ background: "rgba(19, 32, 51, 0.82)" }}
                             >
-                              {allImages.length} {allImages.length === 1 ? "Bild" : "Bilder"}
+                              {allImages.length}{" "}
+                              {allImages.length === 1 ? "Bild" : "Bilder"}
                             </span>
                           )}
                         </div>
@@ -156,15 +170,21 @@ export function GalleryGrid({
                 >
                   <span className="min-w-0 flex-1">
                     <span
-                      className={cn("block text-[15px] font-semibold", darkTextClassName)}
+                      className={cn(
+                        "block text-[15px] font-semibold",
+                        darkTextClassName,
+                      )}
                     >
                       {gallery.name}
                     </span>
-                    <span className="mt-0.5 block text-[12.5px] text-[#8C8C8C]">
+                    <span className="mt-0.5 block text-[12.5px] text-muted-foreground">
                       Effekt: {GALLERY_EFFECT_LABELS[effect]}
                     </span>
                   </span>
-                  <ChevronRight className="size-[17px] shrink-0 text-[#8C8C8C]" strokeWidth={1.7} />
+                  <ChevronRight
+                    className="size-[17px] shrink-0 text-muted-foreground"
+                    strokeWidth={1.7}
+                  />
                 </button>
               </div>
             );

@@ -134,7 +134,9 @@ export function NavigationDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="navigation-name" required>Name</Label>
+            <Label htmlFor="navigation-name" required>
+              Name
+            </Label>
             <Input
               id="navigation-name"
               value={name}
@@ -144,7 +146,9 @@ export function NavigationDialog({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="navigation-slug" required>Slug</Label>
+            <Label htmlFor="navigation-slug" required>
+              Slug
+            </Label>
             <Input
               id="navigation-slug"
               value={slug}
@@ -161,7 +165,7 @@ export function NavigationDialog({
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={() => setOpen(false)}
             >
               Abbrechen

@@ -68,11 +68,13 @@ export function MyAccountView({
   // sperrt den Zugriff auf alles andere ohnehin über middleware.ts).
   const tabParam = searchParams.get("tab");
   const initialTab =
-    user.mustChangePassword || user.twoFactorSetupRequired ? "security"
-    : tabParam === "security" || tabParam === "display" ||
-      tabParam === "notifications" ?
-      tabParam
-    : "profile";
+    user.mustChangePassword || user.twoFactorSetupRequired
+      ? "security"
+      : tabParam === "security" ||
+          tabParam === "display" ||
+          tabParam === "notifications"
+        ? tabParam
+        : "profile";
   const [activeTab, setActiveTab] = useState<
     "profile" | "security" | "display" | "notifications"
   >(initialTab);
@@ -149,7 +151,7 @@ export function MyAccountView({
             {user.avatarUrl && (
               <AvatarImage src={mediaUrl({ url: user.avatarUrl })} />
             )}
-            <AvatarFallback className="bg-neutral-900 text-lg font-medium text-white">
+            <AvatarFallback className="bg-dark-surface text-lg font-medium text-white">
               {initials(user)}
             </AvatarFallback>
           </Avatar>
@@ -160,7 +162,7 @@ export function MyAccountView({
                 <Badge
                   key={role.id}
                   variant="secondary"
-                  className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
+                  className="badge--green border-0"
                 >
                   {role.name}
                 </Badge>
@@ -170,8 +172,8 @@ export function MyAccountView({
                   variant="secondary"
                   className={
                     user.twoFactorEnabled
-                      ? "gap-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
-                      : "gap-1 bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
+                      ? "badge--green gap-1 border-0"
+                      : "badge--ink gap-1 border-0"
                   }
                 >
                   {user.twoFactorEnabled ? (
@@ -200,7 +202,7 @@ export function MyAccountView({
           <Button
             type="button"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             onClick={() => fileInputRef.current?.click()}
           >
             Foto ändern
@@ -220,156 +222,156 @@ export function MyAccountView({
           <TabsTrigger value="notifications">Benachrichtigungen</TabsTrigger>
         </TabsList>
 
-          <TabsContent value="profile">
-            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
-              <div className="lg:col-span-2">
-                <AccountForm
-                  user={user}
-                  allowEmailChange={allowEmailChange}
-                  formId={PROFILE_FORM_ID}
-                  onSubmittingChange={setIsSubmitting}
-                />
-              </div>
-              <div className="flex flex-col gap-4">
-                <div className="rounded-xl bg-card shadow-sm p-6">
-                  <h3 className="text-xs font-medium text-muted-foreground uppercase">
-                    Meine Rolle
-                  </h3>
-                  <p className="mt-2 text-lg font-semibold">
-                    {user.roles.map((role) => role.name).join(", ") || "–"}
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {primaryRole?.description ??
-                      "Änderungen an der eigenen Rolle sind nicht möglich."}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-card shadow-sm p-6">
-                  <h3 className="text-xs font-medium text-muted-foreground uppercase">
-                    Diese Woche
-                  </h3>
-                  <div className="mt-3 grid grid-cols-2 gap-4 text-center">
-                    <div>
-                      <div className="text-2xl font-semibold">
-                        {weeklyStats.contentCount}
-                      </div>
-                      <div className="text-xs text-muted-foreground uppercase">
-                        Seiten
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-2xl font-semibold">
-                        {weeklyStats.mediaCount}
-                      </div>
-                      <div className="text-xs text-muted-foreground uppercase">
-                        Medien
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <SelfServiceRequestCard requests={myDeletionRequests} />
-              </div>
+        <TabsContent value="profile">
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <AccountForm
+                user={user}
+                allowEmailChange={allowEmailChange}
+                formId={PROFILE_FORM_ID}
+                onSubmittingChange={setIsSubmitting}
+              />
             </div>
-          </TabsContent>
-
-          <TabsContent value="security">
-            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
-              <div className="flex flex-col gap-4 lg:col-span-2">
-                <ChangePasswordForm
-                  passwordPolicy={passwordPolicy}
-                  formId={PASSWORD_FORM_ID}
-                  onSubmittingChange={setIsSubmitting}
-                />
-                <TwoFactorSetupCard
-                  enabled={user.twoFactorEnabled}
-                  enabledAt={user.twoFactorEnabledAt}
-                  allowTwoFactor={allowTwoFactor}
-                />
+            <div className="flex flex-col gap-4">
+              <div className="rounded-xl bg-card shadow-sm p-6">
+                <h3 className="text-xs font-medium text-muted-foreground uppercase">
+                  Meine Rolle
+                </h3>
+                <p className="mt-2 text-lg font-semibold">
+                  {user.roles.map((role) => role.name).join(", ") || "–"}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {primaryRole?.description ??
+                    "Änderungen an der eigenen Rolle sind nicht möglich."}
+                </p>
               </div>
               <div className="rounded-xl bg-card shadow-sm p-6">
                 <h3 className="text-xs font-medium text-muted-foreground uppercase">
-                  Meine Sitzungen
+                  Diese Woche
                 </h3>
-                {sessionsState.length === 0 ? (
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    Keine aktiven Sitzungen.
-                  </p>
-                ) : (
-                  <div className="mt-3 flex flex-col gap-2">
-                    {visibleSessions.map((session) => (
-                      <div
-                        key={session.id}
-                        className="flex items-center justify-between gap-3 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-3"
-                      >
-                        <div className="flex min-w-0 items-center gap-2.5">
-                          <Monitor className="size-4 shrink-0 text-muted-foreground" />
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium">
-                              {session.device}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {session.isCurrent
-                                ? "aktuelle Sitzung"
-                                : formatRelativeTime(session.createdAt)}
-                            </p>
-                          </div>
-                        </div>
-                        {session.isCurrent ? (
-                          <Badge
-                            variant="secondary"
-                            className="shrink-0 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
-                          >
-                            aktiv
-                          </Badge>
-                        ) : (
-                          <button
-                            type="button"
-                            className="shrink-0 text-sm text-muted-foreground underline-offset-4 hover:text-destructive hover:underline"
-                            onClick={() => handleRevokeSession(session.id)}
-                          >
-                            beenden
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                <div className="mt-3 grid grid-cols-2 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-semibold">
+                      {weeklyStats.contentCount}
+                    </div>
+                    <div className="text-xs text-muted-foreground uppercase">
+                      Seiten
+                    </div>
                   </div>
-                )}
-                <PaginationControls
-                  page={sessionsPage}
-                  pageCount={sessionsPageCount}
-                  onPageChange={setSessionsPage}
-                />
-                {sessionsState.some((s) => !s.isCurrent) && (
-                  <button
-                    type="button"
-                    className="mt-2 self-start rounded-xl border border-[#E5E5E5] bg-transparent px-3 py-2 text-[12.5px] font-medium text-destructive transition-colors duration-150 hover:bg-destructive/5"
-                    onClick={handleRevokeOtherSessions}
-                  >
-                    Alle anderen Sitzungen beenden
-                  </button>
-                )}
+                  <div>
+                    <div className="text-2xl font-semibold">
+                      {weeklyStats.mediaCount}
+                    </div>
+                    <div className="text-xs text-muted-foreground uppercase">
+                      Medien
+                    </div>
+                  </div>
+                </div>
               </div>
+              <SelfServiceRequestCard requests={myDeletionRequests} />
             </div>
-          </TabsContent>
+          </div>
+        </TabsContent>
 
-          <TabsContent value="display">
-            <div className="rounded-xl bg-card shadow-sm p-6">
-              <h2 className="font-semibold">Darstellung</h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Persönliche Anzeige-Einstellungen sind in Vorbereitung und
-                folgen in einem späteren Ausbauschritt.
-              </p>
+        <TabsContent value="security">
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+            <div className="flex flex-col gap-4 lg:col-span-2">
+              <ChangePasswordForm
+                passwordPolicy={passwordPolicy}
+                formId={PASSWORD_FORM_ID}
+                onSubmittingChange={setIsSubmitting}
+              />
+              <TwoFactorSetupCard
+                enabled={user.twoFactorEnabled}
+                enabledAt={user.twoFactorEnabledAt}
+                allowTwoFactor={allowTwoFactor}
+              />
             </div>
-          </TabsContent>
+            <div className="rounded-xl bg-card shadow-sm p-6">
+              <h3 className="text-xs font-medium text-muted-foreground uppercase">
+                Meine Sitzungen
+              </h3>
+              {sessionsState.length === 0 ? (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Keine aktiven Sitzungen.
+                </p>
+              ) : (
+                <div className="mt-3 flex flex-col gap-2">
+                  {visibleSessions.map((session) => (
+                    <div
+                      key={session.id}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted p-3"
+                    >
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <Monitor className="size-4 shrink-0 text-muted-foreground" />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">
+                            {session.device}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {session.isCurrent
+                              ? "aktuelle Sitzung"
+                              : formatRelativeTime(session.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                      {session.isCurrent ? (
+                        <Badge
+                          variant="secondary"
+                          className="badge--green shrink-0 border-0"
+                        >
+                          aktiv
+                        </Badge>
+                      ) : (
+                        <button
+                          type="button"
+                          className="shrink-0 text-sm text-muted-foreground underline-offset-4 hover:text-destructive hover:underline"
+                          onClick={() => handleRevokeSession(session.id)}
+                        >
+                          beenden
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <PaginationControls
+                page={sessionsPage}
+                pageCount={sessionsPageCount}
+                onPageChange={setSessionsPage}
+              />
+              {sessionsState.some((s) => !s.isCurrent) && (
+                <button
+                  type="button"
+                  className="mt-2 self-start rounded-xl border border-border bg-transparent px-3 py-2 text-[12.5px] font-medium text-destructive transition-colors duration-150 hover:bg-destructive/5"
+                  onClick={handleRevokeOtherSessions}
+                >
+                  Alle anderen Sitzungen beenden
+                </button>
+              )}
+            </div>
+          </div>
+        </TabsContent>
 
-          <TabsContent value="notifications">
-            <div className="rounded-xl bg-card shadow-sm p-6">
-              <h2 className="font-semibold">Benachrichtigungen</h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Persönliche Benachrichtigungs-Einstellungen sind in
-                Vorbereitung und folgen in einem späteren Ausbauschritt.
-              </p>
-            </div>
-          </TabsContent>
+        <TabsContent value="display">
+          <div className="rounded-xl bg-card shadow-sm p-6">
+            <h2 className="font-semibold">Darstellung</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Persönliche Anzeige-Einstellungen sind in Vorbereitung und folgen
+              in einem späteren Ausbauschritt.
+            </p>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="notifications">
+          <div className="rounded-xl bg-card shadow-sm p-6">
+            <h2 className="font-semibold">Benachrichtigungen</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Persönliche Benachrichtigungs-Einstellungen sind in Vorbereitung
+              und folgen in einem späteren Ausbauschritt.
+            </p>
+          </div>
+        </TabsContent>
       </Tabs>
 
       <AvatarCropDialog

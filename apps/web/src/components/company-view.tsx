@@ -133,9 +133,9 @@ export function CompanyView({
     .filter(Boolean)
     .join(", ");
   const registerBadge =
-    values.companyRegisterCourt && values.companyRegisterNumber ?
-      `${values.companyRegisterCourt} · ${values.companyRegisterNumber}`
-    : null;
+    values.companyRegisterCourt && values.companyRegisterNumber
+      ? `${values.companyRegisterCourt} · ${values.companyRegisterNumber}`
+      : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -148,7 +148,7 @@ export function CompanyView({
           <Button
             type="button"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             onClick={handleDiscard}
             disabled={isSubmitting}
           >
@@ -173,7 +173,10 @@ export function CompanyView({
                 {values.companyName || "Firma noch nicht benannt"}
               </span>
               {registerBadge && (
-                <Badge variant="secondary" className="bg-muted text-muted-foreground">
+                <Badge
+                  variant="secondary"
+                  className="bg-muted text-muted-foreground"
+                >
                   {registerBadge}
                 </Badge>
               )}
@@ -198,7 +201,7 @@ export function CompanyView({
         onValueChange={(value) => setActiveTab(value as typeof activeTab)}
         className="gap-4"
       >
-        <TabsList className="!h-auto w-fit justify-start gap-1 !overflow-visible bg-[#F4F4F5] p-1">
+        <TabsList className="!h-auto w-fit justify-start gap-1 !overflow-visible bg-secondary p-1">
           <TabsTrigger
             value="stammdaten"
             className="!h-auto min-h-[52px] flex-none flex-col items-start justify-center gap-0.5 rounded-lg px-4 py-2.5 text-left whitespace-normal"
@@ -214,7 +217,8 @@ export function CompanyView({
           >
             <span className="text-sm font-semibold">Standorte</span>
             <span className="text-xs font-normal text-muted-foreground">
-              {locations.length} {locations.length === 1 ? "Adresse" : "Adressen"}
+              {locations.length}{" "}
+              {locations.length === 1 ? "Adresse" : "Adressen"}
             </span>
           </TabsTrigger>
         </TabsList>
@@ -270,20 +274,21 @@ export function CompanyView({
                       style={{ width: `${completionPercent}%` }}
                     />
                   </div>
-                  {completionPercent === 100 ?
+                  {completionPercent === 100 ? (
                     <SystemMessage
                       variant="success"
                       title="Alle Pflichtfelder gefüllt."
                     />
-                  : <SystemMessage
+                  ) : (
+                    <SystemMessage
                       variant="warning"
                       title={`${companyFields.length - filledCount} ${
-                        companyFields.length - filledCount === 1 ?
-                          "Feld fehlt"
-                        : "Felder fehlen"
+                        companyFields.length - filledCount === 1
+                          ? "Feld fehlt"
+                          : "Felder fehlen"
                       } noch.`}
                     />
-                  }
+                  )}
                 </CardContent>
               </Card>
 
@@ -294,31 +299,35 @@ export function CompanyView({
                   </p>
                 </CardHeader>
                 <CardContent>
-                  {changes.length === 0 ?
+                  {changes.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
                       Noch keine Änderungen erfasst.
                     </p>
-                  : <ol className="flex flex-col">
+                  ) : (
+                    <ol className="flex flex-col">
                       {changes.map((change, index) => {
                         const fieldLabel =
                           companyFields.find(
                             (f) => f.key === change.metadata?.field,
-                          )?.label ?? change.metadata?.field ?? "Feld";
-                        const verb =
-                          change.metadata?.wasEmpty ? "ergänzt" : "aktualisiert";
+                          )?.label ??
+                          change.metadata?.field ??
+                          "Feld";
+                        const verb = change.metadata?.wasEmpty
+                          ? "ergänzt"
+                          : "aktualisiert";
                         const isLast = index === changes.length - 1;
                         return (
                           <li key={change.id} className="flex gap-3">
                             <div className="flex flex-col items-center">
                               <span
                                 className={
-                                  index === 0 ?
-                                    "mt-1.5 size-2 shrink-0 rounded-full bg-primary"
-                                  : "mt-1.5 size-2 shrink-0 rounded-full bg-muted-foreground/30"
+                                  index === 0
+                                    ? "mt-1.5 size-2 shrink-0 rounded-full bg-primary"
+                                    : "mt-1.5 size-2 shrink-0 rounded-full bg-muted-foreground/30"
                                 }
                               />
                               {!isLast && (
-                                <span className="w-px flex-1 bg-neutral-300" />
+                                <span className="w-px flex-1 bg-pivot-line2" />
                               )}
                             </div>
                             <div className={isLast ? "pb-0" : "pb-4"}>
@@ -334,7 +343,7 @@ export function CompanyView({
                         );
                       })}
                     </ol>
-                  }
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -349,22 +358,22 @@ export function CompanyView({
                   Noch keine Standorte angelegt.
                 </div>
               ) : (
-                <div className="flex flex-col divide-y divide-[#F0F0F0]">
+                <div className="flex flex-col divide-y divide-border">
                   {locations.map((location) => {
                     const isSelected = location.id === selectedLocation?.id;
                     const addressSummary =
-                      location.street || location.city ?
-                        [location.street, location.city]
-                          .filter(Boolean)
-                          .join(", ")
-                      : "– · verteilt";
+                      location.street || location.city
+                        ? [location.street, location.city]
+                            .filter(Boolean)
+                            .join(", ")
+                        : "– · verteilt";
                     return (
                       <div
                         key={location.id}
                         className={`flex items-center justify-between gap-4 border-l-4 px-4 py-4 transition-colors ${
-                          isSelected ?
-                            "border-l-primary bg-primary/15"
-                          : "border-l-transparent hover:bg-muted/50"
+                          isSelected
+                            ? "border-l-primary bg-primary/15"
+                            : "border-l-transparent hover:bg-muted/50"
                         }`}
                       >
                         <button
@@ -374,16 +383,18 @@ export function CompanyView({
                         >
                           <span
                             className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${
-                              isSelected ?
-                                "bg-primary/25 text-foreground"
-                              : "bg-[#F4F4F5] text-muted-foreground"
+                              isSelected
+                                ? "bg-primary/25 text-foreground"
+                                : "bg-secondary text-muted-foreground"
                             }`}
                           >
                             <MapPin className="size-4" />
                           </span>
                           <div className="flex flex-col gap-0.5">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold">{location.name}</span>
+                              <span className="font-semibold">
+                                {location.name}
+                              </span>
                               {location.isPrimary && (
                                 <Badge className="bg-primary/25 text-foreground hover:bg-primary/25">
                                   Hauptsitz
@@ -397,7 +408,10 @@ export function CompanyView({
                         </button>
                         <div className="flex shrink-0 items-center gap-2">
                           {location.employeeCount != null && (
-                            <Badge variant="secondary" className="bg-muted text-muted-foreground">
+                            <Badge
+                              variant="secondary"
+                              className="bg-muted text-muted-foreground"
+                            >
                               {location.employeeCount} Personen
                             </Badge>
                           )}
@@ -421,7 +435,7 @@ export function CompanyView({
                 <Button
                   type="button"
                   variant="outline"
-                  className="border-[#D4D4D4]"
+                  className="border-border"
                   onClick={() => setDialogTarget("new")}
                 >
                   <Plus className="size-4" />
@@ -440,18 +454,24 @@ export function CompanyView({
                     <CardTitle>{selectedLocation.name}</CardTitle>
                   </CardHeader>
                   <CardContent className="flex flex-col gap-4">
-                    <div className="flex flex-col divide-y divide-[#F0F0F0] text-sm">
+                    <div className="flex flex-col divide-y divide-border text-sm">
                       {selectedLocation.street && (
                         <div className="flex items-center justify-between py-2 first:pt-0">
-                          <span className="text-muted-foreground">Anschrift</span>
+                          <span className="text-muted-foreground">
+                            Anschrift
+                          </span>
                           <span>{selectedLocation.street}</span>
                         </div>
                       )}
-                      {(selectedLocation.postalCode || selectedLocation.city) && (
+                      {(selectedLocation.postalCode ||
+                        selectedLocation.city) && (
                         <div className="flex items-center justify-between py-2">
                           <span className="text-muted-foreground">Ort</span>
                           <span>
-                            {[selectedLocation.postalCode, selectedLocation.city]
+                            {[
+                              selectedLocation.postalCode,
+                              selectedLocation.city,
+                            ]
                               .filter(Boolean)
                               .join(" ")}
                           </span>

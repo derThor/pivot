@@ -16,7 +16,10 @@ export function StorageQuotaBanner({
 }: {
   usage: MediaStorageUsage | null;
 }) {
-  if (usage?.percentUsed == null || usage.percentUsed < STORAGE_WARNING_THRESHOLD_PERCENT) {
+  if (
+    usage?.percentUsed == null ||
+    usage.percentUsed < STORAGE_WARNING_THRESHOLD_PERCENT
+  ) {
     return null;
   }
 

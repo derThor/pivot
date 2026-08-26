@@ -275,10 +275,10 @@ export function RolesExplorer({
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
       <div className="overflow-hidden rounded-[10px] bg-card shadow-sm lg:w-72 lg:shrink-0 lg:self-start">
-        <p className="border-b border-[#F0F0F0] py-5 pr-4 pl-6 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        <p className="border-b border-border py-5 pr-4 pl-6 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           Rollen · {roles.length}
         </p>
-        <div className="flex flex-col divide-y divide-[#F0F0F0]">
+        <div className="flex flex-col divide-y divide-border">
           {roles.map((role) => {
             const active = role.id === selectedRoleId;
             const isPivotRole = role.name === "Pivot";
@@ -304,7 +304,7 @@ export function RolesExplorer({
                     <img
                       src="/brand/logo-collapsed.png"
                       alt=""
-                      className="size-3.5 shrink-0 object-contain"
+                      className="pivot-logo size-3.5 shrink-0 object-contain"
                     />
                   ) : (
                     isAdmin && (
@@ -328,7 +328,7 @@ export function RolesExplorer({
           })}
         </div>
         {selectedRole && (
-          <div className="border-t border-[#E5E5E5]">
+          <div className="border-t border-border">
             <button
               type="button"
               onClick={handleDuplicate}
@@ -358,7 +358,7 @@ export function RolesExplorer({
                     <img
                       src="/brand/logo-collapsed.png"
                       alt=""
-                      className="size-5 shrink-0 object-contain"
+                      className="pivot-logo size-5 shrink-0 object-contain"
                     />
                   )}
                   <h2 className="text-xl font-semibold">{selectedRole.name}</h2>
@@ -368,9 +368,7 @@ export function RolesExplorer({
                       Geschützt
                     </Badge>
                   ) : (
-                    <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
-                      bearbeitbar
-                    </Badge>
+                    <Badge className="badge--green border-0">bearbeitbar</Badge>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -388,7 +386,7 @@ export function RolesExplorer({
                   <Button
                     type="button"
                     variant="outline"
-                    className="border-[#D4D4D4] py-1.5"
+                    className="border-border py-1.5"
                     disabled={!isDirty || isAdministrator}
                     onClick={resetForm}
                   >
@@ -434,7 +432,7 @@ export function RolesExplorer({
                 </span>
               </label>
 
-              <div className="flex flex-col gap-2 border-t border-[#E5E5E5] pt-3">
+              <div className="flex flex-col gap-2 border-t border-border pt-3">
                 <div className="flex items-center justify-between text-xs font-medium tracking-wide text-muted-foreground uppercase">
                   <span>Umfang</span>
                   <span className="text-sm font-semibold text-foreground normal-case">
@@ -530,13 +528,13 @@ export function RolesExplorer({
                           <img
                             src="/brand/logo-collapsed.png"
                             alt="Pivot"
-                            className="size-3.5 shrink-0 object-contain"
+                            className="pivot-logo size-3.5 shrink-0 object-contain"
                           />
                         )}
                         <p className="shrink-0 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                           {categorySectionLabels[cat]}
                         </p>
-                        <div className="h-px flex-1 bg-[#E5E5E5]" />
+                        <div className="h-px flex-1 bg-border" />
                       </div>
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {groupsInCat.map(([resource, perms]) => {
@@ -563,7 +561,7 @@ export function RolesExplorer({
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex items-center gap-3">
                                   {Icon && (
-                                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#F4F4F5] text-muted-foreground">
+                                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
                                       <Icon className="size-5" />
                                     </span>
                                   )}
@@ -586,12 +584,12 @@ export function RolesExplorer({
                                       allSelected,
                                     )
                                   }
-                                  className="shrink-0 rounded-md bg-[#F4F4F5] px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+                                  className="shrink-0 rounded-md bg-secondary px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
                                 >
                                   {allSelected ? "Keine" : "Alle"}
                                 </button>
                               </div>
-                              <Separator className="bg-[#E5E5E5]" />
+                              <Separator className="bg-border" />
                               <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                                 {perms.map(({ key, action }) => (
                                   <div
@@ -651,7 +649,7 @@ export function RolesExplorer({
                 Keine Nutzer mit dieser Rolle.
               </p>
             ) : (
-              <div className="flex flex-col divide-y divide-[#F0F0F0]">
+              <div className="flex flex-col divide-y divide-border">
                 {roleUsers.map((u) => (
                   <Link
                     key={u.id}
@@ -699,7 +697,7 @@ export function RolesExplorerExportButton({ roles }: { roles: Role[] }) {
     <Button
       type="button"
       variant="outline"
-      className="border-[#D4D4D4]"
+      className="border-border"
       onClick={handleExport}
     >
       <Download />

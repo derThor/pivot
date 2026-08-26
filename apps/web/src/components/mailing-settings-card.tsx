@@ -169,7 +169,7 @@ function TemplateDetail({
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold">{template.label}</h3>
             {!template.formId && (
-              <span className="shrink-0 rounded-full bg-slate-200 px-1.5 py-0.5 text-xs text-slate-600">
+              <span className="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-xs text-secondary-foreground">
                 System
               </span>
             )}
@@ -185,7 +185,7 @@ function TemplateDetail({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="border-[#D4D4D4]"
+                className="border-border"
               >
                 <RotateCcw className="size-4" />
                 Auf Standard zurücksetzen
@@ -206,7 +206,7 @@ function TemplateDetail({
       />
 
       <Tabs defaultValue="template">
-        <TabsList className="!h-auto w-fit justify-start gap-1 !overflow-visible bg-[#F4F4F5] p-1">
+        <TabsList className="!h-auto w-fit justify-start gap-1 !overflow-visible bg-secondary p-1">
           <TabsTrigger value="template">Vorlage</TabsTrigger>
           {template.recipientEditable && (
             <TabsTrigger value="recipient">Empfänger</TabsTrigger>
@@ -244,7 +244,7 @@ function TemplateDetail({
                         <button
                           type="button"
                           onClick={() => insertPlaceholder(placeholder)}
-                          className="rounded-full bg-[#F4F4F5] px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                          className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
                         />
                       }
                     >
@@ -261,7 +261,7 @@ function TemplateDetail({
               </div>
             </div>
           )}
-          <div className="flex flex-wrap items-end gap-2 border-t border-[#F0F0F0] pt-4">
+          <div className="flex flex-wrap items-end gap-2 border-t border-border pt-4">
             <div className="flex flex-1 flex-col gap-1.5">
               <Label htmlFor="mail-test">Testmail senden an</Label>
               <Input
@@ -275,7 +275,7 @@ function TemplateDetail({
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               disabled={!testEmail || isSendingTest}
               onClick={handleTestSend}
             >
@@ -305,7 +305,7 @@ function TemplateDetail({
         )}
 
         <TabsContent value="preview" className="flex flex-col gap-3 pt-4">
-          <div className="rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+          <div className="rounded-lg border border-border bg-muted p-4">
             <p className="text-sm font-semibold">
               {renderPreview(subject, template.placeholders)}
             </p>
@@ -316,7 +316,7 @@ function TemplateDetail({
         </TabsContent>
       </Tabs>
 
-      <div className="flex justify-end border-t border-[#F0F0F0] pt-4">
+      <div className="flex justify-end border-t border-border pt-4">
         <Button type="button" disabled={isSaving} onClick={handleSave}>
           {isSaving ? "Speichert…" : "Speichern"}
         </Button>
@@ -362,12 +362,12 @@ export function MailingSettingsCard({
             <div className="flex flex-col gap-4">
               {groups.map((group) => (
                 <div key={group.category} className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2 border-b border-[#E5E5E5] px-2 pb-1.5">
+                  <div className="flex items-center gap-2 border-b border-border px-2 pb-1.5">
                     <p className="text-xs font-semibold tracking-wide text-accent-foreground uppercase">
                       {CATEGORY_LABELS[group.category]}
                     </p>
                     {group.category !== "forms" && (
-                      <span className="shrink-0 rounded-full bg-slate-200 px-1.5 py-0.5 text-xs text-slate-600 normal-case">
+                      <span className="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-xs text-secondary-foreground normal-case">
                         System
                       </span>
                     )}
@@ -381,12 +381,12 @@ export function MailingSettingsCard({
                         "flex items-center justify-between gap-2 rounded-lg border-l-4 px-3 py-2 text-left text-sm transition-colors",
                         item.id === selected?.id
                           ? "border-l-primary bg-primary/15 font-semibold text-foreground"
-                          : "border-l-transparent text-foreground hover:bg-[#F4F4F5]",
+                          : "border-l-transparent text-foreground hover:bg-secondary",
                       )}
                     >
                       <span className="truncate">{item.label}</span>
                       {!item.enabled && (
-                        <span className="shrink-0 rounded-full bg-slate-200 px-1.5 py-0.5 text-xs text-slate-600">
+                        <span className="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-xs text-secondary-foreground">
                           Pausiert
                         </span>
                       )}
@@ -395,7 +395,7 @@ export function MailingSettingsCard({
                 </div>
               ))}
             </div>
-            <div className="rounded-xl border border-[#F0F0F0] p-4">
+            <div className="rounded-xl border border-border p-4">
               {selected && (
                 <TemplateDetail
                   key={selected.id}

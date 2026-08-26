@@ -62,7 +62,9 @@ export function SubjectAccessRequestDialog({
       );
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        setSendError(body?.message ?? "Auskunft konnte nicht versendet werden.");
+        setSendError(
+          body?.message ?? "Auskunft konnte nicht versendet werden.",
+        );
         return;
       }
       toastEdited(
@@ -96,7 +98,9 @@ export function SubjectAccessRequestDialog({
             hochgeladene Medien) nach Art. 15 DSGVO.
           </p>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="sar-user" required>Person</Label>
+            <Label htmlFor="sar-user" required>
+              Person
+            </Label>
             <Select
               value={userId}
               onValueChange={(value) => setUserId(value ?? "")}
@@ -129,7 +133,7 @@ export function SubjectAccessRequestDialog({
           <Button
             type="button"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             onClick={() => onOpenChange(false)}
           >
             Abbrechen
@@ -137,7 +141,7 @@ export function SubjectAccessRequestDialog({
           <Button
             type="button"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             disabled={!userId || isSending}
             onClick={handleSend}
           >
@@ -148,7 +152,11 @@ export function SubjectAccessRequestDialog({
             disabled={!userId}
             render={
               <a
-                href={userId ? `/api/privacy/subject-access-report/${userId}` : undefined}
+                href={
+                  userId
+                    ? `/api/privacy/subject-access-report/${userId}`
+                    : undefined
+                }
                 onClick={() => onOpenChange(false)}
               />
             }

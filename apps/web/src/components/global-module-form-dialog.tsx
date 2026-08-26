@@ -87,7 +87,9 @@ export function GallerySettingsEditor({
   showPreview?: boolean;
 }) {
   const isSingleSlideEffect = SINGLE_SLIDE_EFFECTS.includes(settings.effect);
-  const isLoopIncompatible = LOOP_INCOMPATIBLE_EFFECTS.includes(settings.effect);
+  const isLoopIncompatible = LOOP_INCOMPATIBLE_EFFECTS.includes(
+    settings.effect,
+  );
 
   function set<K extends keyof GallerySettings>(
     key: K,
@@ -399,7 +401,9 @@ export function GlobalModuleFormDialog({
               sich sonst gegenseitig zusammen statt zu scrollen. */}
           <div className="min-h-0 flex-1 space-y-6 overflow-y-auto py-1">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="global-module-dialog-name" required>Name</Label>
+              <Label htmlFor="global-module-dialog-name" required>
+                Name
+              </Label>
               <Input
                 id="global-module-dialog-name"
                 value={name}

@@ -851,228 +851,288 @@ export function ContentEditorForm({
 
                 <TabsContent value="settingsSeo">
                   <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
-                  <div className="flex flex-col gap-6">
-                    <Card className="shadow-sm">
-                      <CardContent className="flex flex-col gap-10">
-                        <FormField
-                          control={form.control}
-                          name="contentTypeId"
-                          render={({ field }) => (
-                            <FormItem>
-                              <div className="flex items-center gap-1.5">
-                                <FormLabel required>Content-Type</FormLabel>
-                                <InfoTooltip text="Legt fest, welche Felder dieser Inhalt hat (z.B. Titel + Text). Kann nach dem Anlegen nicht mehr geändert werden." />
-                              </div>
+                    <div className="flex flex-col gap-6">
+                      <Card className="shadow-sm">
+                        <CardContent className="flex flex-col gap-10">
+                          <FormField
+                            control={form.control}
+                            name="contentTypeId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <div className="flex items-center gap-1.5">
+                                  <FormLabel required>Content-Type</FormLabel>
+                                  <InfoTooltip text="Legt fest, welche Felder dieser Inhalt hat (z.B. Titel + Text). Kann nach dem Anlegen nicht mehr geändert werden." />
+                                </div>
+                                <Select
+                                  value={field.value}
+                                  onValueChange={handleTypeChange}
+                                  disabled={isEditing}
+                                  items={Object.fromEntries(
+                                    contentTypes.map((type) => [
+                                      type.id,
+                                      type.name,
+                                    ]),
+                                  )}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue placeholder="Content-Type wählen" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {contentTypes.map((type) => (
+                                      <SelectItem key={type.id} value={type.id}>
+                                        {type.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                {isEditing && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Der Content-Type kann nachträglich nicht
+                                    geändert werden.
+                                  </p>
+                                )}
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="title"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel required>Titel</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    onChange={(e) =>
+                                      handleTitleChange(e.target.value)
+                                    }
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="slug"
+                            render={({ field }) => (
+                              <FormItem>
+                                <div className="flex items-center gap-1.5">
+                                  <FormLabel required>Slug</FormLabel>
+                                  <InfoTooltip text="Der URL-freundliche Teil der Adresse, z.B. wird aus „Mein Titel“ „mein-titel“. Wird automatisch aus dem Titel erzeugt, lässt sich aber manuell anpassen." />
+                                </div>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    onChange={(e) => {
+                                      setSlugTouched(true);
+                                      field.onChange(e);
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="status"
+                            render={({ field }) => (
+                              <FormItem>
+                                <div className="flex items-center gap-1.5">
+                                  <FormLabel>Status</FormLabel>
+                                  <InfoTooltip
+                                    text={
+                                      "Entwurf: nur intern sichtbar, noch nicht veröffentlicht.\n" +
+                                      "Geplant: wird automatisch veröffentlicht, sobald der gewählte Zeitpunkt erreicht ist.\n" +
+                                      "Veröffentlicht: öffentlich sichtbar.\n" +
+                                      "Archiviert: nicht mehr aktiv, bleibt aber erhalten."
+                                    }
+                                  />
+                                </div>
+                                <SegmentedPicker
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  options={(isEditing
+                                    ? (Object.keys(
+                                        statusLabel,
+                                      ) as ContentStatus[])
+                                    : ([
+                                        "DRAFT",
+                                        "PUBLISHED",
+                                        "SCHEDULED",
+                                      ] as const)
+                                  ).map((value) => ({
+                                    label: statusLabel[value],
+                                    value,
+                                  }))}
+                                />
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          {watchedValues.status === "SCHEDULED" && (
+                            <div className="flex flex-col gap-2">
+                              <Label htmlFor="scheduled-for" required>
+                                Veröffentlichungszeitpunkt
+                              </Label>
+                              <DateTimePicker
+                                id="scheduled-for"
+                                value={scheduledForValue}
+                                onChange={(next) => {
+                                  setScheduledForValue(next);
+                                  setScheduledForError(null);
+                                }}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Wird automatisch veröffentlicht, sobald dieser
+                                Zeitpunkt erreicht ist.
+                              </p>
+                              {scheduledForError && (
+                                <p className="text-sm text-destructive">
+                                  {scheduledForError}
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          {categories.length > 0 && (
+                            <div className="flex flex-col gap-2">
+                              <Label>Kategorien</Label>
                               <Select
-                                value={field.value}
-                                onValueChange={handleTypeChange}
-                                disabled={isEditing}
+                                multiple
+                                value={categoryIds}
+                                onValueChange={(value) =>
+                                  setCategoryIds(value ?? [])
+                                }
                                 items={Object.fromEntries(
-                                  contentTypes.map((type) => [
-                                    type.id,
-                                    type.name,
+                                  categories.map((category) => [
+                                    category.id,
+                                    category.name,
                                   ]),
                                 )}
                               >
-                                <FormControl>
-                                  <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Content-Type wählen" />
-                                  </SelectTrigger>
-                                </FormControl>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Kategorien wählen">
+                                    {(value: string[]) =>
+                                      value.length === 0
+                                        ? "Keine Kategorie ausgewählt"
+                                        : `${value.length} ${value.length === 1 ? "Kategorie" : "Kategorien"} ausgewählt`
+                                    }
+                                  </SelectValue>
+                                </SelectTrigger>
                                 <SelectContent>
-                                  {contentTypes.map((type) => (
-                                    <SelectItem key={type.id} value={type.id}>
-                                      {type.name}
+                                  {categories.map((category) => (
+                                    <SelectItem
+                                      key={category.id}
+                                      value={category.id}
+                                    >
+                                      {category.name}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
-                              {isEditing && (
-                                <p className="text-xs text-muted-foreground">
-                                  Der Content-Type kann nachträglich nicht
-                                  geändert werden.
-                                </p>
+                              {categoryIds.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {categoryIds.map((id) => {
+                                    const category = categories.find(
+                                      (c) => c.id === id,
+                                    );
+                                    if (!category) return null;
+                                    return (
+                                      <Badge key={id} variant="secondary">
+                                        {category.name}
+                                        <button
+                                          type="button"
+                                          aria-label={`${category.name} entfernen`}
+                                          onClick={() =>
+                                            setCategoryIds((prev) =>
+                                              prev.filter((c) => c !== id),
+                                            )
+                                          }
+                                          className="ml-0.5 rounded-full hover:text-foreground"
+                                        >
+                                          <X className="size-3" />
+                                        </button>
+                                      </Badge>
+                                    );
+                                  })}
+                                </div>
                               )}
-                              <FormMessage />
-                            </FormItem>
+                            </div>
                           )}
-                        />
 
-                        <FormField
-                          control={form.control}
-                          name="title"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel required>Titel</FormLabel>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  onChange={(e) =>
-                                    handleTitleChange(e.target.value)
-                                  }
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="slug"
-                          render={({ field }) => (
-                            <FormItem>
-                              <div className="flex items-center gap-1.5">
-                                <FormLabel required>Slug</FormLabel>
-                                <InfoTooltip text="Der URL-freundliche Teil der Adresse, z.B. wird aus „Mein Titel“ „mein-titel“. Wird automatisch aus dem Titel erzeugt, lässt sich aber manuell anpassen." />
-                              </div>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  onChange={(e) => {
-                                    setSlugTouched(true);
-                                    field.onChange(e);
-                                  }}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="status"
-                          render={({ field }) => (
-                            <FormItem>
-                              <div className="flex items-center gap-1.5">
-                                <FormLabel>Status</FormLabel>
-                                <InfoTooltip
-                                  text={
-                                    "Entwurf: nur intern sichtbar, noch nicht veröffentlicht.\n" +
-                                    "Geplant: wird automatisch veröffentlicht, sobald der gewählte Zeitpunkt erreicht ist.\n" +
-                                    "Veröffentlicht: öffentlich sichtbar.\n" +
-                                    "Archiviert: nicht mehr aktiv, bleibt aber erhalten."
-                                  }
-                                />
-                              </div>
-                              <SegmentedPicker
-                                value={field.value}
-                                onChange={field.onChange}
-                                options={(
-                                  isEditing
-                                    ? (Object.keys(statusLabel) as ContentStatus[])
-                                    : (["DRAFT", "PUBLISHED", "SCHEDULED"] as const)
-                                ).map((value) => ({
-                                  label: statusLabel[value],
-                                  value,
-                                }))}
-                              />
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        {watchedValues.status === "SCHEDULED" && (
-                          <div className="flex flex-col gap-2">
-                            <Label htmlFor="scheduled-for" required>
-                              Veröffentlichungszeitpunkt
-                            </Label>
-                            <DateTimePicker
-                              id="scheduled-for"
-                              value={scheduledForValue}
-                              onChange={(next) => {
-                                setScheduledForValue(next);
-                                setScheduledForError(null);
-                              }}
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              Wird automatisch veröffentlicht, sobald dieser
-                              Zeitpunkt erreicht ist.
-                            </p>
-                            {scheduledForError && (
-                              <p className="text-sm text-destructive">
-                                {scheduledForError}
+                          {settingsFields.length > 0 && (
+                            <div className="flex flex-col gap-4 rounded-xl bg-muted/30 p-4">
+                              <p className="text-sm font-medium">
+                                {selectedType?.name} – Felder
                               </p>
-                            )}
-                          </div>
-                        )}
-
-                        {categories.length > 0 && (
-                          <div className="flex flex-col gap-2">
-                            <Label>Kategorien</Label>
-                            <Select
-                              multiple
-                              value={categoryIds}
-                              onValueChange={(value) =>
-                                setCategoryIds(value ?? [])
-                              }
-                              items={Object.fromEntries(
-                                categories.map((category) => [
-                                  category.id,
-                                  category.name,
-                                ]),
-                              )}
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Kategorien wählen">
-                                  {(value: string[]) =>
-                                    value.length === 0
-                                      ? "Keine Kategorie ausgewählt"
-                                      : `${value.length} ${value.length === 1 ? "Kategorie" : "Kategorien"} ausgewählt`
-                                  }
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {categories.map((category) => (
-                                  <SelectItem
-                                    key={category.id}
-                                    value={category.id}
+                              {settingsFields.map((field) => (
+                                <div
+                                  key={field.name}
+                                  className="flex flex-col gap-2"
+                                >
+                                  <Label
+                                    htmlFor={`data-${field.name}`}
+                                    required={field.required}
                                   >
-                                    {category.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            {categoryIds.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5">
-                                {categoryIds.map((id) => {
-                                  const category = categories.find(
-                                    (c) => c.id === id,
-                                  );
-                                  if (!category) return null;
-                                  return (
-                                    <Badge key={id} variant="secondary">
-                                      {category.name}
-                                      <button
-                                        type="button"
-                                        aria-label={`${category.name} entfernen`}
-                                        onClick={() =>
-                                          setCategoryIds((prev) =>
-                                            prev.filter((c) => c !== id),
-                                          )
-                                        }
-                                        className="ml-0.5 rounded-full hover:text-foreground"
-                                      >
-                                        <X className="size-3" />
-                                      </button>
-                                    </Badge>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        )}
+                                    {field.name}
+                                  </Label>
+                                  {field.type === "text" ? (
+                                    <Textarea
+                                      id={`data-${field.name}`}
+                                      rows={6}
+                                      value={dataValues[field.name] ?? ""}
+                                      onChange={(e) =>
+                                        setDataValues((prev) => ({
+                                          ...prev,
+                                          [field.name]: e.target.value,
+                                        }))
+                                      }
+                                    />
+                                  ) : (
+                                    <Input
+                                      id={`data-${field.name}`}
+                                      type={
+                                        field.type === "number"
+                                          ? "number"
+                                          : "text"
+                                      }
+                                      value={dataValues[field.name] ?? ""}
+                                      onChange={(e) =>
+                                        setDataValues((prev) => ({
+                                          ...prev,
+                                          [field.name]: e.target.value,
+                                        }))
+                                      }
+                                    />
+                                  )}
+                                  {dataErrors[field.name] && (
+                                    <p className="text-sm text-destructive">
+                                      {dataErrors[field.name]}
+                                    </p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
 
-                        {settingsFields.length > 0 && (
-                          <div className="flex flex-col gap-4 rounded-xl bg-muted/30 p-4">
-                            <p className="text-sm font-medium">
-                              {selectedType?.name} – Felder
-                            </p>
-                            {settingsFields.map((field) => (
+                      {editorFields.length > 0 && (
+                        <Card className="flex h-full flex-col shadow-sm">
+                          <CardContent className="flex flex-1 flex-col gap-10">
+                            {editorFields.map((field) => (
                               <div
                                 key={field.name}
-                                className="flex flex-col gap-2"
+                                className="flex min-h-0 flex-1 flex-col gap-2"
                               >
                                 <Label
                                   htmlFor={`data-${field.name}`}
@@ -1080,35 +1140,17 @@ export function ContentEditorForm({
                                 >
                                   {field.name}
                                 </Label>
-                                {field.type === "text" ? (
-                                  <Textarea
-                                    id={`data-${field.name}`}
-                                    rows={6}
-                                    value={dataValues[field.name] ?? ""}
-                                    onChange={(e) =>
-                                      setDataValues((prev) => ({
-                                        ...prev,
-                                        [field.name]: e.target.value,
-                                      }))
-                                    }
-                                  />
-                                ) : (
-                                  <Input
-                                    id={`data-${field.name}`}
-                                    type={
-                                      field.type === "number"
-                                        ? "number"
-                                        : "text"
-                                    }
-                                    value={dataValues[field.name] ?? ""}
-                                    onChange={(e) =>
-                                      setDataValues((prev) => ({
-                                        ...prev,
-                                        [field.name]: e.target.value,
-                                      }))
-                                    }
-                                  />
-                                )}
+                                <RichTextEditor
+                                  id={`data-${field.name}`}
+                                  value={dataValues[field.name] ?? ""}
+                                  editable={!lockBlocksEditing}
+                                  onChange={(html) =>
+                                    setDataValues((prev) => ({
+                                      ...prev,
+                                      [field.name]: html,
+                                    }))
+                                  }
+                                />
                                 {dataErrors[field.name] && (
                                   <p className="text-sm text-destructive">
                                     {dataErrors[field.name]}
@@ -1116,185 +1158,149 @@ export function ContentEditorForm({
                                 )}
                               </div>
                             ))}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
 
-                    {editorFields.length > 0 && (
-                      <Card className="flex h-full flex-col shadow-sm">
-                        <CardContent className="flex flex-1 flex-col gap-10">
-                          {editorFields.map((field) => (
-                            <div
-                              key={field.name}
-                              className="flex min-h-0 flex-1 flex-col gap-2"
-                            >
-                              <Label
-                                htmlFor={`data-${field.name}`}
-                                required={field.required}
-                              >
-                                {field.name}
+                    <div className="flex flex-col gap-6">
+                      <Card className="shadow-sm">
+                        <CardHeader className="flex flex-row items-center gap-3 border-b">
+                          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/25 text-pivot-navy">
+                            <Search className="size-4" />
+                          </span>
+                          <CardTitle>SEO & Sichtbarkeit</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex flex-col gap-10">
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <Label htmlFor="seo-excerpt">
+                                Kurzbeschreibung (Excerpt)
                               </Label>
-                              <RichTextEditor
-                                id={`data-${field.name}`}
-                                value={dataValues[field.name] ?? ""}
-                                editable={!lockBlocksEditing}
-                                onChange={(html) =>
-                                  setDataValues((prev) => ({
-                                    ...prev,
-                                    [field.name]: html,
-                                  }))
-                                }
-                              />
-                              {dataErrors[field.name] && (
-                                <p className="text-sm text-destructive">
-                                  {dataErrors[field.name]}
-                                </p>
-                              )}
+                              <InfoTooltip text="Kurze Zusammenfassung, z.B. für Listenansichten oder als Vorschautext." />
                             </div>
-                          ))}
+                            <Textarea
+                              id="seo-excerpt"
+                              rows={3}
+                              value={seoValues.excerpt}
+                              onChange={(e) =>
+                                setSeoValues((prev) => ({
+                                  ...prev,
+                                  excerpt: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <Label htmlFor="seo-title">SEO-Titel</Label>
+                              <InfoTooltip text="Wird als Seitentitel in Suchergebnissen angezeigt, falls gesetzt – sonst der normale Titel." />
+                            </div>
+                            <Input
+                              id="seo-title"
+                              value={seoValues.seoTitle}
+                              onChange={(e) =>
+                                setSeoValues((prev) => ({
+                                  ...prev,
+                                  seoTitle: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <Label htmlFor="seo-description">
+                                Meta-Description
+                              </Label>
+                              <InfoTooltip text="Kurzbeschreibung für Suchergebnisse, empfohlen ca. 150–160 Zeichen." />
+                            </div>
+                            <Textarea
+                              id="seo-description"
+                              rows={3}
+                              value={seoValues.seoDescription}
+                              onChange={(e) =>
+                                setSeoValues((prev) => ({
+                                  ...prev,
+                                  seoDescription: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <Label htmlFor="seo-canonical">
+                                Canonical-URL
+                              </Label>
+                              <InfoTooltip text="Offizielle URL, falls dieser Inhalt auch unter einer anderen Adresse erreichbar ist – verhindert doppelten Content bei Suchmaschinen." />
+                            </div>
+                            <Input
+                              id="seo-canonical"
+                              placeholder="https://example.com/pfad"
+                              value={seoValues.canonicalUrl}
+                              onChange={(e) =>
+                                setSeoValues((prev) => ({
+                                  ...prev,
+                                  canonicalUrl: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between gap-4 py-2">
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <Label htmlFor="seo-robots-index">
+                                  Indexierung erlauben
+                                </Label>
+                                <InfoTooltip text="Steuert, ob Suchmaschinen diesen Inhalt in ihren Index aufnehmen dürfen." />
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                Deaktiviert: Suchmaschinen wird `noindex`
+                                mitgeteilt.
+                              </p>
+                            </div>
+                            <Switch
+                              id="seo-robots-index"
+                              checked={seoValues.robotsIndex}
+                              onCheckedChange={(checked) =>
+                                setSeoValues((prev) => ({
+                                  ...prev,
+                                  robotsIndex: checked,
+                                }))
+                              }
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between gap-4 py-2">
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <Label htmlFor="seo-robots-follow">
+                                  Link-Folgen erlauben
+                                </Label>
+                                <InfoTooltip text="Steuert, ob Suchmaschinen ausgehenden Links auf dieser Seite folgen dürfen." />
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                Deaktiviert: Suchmaschinen wird `nofollow`
+                                mitgeteilt.
+                              </p>
+                            </div>
+                            <Switch
+                              id="seo-robots-follow"
+                              checked={seoValues.robotsFollow}
+                              onCheckedChange={(checked) =>
+                                setSeoValues((prev) => ({
+                                  ...prev,
+                                  robotsFollow: checked,
+                                }))
+                              }
+                            />
+                          </div>
                         </CardContent>
                       </Card>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col gap-6">
-                  <Card className="shadow-sm">
-                    <CardHeader className="flex flex-row items-center gap-3 border-b">
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/25 text-[#132033]">
-                        <Search className="size-4" />
-                      </span>
-                      <CardTitle>SEO & Sichtbarkeit</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-10">
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-1.5">
-                          <Label htmlFor="seo-excerpt">
-                            Kurzbeschreibung (Excerpt)
-                          </Label>
-                          <InfoTooltip text="Kurze Zusammenfassung, z.B. für Listenansichten oder als Vorschautext." />
-                        </div>
-                        <Textarea
-                          id="seo-excerpt"
-                          rows={3}
-                          value={seoValues.excerpt}
-                          onChange={(e) =>
-                            setSeoValues((prev) => ({
-                              ...prev,
-                              excerpt: e.target.value,
-                            }))
-                          }
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-1.5">
-                          <Label htmlFor="seo-title">SEO-Titel</Label>
-                          <InfoTooltip text="Wird als Seitentitel in Suchergebnissen angezeigt, falls gesetzt – sonst der normale Titel." />
-                        </div>
-                        <Input
-                          id="seo-title"
-                          value={seoValues.seoTitle}
-                          onChange={(e) =>
-                            setSeoValues((prev) => ({
-                              ...prev,
-                              seoTitle: e.target.value,
-                            }))
-                          }
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-1.5">
-                          <Label htmlFor="seo-description">
-                            Meta-Description
-                          </Label>
-                          <InfoTooltip text="Kurzbeschreibung für Suchergebnisse, empfohlen ca. 150–160 Zeichen." />
-                        </div>
-                        <Textarea
-                          id="seo-description"
-                          rows={3}
-                          value={seoValues.seoDescription}
-                          onChange={(e) =>
-                            setSeoValues((prev) => ({
-                              ...prev,
-                              seoDescription: e.target.value,
-                            }))
-                          }
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-1.5">
-                          <Label htmlFor="seo-canonical">Canonical-URL</Label>
-                          <InfoTooltip text="Offizielle URL, falls dieser Inhalt auch unter einer anderen Adresse erreichbar ist – verhindert doppelten Content bei Suchmaschinen." />
-                        </div>
-                        <Input
-                          id="seo-canonical"
-                          placeholder="https://example.com/pfad"
-                          value={seoValues.canonicalUrl}
-                          onChange={(e) =>
-                            setSeoValues((prev) => ({
-                              ...prev,
-                              canonicalUrl: e.target.value,
-                            }))
-                          }
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between gap-4 py-2">
-                        <div className="flex flex-col gap-0.5">
-                          <div className="flex items-center gap-1.5">
-                            <Label htmlFor="seo-robots-index">
-                              Indexierung erlauben
-                            </Label>
-                            <InfoTooltip text="Steuert, ob Suchmaschinen diesen Inhalt in ihren Index aufnehmen dürfen." />
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            Deaktiviert: Suchmaschinen wird `noindex`
-                            mitgeteilt.
-                          </p>
-                        </div>
-                        <Switch
-                          id="seo-robots-index"
-                          checked={seoValues.robotsIndex}
-                          onCheckedChange={(checked) =>
-                            setSeoValues((prev) => ({
-                              ...prev,
-                              robotsIndex: checked,
-                            }))
-                          }
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between gap-4 py-2">
-                        <div className="flex flex-col gap-0.5">
-                          <div className="flex items-center gap-1.5">
-                            <Label htmlFor="seo-robots-follow">
-                              Link-Folgen erlauben
-                            </Label>
-                            <InfoTooltip text="Steuert, ob Suchmaschinen ausgehenden Links auf dieser Seite folgen dürfen." />
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            Deaktiviert: Suchmaschinen wird `nofollow`
-                            mitgeteilt.
-                          </p>
-                        </div>
-                        <Switch
-                          id="seo-robots-follow"
-                          checked={seoValues.robotsFollow}
-                          onCheckedChange={(checked) =>
-                            setSeoValues((prev) => ({
-                              ...prev,
-                              robotsFollow: checked,
-                            }))
-                          }
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  </div>
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>

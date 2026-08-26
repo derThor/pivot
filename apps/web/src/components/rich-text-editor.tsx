@@ -179,7 +179,6 @@ export function RichTextEditor({
     if (!isSame) {
       editor.commands.setContent(value, { emitUpdate: false });
     }
-     
   }, [value, editor]);
 
   // `useEditor` übernimmt einen geänderten `editable`-Wert nicht
@@ -212,7 +211,9 @@ export function RichTextEditor({
   const activeHeadingLevel = HEADING_LEVELS.find((level) =>
     editor.isActive("heading", { level }),
   );
-  const headingValue = activeHeadingLevel ? String(activeHeadingLevel) : "paragraph";
+  const headingValue = activeHeadingLevel
+    ? String(activeHeadingLevel)
+    : "paragraph";
 
   function toggleSourceMode() {
     if (!editor) return;
@@ -244,7 +245,9 @@ export function RichTextEditor({
               editor
                 .chain()
                 .focus()
-                .toggleHeading({ level: Number(next) as (typeof HEADING_LEVELS)[number] })
+                .toggleHeading({
+                  level: Number(next) as (typeof HEADING_LEVELS)[number],
+                })
                 .run();
             }
           }}
@@ -364,7 +367,9 @@ export function RichTextEditor({
         </ToolbarButton>
         <div className="ml-auto">
           <ToolbarButton
-            label={sourceMode ? "HTML-Ansicht verlassen" : "HTML-Quellcode anzeigen"}
+            label={
+              sourceMode ? "HTML-Ansicht verlassen" : "HTML-Quellcode anzeigen"
+            }
             active={sourceMode}
             onClick={toggleSourceMode}
           >
@@ -391,7 +396,11 @@ export function RichTextEditor({
               label="Bild links ausrichten (Text umfließt rechts)"
               active={editor.isActive("image", { align: "left" })}
               onClick={() =>
-                editor.chain().focus().updateAttributes("image", { align: "left" }).run()
+                editor
+                  .chain()
+                  .focus()
+                  .updateAttributes("image", { align: "left" })
+                  .run()
               }
             >
               <AlignLeft />
@@ -413,7 +422,11 @@ export function RichTextEditor({
               label="Bild rechts ausrichten (Text umfließt links)"
               active={editor.isActive("image", { align: "right" })}
               onClick={() =>
-                editor.chain().focus().updateAttributes("image", { align: "right" }).run()
+                editor
+                  .chain()
+                  .focus()
+                  .updateAttributes("image", { align: "right" })
+                  .run()
               }
             >
               <AlignRight />

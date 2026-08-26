@@ -2,7 +2,11 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* Nutzervorgabe, 2026-08-25: Dark Mode wird über ein Attribut auf <html>
+   umgeschaltet (`data-pivot-theme="dark"`, siehe theme-toggle.tsx), nicht
+   über eine `.dark`-Klasse – vorhandene `dark:`-Utility-Klassen im
+   restlichen Code (z.B. system-message.tsx) greifen dadurch unverändert. */
+@custom-variant dark (&:is([data-pivot-theme="dark"] *));
 
 @theme inline {
   /* Eigener Breakpoint (Nutzervorgabe): 992px statt des nächstliegenden
@@ -45,6 +49,26 @@
   --color-card: var(--card);
   --color-dark-surface: var(--dark-surface);
   --color-dark-surface-foreground: var(--dark-surface-foreground);
+  /* Pivot-Tokens ohne bestehendes shadcn-Pendant (Nutzervorgabe,
+     2026-08-25, exakte Token-Tabelle) – als `--color-pivot-*` exponiert,
+     damit sie als normale Utility-Klassen (`bg-pivot-sub3`,
+     `text-pivot-g-mid`, …) nutzbar sind statt Hex-Literale im
+     Komponentencode zu verstreuen. Tokens mit direktem shadcn-Pendant
+     (SURFACE→card, SUB1→muted, SUB2→secondary, LINE→border, G_MID→
+     muted-foreground, NAVY_SOLID→dark-surface, LIME→primary, ON_LIME→
+     primary-foreground, Shell-Fläche→sidebar) bekommen bewusst KEINE
+     eigene Utility-Klasse, um keine zwei Namen für dieselbe Farbe zu
+     haben – siehe Rollen-Mapping in :root unten. */
+  --color-pivot-navy: var(--pivot-navy);
+  --color-pivot-sub3: var(--pivot-sub3);
+  --color-pivot-line2: var(--pivot-line2);
+  --color-pivot-g-strong: var(--pivot-g-strong);
+  --color-pivot-g-body: var(--pivot-g-body);
+  --color-pivot-g-faint: var(--pivot-g-faint);
+  --color-pivot-g-dim: var(--pivot-g-dim);
+  --color-pivot-ok-bg: var(--pivot-ok-bg);
+  --color-pivot-ok-fg: var(--pivot-ok-fg);
+  --color-pivot-switch-track-dark: var(--pivot-switch-track-dark);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -58,32 +82,69 @@
 }
 
 :root {
-  /* Karten (`--card`, reines Weiß) grenzen sich bewusst NICHT über Rand
-     oder Schatten von `--background` ab (beides ausdrücklich unerwünscht),
-     sondern rein über Weißraum/Farbkontrast. */
-  --background: oklch(0.985 0 0);
-  /* #1B212D exakt (Nutzervorgabe) → oklch(0.25 0.02 264) */
-  --foreground: oklch(0.25 0.02 264);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.25 0.02 264);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.25 0.02 264);
-  /* #C8EE44 exakt (Nutzervorgabe) → oklch(0.89 0.19 122) */
-  --primary: oklch(0.89 0.19 122);
-  --primary-foreground: oklch(0.16 0 0);
-  --secondary: oklch(0.96 0.01 60);
-  --secondary-foreground: oklch(0.3 0.02 40);
-  /* #F8F8F8 exakt (Nutzervorgabe) – neutrale Flächen übergreifend (Suche,
-     Auswahl-Toolbar, Tabellen-Hover, u.ä. nutzen alle `bg-muted`). */
-  --muted: oklch(0.978 0 0);
-  --muted-foreground: oklch(0.55 0.02 40);
-  --accent: oklch(0.94 0.08 122);
-  --accent-foreground: oklch(0.35 0.1 122);
-  --destructive: oklch(0.577 0.245 27.325);
-  /* #F5F5F5 exakt (Nutzervorgabe) */
-  --border: oklch(0.967 0 0);
-  --input: oklch(0.967 0 0);
-  --ring: oklch(0.68 0.18 122 / 0.5);
+  /* Pivot-Design-Tokens, Light (Nutzervorgabe, 2026-08-25) – exakte
+     Hex-Werte aus der vorgegebenen Token-Tabelle, keine Näherungswerte.
+     Rollen-Mapping auf die bestehenden shadcn-Variablen weiter unten in
+     diesem Block; die dunklen Werte überschreiben unten in
+     `[data-pivot-theme="dark"]` NUR diese Roh-Tokens, nicht das Mapping
+     selbst – `var()`-Referenzen lösen pro Element neu auf, ein erneutes
+     Wiederholen des Mappings im Dark-Block ist dadurch nicht nötig. */
+  --pivot-navy: #132033;
+  --pivot-ink: #1c2b3a;
+  --pivot-navy-solid: #132033;
+  --pivot-surface: #ffffff;
+  --pivot-sub1: #fafafa;
+  --pivot-sub2: #f4f4f5;
+  --pivot-sub3: #ececec;
+  --pivot-line: #e6e6e6;
+  --pivot-line2: #d8dee6;
+  --pivot-g-strong: #4d4d4d;
+  --pivot-g-body: #6e6e6e;
+  --pivot-g-mid: #8c8c8c;
+  --pivot-g-faint: #adadad;
+  --pivot-g-dim: #bdbdbd;
+  --pivot-acc-fg: #4d6b12;
+  --pivot-ok-bg: #f0fdf4;
+  --pivot-ok-fg: #15803d;
+  /* Nutzervorgabe, 2026-08-26: exakte Werte, nur Light Mode. */
+  --pivot-app-bg: #fafafa;
+  --pivot-shell: #ffffff;
+  --pivot-dot: rgba(157, 200, 255, 0.5);
+  --pivot-switch-track-dark: #f4f4f5;
+
+  /* Konstant in beiden Modi (Nutzervorgabe: NIE als Rollen-Mapping
+     überschreiben – LIME/ON_LIME ändern sich nicht mit dem Theme). */
+  --pivot-lime: #bce64d;
+  --pivot-on-lime: #16181c;
+
+  /* Rollen-Mapping: bestehende shadcn-Variablen zeigen auf die
+     Pivot-Tokens, damit jede Komponente, die bereits `bg-card`,
+     `text-muted-foreground`, `border-border` usw. nutzt, automatisch
+     korrekt im Dark Mode dargestellt wird. */
+  --background: var(--pivot-app-bg);
+  --foreground: var(--pivot-ink);
+  --card: var(--pivot-surface);
+  --card-foreground: var(--pivot-ink);
+  --popover: var(--pivot-surface);
+  --popover-foreground: var(--pivot-ink);
+  --primary: var(--pivot-lime);
+  --primary-foreground: var(--pivot-on-lime);
+  --secondary: var(--pivot-sub2);
+  --secondary-foreground: var(--pivot-g-strong);
+  --muted: var(--pivot-sub1);
+  --muted-foreground: var(--pivot-g-mid);
+  /* Helle Lime-Tönung als Fläche (Rollen-Text darauf: ACC_FG) – aus LIME +
+     SURFACE gemischt statt einer weiteren erfundenen Hex-Farbe, passt sich
+     dadurch automatisch der jeweiligen SURFACE-Helligkeit an. */
+  --accent: color-mix(in oklch, var(--pivot-lime) 18%, var(--pivot-surface));
+  --accent-foreground: var(--pivot-acc-fg);
+  /* Entspricht exakt der konstanten Fehler-Vordergrundfarbe (#dc2626) aus
+     der Token-Tabelle – für den satten Destructive-Button, nicht die helle
+     Fehler-Chip-Tönung (die bleibt Sache von system-message.tsx). */
+  --destructive: #dc2626;
+  --border: var(--pivot-line);
+  --input: var(--pivot-line);
+  --ring: color-mix(in oklch, var(--pivot-lime) 55%, transparent);
   --chart-1: oklch(0.89 0.19 122);
   --chart-2: oklch(0.74 0.17 134);
   --chart-3: oklch(0.62 0.15 146);
@@ -94,58 +155,56 @@
      (rounded-full: Sidebar-Aktiv-Zustand, Buttons, Suchfeld) sind davon
      unabhängig und bleiben vollständig rund. */
   --radius: 0.45rem;
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.6 0.015 40);
-  --sidebar-primary: oklch(0.89 0.19 122);
-  --sidebar-primary-foreground: oklch(0.16 0 0);
-  --sidebar-accent: oklch(0.94 0.06 122);
-  --sidebar-accent-foreground: oklch(0.3 0.08 122);
-  --sidebar-border: oklch(0.985 0 0);
-  --sidebar-ring: oklch(0.68 0.18 122 / 0.5);
+  --sidebar: var(--pivot-shell);
+  --sidebar-foreground: var(--pivot-g-mid);
+  --sidebar-primary: var(--pivot-lime);
+  --sidebar-primary-foreground: var(--pivot-on-lime);
+  --sidebar-accent: color-mix(
+    in oklch,
+    var(--pivot-lime) 18%,
+    var(--pivot-surface)
+  );
+  --sidebar-accent-foreground: var(--pivot-acc-fg);
+  --sidebar-border: var(--pivot-line);
+  --sidebar-ring: color-mix(in oklch, var(--pivot-lime) 55%, transparent);
   /* Dunkle "Hero"-Fläche für hervorgehobene Stat-Karten (siehe
-     dashboard/page.tsx) – bewusst eigene Tokens statt Wiederverwendung von
-     --foreground/--background, da diese Fläche unabhängig vom Light/Dark-
-     Modus der Seite immer dunkel bleiben soll (Kontrast zur sonst hellen
-     Karten-Umgebung, analog zur "Total balance"-Karte im Referenzdesign). */
-  --dark-surface: oklch(0.22 0.01 40);
-  --dark-surface-foreground: oklch(0.97 0.005 90);
+     dashboard/page.tsx) = NAVY_SOLID aus der Token-Tabelle, Text darauf
+     immer Weiß (Nutzervorgabe: "Weiß als Textfarbe auf NAVY_SOLID"). */
+  --dark-surface: var(--pivot-navy-solid);
+  --dark-surface-foreground: #ffffff;
 }
 
-.dark {
-  --background: oklch(0.15 0.01 40);
-  --foreground: oklch(0.96 0.005 60);
-  --card: oklch(0.24 0.012 40);
-  --card-foreground: oklch(0.96 0.005 60);
-  --popover: oklch(0.24 0.012 40);
-  --popover-foreground: oklch(0.96 0.005 60);
-  /* #C8EE44 (Nutzervorgabe), leicht abgedunkelt für Dark-Mode-Lesbarkeit */
-  --primary: oklch(0.85 0.19 122);
-  --primary-foreground: oklch(0.16 0 0);
-  --secondary: oklch(0.3 0.015 40);
-  --secondary-foreground: oklch(0.96 0.005 60);
-  --muted: oklch(0.28 0.012 40);
-  --muted-foreground: oklch(0.68 0.02 50);
-  --accent: oklch(0.32 0.06 122);
-  --accent-foreground: oklch(0.88 0.1 122);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.75 0.18 122 / 0.5);
-  --chart-1: oklch(0.89 0.19 122);
-  --chart-2: oklch(0.74 0.17 134);
-  --chart-3: oklch(0.62 0.15 146);
-  --chart-4: oklch(0.5 0.12 152);
-  --chart-5: oklch(0.38 0.09 158);
-  --sidebar: oklch(0.19 0.01 40);
-  --sidebar-foreground: oklch(0.9 0.01 50);
-  --sidebar-primary: oklch(0.85 0.19 122);
-  --sidebar-primary-foreground: oklch(0.16 0 0);
-  --sidebar-accent: oklch(0.3 0.05 122);
-  --sidebar-accent-foreground: oklch(0.85 0.08 122);
-  --sidebar-border: oklch(0.15 0.01 40);
-  --sidebar-ring: oklch(0.75 0.18 122 / 0.5);
-  --dark-surface: oklch(0.12 0.01 40);
-  --dark-surface-foreground: oklch(0.97 0.005 90);
+/* Dark Mode (Nutzervorgabe, 2026-08-25): überschreibt ausschließlich die
+   rohen Pivot-Tokens, siehe Kommentar in :root oben – Attribut statt
+   Klasse, siehe theme-toggle.tsx/@custom-variant weiter oben. */
+[data-pivot-theme="dark"] {
+  --pivot-navy: #e9eef6;
+  --pivot-ink: #d3dae4;
+  --pivot-navy-solid: #31404f;
+  /* Nutzervorgabe, 2026-08-25: exakter Original-Token-Wert, keine
+     Kompensation für den Sidebar/Main-Tausch mehr (siehe Kopfzeile/
+     Trennlinien-Vorgabe unten, CardHeader übernimmt die visuelle
+     Abgrenzung stattdessen über SUB1 + LINE-Trennlinie). */
+  --pivot-surface: #171c24;
+  --pivot-sub1: #1b212b;
+  --pivot-sub2: #222a36;
+  --pivot-sub3: #2a333f;
+  --pivot-line: #2d3542;
+  --pivot-line2: #3a4453;
+  --pivot-g-strong: #ccd4de;
+  --pivot-g-body: #b0bac6;
+  --pivot-g-mid: #98a2af;
+  --pivot-g-faint: #78838f;
+  --pivot-g-dim: #67717e;
+  --pivot-acc-fg: #cbe86e;
+  --pivot-ok-bg: #12291d;
+  --pivot-ok-fg: #6ee7a0;
+  /* Nutzervorgabe, 2026-08-26: exakter Wert. */
+  --pivot-app-bg: #23272f;
+  /* Getauscht (war vorher --pivot-app-bg). */
+  --pivot-shell: #0d1219;
+  --pivot-dot: rgba(120, 160, 220, 0.16);
+  --pivot-switch-track-dark: #0f1420;
 }
 
 @layer base {
@@ -154,10 +213,242 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Punkteraster hinter der Shell (Nutzervorgabe, Token "Punkteraster") –
+       feines, sehr dezentes Rasterpunktmuster über dem App-Hintergrund. */
+    background-image: radial-gradient(var(--pivot-dot) 1px, transparent 1px);
+    background-size: 22px 22px;
   }
   html {
     @apply font-sans;
   }
+  /* Schatten wirken auf dunklem Grund unsichtbar/schmutzig (Nutzervorgabe)
+     – im Dark Mode stattdessen ein 1px-Rahmen aus LINE. Betrifft die
+     verbreitete "Card + shadow-sm"-Konvention (shared <Card> selbst hat
+     serienmäßig keinen Schatten, siehe --shadow-card:none). */
+  [data-pivot-theme="dark"] .shadow-sm,
+  [data-pivot-theme="dark"] .shadow,
+  [data-pivot-theme="dark"] .shadow-md,
+  [data-pivot-theme="dark"] .shadow-lg {
+    box-shadow: none;
+    border: 1px solid var(--pivot-line);
+  }
+  /* Nutzervorgabe, 2026-08-26: "Drop-Zone muss in Darkmode heller" – gilt
+     app-weit für jede gestrichelte Platzhalter-/Upload-Fläche (Bild-/
+     Video-Slots, "Kein Formular", "Feld hinzufügen" usw.), die alle
+     bislang stillschweigend den normalen LINE-Rand geerbt haben.
+     GESTRICHELTE Linien haben durch die Lücken weniger Farbfläche als
+     eine durchgezogene und wirken dadurch bei gleichem Farbwert deutlich
+     blasser – deshalb eigener, hellerer Ton statt LINE: G_DIM
+     ("Platzhalter, deaktiviert", exakt diese Rolle). */
+  [data-pivot-theme="dark"] .border-dashed {
+    border-color: var(--pivot-g-dim);
+  }
+}
+
+/* Pivot-Logo im Dark Mode (Nutzervorgabe, 2026-08-25) – Filter-Definition
+   in layout.tsx (`#pivot-logo-dark`), siehe dortiger Kommentar. Im Light
+   Mode bleibt das Original-PNG unverändert. */
+[data-pivot-theme="dark"] .pivot-logo {
+  filter: url(#pivot-logo-dark);
+}
+
+/* Nutzervorgabe, 2026-08-26: exakte Badge-/Chip-Farbwerte (Bildvorlage) –
+   als eigene, unlayered CSS-Klassen statt Tailwind-Utilities, damit die
+   inset-box-shadow-"Rahmen" exakt wie vorgegeben aussehen. Struktur
+   (Radius/Padding/Schrift/Flex) kommt weiterhin aus badge.tsx/den
+   jeweiligen Komponenten – hier ausschließlich bg/color/box-shadow. */
+.badge--ink {
+  background: rgba(19, 32, 51, 0.82);
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(19, 32, 51, 0.95);
+}
+.badge--lime {
+  background: #bce64d;
+  color: #16181c;
+  box-shadow: inset 0 0 0 1px #a5cf39;
+}
+.badge--green {
+  background: #dcfce7;
+  color: #15803d;
+  box-shadow: inset 0 0 0 1px #a7e8bf;
+}
+.badge--amber {
+  background: #fef3c7;
+  color: #b45309;
+  box-shadow: inset 0 0 0 1px #f3d894;
+}
+/* Nutzervorgabe, 2026-08-26: "bei dringend und Sicherheit rot nehmen" –
+   keine eigene neue Farbe, sondern dieselben Werte wie die Error-Variante
+   in system-message.tsx, für Konsistenz mit der restlichen App. */
+.badge--red {
+  background: #fef2f2;
+  color: #7f1d1d;
+  box-shadow: inset 0 0 0 1px #fecaca;
+}
+[data-pivot-theme="dark"] .badge--red {
+  background: #3d1d1d;
+  color: #f9d7d7;
+  box-shadow: inset 0 0 0 1px #6b3030;
+}
+.badge--blue {
+  background: #dbeafe;
+  color: #1d4ed8;
+  box-shadow: inset 0 0 0 1px #a9c9f6;
+}
+.badge--slate {
+  background: #ececec;
+  color: #526074;
+  box-shadow: inset 0 0 0 1px #d3d6db;
+}
+.badge--light {
+  background: rgba(255, 255, 255, 0.9);
+  color: #132033;
+  box-shadow: inset 0 0 0 1px rgba(19, 32, 51, 0.18);
+}
+[data-pivot-theme="dark"] .badge--ink {
+  background: #3d4d5e;
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px #52657a;
+}
+[data-pivot-theme="dark"] .badge--lime {
+  background: #bce64d;
+  color: #16181c;
+  box-shadow: inset 0 0 0 1px #d2f277;
+}
+[data-pivot-theme="dark"] .badge--green {
+  background: #1e4634;
+  color: #8df0b4;
+  box-shadow: inset 0 0 0 1px #2f6a4d;
+}
+[data-pivot-theme="dark"] .badge--amber {
+  background: #4a3813;
+  color: #f6cf7e;
+  box-shadow: inset 0 0 0 1px #6b5220;
+}
+[data-pivot-theme="dark"] .badge--blue {
+  background: #22375c;
+  color: #a6c8fa;
+  box-shadow: inset 0 0 0 1px #33507f;
+}
+[data-pivot-theme="dark"] .badge--slate {
+  background: #333d4b;
+  color: #c3ccd8;
+  box-shadow: inset 0 0 0 1px #475466;
+}
+[data-pivot-theme="dark"] .badge--light {
+  background: rgba(255, 255, 255, 0.9);
+  color: #132033;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+}
+
+.badge--admin {
+  background: #132033;
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px #2a3b52;
+}
+.badge--chefred {
+  background: #ede9fe;
+  color: #6d28d9;
+  box-shadow: inset 0 0 0 1px #d3c7f7;
+}
+.badge--redakteur {
+  background: #dbeafe;
+  color: #1d4ed8;
+  box-shadow: inset 0 0 0 1px #a9c9f6;
+}
+.badge--autor {
+  background: #e0f2fe;
+  color: #0369a1;
+  box-shadow: inset 0 0 0 1px #aedcf7;
+}
+.badge--medien {
+  background: #ccfbf1;
+  color: #0f766e;
+  box-shadow: inset 0 0 0 1px #96ecdb;
+}
+.badge--formular {
+  background: rgba(188, 230, 77, 0.35);
+  color: #4d6b12;
+  box-shadow: inset 0 0 0 1px #bdd97e;
+}
+.badge--gast {
+  background: #ececec;
+  color: #526074;
+  box-shadow: inset 0 0 0 1px #d3d6db;
+}
+[data-pivot-theme="dark"] .badge--admin {
+  background: #3d4d5e;
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px #52657a;
+}
+[data-pivot-theme="dark"] .badge--chefred {
+  background: #372a58;
+  color: #cdbdfb;
+  box-shadow: inset 0 0 0 1px #4c3b76;
+}
+[data-pivot-theme="dark"] .badge--redakteur {
+  background: #22375c;
+  color: #a6c8fa;
+  box-shadow: inset 0 0 0 1px #33507f;
+}
+[data-pivot-theme="dark"] .badge--autor {
+  background: #153c4d;
+  color: #9adcf7;
+  box-shadow: inset 0 0 0 1px #22566d;
+}
+[data-pivot-theme="dark"] .badge--medien {
+  background: #12463f;
+  color: #84ecd9;
+  box-shadow: inset 0 0 0 1px #1d6157;
+}
+[data-pivot-theme="dark"] .badge--formular {
+  background: rgba(188, 230, 77, 0.26);
+  color: #d5ef8c;
+  box-shadow: inset 0 0 0 1px rgba(188, 230, 77, 0.45);
+}
+[data-pivot-theme="dark"] .badge--gast {
+  background: #333d4b;
+  color: #c3ccd8;
+  box-shadow: inset 0 0 0 1px #475466;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+.chip--api {
+  background: #132033;
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px #2a3b52;
+}
+.chip--type {
+  background: rgba(188, 230, 77, 0.22);
+  color: #4d6b12;
+  box-shadow: inset 0 0 0 1px rgba(188, 230, 77, 0.45);
+}
+.chip--inactive {
+  background: #f4f4f5;
+  color: #8c8c8c;
+  box-shadow: inset 0 0 0 1px #e6e6e6;
+}
+[data-pivot-theme="dark"] .chip--api {
+  background: #31404f;
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px #4a5b6d;
+}
+[data-pivot-theme="dark"] .chip--type {
+  background: rgba(188, 230, 77, 0.22);
+  color: #cbe86e;
+  box-shadow: inset 0 0 0 1px rgba(188, 230, 77, 0.45);
+}
+[data-pivot-theme="dark"] .chip--inactive {
+  background: #222a36;
+  color: #98a2af;
+  box-shadow: inset 0 0 0 1px #2d3542;
 }
 
 /* Nutzerdefinierter Innen-/Außenabstand eines Bausteins, je Seite einzeln

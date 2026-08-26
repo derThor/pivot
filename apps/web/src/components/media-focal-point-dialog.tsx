@@ -74,9 +74,8 @@ export function MediaFocalPointDialog({
           <DialogTitle>Fokuspunkt für „{item.filename}“</DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">
-          Auf das Bild klicken, um den Fokuspunkt zu setzen. Er wird als
-          Anker für künftig aus diesem Bild erzeugte Zuschnitte/Varianten
-          verwendet.
+          Auf das Bild klicken, um den Fokuspunkt zu setzen. Er wird als Anker
+          für künftig aus diesem Bild erzeugte Zuschnitte/Varianten verwendet.
         </p>
         <div className="relative overflow-hidden rounded-lg border">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -98,7 +97,7 @@ export function MediaFocalPointDialog({
           <Button
             type="button"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             onClick={() => onOpenChange(false)}
           >
             Abbrechen

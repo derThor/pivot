@@ -7,7 +7,11 @@ import { SystemMessage } from "@/components/ui/system-message";
 /** Bewusst nicht dauerhaft (localStorage) weggeklickt – ein fehlschlagender
  * Webhook ist ein aktives Problem, das nach einem Reload wieder sichtbar
  * sein soll, statt versehentlich dauerhaft ausgeblendet zu bleiben. */
-export function WebhookFailureBanner({ failingCount }: { failingCount: number }) {
+export function WebhookFailureBanner({
+  failingCount,
+}: {
+  failingCount: number;
+}) {
   const [dismissed, setDismissed] = useState(false);
 
   if (failingCount === 0 || dismissed) return null;

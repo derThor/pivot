@@ -31,10 +31,17 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import type { PermissionDescriptor, Role } from "@/lib/api-server";
-import { actionLabels, categoryLabels, resourceLabels } from "@/lib/permission-labels";
+import {
+  actionLabels,
+  categoryLabels,
+  resourceLabels,
+} from "@/lib/permission-labels";
 
 function groupByCategory(catalog: PermissionDescriptor[]) {
-  const categories = new Map<PermissionDescriptor["category"], Map<string, PermissionDescriptor[]>>();
+  const categories = new Map<
+    PermissionDescriptor["category"],
+    Map<string, PermissionDescriptor[]>
+  >();
   for (const permission of catalog) {
     const resources = categories.get(permission.category) ?? new Map();
     const list = resources.get(permission.resource) ?? [];
@@ -231,47 +238,53 @@ export function RoleFormDialog({
               )}
             />
             <div className="flex flex-col gap-4 rounded-lg border p-3 max-h-80 overflow-y-auto">
-              {groupByCategory(permissionsCatalog).map(([category, resources]) => (
-                <div key={category} className="flex flex-col gap-2">
-                  <p className="text-sm font-medium">
-                    {categoryLabels[category]}
-                  </p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {resources.map(([resource, permissions]) => (
-                      <div key={resource} className="flex flex-col gap-1.5">
-                        <p className="text-xs font-medium text-muted-foreground">
-                          {resourceLabels[resource] ?? resource}
-                        </p>
-                        {permissions.map(({ key, action }) => {
-                          const locked = resource === "settings" && !viewerIsPivot;
-                          return (
-                            <div key={key} className="flex items-center gap-2">
-                              <Checkbox
-                                id={key}
-                                checked={formPermissions.includes(key)}
-                                disabled={locked}
-                                onCheckedChange={(checked) =>
-                                  togglePermission(key, checked === true)
-                                }
-                              />
-                              <Label htmlFor={key} className="font-normal">
-                                {actionLabels[action] ?? action}
-                              </Label>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ))}
+              {groupByCategory(permissionsCatalog).map(
+                ([category, resources]) => (
+                  <div key={category} className="flex flex-col gap-2">
+                    <p className="text-sm font-medium">
+                      {categoryLabels[category]}
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {resources.map(([resource, permissions]) => (
+                        <div key={resource} className="flex flex-col gap-1.5">
+                          <p className="text-xs font-medium text-muted-foreground">
+                            {resourceLabels[resource] ?? resource}
+                          </p>
+                          {permissions.map(({ key, action }) => {
+                            const locked =
+                              resource === "settings" && !viewerIsPivot;
+                            return (
+                              <div
+                                key={key}
+                                className="flex items-center gap-2"
+                              >
+                                <Checkbox
+                                  id={key}
+                                  checked={formPermissions.includes(key)}
+                                  disabled={locked}
+                                  onCheckedChange={(checked) =>
+                                    togglePermission(key, checked === true)
+                                  }
+                                />
+                                <Label htmlFor={key} className="font-normal">
+                                  {actionLabels[action] ?? action}
+                                </Label>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ),
+              )}
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
-                className="border-[#D4D4D4]"
+                className="border-border"
                 onClick={() => setOpen(false)}
               >
                 Abbrechen

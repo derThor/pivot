@@ -8,7 +8,11 @@ import { LogOut, Plus, Search, Settings, UserCog } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { navGroups } from "@/components/app-sidebar";
-import { searchResultHref, searchTypeMeta, type SearchResult } from "@/lib/search";
+import {
+  searchResultHref,
+  searchTypeMeta,
+  type SearchResult,
+} from "@/lib/search";
 import type { CurrentUser } from "@/lib/api-server";
 
 const MIN_QUERY_LENGTH = 3;
@@ -58,7 +62,9 @@ export function CommandPalette({
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
+  const [searchResults, setSearchResults] = useState<SearchResult[] | null>(
+    null,
+  );
   const permissions = user.permissions ?? [];
   const canViewSettings = permissions.includes("settings:read");
 
@@ -139,7 +145,10 @@ export function CommandPalette({
 
   const navItems: PaletteItem[] = navGroups.flatMap((group) =>
     group.items
-      .filter((item) => !("permission" in item) || permissions.includes(item.permission))
+      .filter(
+        (item) =>
+          !("permission" in item) || permissions.includes(item.permission),
+      )
       .map((item) => ({
         id: `nav-${item.url}`,
         icon: item.icon,
@@ -190,7 +199,9 @@ export function CommandPalette({
       badge: { label: meta.label, className: meta.badgeClassName },
       onSelect: async () => {
         close();
-        router.push(await searchResultHref(result, trimmedQuery, defaultPageSize));
+        router.push(
+          await searchResultHref(result, trimmedQuery, defaultPageSize),
+        );
       },
     };
   });
@@ -203,8 +214,10 @@ export function CommandPalette({
       ? actionItems.filter((item) => matches(item.label, trimmedQuery))
       : actionItems;
     const result: PaletteGroup[] = [];
-    if (filteredActions.length > 0) result.push({ label: "Aktionen", items: filteredActions });
-    if (filteredNav.length > 0) result.push({ label: "Gehe zu", items: filteredNav });
+    if (filteredActions.length > 0)
+      result.push({ label: "Aktionen", items: filteredActions });
+    if (filteredNav.length > 0)
+      result.push({ label: "Gehe zu", items: filteredNav });
     if (trimmedQuery.length >= MIN_QUERY_LENGTH && searchItems.length > 0) {
       result.push({ label: "Suchergebnisse", items: searchItems });
     }
@@ -212,7 +225,10 @@ export function CommandPalette({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trimmedQuery, searchResults, canViewSettings]);
 
-  const flatItems = useMemo(() => groups.flatMap((group) => group.items), [groups]);
+  const flatItems = useMemo(
+    () => groups.flatMap((group) => group.items),
+    [groups],
+  );
 
   // Auswahl auf den ersten Treffer zurücksetzen, sobald sich die Eingabe
   // ändert (neue Suchabsicht) – bewusst nicht bei jeder Änderung von
@@ -228,11 +244,15 @@ export function CommandPalette({
   function handleInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      setSelectedIndex((prev) => (flatItems.length === 0 ? 0 : (prev + 1) % flatItems.length));
+      setSelectedIndex((prev) =>
+        flatItems.length === 0 ? 0 : (prev + 1) % flatItems.length,
+      );
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
       setSelectedIndex((prev) =>
-        flatItems.length === 0 ? 0 : (prev - 1 + flatItems.length) % flatItems.length,
+        flatItems.length === 0
+          ? 0
+          : (prev - 1 + flatItems.length) % flatItems.length,
       );
     } else if (event.key === "Enter") {
       event.preventDefault();
@@ -247,7 +267,7 @@ export function CommandPalette({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent
+      <DialogContent
         showCloseButton={false}
         className="top-24 flex max-h-[70vh] max-w-lg -translate-y-0 flex-col overflow-hidden p-0 sm:max-w-lg"
       >
@@ -300,7 +320,7 @@ export function CommandPalette({
                     </span>
                     {item.badge && (
                       <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${item.badge.className}`}
+                        className={`shrink-0 rounded-[5px] px-2 py-0.5 text-[11px] font-medium ${item.badge.className}`}
                       >
                         {item.badge.label}
                       </span>
@@ -316,7 +336,7 @@ export function CommandPalette({
             </div>
           ))}
         </div>
-        </DialogContent>
+      </DialogContent>
     </Dialog>
   );
 }

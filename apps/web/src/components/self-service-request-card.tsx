@@ -30,10 +30,8 @@ function formatDate(iso: string) {
   });
 }
 
-const STATUS_BADGE_CLASSNAME =
-  "bg-amber-100 text-amber-800 hover:bg-amber-100";
-const STATUS_BADGE_CLASSNAME_DONE =
-  "bg-green-100 text-green-700 hover:bg-green-100";
+const STATUS_BADGE_CLASSNAME = "badge--amber border-0";
+const STATUS_BADGE_CLASSNAME_DONE = "badge--green border-0";
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
@@ -121,9 +119,9 @@ export function SelfServiceRequestCard({
         Meine Daten
       </h3>
       <p className="mt-2 text-sm text-muted-foreground">
-        Fordere eine Auskunft über deine gespeicherten Daten an oder
-        beantrage eine Löschung bzw. Berichtigung (Art. 15–17 DSGVO). Wir
-        melden uns spätestens innerhalb eines Monats.
+        Fordere eine Auskunft über deine gespeicherten Daten an oder beantrage
+        eine Löschung bzw. Berichtigung (Art. 15–17 DSGVO). Wir melden uns
+        spätestens innerhalb eines Monats.
       </p>
 
       {requests.length > 0 && (
@@ -131,7 +129,7 @@ export function SelfServiceRequestCard({
           {requests.map((request) => (
             <div
               key={request.id}
-              className="flex items-center justify-between gap-3 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-3"
+              className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted p-3"
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">
@@ -145,9 +143,9 @@ export function SelfServiceRequestCard({
                 <Badge
                   className={
                     request.status === "completed" ||
-                    request.status === "rejected" ?
-                      STATUS_BADGE_CLASSNAME_DONE
-                    : STATUS_BADGE_CLASSNAME
+                    request.status === "rejected"
+                      ? STATUS_BADGE_CLASSNAME_DONE
+                      : STATUS_BADGE_CLASSNAME
                   }
                 >
                   {DELETION_REQUEST_STATUS_LABELS[request.status]}
@@ -169,7 +167,7 @@ export function SelfServiceRequestCard({
       <Button
         type="button"
         variant="outline"
-        className="mt-3 border-[#D4D4D4]"
+        className="mt-3 border-input"
         onClick={() => setOpen(true)}
       >
         Anfrage stellen
@@ -195,7 +193,11 @@ export function SelfServiceRequestCard({
               >
                 {Object.entries(DATA_SUBJECT_REQUEST_TYPE_LABELS).map(
                   ([value, label]) => (
-                    <option key={value} value={value}>
+                    <option
+                      key={value}
+                      value={value}
+                      className="bg-background text-foreground"
+                    >
                       {label}
                     </option>
                   ),
@@ -216,7 +218,7 @@ export function SelfServiceRequestCard({
               <Button
                 type="button"
                 variant="outline"
-                className="border-[#D4D4D4]"
+                className="border-border"
                 onClick={() => setOpen(false)}
               >
                 Abbrechen
@@ -236,11 +238,12 @@ export function SelfServiceRequestCard({
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {detailTarget && DATA_SUBJECT_REQUEST_TYPE_LABELS[detailTarget.type]}
+              {detailTarget &&
+                DATA_SUBJECT_REQUEST_TYPE_LABELS[detailTarget.type]}
             </DialogTitle>
           </DialogHeader>
           {detailTarget && (
-            <div className="flex flex-col divide-y divide-[#F0F0F0] text-sm">
+            <div className="flex flex-col divide-y divide-border text-sm">
               <DetailRow label="DSR-ID" value={detailTarget.dsrId} />
               <DetailRow
                 label="Art"
@@ -255,7 +258,10 @@ export function SelfServiceRequestCard({
                 value={formatDate(detailTarget.createdAt)}
               />
               {detailTarget.dueAt && (
-                <DetailRow label="Frist" value={formatDate(detailTarget.dueAt)} />
+                <DetailRow
+                  label="Frist"
+                  value={formatDate(detailTarget.dueAt)}
+                />
               )}
               {detailTarget.reason && (
                 <DetailRow label="Grund" value={detailTarget.reason} />
@@ -272,7 +278,7 @@ export function SelfServiceRequestCard({
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={() => setDetailTarget(null)}
             >
               Schließen
@@ -283,7 +289,7 @@ export function SelfServiceRequestCard({
                 <Button
                   type="button"
                   variant="outline"
-                  className="border-[#D4D4D4] text-destructive hover:bg-destructive/5"
+                  className="border-border text-destructive hover:bg-destructive/5"
                   disabled={isWithdrawing}
                   onClick={handleWithdraw}
                 >

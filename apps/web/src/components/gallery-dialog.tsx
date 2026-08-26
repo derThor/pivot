@@ -16,7 +16,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { GallerySettingsEditor } from "@/components/global-module-form-dialog";
-import { DEFAULT_GALLERY_SETTINGS, type GallerySettings } from "@/lib/gallery-settings";
+import {
+  DEFAULT_GALLERY_SETTINGS,
+  type GallerySettings,
+} from "@/lib/gallery-settings";
 import type { ModuleType } from "@/lib/api-server";
 
 /** Schlanker Anlegen-Dialog nur für Name + Anzeige-Einstellungen einer
@@ -45,7 +48,9 @@ export function GalleryDialog({
   const open = controlledOpen ?? internalOpen;
   const setOpen = controlledOnOpenChange ?? setInternalOpen;
   const [name, setName] = useState("");
-  const [settings, setSettings] = useState<GallerySettings>(DEFAULT_GALLERY_SETTINGS);
+  const [settings, setSettings] = useState<GallerySettings>(
+    DEFAULT_GALLERY_SETTINGS,
+  );
   const [nameError, setNameError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -111,7 +116,10 @@ export function GalleryDialog({
         <DialogHeader>
           <DialogTitle>Neue Bildergalerie</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-4">
+        <form
+          onSubmit={handleSubmit}
+          className="flex min-h-0 flex-1 flex-col gap-4"
+        >
           {/* `space-y-4` statt `flex flex-col gap-4`: verschachtelte
               Flex-Spalten innerhalb eines höhenbegrenzten Vorfahren können
               sich gegenseitig zusammenquetschen statt den Container
@@ -121,7 +129,9 @@ export function GalleryDialog({
               `overflow-y-auto` bekommt wieder etwas zum Scrollen. */}
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-1">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="gallery-dialog-name" required>Name</Label>
+              <Label htmlFor="gallery-dialog-name" required>
+                Name
+              </Label>
               <Input
                 id="gallery-dialog-name"
                 value={name}
@@ -132,7 +142,9 @@ export function GalleryDialog({
                 aria-invalid={nameError ? true : undefined}
                 placeholder="z.B. Referenzen 2026"
               />
-              {nameError && <p className="text-sm text-destructive">{nameError}</p>}
+              {nameError && (
+                <p className="text-sm text-destructive">{nameError}</p>
+              )}
             </div>
             <GallerySettingsEditor
               settings={settings}
@@ -140,13 +152,15 @@ export function GalleryDialog({
               previewImages={[]}
               showPreview={false}
             />
-            {submitError && <p className="text-sm text-destructive">{submitError}</p>}
+            {submitError && (
+              <p className="text-sm text-destructive">{submitError}</p>
+            )}
           </div>
           <div className="flex shrink-0 justify-end gap-2">
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={() => setOpen(false)}
             >
               Abbrechen

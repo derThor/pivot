@@ -210,8 +210,8 @@ export default function SearchPage() {
         className={cn(
           "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
           active
-            ? "border-transparent bg-[#132033] text-white"
-            : "border-[#D4D4D4] bg-transparent hover:bg-muted/40",
+            ? "border-transparent bg-dark-surface text-dark-surface-foreground"
+            : "border-border bg-transparent hover:bg-muted/40",
         )}
       >
         {label}

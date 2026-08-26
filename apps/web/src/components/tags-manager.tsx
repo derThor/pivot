@@ -59,7 +59,9 @@ export function TagsManager({
           Alle Tags
         </p>
         {allTags.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Noch keine Tags vorhanden.</p>
+          <p className="text-sm text-muted-foreground">
+            Noch keine Tags vorhanden.
+          </p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {allTags.map((tag) => (
@@ -67,7 +69,12 @@ export function TagsManager({
                 key={tag.id}
                 className="flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-sm"
               >
-                <span className={cn("size-2 shrink-0 rounded-full", tagDotColor(tag.id))} />
+                <span
+                  className={cn(
+                    "size-2 shrink-0 rounded-full",
+                    tagDotColor(tag.id),
+                  )}
+                />
                 <span className="font-medium">{tag.name}</span>
                 <span className="flex min-w-5 items-center justify-center rounded-full bg-muted px-1.5 text-xs text-muted-foreground">
                   {tag.mediaCount}
@@ -80,7 +87,7 @@ export function TagsManager({
 
       <div className="overflow-hidden rounded-[10px] bg-card shadow-[0_1px_3px_0_rgba(0,0,0,0.1),0_1px_2px_-1px_rgba(0,0,0,0.1),0_-1px_2px_0_rgba(0,0,0,0.05)]">
         <Table>
-          <TableHeader className="bg-background">
+          <TableHeader>
             <TableRow>
               <TableHead>Tag</TableHead>
               <TableHead>Verwendet in</TableHead>
@@ -91,7 +98,10 @@ export function TagsManager({
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                <TableCell
+                  colSpan={4}
+                  className="h-24 text-center text-muted-foreground"
+                >
                   Noch keine Tags vorhanden.
                 </TableCell>
               </TableRow>
@@ -101,7 +111,10 @@ export function TagsManager({
                   <TableCell className="font-medium">
                     <span className="flex items-center gap-2">
                       <span
-                        className={cn("size-2 shrink-0 rounded-full", tagDotColor(tag.id))}
+                        className={cn(
+                          "size-2 shrink-0 rounded-full",
+                          tagDotColor(tag.id),
+                        )}
                       />
                       <HighlightText
                         text={tag.name}
@@ -111,7 +124,8 @@ export function TagsManager({
                     </span>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {tag.mediaCount} {tag.mediaCount === 1 ? "Medium" : "Medien"}
+                    {tag.mediaCount}{" "}
+                    {tag.mediaCount === 1 ? "Medium" : "Medien"}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {dateFormatter.format(new Date(tag.createdAt))}

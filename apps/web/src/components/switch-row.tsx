@@ -31,15 +31,13 @@ export function SwitchRow({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4",
+        "flex items-center justify-between gap-4 rounded-lg border border-border bg-muted p-4",
         className,
       )}
     >
       <div className="flex flex-col gap-0.5">
         <Label
-          className={
-            disabled ? "text-sm text-muted-foreground" : "text-sm"
-          }
+          className={disabled ? "text-sm text-muted-foreground" : "text-sm"}
         >
           {label}
         </Label>

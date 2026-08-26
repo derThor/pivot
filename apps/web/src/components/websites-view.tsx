@@ -26,6 +26,17 @@ import { formatRelativeTime } from "@/lib/utils";
 import { WEBSITE_STATUS_BADGE } from "@/lib/website-status";
 import type { WebsiteCheckAllResult, WebsiteListItem } from "@/lib/api-server";
 
+// Nutzer-Bugreport, 2026-08-26: "hier ist http drin, dennoch wird bei
+// öffnen die live seite aufgerufen" – der "Öffnen"-Button nutzte immer
+// die Live-Domain, obwohl eine Test-URL (z.B. "http://localhost:3010/")
+// hinterlegt war. Test-URL hat Vorrang, Live-Domain nur als Fallback.
+function getOpenUrl(website: Pick<WebsiteListItem, "domain" | "testUrl">) {
+  if (website.testUrl) {
+    return `${website.testUrl.replace(/\/+$/, "")}/login`;
+  }
+  return `https://${website.domain}/login`;
+}
+
 /** Eigene Seite `/dashboard/websites` (Nutzervorgabe, 2026-08-24: "einzelne
  * Kacheln", "Hauptbg weiß weg" – kein umschließender Card-Kasten mehr,
  * Kacheln liegen direkt auf dem Seitenhintergrund) – Layout 1:1 nach
@@ -127,7 +138,7 @@ export function WebsitesView({
           <Button
             type="button"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             disabled={isChecking}
             onClick={handleCheckNow}
           >
@@ -226,10 +237,10 @@ export function WebsitesView({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-9 flex-1 rounded-md border-[#D4D4D4]"
+                  className="h-9 flex-1 rounded-md border-border"
                   render={
                     <a
-                      href={`https://${website.domain}/login`}
+                      href={getOpenUrl(website)}
                       target="_blank"
                       rel="noopener noreferrer"
                     />
@@ -255,9 +266,9 @@ export function WebsitesView({
         <button
           type="button"
           onClick={() => setDialogTarget("new")}
-          className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[#D5D5D5] p-4 py-10 text-center transition-colors hover:border-lime-400"
+          className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border p-4 py-10 text-center transition-colors hover:border-lime-400"
         >
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-lime-100 text-lime-700">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
             <Plus className="size-5" />
           </span>
           <div>

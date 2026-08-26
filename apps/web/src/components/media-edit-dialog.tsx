@@ -143,7 +143,7 @@ export function MediaEditDialog({
               <Button
                 type="button"
                 variant="outline"
-                className="border-[#D4D4D4]"
+                className="border-border"
                 onClick={() => onOpenChange(false)}
               >
                 Abbrechen
@@ -165,7 +165,11 @@ export function MediaEditDialog({
 
       {croppable && (
         <>
-          <MediaCropDialog item={item} open={cropOpen} onOpenChange={setCropOpen} />
+          <MediaCropDialog
+            item={item}
+            open={cropOpen}
+            onOpenChange={setCropOpen}
+          />
           <MediaFocalPointDialog
             item={item}
             open={focalOpen}

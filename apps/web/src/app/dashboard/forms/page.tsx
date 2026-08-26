@@ -20,7 +20,10 @@ export default async function FormsPage({
     <PageContent plain>
       <FormsView
         items={result?.items ?? []}
-        meta={{ page: result?.meta.page ?? 1, pageCount: result?.meta.pageCount ?? 1 }}
+        meta={{
+          page: result?.meta.page ?? 1,
+          pageCount: result?.meta.pageCount ?? 1,
+        }}
         stats={
           stats ?? {
             total: 0,

@@ -86,7 +86,7 @@ export default async function UsersPage({
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             render={<Link href="/dashboard/roles" />}
           >
             Rollen verwalten

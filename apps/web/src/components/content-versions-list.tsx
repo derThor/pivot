@@ -28,7 +28,11 @@ import {
   resolveInstanceValues,
 } from "@/components/block-field-output";
 import type { ModuleInstance } from "@/components/block-editor-field";
-import type { ContentVersion, GlobalModule, ModuleType } from "@/lib/api-server";
+import type {
+  ContentVersion,
+  GlobalModule,
+  ModuleType,
+} from "@/lib/api-server";
 
 function isModuleInstanceArray(value: unknown): value is ModuleInstance[] {
   return (
@@ -65,25 +69,38 @@ function ModulesPreview({
   }
   const moduleTypeById = new Map(moduleTypes.map((mt) => [mt.id, mt]));
   return (
-    <div className="flow-root space-y-6 rounded-md border bg-white p-4 dark:bg-neutral-950">
+    <div className="flow-root space-y-6 rounded-md border bg-card p-4">
       {value.map((instance) => {
         const resolved = resolveInstanceValues(instance, globalModules);
         const moduleType = moduleTypeById.get(resolved.moduleTypeId);
         if (!moduleType) return null;
         const contentFields = moduleType.schema.fields.filter((f) => !f.option);
-        const layout = resolveBlockLayout(contentFields, resolved.values, instance.layout);
+        const layout = resolveBlockLayout(
+          contentFields,
+          resolved.values,
+          instance.layout,
+        );
         return (
           <div
             key={instance.id}
-            className={cn("block-layout", blockLayoutClasses(layout.align, layout.width))}
+            className={cn(
+              "block-layout",
+              blockLayoutClasses(layout.align, layout.width),
+            )}
             style={{ width: `${layout.width}%` }}
           >
             {isDividerModule(contentFields) ? (
               <DividerOutput />
             ) : isTilesModule(contentFields) ? (
-              <TilesGridOutput contentFields={contentFields} values={resolved.values} />
+              <TilesGridOutput
+                contentFields={contentFields}
+                values={resolved.values}
+              />
             ) : isCoverModuleType(contentFields) ? (
-              <CoverOutput contentFields={contentFields} values={resolved.values} />
+              <CoverOutput
+                contentFields={contentFields}
+                values={resolved.values}
+              />
             ) : (
               <div className="flow-root space-y-3">
                 {contentFields.map((field) => (
@@ -181,8 +198,15 @@ export function ContentVersionsList({
 }) {
   const router = useRouter();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const { selected, toggle, toggleAll, clear, allSelected, someSelected, count } =
-    useSelection(versions.map((version) => version.id));
+  const {
+    selected,
+    toggle,
+    toggleAll,
+    clear,
+    allSelected,
+    someSelected,
+    count,
+  } = useSelection(versions.map((version) => version.id));
 
   async function handleRollback(versionId: string) {
     await fetch(`/api/content/${contentId}/versions/${versionId}/rollback`, {
@@ -375,9 +399,7 @@ export function ContentVersionsList({
                       <TabsContent value="preview">
                         <RichTextEditor
                           editable={false}
-                          value={
-                            typeof oldValue === "string" ? oldValue : ""
-                          }
+                          value={typeof oldValue === "string" ? oldValue : ""}
                         />
                       </TabsContent>
                     </Tabs>

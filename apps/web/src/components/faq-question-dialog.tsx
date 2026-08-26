@@ -15,7 +15,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { toRepeaterItems, type RepeaterItem } from "@/components/block-field-output";
+import {
+  toRepeaterItems,
+  type RepeaterItem,
+} from "@/components/block-field-output";
 import type { ContentTypeField, GlobalModule } from "@/lib/api-server";
 
 /** Schlanker Dialog nur für "Frage" + "Antwort" + "Veröffentlicht"
@@ -70,7 +73,9 @@ export function FaqQuestionDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function reset() {
-    setQuestionText(question ? String(question.values[questionFieldName] ?? "") : "");
+    setQuestionText(
+      question ? String(question.values[questionFieldName] ?? "") : "",
+    );
     setAnswer(question ? String(question.values[answerFieldName] ?? "") : "");
     setPublished(
       question && publishedFieldName
@@ -87,7 +92,9 @@ export function FaqQuestionDialog({
     const nextQuestionError = questionText.trim()
       ? null
       : "Bitte eine Frage eingeben.";
-    const nextAnswerError = answer.trim() ? null : "Bitte eine Antwort eingeben.";
+    const nextAnswerError = answer.trim()
+      ? null
+      : "Bitte eine Antwort eingeben.";
     setQuestionError(nextQuestionError);
     setAnswerError(nextAnswerError);
     if (nextQuestionError || nextAnswerError) return;
@@ -144,11 +151,15 @@ export function FaqQuestionDialog({
     >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Frage bearbeiten" : "Frage hinzufügen"}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? "Frage bearbeiten" : "Frage hinzufügen"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="faq-question-text" required>Frage</Label>
+            <Label htmlFor="faq-question-text" required>
+              Frage
+            </Label>
             <Input
               id="faq-question-text"
               value={questionText}
@@ -163,7 +174,9 @@ export function FaqQuestionDialog({
             )}
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="faq-question-answer" required>Antwort</Label>
+            <Label htmlFor="faq-question-answer" required>
+              Antwort
+            </Label>
             <RichTextEditor
               id="faq-question-answer"
               value={answer}
@@ -173,7 +186,9 @@ export function FaqQuestionDialog({
               }}
               maxHeight="10rem"
             />
-            {answerError && <p className="text-sm text-destructive">{answerError}</p>}
+            {answerError && (
+              <p className="text-sm text-destructive">{answerError}</p>
+            )}
           </div>
           {publishedFieldName && (
             <div className="flex items-center gap-2">
@@ -185,18 +200,24 @@ export function FaqQuestionDialog({
               <Label htmlFor="faq-question-published">Veröffentlicht</Label>
             </div>
           )}
-          {submitError && <p className="text-sm text-destructive">{submitError}</p>}
+          {submitError && (
+            <p className="text-sm text-destructive">{submitError}</p>
+          )}
           <div className="flex justify-end gap-2">
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={() => onOpenChange(false)}
             >
               Abbrechen
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Speichert…" : isEditing ? "Speichern" : "Hinzufügen"}
+              {isSubmitting
+                ? "Speichert…"
+                : isEditing
+                  ? "Speichern"
+                  : "Hinzufügen"}
             </Button>
           </div>
         </form>

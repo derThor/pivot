@@ -11,7 +11,11 @@ import type { MediaCounts, TaxonomyItem } from "@/lib/api-server";
 // hochladbare Kategorien als Pillen (Nutzerentscheidung, 2026-08-15):
 // kein separates "Audio"/"Archive" ohne Upload-Unterstützung, auch wenn
 // die Bildvorlage die zeigt.
-const TYPE_OPTIONS: { value: string; label: string; countKey: keyof MediaCounts }[] = [
+const TYPE_OPTIONS: {
+  value: string;
+  label: string;
+  countKey: keyof MediaCounts;
+}[] = [
   { value: "image", label: "Bilder", countKey: "image" },
   { value: "video", label: "Video", countKey: "video" },
   { value: "document", label: "Dokumente", countKey: "document" },
@@ -32,7 +36,9 @@ export function MediaFilters({
   const searchParams = useSearchParams();
 
   const type = searchParams.get("type") ?? "";
-  const selectedTagIds = (searchParams.get("tags") ?? "").split(",").filter(Boolean);
+  const selectedTagIds = (searchParams.get("tags") ?? "")
+    .split(",")
+    .filter(Boolean);
   const unused = searchParams.get("unused") === "true";
 
   function updateParams(updates: Record<string, string | null>) {
@@ -62,15 +68,17 @@ export function MediaFilters({
         className={cn(
           "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
           active
-            ? "border-transparent bg-[#132033] text-white"
-            : "border-[#D4D4D4] bg-transparent hover:bg-muted/40",
+            ? "border-transparent bg-dark-surface text-dark-surface-foreground"
+            : "border-border bg-transparent hover:bg-muted/40",
         )}
       >
         {label}
         <span
           className={cn(
             "flex min-w-5 items-center justify-center rounded-full px-1.5 text-xs",
-            active ? "bg-white/20 text-white" : "bg-muted text-muted-foreground",
+            active
+              ? "bg-white/20 text-white"
+              : "bg-muted text-muted-foreground",
           )}
         >
           {count}
@@ -96,7 +104,7 @@ export function MediaFilters({
             "shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
             unused
               ? "border-transparent bg-primary text-primary-foreground"
-              : "border-[#D4D4D4] bg-transparent hover:bg-muted/40",
+              : "border-border bg-transparent hover:bg-muted/40",
           )}
         >
           Nur ungenutzte
@@ -114,8 +122,8 @@ export function MediaFilters({
             className={cn(
               "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
               selectedTagIds.length === 0
-                ? "border-transparent bg-[#132033] text-white"
-                : "border-[#D4D4D4] bg-transparent hover:bg-muted/40",
+                ? "border-transparent bg-dark-surface text-dark-surface-foreground"
+                : "border-border bg-transparent hover:bg-muted/40",
             )}
           >
             Alle
@@ -130,11 +138,16 @@ export function MediaFilters({
                 className={cn(
                   "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
                   active
-                    ? "border-transparent bg-[#132033] text-white"
-                    : "border-[#D4D4D4] bg-transparent hover:bg-muted/40",
+                    ? "border-transparent bg-dark-surface text-dark-surface-foreground"
+                    : "border-border bg-transparent hover:bg-muted/40",
                 )}
               >
-                <span className={cn("size-2 shrink-0 rounded-full", tagDotColor(tag.id))} />
+                <span
+                  className={cn(
+                    "size-2 shrink-0 rounded-full",
+                    tagDotColor(tag.id),
+                  )}
+                />
                 {tag.name}
               </button>
             );

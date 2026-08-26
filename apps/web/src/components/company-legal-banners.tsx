@@ -28,7 +28,7 @@ export function CompanyIncompleteBanner({
         <Button
           size="sm"
           variant="outline"
-          className="border-[#D4D4D4]"
+          className="border-border"
           render={<Link href="/dashboard/company" />}
         >
           Zur Firma-Seite
@@ -54,17 +54,17 @@ export function LegalDocumentsBanner({
       variant="warning"
       title={`${total} ${total === 1 ? "Rechtstext braucht" : "Rechtstexte brauchen"} Aufmerksamkeit.`}
       description={
-        missingCount > 0 && staleCount > 0 ?
-          `${missingCount} ${missingCount === 1 ? "fehlt" : "fehlen"} noch, ${staleCount} ${staleCount === 1 ? "ist" : "sind"} veraltet.`
-        : missingCount > 0 ?
-          `${missingCount} ${missingCount === 1 ? "fehlt" : "fehlen"} noch.`
-        : "Firmendaten haben sich seit der letzten Erzeugung geändert."
+        missingCount > 0 && staleCount > 0
+          ? `${missingCount} ${missingCount === 1 ? "fehlt" : "fehlen"} noch, ${staleCount} ${staleCount === 1 ? "ist" : "sind"} veraltet.`
+          : missingCount > 0
+            ? `${missingCount} ${missingCount === 1 ? "fehlt" : "fehlen"} noch.`
+            : "Firmendaten haben sich seit der letzten Erzeugung geändert."
       }
       actions={
         <Button
           size="sm"
           variant="outline"
-          className="border-[#D4D4D4]"
+          className="border-border"
           render={<Link href="/dashboard/privacy" />}
         >
           Zu den Rechtstexten

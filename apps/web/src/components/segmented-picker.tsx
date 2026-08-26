@@ -32,7 +32,7 @@ export function SegmentedPicker<T extends string | number>({
           {label}
         </span>
       )}
-      <div className="flex gap-1 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-1">
+      <div className="flex gap-1 rounded-lg border border-border bg-muted p-1">
         {options.map((option) => {
           // Zahl-Optionen ("30 Tage", "12 Monate") immer zweizeilig
           // darstellen (Zahl größer über dem Wort), statt sich auf
@@ -57,8 +57,8 @@ export function SegmentedPicker<T extends string | number>({
                 "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                 value === option.value
                   ? variant === "dark"
-                    ? "bg-[#132033] text-white"
-                    : "bg-white text-foreground shadow-sm"
+                    ? "bg-dark-surface text-dark-surface-foreground"
+                    : "bg-card text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >

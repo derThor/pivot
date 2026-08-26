@@ -21,7 +21,10 @@ import {
   PRIVACY_INCIDENT_SEVERITY_LABELS,
 } from "@/components/privacy-incident-dialog";
 import { cn, truncateMiddle } from "@/lib/utils";
-import type { PrivacyIncident, PrivacyIncidentSeverity } from "@/lib/api-server";
+import type {
+  PrivacyIncident,
+  PrivacyIncidentSeverity,
+} from "@/lib/api-server";
 
 function formatDate(iso: string | null) {
   if (!iso) return "–";
@@ -39,29 +42,28 @@ function formatDateTime(iso: string | null) {
 }
 
 const RISK_BADGE_CLASSNAME: Record<PrivacyIncidentSeverity, string> = {
-  low: "bg-muted text-muted-foreground hover:bg-muted",
-  medium: "bg-amber-100 text-amber-800 hover:bg-amber-100",
-  high: "bg-red-100 text-red-700 hover:bg-red-100",
+  low: "badge--slate border-0",
+  medium: "badge--amber border-0",
+  high: "badge--ink border-0",
 };
 
 const RISK_ICON_BOX_CLASSNAME: Record<PrivacyIncidentSeverity, string> = {
-  low: "bg-muted text-muted-foreground",
-  medium: "bg-amber-100 text-amber-600",
-  high: "bg-red-100 text-red-600",
+  low: "badge--slate",
+  medium: "badge--amber",
+  high: "badge--ink",
 };
-
 
 /** Ablauf-Schritte 3–5 (Meldung/Information/Maßnahmen) sind bei
  * severity="low" gegenstandslos – Art. 33/34 DSGVO verlangen dann keine
  * Meldung, siehe schema.prisma-Kommentar bei PrivacyIncident. */
 function statusBadge(row: PrivacyIncident) {
   if (row.severity === "low") {
-    return { label: "kein Risiko", className: "bg-emerald-100 text-emerald-700 hover:bg-emerald-100" };
+    return { label: "kein Risiko", className: "badge--green border-0" };
   }
   if (row.authorityNotifiedAt) {
-    return { label: "gemeldet", className: "bg-amber-100 text-amber-800 hover:bg-amber-100" };
+    return { label: "gemeldet", className: "badge--amber border-0" };
   }
-  return { label: "Offen", className: "bg-amber-100 text-amber-800 hover:bg-amber-100" };
+  return { label: "Offen", className: "badge--amber border-0" };
 }
 
 function ablaufSteps(row: PrivacyIncident) {
@@ -69,9 +71,18 @@ function ablaufSteps(row: PrivacyIncident) {
   return [
     { label: "Vorfall erfassen", done: true },
     { label: "Risiko bewerten", done: true },
-    { label: "Innerhalb 72 Std. melden", done: noActionNeeded || !!row.authorityNotifiedAt },
-    { label: "Betroffene informieren", done: noActionNeeded || !!row.subjectsNotifiedAt },
-    { label: "Maßnahmen dokumentieren", done: noActionNeeded || !!row.measuresDocumented },
+    {
+      label: "Innerhalb 72 Std. melden",
+      done: noActionNeeded || !!row.authorityNotifiedAt,
+    },
+    {
+      label: "Betroffene informieren",
+      done: noActionNeeded || !!row.subjectsNotifiedAt,
+    },
+    {
+      label: "Maßnahmen dokumentieren",
+      done: noActionNeeded || !!row.measuresDocumented,
+    },
   ];
 }
 
@@ -110,7 +121,9 @@ export function PrivacyIncidentsPanel({
   function upsert(row: PrivacyIncident) {
     onIncidentsChange((prev) => {
       const exists = prev.some((r) => r.id === row.id);
-      return exists ? prev.map((r) => (r.id === row.id ? row : r)) : [row, ...prev];
+      return exists
+        ? prev.map((r) => (r.id === row.id ? row : r))
+        : [row, ...prev];
     });
     setSelectedId(row.id);
     router.refresh();
@@ -118,7 +131,9 @@ export function PrivacyIncidentsPanel({
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    await fetch(`/api/privacy-incidents/${deleteTarget.id}`, { method: "DELETE" });
+    await fetch(`/api/privacy-incidents/${deleteTarget.id}`, {
+      method: "DELETE",
+    });
     onIncidentsChange((prev) => prev.filter((r) => r.id !== deleteTarget.id));
     if (selectedId === deleteTarget.id) setSelectedId(null);
     toastDeleted(`„${deleteTarget.title}“ wurde entfernt.`);
@@ -128,9 +143,12 @@ export function PrivacyIncidentsPanel({
 
   async function handleReport() {
     if (!reportTarget) return;
-    const res = await fetch(`/api/privacy-incidents/${reportTarget.id}/report`, {
-      method: "POST",
-    });
+    const res = await fetch(
+      `/api/privacy-incidents/${reportTarget.id}/report`,
+      {
+        method: "POST",
+      },
+    );
     const data = await res.json().catch(() => null);
     if (res.ok && data) {
       upsert(data as PrivacyIncident);
@@ -156,18 +174,20 @@ export function PrivacyIncidentsPanel({
   return (
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_360px]">
       <div className="overflow-hidden rounded-xl bg-card shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F0F0F0] px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
           <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
             Vorfälle · {incidents.length}
           </p>
-          <span className="text-xs text-muted-foreground">Meldefrist 72 Std.</span>
+          <span className="text-xs text-muted-foreground">
+            Meldefrist 72 Std.
+          </span>
         </div>
         {incidents.length === 0 ? (
           <p className="px-6 py-6 text-sm text-muted-foreground">
             Noch keine Vorfälle erfasst.
           </p>
         ) : (
-          <div className="flex flex-col divide-y divide-[#F0F0F0]">
+          <div className="flex flex-col divide-y divide-border">
             {incidents.map((row) => {
               const isSelected = row.id === selectedId;
               const badge = statusBadge(row);
@@ -178,9 +198,9 @@ export function PrivacyIncidentsPanel({
                   onClick={() => setSelectedId(row.id)}
                   className={cn(
                     "flex items-center gap-3 border-l-4 px-4 py-4 text-left transition-colors",
-                    isSelected ?
-                      "border-l-primary bg-amber-50"
-                    : "border-l-transparent hover:bg-muted/50",
+                    isSelected
+                      ? "border-l-primary bg-amber-50 dark:bg-primary/10"
+                      : "border-l-transparent hover:bg-muted/50",
                   )}
                 >
                   <span
@@ -201,7 +221,10 @@ export function PrivacyIncidentsPanel({
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                     <Badge className={RISK_BADGE_CLASSNAME[row.severity]}>
-                      Risiko {PRIVACY_INCIDENT_SEVERITY_LABELS[row.severity].toLowerCase()}
+                      Risiko{" "}
+                      {PRIVACY_INCIDENT_SEVERITY_LABELS[
+                        row.severity
+                      ].toLowerCase()}
                     </Badge>
                     <span className="w-20 text-xs text-muted-foreground">
                       {formatDate(row.occurredAt)}
@@ -216,7 +239,7 @@ export function PrivacyIncidentsPanel({
         <button
           type="button"
           onClick={() => setDialogTarget("new")}
-          className="flex w-full items-center gap-2 border-t border-[#F0F0F0] px-4 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+          className="flex w-full items-center gap-2 border-t border-border px-4 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
         >
           <Plus className="size-4" />
           Vorfall erfassen
@@ -233,7 +256,9 @@ export function PrivacyIncidentsPanel({
                 </p>
                 <CardTitle>{selected.title}</CardTitle>
                 {selected.description && (
-                  <p className="text-sm text-muted-foreground">{selected.description}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selected.description}
+                  </p>
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-1">
@@ -256,27 +281,35 @@ export function PrivacyIncidentsPanel({
               </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              <div className="flex flex-col divide-y divide-[#F0F0F0] text-sm">
+              <div className="flex flex-col divide-y divide-border text-sm">
                 <div className="flex items-center justify-between gap-4 py-2 first:pt-0">
-                  <span className="text-muted-foreground">Bekannt geworden</span>
+                  <span className="text-muted-foreground">
+                    Bekannt geworden
+                  </span>
                   <span>{formatDate(selected.occurredAt)}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4 py-2">
                   <span className="text-muted-foreground">Risiko</span>
-                  <span>{PRIVACY_INCIDENT_SEVERITY_LABELS[selected.severity].toLowerCase()}</span>
+                  <span>
+                    {PRIVACY_INCIDENT_SEVERITY_LABELS[
+                      selected.severity
+                    ].toLowerCase()}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between gap-4 py-2">
                   <span className="text-muted-foreground">Betroffene</span>
                   <span>{selected.affectedCount ?? "–"}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4 py-2 last:pb-0">
-                  <span className="text-muted-foreground">Behörde gemeldet</span>
+                  <span className="text-muted-foreground">
+                    Behörde gemeldet
+                  </span>
                   <span>{formatDateTime(selected.authorityNotifiedAt)}</span>
                 </div>
               </div>
 
               {selected.severity === "low" ? (
-                <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-800">
+                <div className="badge--green rounded-lg border-0 px-3 py-2 text-xs">
                   Keine Meldepflicht — Bewertung dokumentiert.
                 </div>
               ) : (
@@ -285,8 +318,12 @@ export function PrivacyIncidentsPanel({
                     <Button
                       type="button"
                       variant="outline"
-                      className="w-full border-[#D4D4D4]"
-                      render={<a href={`/api/privacy-incidents/${selected.id}/report`} />}
+                      className="w-full border-border"
+                      render={
+                        <a
+                          href={`/api/privacy-incidents/${selected.id}/report`}
+                        />
+                      }
                     >
                       Meldung ansehen
                     </Button>
@@ -294,7 +331,7 @@ export function PrivacyIncidentsPanel({
                     <Button
                       type="button"
                       variant="outline"
-                      className="w-full border-[#D4D4D4]"
+                      className="w-full border-border"
                       onClick={() => setReportTarget(selected)}
                     >
                       Behörde melden
@@ -306,9 +343,9 @@ export function PrivacyIncidentsPanel({
                     disabled={!!selected.subjectsNotifiedAt}
                     onClick={() => setNotifyTarget(selected)}
                   >
-                    {selected.subjectsNotifiedAt ?
-                      `Betroffene informiert am ${formatDate(selected.subjectsNotifiedAt)}`
-                    : "Betroffene informieren"}
+                    {selected.subjectsNotifiedAt
+                      ? `Betroffene informiert am ${formatDate(selected.subjectsNotifiedAt)}`
+                      : "Betroffene informieren"}
                   </Button>
                 </>
               )}
@@ -331,10 +368,16 @@ export function PrivacyIncidentsPanel({
               <ul className="flex flex-col gap-3 text-sm">
                 {ablaufSteps(selected).map((step) => (
                   <li key={step.label} className="flex items-center gap-2">
-                    {step.done ?
+                    {step.done ? (
                       <CheckCircle2 className="size-4 shrink-0 text-primary" />
-                    : <Circle className="size-4 shrink-0 text-muted-foreground" />}
-                    <span className={step.done ? undefined : "text-muted-foreground"}>
+                    ) : (
+                      <Circle className="size-4 shrink-0 text-muted-foreground" />
+                    )}
+                    <span
+                      className={
+                        step.done ? undefined : "text-muted-foreground"
+                      }
+                    >
                       {step.label}
                     </span>
                   </li>

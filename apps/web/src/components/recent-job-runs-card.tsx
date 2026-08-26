@@ -105,7 +105,7 @@ export function RecentJobRunsCard({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="border-[#D4D4D4]"
+                  className="border-border"
                   disabled={runs.items.length === 0}
                 >
                   Alle löschen
@@ -119,12 +119,14 @@ export function RecentJobRunsCard({
               type="button"
               variant="outline"
               size="icon-sm"
-              className="rounded-lg border-[#D4D4D4]"
+              className="rounded-lg border-border"
               aria-label="Aktualisieren"
               disabled={isRefreshing}
               onClick={handleRefresh}
             >
-              <RefreshCw className={isRefreshing ? "size-4 animate-spin" : "size-4"} />
+              <RefreshCw
+                className={isRefreshing ? "size-4 animate-spin" : "size-4"}
+              />
             </Button>
           </div>
         </CardAction>
@@ -138,7 +140,7 @@ export function RecentJobRunsCard({
           runs.items.map((run) => (
             <div
               key={run.id}
-              className="flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4"
+              className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted p-4"
             >
               <div className="flex items-start gap-2.5">
                 <span

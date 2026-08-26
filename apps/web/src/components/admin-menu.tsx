@@ -10,7 +10,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ROUTE_ALIASES, findBestMatchingUrl, navGroups } from "@/components/app-sidebar";
+import {
+  ROUTE_ALIASES,
+  findBestMatchingUrl,
+  navGroups,
+} from "@/components/app-sidebar";
 import { cn } from "@/lib/utils";
 
 const ADMIN_GROUP = navGroups.find((group) => group.label === "Verwaltung")!;
@@ -57,7 +61,7 @@ export function AdminMenu({ permissions }: { permissions: string[] }) {
           />
         }
       >
-        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-foreground">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground">
           <Icon className="size-3.5" />
         </span>
         <span className="hidden sm:inline">{ADMIN_GROUP.label}</span>
@@ -78,16 +82,16 @@ export function AdminMenu({ permissions }: { permissions: string[] }) {
                 key={item.url}
                 render={<Link href={item.url} />}
                 className={cn(
-                  "h-auto items-start gap-3 rounded-xl px-2 py-2 transition-colors focus:bg-primary/15",
-                  isActive && "bg-primary/15",
+                  "h-auto items-start gap-3 rounded-xl px-2 py-2 transition-colors",
+                  isActive && "bg-primary/15 focus:bg-primary/15",
                 )}
               >
                 <span
                   className={cn(
-                    "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                    "flex size-9 shrink-0 items-center justify-center rounded-lg",
                     isActive
                       ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-foreground group-focus/dropdown-menu-item:bg-primary group-focus/dropdown-menu-item:text-primary-foreground",
+                      : "bg-secondary text-muted-foreground group-focus/dropdown-menu-item:bg-primary/25 group-focus/dropdown-menu-item:text-foreground",
                   )}
                 >
                   <item.icon className="size-4" />

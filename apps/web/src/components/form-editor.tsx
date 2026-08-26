@@ -389,7 +389,7 @@ function FormCanvas({
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <h2 className="text-xl font-bold">{name || "Neues Formular"}</h2>
-        <span className="shrink-0 rounded-md bg-[#F4F4F5] px-2 py-1 font-mono text-xs text-muted-foreground">
+        <span className="shrink-0 rounded-md bg-secondary px-2 py-1 font-mono text-xs text-muted-foreground">
           /{slug || "neues-formular"}
         </span>
       </div>
@@ -480,7 +480,7 @@ function FormCanvas({
         </div>
       )}
 
-      <div className="flex flex-col gap-3 border-t border-[#F0F0F0] pt-4">
+      <div className="flex flex-col gap-3 border-t border-border pt-4">
         <p className="text-xs text-muted-foreground">
           Ihre Daten werden verschlüsselt übertragen.
         </p>
@@ -542,7 +542,7 @@ function FieldPalette({
             key={entry.type}
             type="button"
             onClick={() => onAdd(entry)}
-            className="flex items-center justify-between gap-2 rounded-lg border border-[#F0F0F0] px-3 py-2 text-left text-sm transition-colors hover:border-[#D4D4D4] hover:bg-[#F4F4F5]"
+            className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-left text-sm transition-colors hover:border-border hover:bg-secondary"
           >
             <span className="flex items-center gap-2">
               <entry.icon className="size-4 text-muted-foreground" />
@@ -642,7 +642,7 @@ function SubmitButtonPropertiesPanel({
   return (
     <div className="rounded-xl bg-card p-3 shadow-sm">
       <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-3 border-b border-[#F0F0F0] pb-4">
+        <div className="flex items-center gap-3 border-b border-border pb-4">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
             <Send className="size-4" />
           </span>
@@ -723,7 +723,7 @@ function FieldPropertiesPanel({
         </p>
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3 border-b border-[#F0F0F0] pb-4">
+          <div className="flex items-center gap-3 border-b border-border pb-4">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
               <SelectedIcon className="size-4" />
             </span>
@@ -881,7 +881,7 @@ function FieldPropertiesPanel({
             <Label className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               Feld-ID
             </Label>
-            <div className="rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] px-3 py-2 text-sm text-muted-foreground">
+            <div className="rounded-lg border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
               {selected.id}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -892,7 +892,7 @@ function FieldPropertiesPanel({
           <Button
             type="button"
             variant="outline"
-            className="w-full border-[#D4D4D4] text-destructive hover:bg-destructive/5"
+            className="w-full border-border text-destructive hover:bg-destructive/5"
             onClick={() => onRemove(selected.id)}
           >
             <Trash2 className="size-4" />
@@ -1113,7 +1113,7 @@ export function FormEditor({
           <Button
             type="button"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             render={<Link href="/dashboard/forms" />}
           >
             <ChevronLeft className="size-4" />
@@ -1122,7 +1122,7 @@ export function FormEditor({
           <Button
             type="button"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             onClick={() => setPreviewOpen(true)}
           >
             <Eye className="size-4" />
@@ -1211,7 +1211,7 @@ export function FormEditor({
                 </p>
               </div>
 
-              <div className="flex items-center justify-between rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+              <div className="flex items-center justify-between rounded-lg border border-border bg-muted p-4">
                 <div>
                   <Label>Bestätigung an Absender senden</Label>
                   <p className="text-sm text-muted-foreground">
@@ -1296,7 +1296,7 @@ export function FormEditor({
               )}
 
               {!isNew && (
-                <div className="border-t border-[#F0F0F0] pt-4">
+                <div className="border-t border-border pt-4">
                   <ConfirmDeleteDialog
                     trigger={
                       <Button type="button" variant="destructive">

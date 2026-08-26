@@ -8,7 +8,12 @@ import { toastCreated } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ModuleFieldInput } from "@/components/module-field-input";
 import type { GlobalModule, ModuleType } from "@/lib/api-server";
 
@@ -146,7 +151,9 @@ export function InsertSharedBlockDialog({
                 className="flex flex-col gap-4 overflow-y-auto"
               >
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="insert-shared-block-name" required>Name</Label>
+                  <Label htmlFor="insert-shared-block-name" required>
+                    Name
+                  </Label>
                   <Input
                     id="insert-shared-block-name"
                     value={name}

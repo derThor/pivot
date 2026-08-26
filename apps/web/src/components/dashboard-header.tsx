@@ -20,6 +20,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminMenu } from "@/components/admin-menu";
 import { CommandPalette } from "@/components/command-palette";
 import { HeaderSearch } from "@/components/header-search";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,7 +75,7 @@ export function DashboardHeader({
   const canViewSettings = permissions.includes("settings:read");
 
   return (
-    <header className="sticky top-0 z-40 flex h-20 min-w-0 shrink-0 items-center gap-3 border-b bg-background/70 px-4 py-4 backdrop-blur-md">
+    <header className="sticky top-0 z-40 flex h-20 min-w-0 shrink-0 items-center gap-3 bg-background/70 px-4 py-4 backdrop-blur-md">
       {!mobileSearchOpen && (
         <>
           <SidebarTrigger />
@@ -121,6 +122,7 @@ export function DashboardHeader({
                 </span>
               )}
             </div>
+            <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
@@ -151,7 +153,7 @@ export function DashboardHeader({
                     {user.avatarUrl && (
                       <AvatarImage src={mediaUrl({ url: user.avatarUrl })} />
                     )}
-                    <AvatarFallback className="bg-neutral-900 text-white">
+                    <AvatarFallback className="bg-dark-surface text-white">
                       {initials(user)}
                     </AvatarFallback>
                   </Avatar>
@@ -166,7 +168,7 @@ export function DashboardHeader({
                   {user.roles.map((role) => (
                     <Badge
                       key={role.id}
-                      className="bg-neutral-900 text-white hover:bg-neutral-900"
+                      className="bg-dark-surface text-white hover:bg-dark-surface"
                     >
                       {role.name}
                     </Badge>
@@ -176,8 +178,8 @@ export function DashboardHeader({
                       variant="secondary"
                       className={
                         user.twoFactorEnabled
-                          ? "gap-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
-                          : "gap-1 bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
+                          ? "badge--green gap-1 border-0"
+                          : "badge--ink gap-1 border-0"
                       }
                     >
                       {user.twoFactorEnabled ? (

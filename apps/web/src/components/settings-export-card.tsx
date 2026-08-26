@@ -20,7 +20,7 @@ function ExportRow({
   isExporting?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border border-[#F0F0F0] bg-[#FAFAFA] p-4">
+    <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted p-4">
       <div className="flex flex-col gap-0.5">
         <p className="text-sm font-medium">{title}</p>
         <p className="text-sm text-muted-foreground">{note}</p>
@@ -29,7 +29,7 @@ function ExportRow({
         type="button"
         variant="outline"
         size="sm"
-        className="border-[#D4D4D4]"
+        className="border-border"
         onClick={onExport}
         disabled={disabled || isExporting}
       >
@@ -49,11 +49,7 @@ function ExportRow({
  * Inhaltsexport" bleibt bewusst deaktiviert, da Formular-Einsendungen kein
  * reales Feature dieser App sind (kein erfundener Inhalt, siehe
  * PROCESS.md-Prinzip). */
-export function SettingsExportCard({
-  hasChanges,
-}: {
-  hasChanges: boolean;
-}) {
+export function SettingsExportCard({ hasChanges }: { hasChanges: boolean }) {
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingJson, setIsExportingJson] = useState(false);
 

@@ -64,71 +64,61 @@ export const searchTypeMeta: Record<
     label: "Inhalt",
     icon: FileText,
     href: "/dashboard/content",
-    badgeClassName:
-      "bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-400",
+    badgeClassName: "badge--blue",
   },
   category: {
     label: "Kategorie",
     icon: FolderTree,
     href: "/dashboard/categories",
-    badgeClassName:
-      "bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400",
+    badgeClassName: "badge--green",
   },
   tag: {
     label: "Tag",
     icon: TagIcon,
     href: "/dashboard/tags",
-    badgeClassName:
-      "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",
+    badgeClassName: "badge--amber",
   },
   media: {
     label: "Medium",
     icon: ImageIcon,
     href: "/dashboard/media",
-    badgeClassName:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400",
+    badgeClassName: "badge--lime",
   },
   user: {
     label: "Benutzer",
     icon: Users,
     href: "/dashboard/users",
-    badgeClassName:
-      "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400",
+    badgeClassName: "badge--ink",
   },
   role: {
     label: "Rolle",
     icon: ShieldCheck,
     href: "/dashboard/roles",
-    badgeClassName:
-      "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400",
+    badgeClassName: "badge--slate",
   },
   previewLink: {
     label: "Vorschau-Link",
     icon: Link2,
     href: "/dashboard/content/preview-links",
-    badgeClassName:
-      "bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-400",
+    badgeClassName: "badge--blue",
   },
   faq: {
     label: "FAQ",
     icon: HelpCircle,
     href: "/dashboard/content/faqs",
-    badgeClassName:
-      "bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400",
+    badgeClassName: "badge--amber",
   },
   gallery: {
     label: "Galerie",
     icon: Images,
     href: "/dashboard/content/galleries",
-    badgeClassName:
-      "bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-400",
+    badgeClassName: "badge--lime",
   },
   form: {
     label: "Formular",
     icon: ClipboardList,
     href: "/dashboard/forms",
-    badgeClassName:
-      "bg-teal-100 text-teal-700 dark:bg-teal-500/20 dark:text-teal-400",
+    badgeClassName: "badge--slate",
   },
 };
 

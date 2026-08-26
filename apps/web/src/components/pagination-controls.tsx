@@ -76,14 +76,14 @@ export function PaginationControls({
               // props") abbricht, sobald diese Seite (server-gerendert)
               // aufgerufen wird.
               onClick={
-                onPageChange && item !== page ?
-                  () => onPageChange(item)
-                : undefined
+                onPageChange && item !== page
+                  ? () => onPageChange(item)
+                  : undefined
               }
               render={
-                item === page ? undefined
-                : buildHref ? <Link href={buildHref(item)} />
-                : undefined
+                item === page ? undefined : buildHref ? (
+                  <Link href={buildHref(item)} />
+                ) : undefined
               }
             >
               {item}
@@ -101,13 +101,12 @@ export function PaginationControls({
           aria-label="Vorherige Seite"
           disabled={page <= 1}
           onClick={
-            onPageChange && page > 1 ? () => onPageChange(page - 1) : (
-              undefined
-            )
+            onPageChange && page > 1 ? () => onPageChange(page - 1) : undefined
           }
           render={
-            page > 1 && buildHref ? <Link href={buildHref(page - 1)} />
-            : undefined
+            page > 1 && buildHref ? (
+              <Link href={buildHref(page - 1)} />
+            ) : undefined
           }
         >
           <ChevronLeft />
@@ -121,14 +120,14 @@ export function PaginationControls({
           aria-label="Nächste Seite"
           disabled={page >= pageCount}
           onClick={
-            onPageChange && page < pageCount ?
-              () => onPageChange(page + 1)
-            : undefined
+            onPageChange && page < pageCount
+              ? () => onPageChange(page + 1)
+              : undefined
           }
           render={
-            page < pageCount && buildHref ?
+            page < pageCount && buildHref ? (
               <Link href={buildHref(page + 1)} />
-            : undefined
+            ) : undefined
           }
         >
           <ChevronRight />

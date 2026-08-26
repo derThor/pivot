@@ -30,9 +30,9 @@ const STATUS_FILTERS: { value: FormStatus | null; label: string }[] = [
 ];
 
 const STATUS_BADGE: Record<FormStatus, { label: string; className: string }> = {
-  published: { label: "Live", className: "bg-green-100 text-green-700" },
-  draft: { label: "Entwurf", className: "bg-slate-200 text-slate-700" },
-  paused: { label: "Pausiert", className: "bg-amber-100 text-amber-700" },
+  published: { label: "Live", className: "badge--green border-0" },
+  draft: { label: "Entwurf", className: "badge--slate border-0" },
+  paused: { label: "Pausiert", className: "badge--amber border-0" },
 };
 
 const dateFormatter = new Intl.DateTimeFormat("de-DE", {
@@ -83,7 +83,7 @@ export function FormsView({
           <Button
             type="button"
             variant="outline"
-            className="border-[#D4D4D4]"
+            className="border-border"
             render={<Link href="/dashboard/forms/submissions" />}
           >
             <Inbox className="size-4" />
@@ -116,7 +116,7 @@ export function FormsView({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex flex-wrap items-center gap-1 rounded-xl bg-[#F4F4F5] p-1">
+        <div className="flex flex-wrap items-center gap-1 rounded-xl bg-secondary p-1">
           {STATUS_FILTERS.map((filter) => {
             const active = activeStatus === filter.value;
             return (
@@ -127,7 +127,7 @@ export function FormsView({
                 className={cn(
                   "rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors",
                   active
-                    ? "bg-white text-foreground shadow-sm"
+                    ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
@@ -136,7 +136,7 @@ export function FormsView({
             );
           })}
         </div>
-        <div className="flex h-9 min-w-56 flex-1 items-center gap-2 rounded-xl border border-[#D4D4D4] bg-card px-4 sm:flex-none">
+        <div className="flex h-9 min-w-56 flex-1 items-center gap-2 rounded-xl border border-border bg-card px-4 sm:flex-none">
           <Search className="size-4 shrink-0 text-muted-foreground" />
           <Input
             value={query}
@@ -149,7 +149,7 @@ export function FormsView({
 
       <div className="overflow-hidden rounded-xl bg-card shadow-sm">
         <Table>
-          <TableHeader className="bg-background">
+          <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Status</TableHead>
@@ -162,7 +162,10 @@ export function FormsView({
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell
+                  colSpan={6}
+                  className="py-10 text-center text-sm text-muted-foreground"
+                >
                   Keine Formulare gefunden.
                 </TableCell>
               </TableRow>
@@ -178,12 +181,14 @@ export function FormsView({
                       >
                         {form.name}
                       </Link>
-                      <p className="text-xs text-muted-foreground">/{form.slug}</p>
+                      <p className="text-xs text-muted-foreground">
+                        /{form.slug}
+                      </p>
                     </TableCell>
                     <TableCell>
                       <span
                         className={cn(
-                          "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+                          "inline-flex items-center rounded-[5px] px-2.5 py-0.5 text-[11px] font-medium",
                           badge.className,
                         )}
                       >

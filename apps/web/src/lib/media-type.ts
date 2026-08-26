@@ -88,8 +88,10 @@ export function fileExtensionLabel(filename: string, mimeType: string): string {
  * alle in derselben grauen Box zu landen. */
 export function mediaTypeStyle(mimeType: string): { bg: string; fg: string } {
   if (isSvg(mimeType)) return { bg: "bg-lime-50", fg: "text-lime-600" };
-  if (mimeType === "application/pdf") return { bg: "bg-red-50", fg: "text-red-500" };
-  if (mimeType.startsWith("video/")) return { bg: "bg-sky-50", fg: "text-sky-600" };
+  if (mimeType === "application/pdf")
+    return { bg: "bg-red-50", fg: "text-red-500" };
+  if (mimeType.startsWith("video/"))
+    return { bg: "bg-sky-50", fg: "text-sky-600" };
   if (mimeType.includes("spreadsheet") || mimeType.includes("excel")) {
     return { bg: "bg-emerald-50", fg: "text-emerald-600" };
   }
@@ -115,8 +117,10 @@ export function mediaTypeLabel(mimeType: string): string {
     case "video":
       return "Video";
     case "office":
-      if (mimeType.includes("spreadsheet") || mimeType.includes("excel")) return "Excel-Tabelle";
-      if (mimeType.includes("presentation") || mimeType.includes("powerpoint")) return "PowerPoint-Präsentation";
+      if (mimeType.includes("spreadsheet") || mimeType.includes("excel"))
+        return "Excel-Tabelle";
+      if (mimeType.includes("presentation") || mimeType.includes("powerpoint"))
+        return "PowerPoint-Präsentation";
       return "Word-Dokument";
     default:
       return "Datei";

@@ -65,10 +65,7 @@ export interface AccentTokens {
 
 const DARK_INPUT_LIGHTNESS_THRESHOLD = 0.5;
 
-function deriveForMode(
-  hex: string,
-  variant: "light" | "dark",
-): AccentTokens {
+function deriveForMode(hex: string, variant: "light" | "dark"): AccentTokens {
   const { l, c, h } = hexToOklch(hex);
 
   if (l < DARK_INPUT_LIGHTNESS_THRESHOLD) {
@@ -78,14 +75,30 @@ function deriveForMode(
     return {
       primary: ok(l, Math.min(c, 0.08), h),
       primaryForeground: ok(0.97, 0.005, 90),
-      accent: ok(variant === "light" ? 0.94 : 0.32, variant === "light" ? 0.08 : 0.06, h),
-      accentForeground: ok(variant === "light" ? 0.35 : 0.88, variant === "light" ? 0.1 : 0.1, h),
+      accent: ok(
+        variant === "light" ? 0.94 : 0.32,
+        variant === "light" ? 0.08 : 0.06,
+        h,
+      ),
+      accentForeground: ok(
+        variant === "light" ? 0.35 : 0.88,
+        variant === "light" ? 0.1 : 0.1,
+        h,
+      ),
       ring: ok(variant === "light" ? 0.68 : 0.75, 0.18, h, 0.5),
       chart1: ok(l, Math.min(c, 0.08), h),
       sidebarPrimary: ok(l, Math.min(c, 0.08), h),
       sidebarPrimaryForeground: ok(0.97, 0.005, 90),
-      sidebarAccent: ok(variant === "light" ? 0.94 : 0.3, variant === "light" ? 0.06 : 0.05, h),
-      sidebarAccentForeground: ok(variant === "light" ? 0.3 : 0.85, variant === "light" ? 0.08 : 0.08, h),
+      sidebarAccent: ok(
+        variant === "light" ? 0.94 : 0.3,
+        variant === "light" ? 0.06 : 0.05,
+        h,
+      ),
+      sidebarAccentForeground: ok(
+        variant === "light" ? 0.3 : 0.85,
+        variant === "light" ? 0.08 : 0.08,
+        h,
+      ),
       sidebarRing: ok(variant === "light" ? 0.68 : 0.75, 0.18, h, 0.5),
     };
   }

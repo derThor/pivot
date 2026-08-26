@@ -161,7 +161,9 @@ export function TaxonomyItemDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor={`${apiPath}-name`} required>Name</Label>
+            <Label htmlFor={`${apiPath}-name`} required>
+              Name
+            </Label>
             <Input
               id={`${apiPath}-name`}
               value={name}
@@ -170,7 +172,9 @@ export function TaxonomyItemDialog({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor={`${apiPath}-slug`} required>Slug</Label>
+            <Label htmlFor={`${apiPath}-slug`} required>
+              Slug
+            </Label>
             <Input
               id={`${apiPath}-slug`}
               value={slug}
@@ -197,7 +201,7 @@ export function TaxonomyItemDialog({
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={() => setOpen(false)}
             >
               Abbrechen

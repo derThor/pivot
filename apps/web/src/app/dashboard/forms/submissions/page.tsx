@@ -27,7 +27,10 @@ export default async function AllFormSubmissionsPage({
       <PageContent plain>
         <SubmissionsTable
           items={result?.items ?? []}
-          meta={{ page: result?.meta.page ?? 1, pageCount: result?.meta.pageCount ?? 1 }}
+          meta={{
+            page: result?.meta.page ?? 1,
+            pageCount: result?.meta.pageCount ?? 1,
+          }}
           showForm
           basePath="/dashboard/forms/submissions"
           retentionDays={privacy?.retentionFormSubmissionsDays ?? null}

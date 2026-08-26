@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, HelpCircle, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  HelpCircle,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { toastDeleted } from "@/components/app-toast";
@@ -11,7 +18,10 @@ import { FaqGroupDialog } from "@/components/faq-group-dialog";
 import { FaqQuestionDialog } from "@/components/faq-question-dialog";
 import { RichTextDisplay } from "@/components/rich-text-display";
 import { RowActionButtons } from "@/components/row-action-buttons";
-import { toRepeaterItems, type RepeaterItem } from "@/components/block-field-output";
+import {
+  toRepeaterItems,
+  type RepeaterItem,
+} from "@/components/block-field-output";
 import { cn, truncateMiddle } from "@/lib/utils";
 import type { GlobalModule, ModuleType } from "@/lib/api-server";
 
@@ -19,11 +29,11 @@ import type { GlobalModule, ModuleType } from "@/lib/api-server";
 // Badge-/Card-Tokens aus globals.css), damit Farben/Radien/Abstände 1:1
 // übereinstimmen – siehe Nutzervorgabe "muss exakt so aussehen".
 const iconBgClassName = "bg-primary/25";
-const darkTextClassName = "text-[#132033]";
-const countBadgeClassName = "bg-[#ECECEC] text-[#526074]";
-const publishedBadgeClassName = "bg-green-100 text-green-700";
-const draftBadgeClassName = "bg-[#ECECEC] text-[#526074]";
-const chevronClassName = "size-[17px] shrink-0 text-[#8C8C8C]";
+const darkTextClassName = "text-pivot-navy";
+const countBadgeClassName = "badge--slate border-0";
+const publishedBadgeClassName = "badge--green border-0";
+const draftBadgeClassName = "badge--slate border-0";
+const chevronClassName = "size-[17px] shrink-0 text-muted-foreground";
 
 /** Ersetzt die generische Tabellen-Ansicht (`GlobalModulesManager`) speziell
  * für FAQs (Nutzervorgabe, 2026-08-15): Gruppen (= FAQ-Module) als
@@ -54,15 +64,17 @@ export function FaqGroupsManager({
   const publishedField = subFields.find((f) => f.type === "boolean");
 
   function questionsOf(group: GlobalModule) {
-    return repeaterField ? toRepeaterItems(group.values[repeaterField.name]) : [];
+    return repeaterField
+      ? toRepeaterItems(group.values[repeaterField.name])
+      : [];
   }
 
   const [expandedGroups, setExpandedGroups] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
-  const [expandedQuestions, setExpandedQuestions] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  );
+  const [expandedQuestions, setExpandedQuestions] = useState<
+    ReadonlySet<string>
+  >(() => new Set());
   const [editGroup, setEditGroup] = useState<GlobalModule | null>(null);
   const [questionDialogTarget, setQuestionDialogTarget] = useState<{
     group: GlobalModule;
@@ -102,7 +114,9 @@ export function FaqGroupsManager({
   async function handleDeleteQuestion() {
     if (!deleteQuestion || !repeaterField) return;
     const { group, questionId } = deleteQuestion;
-    const nextItems = questionsOf(group).filter((item) => item.id !== questionId);
+    const nextItems = questionsOf(group).filter(
+      (item) => item.id !== questionId,
+    );
     await fetch(`/api/global-modules/${group.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -161,7 +175,7 @@ export function FaqGroupsManager({
             return (
               <div
                 key={group.id}
-                className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-[#E6E6E6]"
+                className="overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border"
               >
                 <div className="flex w-full items-center gap-3 px-4 py-4 text-left sm:gap-4 sm:px-5">
                   <span
@@ -179,12 +193,15 @@ export function FaqGroupsManager({
                     className="min-w-0 flex-1 text-left"
                   >
                     <span
-                      className={cn("block text-[15px] font-semibold", darkTextClassName)}
+                      className={cn(
+                        "block text-[15px] font-semibold",
+                        darkTextClassName,
+                      )}
                     >
                       {group.name}
                     </span>
                     {description && (
-                      <span className="mt-0.5 block text-[12.5px] text-[#8C8C8C]">
+                      <span className="mt-0.5 block text-[12.5px] text-muted-foreground">
                         {description}
                       </span>
                     )}
@@ -207,7 +224,8 @@ export function FaqGroupsManager({
                       countBadgeClassName,
                     )}
                   >
-                    {questions.length} {questions.length === 1 ? "Frage" : "Fragen"}
+                    {questions.length}{" "}
+                    {questions.length === 1 ? "Frage" : "Fragen"}
                   </span>
                   <RowActionButtons
                     size="icon-sm"
@@ -221,18 +239,26 @@ export function FaqGroupsManager({
                     type="button"
                     onClick={() => toggleGroup(group.id)}
                     className="shrink-0"
-                    aria-label={isGroupOpen ? "Gruppe einklappen" : "Gruppe ausklappen"}
+                    aria-label={
+                      isGroupOpen ? "Gruppe einklappen" : "Gruppe ausklappen"
+                    }
                   >
                     {isGroupOpen ? (
-                      <ChevronUp className={chevronClassName} strokeWidth={1.7} />
+                      <ChevronUp
+                        className={chevronClassName}
+                        strokeWidth={1.7}
+                      />
                     ) : (
-                      <ChevronDown className={chevronClassName} strokeWidth={1.7} />
+                      <ChevronDown
+                        className={chevronClassName}
+                        strokeWidth={1.7}
+                      />
                     )}
                   </button>
                 </div>
 
                 {isGroupOpen && (
-                  <div className="border-t border-[#EFEFEF] bg-[#FCFCFC] px-4 py-4 sm:px-5">
+                  <div className="border-t border-border bg-sidebar px-4 py-4 sm:px-5">
                     {questions.length === 0 ? (
                       <p className="px-1 text-sm text-muted-foreground">
                         Noch keine Fragen in dieser Gruppe.
@@ -240,7 +266,9 @@ export function FaqGroupsManager({
                     ) : (
                       <div className="flex flex-col gap-2">
                         {questions.map((question) => {
-                          const isQuestionOpen = expandedQuestions.has(question.id);
+                          const isQuestionOpen = expandedQuestions.has(
+                            question.id,
+                          );
                           const published = publishedField
                             ? question.values[publishedField.name] !== false
                             : true;
@@ -257,7 +285,7 @@ export function FaqGroupsManager({
                           return (
                             <div
                               key={question.id}
-                              className="overflow-hidden rounded-xl bg-white ring-1 ring-[#E6E6E6]"
+                              className="overflow-hidden rounded-xl bg-card ring-1 ring-border"
                             >
                               <div className="flex w-full items-center gap-3 px-4 py-3 text-left">
                                 <button
@@ -274,11 +302,15 @@ export function FaqGroupsManager({
                                   <span
                                     className={cn(
                                       "size-2 shrink-0 rounded-full sm:hidden",
-                                      published ? "bg-green-500" : "bg-[#8C8C8C]",
+                                      published
+                                        ? "bg-green-500"
+                                        : "bg-muted-foreground",
                                     )}
                                     aria-hidden
                                   />
-                                  <span className="min-w-0">{questionText || "…"}</span>
+                                  <span className="min-w-0">
+                                    {questionText || "…"}
+                                  </span>
                                 </button>
                                 <span
                                   className={cn(
@@ -295,18 +327,26 @@ export function FaqGroupsManager({
                                   onClick={() => toggleQuestion(question.id)}
                                   className="shrink-0"
                                   aria-label={
-                                    isQuestionOpen ? "Frage einklappen" : "Frage ausklappen"
+                                    isQuestionOpen
+                                      ? "Frage einklappen"
+                                      : "Frage ausklappen"
                                   }
                                 >
                                   {isQuestionOpen ? (
-                                    <ChevronUp className={chevronClassName} strokeWidth={1.7} />
+                                    <ChevronUp
+                                      className={chevronClassName}
+                                      strokeWidth={1.7}
+                                    />
                                   ) : (
-                                    <ChevronDown className={chevronClassName} strokeWidth={1.7} />
+                                    <ChevronDown
+                                      className={chevronClassName}
+                                      strokeWidth={1.7}
+                                    />
                                   )}
                                 </button>
                               </div>
                               {isQuestionOpen && (
-                                <div className="flex flex-col gap-3 border-t border-[#EFEFEF] px-4 py-4">
+                                <div className="flex flex-col gap-3 border-t border-border px-4 py-4">
                                   {answerHtml && (
                                     <RichTextDisplay
                                       html={answerHtml}
@@ -320,7 +360,10 @@ export function FaqGroupsManager({
                                       size="sm"
                                       className="font-normal"
                                       onClick={() =>
-                                        setQuestionDialogTarget({ group, question })
+                                        setQuestionDialogTarget({
+                                          group,
+                                          question,
+                                        })
                                       }
                                     >
                                       <Pencil />
@@ -332,7 +375,10 @@ export function FaqGroupsManager({
                                       size="sm"
                                       className="font-normal"
                                       onClick={() =>
-                                        setDeleteQuestion({ group, questionId: question.id })
+                                        setDeleteQuestion({
+                                          group,
+                                          questionId: question.id,
+                                        })
                                       }
                                     >
                                       <Trash2 />
@@ -349,7 +395,7 @@ export function FaqGroupsManager({
                     <button
                       type="button"
                       onClick={() => setQuestionDialogTarget({ group })}
-                      className="mt-3 flex w-fit items-center gap-2 rounded-xl border border-dashed border-[#D5D5D5] px-4 py-2.5 text-[12.5px] font-medium text-[#6E6E6E] transition hover:border-[#BCE64D] hover:text-[#132033]"
+                      className="mt-3 flex w-fit items-center gap-2 rounded-xl border border-dashed border-border px-4 py-2.5 text-[12.5px] font-medium text-pivot-g-body transition hover:border-primary hover:text-pivot-navy"
                     >
                       <Plus className="size-4" />
                       Frage hinzufügen

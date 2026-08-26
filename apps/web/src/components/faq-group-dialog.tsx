@@ -43,7 +43,9 @@ export function FaqGroupDialog({
   const setOpen = controlledOnOpenChange ?? setInternalOpen;
   const [name, setName] = useState(group?.name ?? "");
   const [description, setDescription] = useState(
-    typeof group?.values.description === "string" ? group.values.description : "",
+    typeof group?.values.description === "string"
+      ? group.values.description
+      : "",
   );
   // Validierungsfehler direkt unters betroffene Feld statt als
   // Sammel-Meldung (Nutzervorgabe, 2026-08-15, gilt als Konvention für
@@ -55,7 +57,9 @@ export function FaqGroupDialog({
   function reset() {
     setName(group?.name ?? "");
     setDescription(
-      typeof group?.values.description === "string" ? group.values.description : "",
+      typeof group?.values.description === "string"
+        ? group.values.description
+        : "",
     );
     setNameError(null);
     setSubmitError(null);
@@ -71,7 +75,9 @@ export function FaqGroupDialog({
     setSubmitError(null);
     setIsSubmitting(true);
     try {
-      const url = isEditing ? `/api/global-modules/${group!.id}` : "/api/global-modules";
+      const url = isEditing
+        ? `/api/global-modules/${group!.id}`
+        : "/api/global-modules";
       const method = isEditing ? "PATCH" : "POST";
       const body = isEditing
         ? { name, values: { ...group!.values, description } }
@@ -125,7 +131,9 @@ export function FaqGroupDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="faq-group-name" required>Name</Label>
+            <Label htmlFor="faq-group-name" required>
+              Name
+            </Label>
             <Input
               id="faq-group-name"
               value={name}
@@ -136,7 +144,9 @@ export function FaqGroupDialog({
               aria-invalid={nameError ? true : undefined}
               placeholder="z.B. Allgemeines"
             />
-            {nameError && <p className="text-sm text-destructive">{nameError}</p>}
+            {nameError && (
+              <p className="text-sm text-destructive">{nameError}</p>
+            )}
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="faq-group-description">Beschreibung</Label>
@@ -148,18 +158,24 @@ export function FaqGroupDialog({
               placeholder="Kurze Beschreibung dieser FAQ-Gruppe."
             />
           </div>
-          {submitError && <p className="text-sm text-destructive">{submitError}</p>}
+          {submitError && (
+            <p className="text-sm text-destructive">{submitError}</p>
+          )}
           <div className="flex justify-end gap-2">
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={() => setOpen(false)}
             >
               Abbrechen
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Speichert…" : isEditing ? "Änderungen speichern" : "Anlegen"}
+              {isSubmitting
+                ? "Speichert…"
+                : isEditing
+                  ? "Änderungen speichern"
+                  : "Anlegen"}
             </Button>
           </div>
         </form>

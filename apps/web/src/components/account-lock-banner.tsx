@@ -19,7 +19,11 @@ export function AccountLockBanner({ reason }: { reason: "password" | "2fa" }) {
             : "Du musst die Zwei-Faktor-Authentifizierung einrichten, bevor du fortfahren kannst."}
         </span>
       </div>
-      <Button variant="outline" size="sm" render={<Link href="/dashboard/account" />}>
+      <Button
+        variant="outline"
+        size="sm"
+        render={<Link href="/dashboard/account" />}
+      >
         Jetzt {reason === "password" ? "ändern" : "einrichten"}
       </Button>
     </div>

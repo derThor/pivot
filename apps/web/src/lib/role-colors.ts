@@ -1,7 +1,24 @@
-// Rein dekorative, deterministische Farbzuordnung für Rollen-Badges
-// (gleiches Muster wie `tagDotColor` in `tag-colors.ts`) – Rollen haben kein
+// Nutzervorgabe, 2026-08-26: feste, exakt vorgegebene Farben je bekanntem
+// Rollennamen (Bildvorlage "ROLLEN-BADGES") statt der bisherigen
+// Hash-Zuordnung aus einer Palette – nur für Rollennamen OHNE Eintrag hier
+// (z.B. selbst angelegte Rollen ohne feste Vorgabe) greift weiterhin die
+// deterministische Hash-Zuordnung als Fallback, damit auch die keine
+// beliebige, aber stabile Farbe über die Nutzer-Tabelle hinweg behalten.
+// Exakte Werte liegen als `.badge--*`-Klassen in globals.css (inset
+// box-shadow als "Rahmen"), hier nur noch die Zuordnung Rollenname → Klasse.
+const FIXED_ROLE_BADGE_COLORS: Record<string, string> = {
+  Administrator: "badge--admin border-0",
+  Chefredaktion: "badge--chefred border-0",
+  Redakteur: "badge--redakteur border-0",
+  Autor: "badge--autor border-0",
+  Medienpflege: "badge--medien border-0",
+  "Formular-Manager": "badge--formular border-0",
+  "Gast / Praktikum": "badge--gast border-0",
+};
+
+// Fallback-Palette für Rollennamen ohne feste Vorgabe – Rollen haben kein
 // eigenes `color`-Feld im Schema, die Farbe wird über einen Hash der ID aus
-// einer festen Palette gewählt, damit dieselbe Rolle über die Nutzer-Tabelle
+// dieser Palette gewählt, damit dieselbe Rolle über die Nutzer-Tabelle
 // hinweg immer dieselbe Farbe behält.
 const ROLE_BADGE_COLORS = [
   "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400",
@@ -14,14 +31,10 @@ const ROLE_BADGE_COLORS = [
   "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400",
 ] as const;
 
-// Administrator sticht bewusst hervor (dunkle Badge statt Palettenfarbe,
-// 1:1 nach Bildvorlage) – einzige Rolle mit dieser Sonderbehandlung, analog
-// zu den anderen `role.name === "Administrator"`-Checks im Rollen-Bereich.
-const ADMIN_BADGE_COLOR =
-  "bg-foreground text-background dark:bg-white dark:text-black";
-
 export function roleBadgeColor(id: string, name?: string): string {
-  if (name === "Administrator") return ADMIN_BADGE_COLOR;
+  if (name && name in FIXED_ROLE_BADGE_COLORS) {
+    return FIXED_ROLE_BADGE_COLORS[name];
+  }
   let hash = 0;
   for (let i = 0; i < id.length; i++) {
     hash = (hash * 31 + id.charCodeAt(i)) >>> 0;

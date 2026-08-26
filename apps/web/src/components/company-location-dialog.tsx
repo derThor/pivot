@@ -82,13 +82,14 @@ export function CompanyLocationDialog({
         city: form.city || undefined,
         phone: form.phone || undefined,
         email: form.email || undefined,
-        employeeCount:
-          form.employeeCount.trim() ? Number(form.employeeCount) : undefined,
+        employeeCount: form.employeeCount.trim()
+          ? Number(form.employeeCount)
+          : undefined,
       };
       const res = await fetch(
-        isEdit ?
-          `/api/company-locations/${(target as CompanyLocation).id}`
-        : "/api/company-locations",
+        isEdit
+          ? `/api/company-locations/${(target as CompanyLocation).id}`
+          : "/api/company-locations",
         {
           method: isEdit ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
@@ -124,7 +125,9 @@ export function CompanyLocationDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
-            <Label htmlFor="location-name" required>Name</Label>
+            <Label htmlFor="location-name" required>
+              Name
+            </Label>
             <Input
               id="location-name"
               autoFocus
@@ -217,7 +220,7 @@ export function CompanyLocationDialog({
             <Button
               type="button"
               variant="outline"
-              className="border-[#D4D4D4]"
+              className="border-border"
               onClick={() => onOpenChange(false)}
             >
               Abbrechen

@@ -27,7 +27,7 @@ export function DeletionRequestsBanner({
         <Button
           size="sm"
           variant="outline"
-          className="border-[#D4D4D4]"
+          className="border-border"
           render={<Link href="/dashboard/privacy?tab=loeschanfragen" />}
         >
           Anfragen ansehen
