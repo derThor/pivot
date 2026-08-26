@@ -93,6 +93,7 @@ export class LicenseStateController {
       expectedBuf.length === providedBuf.length &&
       timingSafeEqual(expectedBuf, providedBuf);
     if (!isValid) {
+      await this.licenseClient.recordFailedWakeupAttempt();
       throw new UnauthorizedException('Ungültiger Weck-Schlüssel.');
     }
     const outcome = await this.licenseClient.requestWakeup();

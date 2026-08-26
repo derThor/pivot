@@ -155,6 +155,19 @@ export class LicenseClientService implements OnModuleInit {
     return this.performCheck();
   }
 
+  /** Nutzer-Bugreport, 2026-08-26: ein Weck-Aufruf mit falschem Bearer
+   * scheitert schon an `LicenseStateController.wakeup()`s eigenem
+   * Schlüsselvergleich, BEVOR `requestWakeup()`/`runCheck()` je aufgerufen
+   * wird – `LicenseState.lastCheckAttemptAt` blieb dadurch unverändert und
+   * `keySuspect` (siehe `getEffectiveStatus()`) wurde nie `true`, egal wie
+   * oft der Master erfolglos weckte. Der Vergleich dort nutzt exakt
+   * denselben `getApiKey()`-Wert wie `runCheck()` für den eigenen
+   * ausgehenden Abgleich – ein falscher Bearer ist also genauso aussage-
+   * kräftig wie ein fehlgeschlagener eigener Versuch. */
+  async recordFailedWakeupAttempt() {
+    await this.recordAttempt(new Date());
+  }
+
   private getState() {
     return this.prisma.licenseState.findUnique({ where: { id: 'singleton' } });
   }
