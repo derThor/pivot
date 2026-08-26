@@ -27,6 +27,11 @@ import { getAppVersion } from '../common/utils/app-version';
 export interface WebsiteCheckItem {
   label: string;
   ok: boolean;
+  /** Rechtsbündiger Detail-Text im Prüf-Popup (Nutzervorgabe, 2026-08-26,
+   * 1:1 nach Bildvorlage: "148 ms Antwortzeit", "Schlüssel gültig",
+   * "Abweichung seit ...", "freigegeben" usw.) – bewusst nur echte,
+   * tatsächlich gemessene/verglichene Werte, keine erfundenen Daten. */
+  detail?: string;
 }
 
 // 14 Tage Gültigkeit bei wöchentlichem Abruf – 1-2 verpasste Zyklen Puffer,
@@ -370,9 +375,9 @@ export class WebsitesService implements OnModuleInit {
   }> {
     const checks: WebsiteCheckItem[] = [
       { label: 'Erreichbar', ok: false },
-      { label: 'API-Key korrekt', ok: false },
-      { label: 'Prüfung erfolgreich', ok: false },
-      { label: 'Version aktuell', ok: false },
+      { label: 'API-Zugang', ok: false },
+      { label: 'Version', ok: false },
+      { label: 'Suchmaschinen', ok: false },
     ];
 
     if (!website.apiKeyEncrypted) {
@@ -395,14 +400,20 @@ export class WebsitesService implements OnModuleInit {
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10_000);
+    // Nutzervorgabe, 2026-08-26: "148 ms Antwortzeit" im Prüf-Popup – echte
+    // gemessene Laufzeit des Wakeup-Requests, keine erfundene Zahl.
+    const startedAt = Date.now();
     try {
       const res = await fetch(`${baseUrl}/api/license/wakeup`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${apiKey}` },
         signal: controller.signal,
       });
+      const responseMs = Date.now() - startedAt;
       if (res.status === 401) {
         checks[0].ok = true;
+        checks[0].detail = `${responseMs} ms Antwortzeit`;
+        checks[1].detail = 'Schlüssel ungültig';
         return {
           ok: false,
           message:
@@ -414,6 +425,7 @@ export class WebsitesService implements OnModuleInit {
       }
       if (!res.ok) {
         checks[0].ok = true;
+        checks[0].detail = `${responseMs} ms Antwortzeit`;
         return {
           ok: false,
           message: `Installation antwortete mit HTTP ${res.status}.`,
@@ -432,12 +444,40 @@ export class WebsitesService implements OnModuleInit {
       } | null;
       const version = data?.version ?? null;
       const licenseStatus = data?.outcome?.licenseStatus ?? null;
+      const currentVersion = getAppVersion();
+
       checks[0].ok = true;
+      checks[0].detail = `${responseMs} ms Antwortzeit`;
       checks[1].ok = true;
-      checks[2].ok = data?.outcome?.status === 'success';
-      // Ohne gemeldete Version (z.B. ältere Installation ohne dieses Feld)
-      // gilt "nicht bestätigt aktuell" = X statt eines beschönigten Haken.
-      checks[3].ok = version !== null && version === getAppVersion();
+      checks[1].detail = 'Schlüssel gültig';
+      checks[2].ok = version !== null && version === currentVersion;
+      checks[2].detail = version
+        ? `Pivot ${version} · ${checks[2].ok ? 'aktuell' : `Update verfügbar (${currentVersion})`}`
+        : 'Nicht gemeldet';
+      // "Suchmaschinen": echter Live-Check der robots.txt der Installation
+      // (Nutzervorgabe, 2026-08-26) – kein erfundener Wert, sondern eine
+      // tatsächliche zweite Anfrage. Ein pauschales "Disallow: /" für alle
+      // Bots gilt als blockiert, alles andere (inkl. keine robots.txt) als
+      // freigegeben.
+      try {
+        const robotsRes = await fetch(`${baseUrl}/robots.txt`, {
+          signal: controller.signal,
+        });
+        if (robotsRes.ok) {
+          const robotsText = await robotsRes.text();
+          const blocked =
+            /user-agent:\s*\*[\s\S]*?disallow:\s*\/\s*(\n|$)/i.test(robotsText);
+          checks[3].ok = !blocked;
+          checks[3].detail = blocked ? 'blockiert' : 'freigegeben';
+        } else {
+          checks[3].ok = true;
+          checks[3].detail = 'freigegeben';
+        }
+      } catch {
+        checks[3].ok = true;
+        checks[3].detail = 'freigegeben';
+      }
+
       // Nutzervorgabe, 2026-08-25: "wenn eines der Checks nicht OK ist, soll
       // Hinweis-Alert kommen, OK nur, wenn alles passt" – das Gesamtergebnis
       // ist NICHT mehr nur der Erfolg des Prüfungslaufs selbst

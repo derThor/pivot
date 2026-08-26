@@ -122,7 +122,7 @@ export function DashboardHeader({
                 </span>
               )}
             </div>
-            <ThemeToggle />
+            <ThemeToggle className="hidden md:block" />
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={

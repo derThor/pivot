@@ -106,8 +106,10 @@
   --pivot-acc-fg: #4d6b12;
   --pivot-ok-bg: #f0fdf4;
   --pivot-ok-fg: #15803d;
-  /* Nutzervorgabe, 2026-08-26: exakte Werte, nur Light Mode. */
-  --pivot-app-bg: #fafafa;
+  /* Nutzervorgabe, 2026-08-26: #fafafa war neben den weißen Karten optisch
+     nicht als Grau wahrnehmbar (Nutzer-Feedback: "du hast keinen grauen
+     Hintergrund") – sichtbar grauer Ton wie SUB2. */
+  --pivot-app-bg: #f4f4f5;
   --pivot-shell: #ffffff;
   --pivot-dot: rgba(157, 200, 255, 0.5);
   --pivot-switch-track-dark: #f4f4f5;

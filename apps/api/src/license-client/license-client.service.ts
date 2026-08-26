@@ -1,10 +1,34 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  OnModuleInit,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
+import { SettingsService } from '../settings/settings.service';
 import { verifyLicenseToken } from '../websites/license-token.util';
 import { decryptSecret } from '../common/utils/secret-encryption';
 import { DEVELOPMENT_MODE_MAX_DAYS } from '../websites/websites.service';
+
+// Zweckgebundenes Kurzzeit-Token zwischen den beiden Schritten des
+// Wiederherstellungs-Popups auf der Wartungsseite (siehe
+// verifyRecoveryCredentials()/applyRecoveryKey() unten) – bewusst KEIN
+// echter Login-Token (kein Zugriff auf irgendeine andere Route), daher
+// eigener `purpose`-Diskriminator statt Wiederverwendung der normalen
+// Access-Token-Struktur.
+interface LicenseRecoveryPayload {
+  sub: string;
+  purpose: 'license-recovery';
+}
+
+// Kurz genug, dass ein abgefangenes Token kaum Schaden anrichten kann, lang
+// genug für die zwei Formular-Schritte im Popup.
+const LICENSE_RECOVERY_TOKEN_TTL_MS = 5 * 60 * 1000;
 
 // Karenzzeit nach Ablauf, bevor eine nicht erreichbare/fehlgeschlagene
 // erneute Prüfung tatsächlich zur Sperre führt (siehe
@@ -76,6 +100,8 @@ export class LicenseClientService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly jwt: JwtService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   private async isSlaveMode(): Promise<boolean> {
@@ -404,5 +430,97 @@ export class LicenseClientService implements OnModuleInit {
       companyCity: settings?.companyCity ?? null,
       accentColor: settings?.accentColor ?? null,
     };
+  }
+
+  /** Schritt 1 des Wiederherstellungs-Popups auf der Wartungsseite
+   * (Nutzervorgabe, 2026-08-26): eine gesperrte Installation blockt über
+   * `LicenseEnforcementGuard` fast jede Route inkl. Login – ohne diesen Weg
+   * gäbe es keine Möglichkeit mehr, einen versehentlich falsch eingetragenen
+   * Lizenz-Key selbst zu korrigieren, sobald die Installation einmal
+   * gesperrt ist. Bewusst KEIN echter Login (kein Access-/Refresh-Token,
+   * keine Dashboard-Session) – nur ein kurzlebiges, eng zweckgebundenes
+   * Token für Schritt 2 (Key eintragen). Prüft Passwort UND
+   * `settings:update`-Recht (nur wer den Key im normalen Betrieb ändern
+   * dürfte, darf es auch hier tun) – generische Fehlermeldung wie beim
+   * normalen Login, keine Auskunft, welcher Teil falsch war. */
+  async verifyRecoveryCredentials(
+    email: string,
+    password: string,
+  ): Promise<string> {
+    if (!(await this.isSlaveMode())) {
+      throw new BadRequestException(
+        'Nur auf einer Client-Installation verfügbar.',
+      );
+    }
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: {
+        userRoles: {
+          include: {
+            role: {
+              include: { permissions: { include: { permission: true } } },
+            },
+          },
+        },
+      },
+    });
+    const permissions = user
+      ? [
+          ...new Set(
+            user.userRoles.flatMap((userRole) =>
+              userRole.role.permissions.map(
+                (rolePermission) =>
+                  `${rolePermission.permission.resource}:${rolePermission.permission.action}`,
+              ),
+            ),
+          ),
+        ]
+      : [];
+    const isValid =
+      !!user &&
+      user.isActive &&
+      permissions.includes('settings:update') &&
+      (await argon2.verify(user.passwordHash, password));
+    if (!isValid) {
+      throw new UnauthorizedException('Ungültige Zugangsdaten.');
+    }
+
+    const payload: LicenseRecoveryPayload = {
+      sub: user.id,
+      purpose: 'license-recovery',
+    };
+    return this.jwt.signAsync(payload, {
+      secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
+      expiresIn: Math.floor(LICENSE_RECOVERY_TOKEN_TTL_MS / 1000),
+    });
+  }
+
+  /** Schritt 2: der Key wird erst nach einem gültigen Token aus Schritt 1
+   * übernommen. Löst danach sofort einen echten Re-Check aus, damit die
+   * Installation ohne Neustart wieder entsperrt, sobald der Key stimmt. */
+  async applyRecoveryKey(
+    recoveryToken: string,
+    apiKey: string,
+  ): Promise<JobOutcome> {
+    let payload: LicenseRecoveryPayload;
+    try {
+      payload = await this.jwt.verifyAsync<LicenseRecoveryPayload>(
+        recoveryToken,
+        { secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET') },
+      );
+    } catch {
+      throw new UnauthorizedException(
+        'Sitzung abgelaufen. Bitte erneut anmelden.',
+      );
+    }
+    if (payload.purpose !== 'license-recovery') {
+      throw new UnauthorizedException('Token ungültig.');
+    }
+
+    await this.settingsService.updateLicenseClientSettings(
+      { apiKey },
+      payload.sub,
+    );
+    return this.performCheck();
   }
 }

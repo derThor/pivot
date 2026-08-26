@@ -1,13 +1,19 @@
 import {
+  Body,
   Controller,
   Get,
   Headers,
+  HttpCode,
+  HttpStatus,
   Post,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { timingSafeEqual } from 'node:crypto';
 import { LicenseClientService } from './license-client.service';
+import { LicenseRecoveryVerifyDto } from './dto/license-recovery-verify.dto';
+import { LicenseRecoveryApplyKeyDto } from './dto/license-recovery-apply-key.dto';
 import { Public } from '../auth/decorators/public.decorator';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
 import { getAppVersion } from '../common/utils/app-version';
@@ -95,5 +101,34 @@ export class LicenseStateController {
     // der Master liest das aus der Wecken-Antwort (WebsitesService.
     // performWakeup()) und persistiert es auf Website.lastReportedVersion.
     return { triggered: true, outcome, version: getAppVersion() };
+  }
+
+  /** Schritt 1 des Wiederherstellungs-Popups auf der Wartungsseite
+   * (Nutzervorgabe, 2026-08-26): eine gesperrte Installation blockt sonst
+   * auch den Login selbst – ohne diesen Weg gäbe es keine Möglichkeit mehr,
+   * einen falsch eingetragenen Lizenz-Key zu korrigieren. Bewusst `@Public`
+   * (kein Login nötig, genau das wäre ja gesperrt) UND in
+   * `LicenseEnforcementGuard`s Ausnahmeliste, aber trotzdem durch echte
+   * Zugangsdaten + `settings:update`-Recht abgesichert (siehe Service).
+   * Gleiches Rate-Limit wie der normale Login (Brute-Force-Schutz). */
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('recovery/verify')
+  async recoveryVerify(@Body() dto: LicenseRecoveryVerifyDto) {
+    const recoveryToken = await this.licenseClient.verifyRecoveryCredentials(
+      dto.email,
+      dto.password,
+    );
+    return { recoveryToken };
+  }
+
+  /** Schritt 2: nimmt das Token aus Schritt 1 plus den korrigierten Key
+   * entgegen, speichert ihn und löst sofort einen echten Re-Check aus. */
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('recovery/apply-key')
+  async recoveryApplyKey(@Body() dto: LicenseRecoveryApplyKeyDto) {
+    return this.licenseClient.applyRecoveryKey(dto.recoveryToken, dto.apiKey);
   }
 }

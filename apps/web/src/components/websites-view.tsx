@@ -22,9 +22,26 @@ import { PaginationControls } from "@/components/pagination-controls";
 import { SystemMessage } from "@/components/ui/system-message";
 import { WebsiteCheckDetailsDialog } from "@/components/website-check-details-dialog";
 import { WebsiteDialog } from "@/components/website-dialog";
-import { formatRelativeTime } from "@/lib/utils";
 import { WEBSITE_STATUS_BADGE } from "@/lib/website-status";
 import type { WebsiteCheckAllResult, WebsiteListItem } from "@/lib/api-server";
+
+// Nutzervorgabe, 2026-08-26: "zuletzt geprüft text weg, gerade eben oder
+// datum" + "stunden als zeit auch, am nächsten tag datum" – am selben Tag
+// die Uhrzeit (auch bei mehreren Stunden Differenz, keine "vor X
+// Std."-Relativangabe), ab dem nächsten Tag das Datum.
+function formatCheckTime(iso: string) {
+  const date = new Date(iso);
+  const now = new Date();
+  if (now.getTime() - date.getTime() < 60_000) return "gerade eben";
+  if (date.toDateString() === now.toDateString()) {
+    return `${date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr`;
+  }
+  return date.toLocaleDateString("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
 
 // Nutzer-Bugreport, 2026-08-26: "hier ist http drin, dennoch wird bei
 // öffnen die live seite aufgerufen" – der "Öffnen"-Button nutzte immer
@@ -63,8 +80,12 @@ export function WebsitesView({
   );
   const [isChecking, setIsChecking] = useState(false);
   const [wakingId, setWakingId] = useState<string | null>(null);
-  const [checkDetailsTarget, setCheckDetailsTarget] =
-    useState<WebsiteListItem | null>(null);
+  // ID statt ganzem Objekt (Nutzervorgabe, 2026-08-26: "Erneut prüfen"-
+  // Button direkt im Popup) – so zeigt das Popup nach einer erneuten
+  // Prüfung automatisch die frischen `items` an, statt an der alten
+  // Objekt-Referenz von vor dem `router.refresh()` festzuhängen.
+  const [checkDetailsId, setCheckDetailsId] = useState<string | null>(null);
+  const checkDetailsTarget = items.find((w) => w.id === checkDetailsId) ?? null;
 
   // Nutzer-Feedback, 2026-08-24: "diese Prüfung sagt nichts aus ... alle
   // Webseiten einmal durchlaufen und den Status ausgeben, der gerade ist"
@@ -188,11 +209,6 @@ export function WebsitesView({
               </div>
               <div className="min-w-0">
                 <p className="truncate font-medium">{website.domain}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {website.lastCheckInAt
-                    ? `Zuletzt selbst gemeldet ${formatRelativeTime(website.lastCheckInAt)}`
-                    : "Hat sich noch nie selbst gemeldet"}
-                </p>
               </div>
               {/* Nutzervorgabe, 2026-08-24: "Status ausgeben, der gerade
                * ist" – Momentaufnahme vom letzten "Wecken"/"Prüfen", bewusst
@@ -208,27 +224,50 @@ export function WebsitesView({
                * Teilergebnisse (`lastCheckChecks`, inkl. Versionsabgleich)
                * stecken nur noch im Popup, siehe
                * website-check-details-dialog.tsx. */}
-              {website.lastWakeupAt && (
+              {website.lastWakeupAt ? (
                 <div className="relative">
                   <SystemMessage
                     variant={website.lastWakeupOk ? "success" : "warning"}
                     title={
                       website.lastWakeupOk
-                        ? "Prüfung OK"
-                        : "Prüfung mit Hinweisen"
+                        ? "Alles in Ordnung"
+                        : "Mit Hinweisen"
                     }
-                    description={`Zuletzt geprüft ${formatRelativeTime(website.lastWakeupAt)}`}
+                    titleClassName="text-sm"
+                    meta={formatCheckTime(website.lastWakeupAt)}
+                    metaClassName="text-sm"
                     className="pr-11"
                   />
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="ghost"
                     size="icon-xs"
                     aria-label="Prüfdetails anzeigen"
-                    className="absolute top-3 right-3"
-                    onClick={() => setCheckDetailsTarget(website)}
+                    aria-haspopup="dialog"
+                    className="absolute top-1/2 right-3 -translate-y-1/2"
+                    onClick={() => setCheckDetailsId(website.id)}
                   >
-                    <Info />
+                    <Info className="size-[18px]" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <SystemMessage
+                    variant="neutral"
+                    title="Noch nie geprüft"
+                    titleClassName="text-sm"
+                    className="pr-11"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label="Prüfdetails anzeigen"
+                    aria-haspopup="dialog"
+                    className="absolute top-1/2 right-3 -translate-y-1/2"
+                    onClick={() => setCheckDetailsId(website.id)}
+                  >
+                    <Info className="size-[18px]" />
                   </Button>
                 </div>
               )}
@@ -251,8 +290,9 @@ export function WebsitesView({
                 </Button>
                 <Button
                   type="button"
+                  variant="outline"
                   size="sm"
-                  className="h-9 flex-1 rounded-md"
+                  className="h-9 flex-1 rounded-md border-border"
                   disabled={wakingId === website.id}
                   onClick={() => handleWakeup(website)}
                 >
@@ -306,7 +346,9 @@ export function WebsitesView({
 
       <WebsiteCheckDetailsDialog
         target={checkDetailsTarget}
-        onOpenChange={(open) => !open && setCheckDetailsTarget(null)}
+        onOpenChange={(open) => !open && setCheckDetailsId(null)}
+        onRecheck={handleWakeup}
+        isRechecking={wakingId === checkDetailsTarget?.id}
       />
     </div>
   );

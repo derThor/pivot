@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getLicenseState } from "@/lib/api-server";
+import { LicenseRecoveryDialog } from "@/components/license-recovery-dialog";
 import { mediaUrl } from "@/lib/media";
 
 // Meta-Tag-Marker, den WebsiteMonitorService (Master-seitige Live-
@@ -108,11 +109,11 @@ export default async function LockedPage() {
         </div>
       </div>
 
-      {hasContact && (
-        <div
-          className="flex flex-col items-start gap-4 border-t pt-6 sm:flex-row sm:items-center sm:justify-between"
-          style={{ borderColor }}
-        >
+      <div
+        className="flex flex-col items-start gap-4 border-t pt-6 sm:flex-row sm:items-center sm:justify-between"
+        style={{ borderColor }}
+      >
+        {hasContact && (
           <div className="flex flex-wrap gap-8">
             {companyEmail && (
               <div>
@@ -147,6 +148,8 @@ export default async function LockedPage() {
               </div>
             )}
           </div>
+        )}
+        <div className="flex items-center gap-3">
           {/* Nutzervorgabe, 2026-08-25: hinterlegtes Logo aus Einstellungen
            * → Darstellung nutzen, falls vorhanden – sonst wie bisher der
            * Firmenname (das Logo oben links bleibt trotzdem immer Pivot). */}
@@ -162,8 +165,13 @@ export default async function LockedPage() {
               {[companyName, companyCity].filter(Boolean).join(" · ")}
             </p>
           )}
+          {/* Nutzervorgabe, 2026-08-26: Wiederherstellungs-Popup für einen
+           * falsch eingetragenen Lizenz-Key – bewusst unauffällig direkt
+           * neben dem Firmen-Logo im Footer, kein eigener Login auf die
+           * Seite (siehe license-recovery-dialog.tsx). */}
+          <LicenseRecoveryDialog triggerStyle={{ color: mutedColor }} />
         </div>
-      )}
+      </div>
     </div>
   );
 }

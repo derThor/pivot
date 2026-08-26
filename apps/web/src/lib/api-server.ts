@@ -1392,6 +1392,7 @@ export type WebsiteStatus = "live" | "development" | "locked";
 export interface WebsiteCheckItem {
   label: string;
   ok: boolean;
+  detail?: string;
 }
 
 export interface WebsiteListItem {

@@ -77,6 +77,9 @@ export function SystemMessage({
   onDismiss,
   actions,
   className,
+  titleClassName,
+  meta,
+  metaClassName,
 }: {
   variant: SystemMessageVariant;
   title: string;
@@ -86,6 +89,15 @@ export function SystemMessage({
   onDismiss?: () => void;
   actions?: React.ReactNode;
   className?: string;
+  /** Für Stellen, die den Titel bewusst kleiner brauchen (Nutzervorgabe,
+   * 2026-08-26, websites-view.tsx-Prüfergebnis-Kachel), ohne die
+   * Standardgröße für alle anderen Aufrufer zu ändern. */
+  titleClassName?: string;
+  /** Rechtsbündiger Zusatztext in derselben Zeile wie der Titel
+   * (Nutzervorgabe, 2026-08-26: "Zeit rechts ausgerichtet, Zustand
+   * links") – z.B. ein Zeitstempel, unabhängig vom `dismissible`-Button. */
+  meta?: string;
+  metaClassName?: string;
 }) {
   const styles = VARIANT_STYLES[variant];
   const Icon = icon === false ? null : (icon ?? styles.defaultIcon);
@@ -94,17 +106,34 @@ export function SystemMessage({
     <div
       role={variant === "error" ? "alert" : "status"}
       className={cn(
-        "flex gap-3 rounded-xl border p-4",
+        "flex items-center gap-3 rounded-xl border p-4",
         styles.container,
         className,
       )}
     >
-      {Icon && (
-        <Icon className={cn("mt-0.5 size-[18px] shrink-0", styles.icon)} />
-      )}
+      {Icon && <Icon className={cn("size-[18px] shrink-0", styles.icon)} />}
       <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
-          <p className={cn("text-sm font-semibold", styles.title)}>{title}</p>
+        <div className="flex items-center justify-between gap-2">
+          <p
+            className={cn(
+              "text-sm font-semibold",
+              styles.title,
+              titleClassName,
+            )}
+          >
+            {title}
+          </p>
+          {meta && (
+            <span
+              className={cn(
+                "shrink-0 text-sm font-semibold",
+                styles.title,
+                metaClassName,
+              )}
+            >
+              {meta}
+            </span>
+          )}
           {dismissible && (
             <button
               type="button"

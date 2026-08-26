@@ -52,6 +52,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { DEPLOYMENT_MODE_BADGE } from "@/lib/deployment-mode-badge";
 import { cn } from "@/lib/utils";
 import type { CurrentUser } from "@/lib/api-server";
@@ -266,7 +267,7 @@ function itemMatchesActive(
 export function AppSidebar({ user }: { user: CurrentUser }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { state: sidebarState } = useSidebar();
+  const { state: sidebarState, isMobile } = useSidebar();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
   const permissions = user.permissions ?? [];
   // "Administration" (Websites/Module) nur für die Master-Instanz sichtbar
@@ -363,7 +364,7 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b px-[25px] transition-[padding] duration-200 ease-linear group-data-[collapsible=icon]:px-[10px]">
+      <SidebarHeader className="border-b px-[25px] transition-[padding] duration-200 ease-linear max-md:px-3 group-data-[collapsible=icon]:px-[10px]">
         <div className="relative flex items-center gap-2 py-2 transition-[gap] duration-200 ease-linear group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
           <div className="relative flex h-8 w-0 shrink-0 items-center justify-center opacity-0 transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:opacity-100">
             <div className="flex size-full items-center justify-center overflow-hidden rounded-lg shadow-sm">
@@ -423,6 +424,11 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
               </Badge>
             </span>
           </span>
+          {/* Nutzervorgabe, 2026-08-26: Hell/Dunkel-Schalter passt nicht mehr
+              in den Header (führte auf schmalen Handys zu horizontalem
+              Scrollen) – nur mobil hier rechts neben dem Logo, Desktop-Header
+              behält seinen eigenen (siehe dashboard-header.tsx). */}
+          {isMobile && <ThemeToggle className="mr-0 ml-auto" />}
         </div>
       </SidebarHeader>
       <SidebarContent>

@@ -24,11 +24,19 @@ import { LicenseClientService } from './license-client.service';
 // nicht mehr ändern, wenn die Installation bereits gesperrt war und man
 // die angezeigte Seite anpassen wollte) – bewusst NICHT das allgemeine
 // `/settings`, das bleibt im gesperrten Zustand weiterhin blockiert.
+// `/license/recovery/*` (Nutzervorgabe, 2026-08-26): ohne diese Ausnahme
+// gäbe es keine Möglichkeit mehr, einen falsch eingetragenen Lizenz-Key zu
+// korrigieren, sobald die Installation einmal gesperrt ist – der Guard
+// blockt sonst auch den Login selbst. Bleibt trotzdem durch echte
+// Zugangsdaten + `settings:update`-Recht abgesichert (siehe
+// LicenseClientService.verifyRecoveryCredentials()), kein offener Bypass.
 const ALLOWED_SUFFIXES = [
   '/health',
   '/license/state',
   '/license/recheck',
   '/license/wakeup',
+  '/license/recovery/verify',
+  '/license/recovery/apply-key',
   '/settings/maintenance-page',
 ];
 

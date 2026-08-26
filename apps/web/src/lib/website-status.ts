@@ -7,9 +7,8 @@ import type { WebsiteStatus } from "@/lib/api-server";
 // website-check-details-dialog.tsx.
 // Nutzervorgabe, 2026-08-26: feste Badge-Palette (siehe ui/badge.tsx) statt
 // Ad-hoc-Tailwind-Tönen – "Entwicklung" bewusst lila (Nutzervorgabe:
-// "in lila", nutzt dieselben Werte wie `.badge--chefred`), "Gesperrt"
-// bewusst "ink" (kein "Fehler"-Rot in der vorgegebenen Palette, "ink" ist
-// dort die einzige stark-negative Farbe).
+// "in lila", nutzt dieselben Werte wie `.badge--chefred`), "Gesperrt" rot
+// (Nutzervorgabe, wie bei "dringend"/Sicherheit/Schloss an anderer Stelle).
 export const WEBSITE_STATUS_BADGE: Record<
   WebsiteStatus,
   { label: string; className: string }
@@ -19,5 +18,5 @@ export const WEBSITE_STATUS_BADGE: Record<
     label: "Entwicklung",
     className: "badge--chefred border-0",
   },
-  locked: { label: "Gesperrt", className: "badge--ink border-0" },
+  locked: { label: "Gesperrt", className: "badge--red border-0" },
 };

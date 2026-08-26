@@ -18,7 +18,7 @@ const THEME_ATTR = "data-pivot-theme";
  * Kommentar) – der `useEffect` synchronisiert React nur EINMAL nach dem
  * Mount aus dem bereits vorhandenen DOM-Zustand, damit Server- und
  * Client-Erst-Render identisch bleiben (kein Hydration-Mismatch). */
-export function ThemeToggle() {
+export function ThemeToggle({ className }: { className?: string }) {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
@@ -51,7 +51,10 @@ export function ThemeToggle() {
         isDark ? "Zu hellem Design wechseln" : "Zu dunklem Design wechseln"
       }
       onClick={toggle}
-      className="relative mx-2 h-9 w-[82px] shrink-0 rounded-full bg-pivot-switch-track-dark transition-colors"
+      className={cn(
+        "relative mx-2 h-9 w-[82px] shrink-0 rounded-full bg-pivot-switch-track-dark transition-colors",
+        className,
+      )}
     >
       <span
         className={cn(
