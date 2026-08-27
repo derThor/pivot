@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 
 import { toastDeleted, toastEdited } from "@/components/app-toast";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
@@ -182,11 +183,7 @@ export function WebsitesView({
                   <Globe className="size-4.5" />
                 </span>
                 <div className="flex shrink-0 items-center gap-1.5">
-                  <span
-                    className={`rounded-md px-2.5 py-1 text-xs font-medium ${badge.className}`}
-                  >
-                    {badge.label}
-                  </span>
+                  <Badge className={badge.className}>{badge.label}</Badge>
                   <Button
                     type="button"
                     variant="ghost"

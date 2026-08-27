@@ -146,11 +146,14 @@ export function MasterClientCard({
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="truncate font-semibold">Diese Installation</p>
-                <span
-                  className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-medium ${DEPLOYMENT_MODE_BADGE[isMaster ? "master" : "slave"].className}`}
+                <Badge
+                  className={
+                    DEPLOYMENT_MODE_BADGE[isMaster ? "master" : "slave"]
+                      .className
+                  }
                 >
                   {DEPLOYMENT_MODE_BADGE[isMaster ? "master" : "slave"].label}
-                </span>
+                </Badge>
               </div>
               {/* Nutzervorgabe, 2026-08-25: Version dieser Installation
                * unter Einstellungen → Master-Client anzeigen (bisher in der
@@ -198,16 +201,14 @@ export function MasterClientCard({
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="truncate font-semibold">{website.name}</p>
-                  <span
-                    className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-medium ${DEPLOYMENT_MODE_BADGE[website.deploymentMode].className}`}
+                  <Badge
+                    className={
+                      DEPLOYMENT_MODE_BADGE[website.deploymentMode].className
+                    }
                   >
                     {DEPLOYMENT_MODE_BADGE[website.deploymentMode].label}
-                  </span>
-                  <span
-                    className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-medium ${badge.className}`}
-                  >
-                    {badge.label}
-                  </span>
+                  </Badge>
+                  <Badge className={badge.className}>{badge.label}</Badge>
                 </div>
                 <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
                   {website.domain}

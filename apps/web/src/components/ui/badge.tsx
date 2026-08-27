@@ -7,7 +7,13 @@ import { cn } from "@/lib/utils";
 const badgeVariants = cva(
   // Nutzervorgabe, 2026-08-26: exakte Maße nach Bildvorlage – Radius 5px,
   // Schrift 11px (statt der bisherigen Näherungen `rounded-md`/`text-xs`).
-  "group/badge inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-[5px] border border-transparent px-2 py-0.5 text-[11px] leading-[1.45] font-medium whitespace-nowrap transition-all focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3!",
+  // Nutzervorgabe, 2026-08-27: "alle badges einen ganz kleinen wenig höher
+  // machen und schrift muss komplett mittig, horizontal und vertikal" –
+  // `h-[21px]` statt `h-5` (20px), `leading-none` statt `leading-[1.45]`:
+  // die größere Zeilenhöhe addierte oben/unten ungleich viel Leerraum zum
+  // Text hinzu (Schriftart-Metrik-Asymmetrie), wodurch die vertikale
+  // Zentrierung trotz `items-center` optisch leicht daneben wirkte.
+  "group/badge inline-flex h-[21px] w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-[5px] border border-transparent px-2 py-0.5 text-[11px] leading-none font-medium whitespace-nowrap transition-all focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3!",
   {
     variants: {
       variant: {
