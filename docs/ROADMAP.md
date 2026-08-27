@@ -892,6 +892,12 @@ Plan inkl. Token-Design, Sicherheitsüberlegungen und offenen Punkten:
       Server verfügbar) – erfolgt natürlich bei der strasev-Einrichtung
 - [ ] `WebsiteMonitorService`s echter HTTPS-Abruf nicht gegen eine reale
       Domain getestet (bewusst keine unbeteiligte externe Seite angefragt)
+- [x] Lizenz-Wiederherstellung (2026-08-26): ein falsch eingetragener Key
+      sperrte bisher auch den Login selbst aus (kein Dead-End-Ausweg mehr
+      möglich). Neues, vom normalen Login unabhängiges Popup auf der
+      Wartungsseite (Klick auf Firmen-Logo, kein eigenes Icon) – Details,
+      inkl. drei behobener Sicherheitslücken beim anschließenden Review,
+      siehe Knowledge-Base.
 
 **Noch offen:**
 - [x] strasev-Installation technisch lauffähig machen (`.env`, Datenbank,
@@ -900,12 +906,17 @@ Plan inkl. Token-Design, Sicherheitsüberlegungen und offenen Punkten:
       alle Master/Slave-Tests genutzt.
 - [ ] **Echter Deploy-/Produktivbetrieb statt lokaler Simulation**
       (Nutzerfrage, 2026-08-25: "geht sowas auch wie wir es jetzt machen
-      später im Live-Betrieb?" – Antwort: nein). Bisher laufen Master und
-      jede Slave-Installation (aktuell nur strasev) lokal auf demselben
-      Rechner über `nest start --watch`/`next dev`, Schema-Änderungen per
-      `prisma db push` und manuellem Prozess-Kill+Neustart nach jeder
-      Änderung – das ist ausschließlich ein Entwicklungs-Artefakt.
-      Für einen echten Kunden-Rollout fehlen noch:
+      später im Live-Betrieb?" – Antwort: nein). Bisher laufen die meisten
+      lokalen Prozesse über `nest start --watch`/`next dev`, Schema-
+      Änderungen per `prisma db push` und manuellem Prozess-Kill+Neustart
+      nach jeder Änderung – das ist ausschließlich ein Entwicklungs-
+      Artefakt. Ausnahme, live erst am 2026-08-27 entdeckt: Pivots eigener
+      API-Prozess lief die ganze Session über tatsächlich schon als
+      fertig kompilierter Build (`node dist/main`, kein Watch-Modus) –
+      dabei kam ein latenter Fehler ans Licht (`multer` fehlte als echte
+      Dependency, nur `@types/multer` war eingetragen, siehe Knowledge-
+      Base), der einen echten Neustart/Deploy sofort zum Absturz gebracht
+      hätte. Für einen echten Kunden-Rollout fehlen noch:
       - Ein echter Build-Schritt (`nest build`/`next build`) statt der
         Watch-Modi, ausgeführt von einem Prozessmanager (PM2, systemd,
         Docker) statt manuell.
