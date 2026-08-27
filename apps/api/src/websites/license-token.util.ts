@@ -28,6 +28,12 @@ export interface LicenseTokenPayload {
   // damit der Client seinerseits anzeigen kann, wann die automatische
   // Sperre droht (siehe LicenseClientService/license-development-toast.tsx).
   developmentModeSince: number | null;
+  // Mandantenfähigkeit (Nutzervorgabe, 2026-08-27): die aktuell für diesen
+  // Mandanten gebuchten Modul-Keys (siehe `WebsiteModule`/
+  // `module-catalog.ts`) – Teil des signierten Tokens, damit eine
+  // Client-Installation ihren Modul-Entitlements genauso vertrauen kann
+  // wie dem Lizenzstatus selbst.
+  modules: string[];
 }
 
 function base64url(buffer: Buffer): string {

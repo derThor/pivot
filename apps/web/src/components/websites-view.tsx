@@ -7,7 +7,6 @@ import {
   Globe,
   Info,
   Pencil,
-  Plus,
   RotateCcw,
   Trash2,
 } from "lucide-react";
@@ -73,9 +72,9 @@ export function WebsitesView({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [dialogTarget, setDialogTarget] = useState<
-    WebsiteListItem | null | "new"
-  >(null);
+  const [dialogTarget, setDialogTarget] = useState<WebsiteListItem | null>(
+    null,
+  );
   const [deleteTarget, setDeleteTarget] = useState<WebsiteListItem | null>(
     null,
   );
@@ -299,22 +298,6 @@ export function WebsitesView({
             </div>
           );
         })}
-
-        <button
-          type="button"
-          onClick={() => setDialogTarget("new")}
-          className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border p-4 py-10 text-center transition-colors hover:border-lime-400"
-        >
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-            <Plus className="size-5" />
-          </span>
-          <div>
-            <p className="font-semibold">Projekt anlegen</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Neue Website verbinden und als Mandant aufnehmen
-            </p>
-          </div>
-        </button>
       </div>
 
       <PaginationControls

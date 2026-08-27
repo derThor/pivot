@@ -33,7 +33,7 @@ export function UsersTable({
   const { activeId, query: highlightQuery } = useHighlightParam("user-row");
 
   return (
-    <div className="overflow-hidden">
+    <div className="overflow-hidden rounded-xl bg-card shadow-sm">
       <Table>
         <TableHeader>
           <TableRow>

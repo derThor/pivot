@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Copy, Eye, EyeOff, RotateCcw } from "lucide-react";
 
-import { toastCreated, toastEdited } from "@/components/app-toast";
+import { toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,47 +24,37 @@ const STATUS_OPTIONS: { value: WebsiteStatus; label: string }[] = [
   { value: "locked", label: "Gesperrt" },
 ];
 
-// Validierungsfehler direkt unter dem betroffenen Feld statt als
-// Sammel-Meldung unten im Formular (App-Konvention, siehe gallery-dialog.tsx)
-// – `nameError`/`domainError` getrennt von `submitError` (Server-/
-// Netzwerkfehler, die zu keinem einzelnen Feld gehören).
+// Mandantenfähigkeit, 2026-08-27: "Projekt anlegen" gibt es nicht mehr –
+// eine neue Website entsteht nur noch über ihren Mandanten (siehe
+// mandant-dialog.tsx/mandant-detail-view.tsx). Dieser Dialog ist deshalb
+// bewusst reiner Bearbeiten-Dialog, kein Anlegen-Modus mehr.
 export function WebsiteDialog({
   target,
   onOpenChange,
   onSaved,
 }: {
-  target: WebsiteListItem | null | "new";
+  target: WebsiteListItem | null;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
 }) {
   const router = useRouter();
   const open = target !== null;
-  const isEdit = target !== null && target !== "new";
-  const [name, setName] = useState(isEdit ? target.name : "");
-  const [domain, setDomain] = useState(isEdit ? target.domain : "");
+  const [name, setName] = useState(target?.name ?? "");
+  const [domain, setDomain] = useState(target?.domain ?? "");
   const [status, setStatus] = useState<WebsiteStatus>(
-    isEdit ? target.status : "development",
+    target?.status ?? "development",
   );
-  const [testUrl, setTestUrl] = useState(isEdit ? (target.testUrl ?? "") : "");
+  const [testUrl, setTestUrl] = useState(target?.testUrl ?? "");
   const [nameError, setNameError] = useState<string | null>(null);
   const [domainError, setDomainError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Nach dem Anlegen: API-Key + öffentlicher Schlüssel werden nur dieses
-  // eine Mal angezeigt (siehe WebsitesService.create() – der Klartext-Key
-  // wird danach nie wieder ausgeliefert, nur noch sein Hash gespeichert).
-  const [credentials, setCredentials] = useState<{
-    apiKey: string;
-    publicKey: string;
-  } | null>(null);
-  const [copied, setCopied] = useState<"apiKey" | "publicKey" | null>(null);
-  // Bearbeiten-Modus, nach "Neu erzeugen": der brandneue Klartext-Key
-  // (der bestehende, bereits gespeicherte Key läuft über `existingApiKey`
-  // unten – beide sind jetzt gleichwertig abrufbar, siehe WebsitesService).
+  const [copied, setCopied] = useState<"apiKey" | null>(null);
+  // Nach "Neu erzeugen": der brandneue Klartext-Key (der bestehende,
+  // bereits gespeicherte Key läuft über `existingApiKey` unten – beide
+  // sind gleichwertig abrufbar, siehe WebsitesService).
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
-  // Frisch erzeugte Klartext-Keys (Anlegen oder "Neu erzeugen") sind
-  // standardmäßig maskiert, per Augen-Icon einblendbar.
   const [revealApiKey, setRevealApiKey] = useState(false);
   // Bestehender, bereits gespeicherter Key (Nutzervorgabe, 2026-08-24:
   // "ich will mir den Key immer mit Icon anzeigen lassen") – wird erst bei
@@ -77,21 +67,17 @@ export function WebsiteDialog({
   // Render-Zeit-Sync statt Effekt (gleiches Muster wie `syncedRoleId` in
   // roles-explorer.tsx): der Dialog bleibt dauerhaft gemountet, nur `target`
   // wechselt bei jedem Klick auf "Bearbeiten" – ohne diesen Sync blieben die
-  // Felder auf ihren Werten vom allerersten Mount stehen (Bugreport: "Wenn
-  // ich auf bearbeiten gehe, sind die Inputs nicht mehr befüllt").
-  const targetKey =
-    target === null ? null : target === "new" ? "new" : target.id;
-  const [syncedTargetKey, setSyncedTargetKey] = useState(targetKey);
-  if (targetKey !== syncedTargetKey) {
-    setSyncedTargetKey(targetKey);
-    setName(isEdit ? target.name : "");
-    setDomain(isEdit ? target.domain : "");
-    setStatus(isEdit ? target.status : "development");
-    setTestUrl(isEdit ? (target.testUrl ?? "") : "");
+  // Felder auf ihren Werten vom allerersten Mount stehen.
+  const [syncedTargetId, setSyncedTargetId] = useState(target?.id ?? null);
+  if ((target?.id ?? null) !== syncedTargetId) {
+    setSyncedTargetId(target?.id ?? null);
+    setName(target?.name ?? "");
+    setDomain(target?.domain ?? "");
+    setStatus(target?.status ?? "development");
+    setTestUrl(target?.testUrl ?? "");
     setNameError(null);
     setDomainError(null);
     setSubmitError(null);
-    setCredentials(null);
     setNewApiKey(null);
     setRevealApiKey(false);
     setExistingApiKey(null);
@@ -99,14 +85,13 @@ export function WebsiteDialog({
   }
 
   function reset() {
-    setName(isEdit ? target.name : "");
-    setDomain(isEdit ? target.domain : "");
-    setStatus(isEdit ? target.status : "development");
-    setTestUrl(isEdit ? (target.testUrl ?? "") : "");
+    setName(target?.name ?? "");
+    setDomain(target?.domain ?? "");
+    setStatus(target?.status ?? "development");
+    setTestUrl(target?.testUrl ?? "");
     setNameError(null);
     setDomainError(null);
     setSubmitError(null);
-    setCredentials(null);
     setNewApiKey(null);
     setRevealApiKey(false);
     setExistingApiKey(null);
@@ -114,7 +99,7 @@ export function WebsiteDialog({
   }
 
   async function handleRegenerate() {
-    if (!isEdit) return;
+    if (!target) return;
     setIsRegenerating(true);
     setSubmitError(null);
     try {
@@ -137,7 +122,7 @@ export function WebsiteDialog({
   }
 
   async function handleRevealExisting() {
-    if (!isEdit) return;
+    if (!target) return;
     if (existingApiKey) {
       setExistingRevealed((v) => !v);
       return;
@@ -165,7 +150,7 @@ export function WebsiteDialog({
     if (!next) reset();
   }
 
-  async function handleCopy(field: "apiKey" | "publicKey", value: string) {
+  async function handleCopy(field: "apiKey", value: string) {
     await navigator.clipboard.writeText(value);
     setCopied(field);
     setTimeout(() => setCopied((c) => (c === field ? null : c)), 2000);
@@ -173,6 +158,7 @@ export function WebsiteDialog({
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (!target) return;
     let hasError = false;
     if (!name.trim()) {
       setNameError("Bitte einen Namen angeben.");
@@ -188,37 +174,23 @@ export function WebsiteDialog({
     setSubmitError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch(
-        isEdit ? `/api/websites/${target.id}` : "/api/websites",
-        {
-          method: isEdit ? "PATCH" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(
-            isEdit
-              ? { name, domain, status, testUrl: testUrl.trim() || null }
-              : { name, domain },
-          ),
-        },
-      );
+      const res = await fetch(`/api/websites/${target.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          domain,
+          status,
+          testUrl: testUrl.trim() || null,
+        }),
+      });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         setSubmitError(data?.message ?? "Konnte nicht gespeichert werden.");
         return;
       }
-      if (isEdit) {
-        toastEdited(`„${name}“ wurde aktualisiert.`);
-        handleOpenChange(false);
-        onSaved();
-        router.refresh();
-        return;
-      }
-      toastCreated(`„${name}“ wurde angelegt.`);
-      const keyRes = await fetch("/api/websites/public-key");
-      const keyData = await keyRes.json().catch(() => null);
-      setCredentials({
-        apiKey: data.apiKey as string,
-        publicKey: keyData?.publicKey ?? "",
-      });
+      toastEdited(`„${name}“ wurde aktualisiert.`);
+      handleOpenChange(false);
       onSaved();
       router.refresh();
     } catch {
@@ -232,29 +204,76 @@ export function WebsiteDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>
-            {credentials
-              ? "Zugangsdaten für die Slave-Installation"
-              : isEdit
-                ? "Website bearbeiten"
-                : "Website verbinden"}
-          </DialogTitle>
+          <DialogTitle>Website bearbeiten</DialogTitle>
         </DialogHeader>
 
-        {credentials ? (
-          <div className="flex flex-col gap-4">
-            <p className="text-sm text-muted-foreground">
-              Diese Werte werden nur jetzt einmal angezeigt. Hinterlege sie
-              außerhalb dieser App in der Umgebungskonfiguration der
-              Slave-Installation.
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="website-name" required>
+              Name
+            </Label>
+            <Input
+              id="website-name"
+              autoFocus
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (nameError) setNameError(null);
+              }}
+              aria-invalid={nameError ? true : undefined}
+              placeholder="z.B. strasev.de"
+            />
+            {nameError && (
+              <p className="text-sm text-destructive">{nameError}</p>
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="website-domain" required>
+              Domain
+            </Label>
+            <Input
+              id="website-domain"
+              value={domain}
+              onChange={(e) => {
+                setDomain(e.target.value);
+                if (domainError) setDomainError(null);
+              }}
+              aria-invalid={domainError ? true : undefined}
+              placeholder="z.B. strasev.de"
+            />
+            {domainError && (
+              <p className="text-sm text-destructive">{domainError}</p>
+            )}
+          </div>
+          <SegmentedPicker
+            label="Status"
+            options={STATUS_OPTIONS}
+            value={status}
+            onChange={setStatus}
+          />
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="website-test-url">Test-URL</Label>
+            <Input
+              id="website-test-url"
+              value={testUrl}
+              onChange={(e) => setTestUrl(e.target.value)}
+              placeholder={`https://${domain || "..."}/`}
+            />
+            <p className="text-xs text-muted-foreground">
+              Nur für lokale Test-Installationen: überschreibt die
+              Live-Überwachung, falls die Domain nicht wirklich auf diese
+              Installation zeigt (z.B. „http://localhost:3010“). Bei echten
+              Kunden leer lassen.
             </p>
-            <div className="flex flex-col gap-1.5">
-              <Label>API-Key</Label>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>API-Key</Label>
+            {newApiKey ? (
               <div className="flex items-center gap-2">
                 <Input
                   readOnly
                   type={revealApiKey ? "text" : "password"}
-                  value={credentials.apiKey}
+                  value={newApiKey}
                   className="font-mono text-xs"
                 />
                 <Button
@@ -273,217 +292,85 @@ export function WebsiteDialog({
                   variant="outline"
                   size="icon-sm"
                   aria-label="API-Key kopieren"
-                  onClick={() => handleCopy("apiKey", credentials.apiKey)}
+                  onClick={() => handleCopy("apiKey", newApiKey)}
                 >
                   {copied === "apiKey" ? <Check /> : <Copy />}
                 </Button>
               </div>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label>Öffentlicher Schlüssel des Masters</Label>
+            ) : existingApiKey ? (
               <div className="flex items-center gap-2">
                 <Input
                   readOnly
-                  value={credentials.publicKey}
+                  type={existingRevealed ? "text" : "password"}
+                  value={existingApiKey}
                   className="font-mono text-xs"
                 />
                 <Button
                   type="button"
                   variant="outline"
                   size="icon-sm"
-                  aria-label="Öffentlichen Schlüssel kopieren"
-                  onClick={() => handleCopy("publicKey", credentials.publicKey)}
+                  aria-label={
+                    existingRevealed ? "API-Key verbergen" : "API-Key anzeigen"
+                  }
+                  onClick={handleRevealExisting}
                 >
-                  {copied === "publicKey" ? <Check /> : <Copy />}
+                  {existingRevealed ? <EyeOff /> : <Eye />}
                 </Button>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="button" onClick={() => handleOpenChange(false)}>
-                Fertig
-              </Button>
-            </DialogFooter>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="website-name" required>
-                Name
-              </Label>
-              <Input
-                id="website-name"
-                autoFocus
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  if (nameError) setNameError(null);
-                }}
-                aria-invalid={nameError ? true : undefined}
-                placeholder="z.B. strasev.de"
-              />
-              {nameError && (
-                <p className="text-sm text-destructive">{nameError}</p>
-              )}
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="website-domain" required>
-                Domain
-              </Label>
-              <Input
-                id="website-domain"
-                value={domain}
-                onChange={(e) => {
-                  setDomain(e.target.value);
-                  if (domainError) setDomainError(null);
-                }}
-                aria-invalid={domainError ? true : undefined}
-                placeholder="z.B. strasev.de"
-              />
-              {domainError && (
-                <p className="text-sm text-destructive">{domainError}</p>
-              )}
-            </div>
-            {isEdit && (
-              <SegmentedPicker
-                label="Status"
-                options={STATUS_OPTIONS}
-                value={status}
-                onChange={setStatus}
-              />
-            )}
-            {isEdit && (
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="website-test-url">Test-URL</Label>
-                <Input
-                  id="website-test-url"
-                  value={testUrl}
-                  onChange={(e) => setTestUrl(e.target.value)}
-                  placeholder={`https://${domain || "..."}/`}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Nur für lokale Test-Installationen: überschreibt die
-                  Live-Überwachung, falls die Domain nicht wirklich auf diese
-                  Installation zeigt (z.B. „http://localhost:3010“). Bei echten
-                  Kunden leer lassen.
-                </p>
-              </div>
-            )}
-            {isEdit && (
-              <div className="flex flex-col gap-1.5">
-                <Label>API-Key</Label>
-                {newApiKey ? (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      readOnly
-                      type={revealApiKey ? "text" : "password"}
-                      value={newApiKey}
-                      className="font-mono text-xs"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon-sm"
-                      aria-label={
-                        revealApiKey ? "API-Key verbergen" : "API-Key anzeigen"
-                      }
-                      onClick={() => setRevealApiKey((v) => !v)}
-                    >
-                      {revealApiKey ? <EyeOff /> : <Eye />}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon-sm"
-                      aria-label="API-Key kopieren"
-                      onClick={() => handleCopy("apiKey", newApiKey)}
-                    >
-                      {copied === "apiKey" ? <Check /> : <Copy />}
-                    </Button>
-                  </div>
-                ) : existingApiKey ? (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      readOnly
-                      type={existingRevealed ? "text" : "password"}
-                      value={existingApiKey}
-                      className="font-mono text-xs"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon-sm"
-                      aria-label={
-                        existingRevealed
-                          ? "API-Key verbergen"
-                          : "API-Key anzeigen"
-                      }
-                      onClick={handleRevealExisting}
-                    >
-                      {existingRevealed ? <EyeOff /> : <Eye />}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon-sm"
-                      aria-label="API-Key kopieren"
-                      onClick={() => handleCopy("apiKey", existingApiKey)}
-                    >
-                      {copied === "apiKey" ? <Check /> : <Copy />}
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="border-border"
-                    disabled={isLoadingExistingKey}
-                    onClick={handleRevealExisting}
-                  >
-                    <Eye />
-                    {isLoadingExistingKey
-                      ? "Wird geladen…"
-                      : "API-Key anzeigen"}
-                  </Button>
-                )}
                 <Button
                   type="button"
                   variant="outline"
-                  className="border-border"
-                  disabled={isRegenerating}
-                  onClick={handleRegenerate}
+                  size="icon-sm"
+                  aria-label="API-Key kopieren"
+                  onClick={() => handleCopy("apiKey", existingApiKey)}
                 >
-                  <RotateCcw />
-                  {isRegenerating ? "Wird erzeugt…" : "API-Key neu erzeugen"}
+                  {copied === "apiKey" ? <Check /> : <Copy />}
                 </Button>
-                <p className="text-xs text-muted-foreground">
-                  {newApiKey
-                    ? "Dieser Wert wird nur jetzt einmal angezeigt. Hinterlege ihn außerhalb dieser App in der Umgebungskonfiguration der Slave-Installation."
-                    : "Beim Neu-Erzeugen wird der bisherige Key sofort ungültig."}
-                </p>
               </div>
-            )}
-            {submitError && (
-              <p className="text-sm text-destructive">{submitError}</p>
-            )}
-            <DialogFooter>
+            ) : (
               <Button
                 type="button"
                 variant="outline"
                 className="border-border"
-                onClick={() => handleOpenChange(false)}
+                disabled={isLoadingExistingKey}
+                onClick={handleRevealExisting}
               >
-                Abbrechen
+                <Eye />
+                {isLoadingExistingKey ? "Wird geladen…" : "API-Key anzeigen"}
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting
-                  ? "Speichert…"
-                  : isEdit
-                    ? "Speichern"
-                    : "Verbinden"}
-              </Button>
-            </DialogFooter>
-          </form>
-        )}
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              className="border-border"
+              disabled={isRegenerating}
+              onClick={handleRegenerate}
+            >
+              <RotateCcw />
+              {isRegenerating ? "Wird erzeugt…" : "API-Key neu erzeugen"}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              {newApiKey
+                ? "Dieser Wert wird nur jetzt einmal angezeigt. Hinterlege ihn außerhalb dieser App in der Umgebungskonfiguration der Slave-Installation."
+                : "Beim Neu-Erzeugen wird der bisherige Key sofort ungültig."}
+            </p>
+          </div>
+          {submitError && (
+            <p className="text-sm text-destructive">{submitError}</p>
+          )}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-border"
+              onClick={() => handleOpenChange(false)}
+            >
+              Abbrechen
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Speichert…" : "Speichern"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

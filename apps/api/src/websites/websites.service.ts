@@ -78,6 +78,8 @@ const PUBLIC_SELECT = {
   lastCheckChecks: true,
   createdAt: true,
   updatedAt: true,
+  mandantId: true,
+  mandant: { select: { id: true, name: true } },
 } as const;
 
 @Injectable()
@@ -203,7 +205,12 @@ export class WebsitesService implements OnModuleInit {
     const apiKey = generateApiKey();
     const apiKeyEncrypted = encryptSecret(apiKey, this.getEncryptionKey());
     const website = await this.prisma.website.create({
-      data: { name: dto.name, domain: dto.domain, apiKeyEncrypted },
+      data: {
+        name: dto.name,
+        domain: dto.domain,
+        apiKeyEncrypted,
+        mandantId: dto.mandantId,
+      },
       select: PUBLIC_SELECT,
     });
     return { ...website, apiKey };
@@ -451,9 +458,14 @@ export class WebsitesService implements OnModuleInit {
       checks[1].ok = true;
       checks[1].detail = 'Schlüssel gültig';
       checks[2].ok = version !== null && version === currentVersion;
+      // Nutzervorgabe, 2026-08-27: die installierte Version steht schon
+      // oben im Popup-Kopf (Badge "Pivot {lastReportedVersion}") – hier
+      // nur noch das Ergebnis des Vergleichs, ohne Versions-Wiederholung.
       checks[2].detail = version
-        ? `Pivot ${version} · ${checks[2].ok ? 'aktuell' : `Update verfügbar (${currentVersion})`}`
-        : 'Nicht gemeldet';
+        ? checks[2].ok
+          ? 'aktuell'
+          : `Update verfügbar (${currentVersion})`
+        : 'veraltet';
       // "Suchmaschinen": echter Live-Check der robots.txt der Installation
       // (Nutzervorgabe, 2026-08-26) – kein erfundener Wert, sondern eine
       // tatsächliche zweite Anfrage. Ein pauschales "Disallow: /" für alle
@@ -580,6 +592,9 @@ export class WebsitesService implements OnModuleInit {
   ): Promise<{ token: string }> {
     const website = await this.prisma.website.findUnique({
       where: { domain },
+      include: {
+        mandant: { include: { modules: { select: { moduleKey: true } } } },
+      },
     });
     if (!website?.apiKeyEncrypted) {
       throw new UnauthorizedException('Ungültige Zugangsdaten.');
@@ -611,6 +626,7 @@ export class WebsitesService implements OnModuleInit {
       expiresAt: issuedAt + TOKEN_VALIDITY_MS,
       seq,
       developmentModeSince: website.developmentModeSince?.getTime() ?? null,
+      modules: website.mandant.modules.map((entry) => entry.moduleKey),
     };
     const token = signLicenseToken(payload);
 

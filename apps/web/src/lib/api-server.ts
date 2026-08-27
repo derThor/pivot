@@ -1409,6 +1409,10 @@ export interface WebsiteListItem {
   domain: string;
   status: WebsiteStatus;
   deploymentMode: "master" | "slave";
+  // Mandantenfähigkeit, 2026-08-27 – jede Website gehört zu genau einem
+  // Mandanten (siehe MandantListItem).
+  mandantId: string;
+  mandant: { id: string; name: string };
   testUrl: string | null;
   lastCheckInAt: string | null;
   // Ergebnis des letzten "Wecken"-Diagnose-Durchlaufs (Nutzervorgabe,
@@ -1457,6 +1461,80 @@ export function getWebsites(params?: { page?: number; pageSize?: number }) {
   if (params?.pageSize) search.set("pageSize", String(params.pageSize));
   const query = search.toString();
   return apiFetch<WebsiteListResponse>(`/websites${query ? `?${query}` : ""}`);
+}
+
+// ---------- Mandantenfähigkeit ----------
+// Nutzervorgabe, 2026-08-27: ein Mandant ist der eigentliche Kunde des
+// Masters und kann mehrere Website-Installationen haben. Modul-Buchung
+// liegt am Mandanten, nicht an der einzelnen Website.
+export interface ModuleCatalogEntry {
+  key: string;
+  label: string;
+  description: string;
+  category: "compliance" | "integration";
+}
+
+export interface MandantWebsite {
+  id: string;
+  name: string;
+  domain: string;
+  status: WebsiteStatus;
+}
+
+export interface MandantListItem {
+  id: string;
+  name: string;
+  status: "active" | "inactive" | "locked";
+  lockReason: string | null;
+  legalName: string | null;
+  representativeName: string | null;
+  street: string | null;
+  postalCode: string | null;
+  city: string | null;
+  country: string | null;
+  email: string | null;
+  phone: string | null;
+  registerInfo: string | null;
+  vatId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  websites: MandantWebsite[];
+  modules: { moduleKey: string }[];
+}
+
+export interface MandantListResponse {
+  items: MandantListItem[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
+export interface MandantStats {
+  mandantsTotal: number;
+  mandantsActive: number;
+  websitesTotal: number;
+  moduleBookingsTotal: number;
+  modulesAvailableCount: number;
+  lockedOrInactiveCount: number;
+  withLockReasonCount: number;
+}
+
+export function getMandanten(params?: { page?: number; pageSize?: number }) {
+  const search = new URLSearchParams();
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.pageSize) search.set("pageSize", String(params.pageSize));
+  const query = search.toString();
+  return apiFetch<MandantListResponse>(`/mandanten${query ? `?${query}` : ""}`);
+}
+
+export function getMandantStats() {
+  return apiFetch<MandantStats>("/mandanten/stats");
+}
+
+export function getMandant(id: string) {
+  return apiFetch<MandantListItem>(`/mandanten/${id}`);
+}
+
+export function getMandantModuleCatalog() {
+  return apiFetch<ModuleCatalogEntry[]>("/mandanten/modules");
 }
 
 export type NotificationCategory =

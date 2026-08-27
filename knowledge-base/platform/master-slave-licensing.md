@@ -222,7 +222,7 @@ Sicherheitsgewinn.
     UND "falscher Key" denselben generischen 401 (verhindert Domain-
     Enumeration über den öffentlichen Endpunkt).
   - `websites.controller.ts`: Admin-CRUD, `@RequirePermission('settings:
-    read'|'settings:update')` – bewusst keine neue Rechte-Ressource
+read'|'settings:update')` – bewusst keine neue Rechte-Ressource
     (Pivot ist ohnehin exklusiv über `settings:*`, siehe
     [[project_pivot_role_and_scoped_permissions]]).
   - `license.controller.ts`: `POST /license/check`, `@Public()` (kein JWT-
@@ -309,7 +309,7 @@ das Wort "Slave" verwenden). Badge sitzt unter dem Logo im
 `SidebarHeader` (`app-sidebar.tsx`):
 
 - **Ausgeklappt**: volle Pille mit Text "Master" (`bg-primary/15
-  text-primary`) oder "Client" (`bg-slate-200 text-slate-700`).
+text-primary`) oder "Client" (`bg-slate-200 text-slate-700`).
 - **Eingeklappt** (icon-only, kein Platz für Text): nur ein farbiger Punkt
   (`bg-primary` bzw. `bg-slate-400`), Label erscheint als Tooltip beim
   Hovern (`side="right"`, `ui/tooltip.tsx`) – gleiches Umschalt-Verhalten
@@ -562,6 +562,7 @@ einen "Prüfen"-Button.
 
 **Bewusst NICHT aus dem Mockup übernommen** (Nutzervorgabe: "was wird
 vorgegeben soll weg"):
+
 - Erfundene Kennzahlen pro Mandant ("24 Nutzer · 42 Seiten") – der Master
   hat auf die Datenbank einer Slave-Installation keinen Einblick, diese
   Zahlen gäbe es nicht wirklich.
@@ -576,6 +577,7 @@ vorgegeben soll weg"):
   Lizenzstatus (live/development/locked), keine sonstigen Einstellungen.
 
 **Was tatsächlich gebaut wurde:**
+
 - `MasterClientCard`: erste Zeile immer "Diese Installation" mit Master-
   (gelb) bzw. Client-Badge (grau) je nach `AppSettings.deploymentMode`;
   danach alle echten `Website`-Zeilen (aus `getWebsites()`) mit Domain,
@@ -592,7 +594,7 @@ vorgegeben soll weg"):
   nächsten 30-Minuten-Cron-Lauf zu warten. Live getestet, liefert
   `{checkedAt: <ISO-Zeitstempel>}`.
 - Der bestehende Mode-Umschalter + Wartungsseiten-Editor (`deployment-
-  mode-card.tsx`) zog aus "Integrationen" hierher um (thematisch
+mode-card.tsx`) zog aus "Integrationen" hierher um (thematisch
   passender), unverändert in seiner Funktion.
 
 ## Update 2026-08-24: Mandanten-Liste rein informativ statt bearbeitbar
@@ -645,8 +647,8 @@ separater Button mehr):
   `Website`-Datensatz gar kein `deploymentMode`-Feld hat (nur `status`)
   und der Master ohnehin keinen Push-Mechanismus hat, um den Modus einer
   entfernten Installation zu setzen – "dieses System genauso behandeln"
-  wurde als *gleiche Interaktion* (Zeile anklicken → Popup), nicht als
-  *gleicher Inhalt* umgesetzt.
+  wurde als _gleiche Interaktion_ (Zeile anklicken → Popup), nicht als
+  _gleicher Inhalt_ umgesetzt.
 - **Nur auf dem Master klickbar**: `disabled={!isMaster}` auf allen
   Zeilen-Buttons, `ChevronRight` (Klick-Hinweis-Pfeil) nur bei
   `isMaster` gerendert, beide Dialoge werden auf einer Client-Installation
@@ -680,6 +682,7 @@ Guard dafür gelockert, bleibt auch im Client-Modus erreichbar + im Nav
 sichtbar; die Mandanten-Liste selbst bleibt Master-exklusiv.**
 
 Umgesetzt:
+
 - Neue Komponente `maintenance-page-card.tsx` – eigenständige Karte mit
   Titel/Text-Feldern + eigenem "Speichern"-Button (PATCH `/settings`),
   bewusst NICHT hinter `MasterOnlyGuard` (der auf dieser Seite nur die
@@ -708,6 +711,7 @@ Zwei direkt aufeinanderfolgende Korrekturen zum oben beschriebenen Stand:
 **2. Mandanten-Zeilen bekommen ein echtes, funktionierendes Master/Client-Popup statt nur eine Anzeige.** Nutzer-Korrektur (mehrfach, zunehmend deutlich): "ALLE APPS UNTER MASTER CLIENT AUFFÜHREN: ABER DA DARF NUR DIE EINSTELLUNG ZU CLIENT ODER MASTER JE SEITE GEMACHT WERDEN" / "wenn ich ... eine Seite anklicke, kommt ein Popup, wo man NUR wechseln kann zwischen Master und Client. Mehr nicht." Der erste Versuch (Mandanten-Zeile öffnet den vollen `WebsiteDialog`) widersprach damit dem "nur Master oder Client, sonst nichts"-Prinzip, das für die Selbst-Zeile schon galt.
 
 Umgesetzt:
+
 - Neues Feld `Website.deploymentMode` (`"master" | "slave"`, Default `"slave"`) in `schema.prisma` – ausdrücklich als **rein dokumentarisches Feld ohne technische Wirkung** kommentiert: ein Mandant hat keinen Push-Mechanismus, über den der Master seinen tatsächlichen Modus setzen könnte, das bleibt Sache der jeweiligen Installation selbst (`AppSettings.deploymentMode` vor Ort). Trotzdem als echtes, speicherbares Feld umgesetzt statt einer Attrappe ohne Persistenz, da der Nutzer ausdrücklich "wechseln" (nicht nur "anzeigen") verlangt hat.
 - `UpdateWebsiteDto` + `WebsitesService.update()` akzeptieren `deploymentMode` (`WEBSITE_DEPLOYMENT_MODES`), `PUBLIC_SELECT` liefert es mit aus.
 - Neue Komponente `website-mode-dialog.tsx` – exakt nach dem Vorbild von `deployment-mode-dialog.tsx` (Render-Zeit-Sync, `SegmentedPicker`, eigenständiges PATCH), aber für eine Mandanten-Zeile: PATCHt `/api/websites/:id` mit `{ deploymentMode }`. Enthält bewusst NICHTS sonst (kein Name/Domain/API-Key/Status – das bleibt unter Administration → Webseite im bestehenden `WebsiteDialog`).
@@ -727,6 +731,7 @@ Nutzervorgabe: "bei Webseiten und Einstellung Master-Client Pagination einbauen 
 Erster echter Test mit zwei tatsächlich separat laufenden Prozessen statt der bisherigen Simulation (siehe "Nicht verifiziert" oben). Wichtige Erkenntnis dabei: `C:\git\strasev` war zwar schon geklont, hatte aber – da derselbe GitHub-Remote (`github.com/derThor/pivot`) wie Pivot selbst – den kompletten Master/Slave-Code noch nicht, weil der bis dahin nur uncommitted im Pivot-Arbeitsverzeichnis lag. Erst committet + zu `origin/master` gepusht (Commit `44b43e0`), dann bei strasev `git pull`.
 
 **Lokales Setup** (kein eigener Server, dieselbe Windows-Maschine wie Pivot):
+
 - Eigene Postgres-Datenbank `strasev` im bereits laufenden `pivot-postgres-1`-Container angelegt (nicht strasevs eigene `docker-compose.yml` gestartet – gleicher Compose-Projektname/Port 5432 wie bei Pivot, hätte kollidiert).
 - `apps/api/.env`, `apps/web/.env.local`, `packages/database/.env`: eigene Ports (API 3011, Web 3010, Pivot bleibt 3001/3000), eigene `DATABASE_URL`, frisch generierte `JWT_*`/`TOTP_ENCRYPTION_KEY`-Secrets (nicht von Pivot wiederverwendet). `LICENSE_MASTER_URL="http://localhost:3001/v1"`, `LICENSE_SITE_DOMAIN="strasev.de"`, `LICENSE_API_KEY` (Klartext, per Skript aus `Website.apiKeyEncrypted` mit Pivots `TOTP_ENCRYPTION_KEY` entschlüsselt) und `LICENSE_MASTER_PUBLIC_KEY` (aus Pivots `LICENSE_SIGNING_PRIVATE_KEY` abgeleitet) aus der Master-Installation übernommen.
 - `prisma db push` + `seed` gegen die neue DB, danach `AppSettings.deploymentMode` direkt per Skript auf `"slave"` gesetzt (einmaliger Bootstrap – ohne laufenden Server keine Möglichkeit, es über die UI zu setzen).
@@ -750,6 +755,7 @@ Umgesetzt: neues optionales Feld `Website.testUrl` (schema.prisma) – wenn gese
 Nutzer-Kontext: Pivot hatte strasev gesperrt, aber strasev bekam das nicht mit ("ich habe jetzt strasev in pivot gesperrt. aber nichts passiert") – erwartungsgemäß, da nur der wöchentliche Cron oder ein manueller Klick bei strasev selbst eine neue Prüfung auslöst. Auf "ich will das über Pivot auslösen" folgte die Erklärung, dass ein echter Push das Pull-Prinzip bräche. Der Kompromiss, dem der Nutzer zugestimmt hat ("können wir das auch einbauen?"): ein **"Wecken"-Aufruf ohne Autorität** – er löst bei der Installation nur ihren eigenen, weiterhin selbst-signierten Pull-Check aus, setzt nie selbst einen Status.
 
 **Umgesetzt:**
+
 - Client-seitig: `POST /license/wakeup` (`license-state.controller.ts`) – `@Public()`, authentifiziert per Konstant-Zeit-Vergleich gegen den ohnehin geteilten `LICENSE_API_KEY` (kein neues Secret). Steht in `LicenseEnforcementGuard`s Ausnahmeliste, damit eine gesperrte Installation überhaupt geweckt werden kann.
 - Master-seitig: `WebsitesService.wakeup()` + `POST /websites/:id/wakeup` – entschlüsselt den gespeicherten API-Key, ruft `${website.testUrl ?? https://domain}/api/license/wakeup` auf. Neuer, dedizierter Next.js-Proxy `apps/web/src/app/api/license/wakeup/route.ts` beim Client (bewusst NICHT über `proxyToApi()`, da kein eingeloggter Nutzer, sondern der Master als Aufrufer – reiner Authorization-Header-Passthrough).
 - UI: dritter Icon-Button ("Wecken", Glocke) pro Kachel auf `/dashboard/websites`.
@@ -805,6 +811,7 @@ Abwägung: Die Abklingzeit war ohnehin nur zusätzliche Vorsichtsmaßnahme (sieh
 Vorheriger Zustand: Wenn der Master-Admin den API-Key einer Website regeneriert, musste der neue Key manuell in die `.env` der Client-Installation eingetragen und die Installation neu gestartet werden (siehe Nutzerfrage "wie bekomme ich den aktuellen beim Client rein?"). Nutzervorgabe danach: "eine Eingabe, wo man den Schlüssel ändern kann. Mach ein Schlüssel-Icon bei 'Diese Installation'."
 
 **Umgesetzt** (gleiches Muster wie das SMTP-Passwort – schreibt-only, nie im Klartext zurückgegeben):
+
 - Neues Feld `AppSettings.licenseApiKeyEncrypted` (schema.prisma), AES-256-GCM wie SMTP-Passwort/TOTP-Secrets.
 - `SettingsService.getLicenseClientSettings()`/`updateLicenseClientSettings()` + `GET`/`PATCH /settings/license-client` (gleiches Recht wie der Rest der Einstellungen, kein eigenes Recht) – liefert nur `hasApiKey: boolean`, nie den Key selbst.
 - `LicenseClientService.getApiKey()`: liest bevorzugt den über die UI gesetzten (entschlüsselten) DB-Wert, fällt auf die `LICENSE_API_KEY`-Umgebungsvariable zurück, solange noch nie über die UI ein Key gesetzt wurde (Erstinbetriebnahme per `.env` bleibt möglich).
@@ -824,6 +831,7 @@ Vorheriger Zustand: Wenn der Master-Admin den API-Key einer Website regeneriert,
 Nutzer-Feedback direkt im Anschluss: "Ich finde diese Prüfung eh Mist, sie sagt nichts aus. Wenn ich bei Pivot Master prüfe, sollen ALLE Webseiten einmal durchlaufen werden und den Status ausgeben, der gerade ist – z.B. ob der Key korrekt ist, welcher Modus usw." Vorher: der "Prüfen"-Button auf `/dashboard/websites` löste nur `WebsiteMonitorService.checkLockedWebsites()` aus (reine Anomalie-Erkennung für GESPERRTE Websites, sagt nichts über Key-Gültigkeit oder nicht-gesperrte Installationen aus) und meldete pauschal "Websites wurden geprüft."
 
 **Umgesetzt:** Neue `WebsitesService.checkAllWebsites()` – weckt (siehe "Wecken"-Feature) JEDE Website unabhängig vom Status und wertet die ECHTE Antwort aus:
+
 - `401` von der Installation → "Der bei der Installation hinterlegte API-Key stimmt nicht mehr mit dem hier gespeicherten überein" (genau der Fall aus Bug 2 oben, nur jetzt für den Master sichtbar statt stillschweigend).
 - Sonstiger Fehlerstatus/nicht erreichbar → jeweils eigene, konkrete Meldung.
 - Erfolgreiche Antwort → das tatsächliche `outcome` der Installation (aus deren eigenem `performCheck()`, siehe oben).
@@ -837,6 +845,7 @@ Nutzer-Bugreport: "Seite wird nicht in den Wartungsmodus gesetzt" + Screenshot, 
 **Fix:** `update()` löst bei einer tatsächlichen Statusänderung (`dto.status !== website.status`) jetzt automatisch `wakeup(id)` aus – Sperren/Entsperren über den Bearbeiten-Dialog wirkt dadurch sofort, UND die Kachel zeigt danach sofort den frischen, echten Stand statt eines veralteten.
 
 **Zwei Nebenbefunde beim Debuggen:**
+
 - "API-Keys sind unterschiedlich, aber es tut so, als ob alles passt" – zum Zeitpunkt der Prüfung stimmten die Keys tatsächlich überein (direkter DB-Vergleich auf beiden Seiten); die gefühlte Diskrepanz kam von genau derselben Stale-Daten-Anzeige, die der Update-Fix oben behebt (alter "OK"-Stand neben neuem, abweichendem Status).
 - "Kann keinen neuen API-Key mehr erzeugen" – zunächst als abgelaufenes Zugriffstoken abgetan (mit frischem Token direkt nachgestellt: funktioniert einwandfrei). Nutzer meldete denselben Fehler danach noch einmal – siehe nächster Abschnitt, das war tatsächlich ein echter, systemweiter Bug.
 
@@ -850,7 +859,7 @@ Nutzer bestand darauf, dass "Key erzeugen" weiterhin fehlschlägt, trotz der Liv
 
 Nutzer meldete den Fehler ein drittes Mal, diesmal für "API-Key anzeigen" UND "neu erzeugen" gleichzeitig, kurz nachdem der Token-Refresh-Fix oben schon live war – also ein zweiter, unabhängiger Bug. Direkter Beweis per curl: `POST /v1/websites/:id/regenerate-key` und `GET /v1/websites/:id/api-key` funktionierten am Backend (Port 3001) einwandfrei, aber dieselben Aufrufe über die Next.js-BFF-Routen (`/api/websites/:id/api-key`, `/regenerate-key`, `/wakeup`) lieferten ein rohes Next.js-404 (HTML, keine JSON) – während der Nachbar-Endpunkt `/api/websites/:id` (PATCH, direkt unter `[id]`) tadellos funktionierte.
 
-**Ursache:** Der laufende `next dev`-Prozess (Turbopack) hatte diese drei verschachtelten Routen (`[id]/api-key`, `[id]/regenerate-key`, `[id]/wakeup` – alle als eigene Unterordner unter dem bereits bestehenden `[id]`-Segment neu angelegt) nie in sein Routen-Manifest aufgenommen. Turbopacks Dev-Server erkennt zwar Änderungen an bestehenden Dateien per Hot-Reload, aber ein komplett *neuer, verschachtelter* dynamischer Routenordner unter einem bereits aktiven Elternsegment wurde offenbar nicht automatisch nachgezogen – das Frontend reichte deshalb wochenlang ein Next.js-404 durch, das `website-dialog.tsx` als leere/nicht-JSON-Antwort interpretierte und auf die generische Fallback-Meldung zurückfiel.
+**Ursache:** Der laufende `next dev`-Prozess (Turbopack) hatte diese drei verschachtelten Routen (`[id]/api-key`, `[id]/regenerate-key`, `[id]/wakeup` – alle als eigene Unterordner unter dem bereits bestehenden `[id]`-Segment neu angelegt) nie in sein Routen-Manifest aufgenommen. Turbopacks Dev-Server erkennt zwar Änderungen an bestehenden Dateien per Hot-Reload, aber ein komplett _neuer, verschachtelter_ dynamischer Routenordner unter einem bereits aktiven Elternsegment wurde offenbar nicht automatisch nachgezogen – das Frontend reichte deshalb wochenlang ein Next.js-404 durch, das `website-dialog.tsx` als leere/nicht-JSON-Antwort interpretierte und auf die generische Fallback-Meldung zurückfiel.
 
 **Fix:** Kein Code-Fix – Neustart des `apps/web`-Dev-Prozesses hat gereicht, danach lieferten alle drei Routen sofort korrekte Antworten.
 
@@ -861,6 +870,7 @@ Nutzer meldete den Fehler ein drittes Mal, diesmal für "API-Key anzeigen" UND "
 Nutzerfrage: "die App startet beim Prüfen neu bei strasev? geht sowas auch wie wir es jetzt machen später im Live-Betrieb?" – wichtig genug, um es hier ausdrücklich festzuhalten (siehe auch [ROADMAP.md](../../docs/ROADMAP.md), Abschnitt Master/Slave-Lizenzsystem → "Noch offen").
 
 **Was wir bisher tatsächlich tun, jedes Mal nach einer Code-/Schema-Änderung:**
+
 1. `taskkill //F //IM node.exe` (alle vier Dev-Prozesse hart beenden)
 2. `prisma db push --accept-data-loss` auf **beiden** Datenbanken (pivot UND strasev, getrennt)
 3. `nest start --watch` bzw. `next dev` für alle vier Prozesse manuell neu starten (pivot-api, pivot-web, strasev-api, strasev-web)
@@ -880,6 +890,7 @@ Nutzerfrage: "die App startet beim Prüfen neu bei strasev? geht sowas auch wie 
 Nutzervorgabe (mit zwei Mockup-Screenshots): das "Prüfdetails"-Popup pro Website (`websites-view.tsx`, Info-Icon neben dem Alert) komplett neu gebaut – farbiger Kopfbereich (Status/Icon/Titel/Domain+Zeitpunkt/Schließen-X), Version-/Status-Badge-Zeile, Prüfliste mit rechtsbündigem, echtem Detail-Wert pro Zeile, Footer mit Bestanden-Zähler + "Erneut prüfen"/"Schließen". Auf die Frage, wie mit Detail-Werten umgegangen wird, die das Backend noch nicht liefert, entschied der Nutzer explizit **"Backend erweitern"** statt Werte vorzutäuschen.
 
 **`WebsitesService.performWakeup()`** liefert jetzt pro Check ein `detail`-Feld (echte, gemessene/verglichene Werte, keine erfundenen):
+
 - **Erreichbar**: tatsächliche Laufzeit des Wakeup-Requests in ms (`Date.now()`-Differenz).
 - **API-Zugang**: "Schlüssel gültig"/"ungültig".
 - **Version**: Vergleich gegen `getAppVersion()` der Master-Installation selbst, "aktuell" oder "Update verfügbar (X)".
@@ -910,6 +921,7 @@ Nutzervorgabe: "Login mit Lizenzeingabe darf nur kommen, wenn der Schlüssel ung
 **Dritter, unabhängiger Bug in derselben Test-Session:** "wenn man den korrekten Schlüssel eingibt und prüft, wird man auf locked weitergeleitet." Ursache war NICHT die Backend-Logik (die stimmte bereits), sondern `middleware.ts`s `isInstanceLocked()`-Cache: der 30-Sekunden-TTL-Cache hielt eine Sperre bis zu 30s lang fest, auch direkt nachdem sie im Popup gerade behoben wurde. **Fix:** nur noch das GÜNSTIGE Ergebnis (nicht gesperrt) wird zwischengespeichert – das ist der Normalfall bei praktisch jeder Anfrage und lohnt sich; eine bestehende Sperre wird jetzt bei jeder Anfrage frisch geprüft (unkritisch, da in diesem seltenen Zustand ohnehin kaum Traffic anfällt), ermöglicht dafür ein sofortiges Entsperren ohne Wartezeit.
 
 **Sicherheits-Review** (Nutzeranfrage "prüfe diese Implementierung. ist dies sicher"), drei echte Lücken gefunden und behoben:
+
 1. **Timing-Seitenkanal**: `verifyRecoveryCredentials()` rief `argon2.verify()` wegen Kurzschlussauswertung nur auf, wenn ein Nutzer mit dieser E-Mail existiert UND `settings:update` hat – die Antwortzeit verriet dadurch, ob eine E-Mail existiert bzw. zu einem privilegierten Konto gehört. Fix: `argon2.verify()` läuft jetzt immer (gegen einen festen `DUMMY_PASSWORD_HASH`, falls kein Nutzer existiert) – konstante Laufzeit unabhängig vom Ergebnis.
 2. **Umgehung der bestehenden Konto-Sperre**: ein falsches Passwort zählte hier nicht auf `AuthService.login()`s `failedLoginAttempts`/`failedLoginLockoutThreshold` – ein zweiter, unlimitierter Weg, ein Admin-Passwort zu erraten. Fix: zählt jetzt auf denselben Zähler.
 3. **Fehlendes Rate-Limit auf Schritt 2**: `recovery/apply-key` hatte kein eigenes Throttle – mit einem einmal erhaltenen, 5 Minuten gültigen Token hätte sich beliebig oft ein API-Key raten lassen. Fix: dasselbe 5/Min-Limit wie Schritt 1.
@@ -921,5 +933,182 @@ Akzeptiertes Restrisiko (gering, bewusst nicht behoben): das Recovery-Token ist 
 Wiederkehrende Verwirrung während dieser Session: der Master-seitige Versionsvergleich im Prüf-Popup zeigte wiederholt "Update verfügbar" mit einer VERALTETEN eigenen Version, obwohl frisch gepusht wurde. Ursache: `getAppVersion()` (`common/utils/app-version.ts`) ermittelt den Git-Commit-Hash einmalig pro Prozess und cached ihn danach dauerhaft. Anders als in der bisherigen Dokumentation angenommen (`nest start --watch` für alle vier lokalen Dev-Prozesse), lief Pivots eigener API-Prozess tatsächlich als fertig kompilierter Build (`node --enable-source-maps dist/main`, kein Watch-Modus) – Code-Änderungen wurden dort nie automatisch übernommen, nur ein manuelles `nest build` + Neustart aktualisiert die gecachte Version. strasevs API lief dagegen im Watch-Modus und aktualisierte sich korrekt von selbst.
 
 **Nebenfund beim erzwungenen Neustart:** der neu gebaute Prozess stürzte sofort mit `Cannot find module 'multer'` ab. `apps/api/package.json` enthielt nur `@types/multer` (Typdefinitionen) als devDependency, nie das eigentliche `multer`-Laufzeitpaket (von `@nestjs/platform-express` für Datei-Uploads gebraucht) als echte Dependency – ein latenter Bug, der nur deshalb nie auffiel, weil der lange laufende Prozess es zufällig noch aus einem älteren, anders gehashten `node_modules`-Zustand im Speicher hatte. Ein echter Neustart (Server-Reboot, Deploy) wäre schon vorher fehlgeschlagen. **Fix:** `multer` als echte Dependency ergänzt, `pnpm install` in beiden Installationen (Pivot + strasev) nachgezogen.
+
+## Update 2026-08-27: Mandantenfähigkeit für Master – Mandant-Entity, Modul-Buchung, Status-Kaskade
+
+**Ausgangslage/Nutzervorgabe:** Master soll als Hauptsystem fungieren, über
+das weitere Kunden-Projekte realisiert werden. Ein Kunde ("Mandant") soll
+künftig unterschiedliche **Module** buchen können (z.B. "Datenschutz",
+"Magicline") – je nach gebuchtem Modul werden bei der jeweiligen
+Kunden-Installation entsprechende Funktionen freigeschaltet. Module sind
+ein fester, von Pivot entwickelter Katalog, kein "Neu"-Button.
+Ausdrücklich bestätigt (Rückfrage): **kein** neues, geteiltes Multi-Tenant-
+System mit gemeinsamer Datenbank – das bestehende Website/Lizenzsystem
+(oben beschrieben) wird nur erweitert, jeder Kunde bleibt eine physisch
+eigene, isolierte Installation.
+
+### `Mandant` ist NICHT `Website` – 1:N-Beziehung
+
+Erste Fassung setzte die Modul-Buchung direkt auf `Website` an
+(`WebsiteModule`). Nutzerkorrektur: "bei den Mandanten gehört immer eine
+Webseite oder mehrere dazu ... deshalb Projekt anlegen bei Webseites
+raus, das wird in Zukunft über den Mandanten angelegt" – ein `Mandant` ist
+der eigentliche Kunde und kann **mehrere** `Website`-Installationen
+besitzen. Neues Modell in `packages/database/prisma/schema.prisma`:
+
+```prisma
+model Mandant {
+  id         String  @id @default(cuid())
+  name       String
+  status     String  @default("active") // "active" | "inactive" | "locked"
+  lockReason String?
+  // + Firmenangaben (legalName, representativeName, street, postalCode,
+  //   city, country, email, phone, registerInfo, vatId) – speisen künftig
+  //   Impressum/Systemmails DIESER Installation, aktuell reine Master-
+  //   Referenzdaten ohne automatischen Abgleich zur Client-Installation.
+  websites Website[]
+  modules  MandantModule[]
+}
+```
+
+`Website` bekam ein Pflichtfeld `mandantId` (+ Relation). Die "Projekt
+anlegen"-Kachel wurde komplett aus `websites-view.tsx` entfernt –
+Website-Erstellung passiert nur noch über `POST /mandanten` (legt Mandant
+
+- erste Website zusammen an) oder `POST /mandanten/:id/websites`
+  ("Domain hinzufügen" auf der Mandant-Detailseite). `website-dialog.tsx`
+  wurde entsprechend auf reinen Bearbeiten-Modus zurückgebaut (kein
+  "new"-Target, kein Nach-Anlage-Credentials-Screen mehr).
+
+**Migration eines nicht-leeren `Website`-Bestands auf ein Pflichtfeld:**
+`prisma db push` kann keine Required-Spalte ohne Default auf eine
+Tabelle mit vorhandenen Zeilen anwenden. Vorgehen: (1) Feld erst optional
+(`String?`/`Mandant?`) pushen, (2) Node-Skript, das pro bestehender
+Website genau einen `Mandant` anlegt und verlinkt, (3) Feld wieder auf
+required umstellen und erneut pushen.
+
+### Modul-Buchung liegt auf dem Mandanten, nicht auf der Website
+
+Ein gebuchtes Modul gilt für **alle** Websites eines Mandanten gleich.
+Katalog bleibt Code (`apps/api/src/websites/module-catalog.ts`, analog zu
+`roles/permissions.catalog.ts`), aktuell zwei Einträge (`datenschutz`,
+`magicline`) mit `category: 'compliance' | 'integration'`. Buchung selbst
+ist eine reine Ja/Nein-Zeile ohne Konfigurationsinhalt:
+
+```prisma
+model MandantModule {
+  id         String   @id @default(cuid())
+  mandantId  String
+  moduleKey  String
+  bookedAt   DateTime @default(now())
+  bookedById String?
+  @@unique([mandantId, moduleKey])
+}
+```
+
+Ein extern geprüfter Magicline-Integrationsfahrplan bestätigte: Magicline
+vergibt Zugangsdaten pro Studio direkt an den Kunden, nicht über den
+Master – deshalb bleibt `MandantModule` bewusst konfigurationsfrei. Sobald
+ein Modul freigeschaltet ist, trägt der Kunde dessen Zugangsdaten lokal
+in seiner eigenen Installation ein (gleiches Muster wie SMTP-Passwort,
+`common/utils/secret-encryption.ts`).
+
+`MandantenService.updateModules()` ersetzt bei jedem Speichern den
+kompletten Buchungsstand eines Mandanten (`deleteMany` + `createMany` in
+einer `$transaction`), validiert jeden Key gegen den Katalog.
+
+### Signierter Transport bis zur Client-Installation
+
+`LicenseTokenPayload` (`websites/license-token.util.ts`) bekam ein neues
+Feld `modules: string[]` – Teil des ohnehin Ed25519-signierten Tokens,
+also so fälschungssicher wie `status`. `WebsitesService.checkLicense()`
+lädt beim Ausstellen eines Tokens `website.mandant.modules` und packt die
+Keys hinein. Client-seitig übernimmt `LicenseClientService.runCheck()`
+`payload.modules ?? []` (Fallback für Tokens, die vor diesem Feld signiert
+wurden) in `LicenseState.modules String[] @default([])`.
+`EffectiveLicenseStatus` (`'live'`/`'development'`/`'pending'`-Varianten)
+führt `modules` mit; `'unchecked'`/`'locked'` nicht.
+
+**Vorbereitete, aber noch nicht verdrahtete Durchsetzung:**
+`ModuleEntitlementGuard` + `@RequireModule('key')`
+(`apps/api/src/license-client/guards/`, `.../decorators/`) – auf einer
+Slave-Installation 404 (gleiche "existiert nicht"-Konvention wie
+`MasterOnlyGuard`), falls `LicenseState.modules` den geforderten Key
+nicht enthält; auf dem Master selbst wirkt der Guard nie. Registriert in
+`LicenseClientModule` (`providers`+`exports`), **an keiner echten Route
+verwendet** – die eigentliche Verdrahtung von z.B. "Datenschutz" hinter
+den Guard ist bewusst Folgearbeit, nicht Teil dieser Runde.
+
+### Mitgliedschafts-Status kaskadiert auf den technischen Website-Status
+
+Nutzervorgabe: "wenn Mandant gesperrt, muss Website gesperrt werden" +
+"wenn inaktiv der Mandant, dann soll Website auf gesperrt. wenn Mandant
+aktiv ist, kann ich jeden Zustand setzen" + "wenn Mandant wieder auf aktiv
+gesetzt wird, muss Website auch aktiv sein". `Mandant.status` (business-
+seitige Mitgliedschaft) und `Website.status` (technische Durchsetzung:
+`live`/`development`/`locked`) sind zwei getrennte Felder – die Kaskade in
+`MandantenService.update()` hält sie synchron:
+
+- Wechsel zu `"locked"` oder `"inactive"`: alle Websites des Mandanten,
+  die nicht schon `locked` sind, werden zwangsweise auf `locked` gesetzt.
+- Wechsel zu `"active"`: alle Websites, die aktuell `locked` sind, werden
+  auf `live` zurückgesetzt. Eine Website, die ein Admin bewusst auf
+  `development` gestellt hat, bleibt unangetastet – das ist der freie
+  "jeden Zustand setzen"-Spielraum bei aktivem Mandanten.
+- Kaskade ist **einseitig pro Richtungswechsel**, keine automatische
+  Rückkehr ohne Statuswechsel: nur ein tatsächlicher `dto.status !==
+before.status`-Übergang löst sie aus.
+
+Technisch durchgesetzt wird die Kaskade über dieselbe
+`WebsitesService.update()`-Methode, die auch das manuelle Sperren einer
+einzelnen Website nutzt – die Methode löst bei jeder echten
+Statusänderung automatisch `this.wakeup(id)` aus (echter, sofortiger
+"Wecken"-Aufruf gegen die Client-Installation, kein bloßes DB-Feld-
+Schreiben). Die Mandanten-Kaskade bekommt diese Live-Abgleich-Prüfung
+damit ohne zusätzlichen Code geschenkt.
+
+### Neue Master-UI
+
+Sidebar-Gruppe "Administration" von einem Eintrag mit Unterpunkt auf drei
+flache Top-Level-Einträge umgebaut (Nutzervorgabe: "Module als eigener
+Menüpunkt, kein Unterpunkt von Webseite mehr"): **Mandanten** (neu,
+`/dashboard/mandanten`), **Webseite**, **Module**.
+
+- `/dashboard/mandanten` – Stat-Kacheln (Mandanten/Websites/
+  Modulzuweisungen/Gesperrt-Inaktiv) + Kartenraster (Icon, Name, Domain,
+  Status-/Website-Anzahl-Badge, kleine Modul-Icon-Badges oder "Keine
+  Module"). Bewusst **ohne** Content-/Nutzerzahlen aus der Kunden-DB
+  (Rückfrage-Antwort: "Weglassen (fürs Erste)" – Master hat schlicht
+  keinen Zugriff auf die echten Inhalte einer Client-Installation).
+- `/dashboard/mandanten/[id]` – Stammdaten-Karte (Mitgliedschafts-
+  `SegmentedPicker`, bedingte Sperrvermerk-Box mit `Textarea` nur bei
+  Status "Gesperrt", Wert bleibt beim Entsperren erhalten/wird nicht
+  gelöscht), Firmenangaben-Karte (10 Felder + "Pflichtangaben
+  vollständig"-`SystemMessage`), Websites-Karte (+ "Domain hinzufügen"),
+  Module-Karte (Toggle-`Switch` je Katalog-Eintrag). Nach "Speichern"
+  Redirect zurück zu `/dashboard/mandanten` (nicht nur `router.refresh()`).
+- `/dashboard/modules` von ehrlichem Platzhalter zu echter, rein
+  lesender Katalog-Übersicht umgebaut: pro Modul Label/Beschreibung +
+  welche Mandanten es gebucht haben. Buchen selbst passiert nur auf der
+  Mandant-Detailseite.
+
+### Live verifiziert (2026-08-27)
+
+`PATCH /mandanten/:id` mit `{"status":"inactive"}` → verlinkte Website
+sprang von `live` auf `locked`; zurück auf `{"status":"active"}` →
+Website sprang zurück auf `live`; `{"status":"locked","lockReason":"..."}`
+→ ebenfalls `locked`. Alle drei Übergänge gegen die echte, neu gebaute
+und neu gestartete Master-API getestet (curl + handgemintetes HS256-JWT).
+
+### Offene Punkte
+
+- `ModuleEntitlementGuard`/`@RequireModule('datenschutz')` noch an
+  keiner echten Route verwendet.
+- Magicline-Modul hat noch keinen Code, nur den Katalog-Eintrag.
+- Modul-interne Mandantenfähigkeit (z.B. falls ein Modul selbst mehrere
+  Unter-Einheiten pro Kunde verwalten muss) – laut Nutzervorgabe bewusst
+  separates, späteres Thema.
+- "Einrichten"-Button pro Modul aus der Bildvorlage bewusst nicht gebaut,
+  da keine echte Aktion dahintersteht.
 
 **Lehre, ergänzt zur bestehenden "lokaler Workflow ist reine Simulation"-Doku oben:** die Annahme "alle vier Prozesse laufen im Watch-Modus" war für Pivots eigenen API-Prozess falsch – vor jedem Versionsvergleich-Test lohnt sich eine kurze Prüfung, ob der jeweilige Prozess tatsächlich den aktuellen Code-Stand ausführt, statt sich allein auf den Git-Log zu verlassen.

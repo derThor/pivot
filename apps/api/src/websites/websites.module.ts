@@ -8,5 +8,6 @@ import { WebsiteMonitorService } from './website-monitor.service';
 @Module({
   controllers: [WebsitesController, LicenseController],
   providers: [WebsitesService, MasterOnlyGuard, WebsiteMonitorService],
+  exports: [WebsitesService, MasterOnlyGuard],
 })
 export class WebsitesModule {}

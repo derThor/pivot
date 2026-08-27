@@ -151,9 +151,20 @@ function buildCrumbs(pathname: string): Crumb[] {
   return crumbs;
 }
 
-export function DashboardBreadcrumbs() {
+export function DashboardBreadcrumbs({
+  overrideLast,
+}: {
+  // Für Detailseiten unter einer reinen ID (z.B. "/dashboard/mandanten/
+  // [id]"), die statt des generischen "Bearbeiten"-Fallbacks den echten
+  // Namen der Entität zeigen sollen (Nutzervorgabe, 2026-08-27, Mockup:
+  // "Dashboard > Administration > Mandanten > StraSev Steuerberatung").
+  overrideLast?: string;
+} = {}) {
   const pathname = usePathname();
   const crumbs = buildCrumbs(pathname);
+  if (overrideLast && crumbs.length > 0) {
+    crumbs[crumbs.length - 1] = { label: overrideLast };
+  }
 
   return (
     <Breadcrumb>

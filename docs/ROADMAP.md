@@ -58,7 +58,7 @@ Details: [rbac-rework.md](../knowledge-base/auth/rbac-rework.md),
 
 - [x] Content bearbeiten (Edit-Formular für bestehende Einträge; Backend
       `PATCH /content/:id` existiert bereits) und löschen (`DELETE
-      /content/:id` existiert bereits) im Frontend nutzen
+    /content/:id` existiert bereits) im Frontend nutzen
 - [x] Medien bearbeiten (Alt-Text ändern) und löschen – Backend-Endpoint
       `DELETE /media/:id` fehlt noch komplett, nicht nur die UI
 - [x] Benutzer vollständig bearbeiten (Name/E-Mail/Aktiv-Status, nicht nur
@@ -95,7 +95,7 @@ Details: [rbac-rework.md](../knowledge-base/auth/rbac-rework.md),
 - [x] Rich-Text/Block-Editor für Content-Body (Tiptap Core + StarterKit,
       HTML-String-Ausgabe)
 - [x] Versions-Diff & Rollback-UI (`GET /content/:id/versions`, `POST
-      .../rollback`, Feld-für-Feld-Wortdiff gegen den aktuellen Stand)
+    .../rollback`, Feld-für-Feld-Wortdiff gegen den aktuellen Stand)
 
 Details: [rich-text-and-versioning.md](../knowledge-base/content/rich-text-and-versioning.md).
 
@@ -141,7 +141,7 @@ Details: [rich-text-and-versioning.md](../knowledge-base/content/rich-text-and-v
 - [x] Autosave während der Bearbeitung – lokal im Browser
       (`localStorage`), debounced 1.5s nach Änderung, admin-abschaltbar
       über `Einstellungen → Zugriff & Funktionen → Autosave im
-      Content-Editor` (2026-08-06)
+    Content-Editor` (2026-08-06)
 - [x] Wiederherstellung nicht gespeicherter Entwürfe – Banner beim
       Öffnen eines Inhalts, falls ein neuerer lokaler Entwurf existiert
       (Wiederherstellen/Verwerfen) (2026-08-06)
@@ -342,6 +342,7 @@ Navigation (Menü-Liste + Einträge-Panel, siehe
 [navigation-management.md](../knowledge-base/content/navigation-management.md)).
 
 **Bereits umgesetzt (2026-08-16):**
+
 - [x] Backend-Rechte-Katalog von 13 groben Bundle-Rechten auf 46
       feingranulare Rechte aufgesplittet (`content:publish`/`schedule`,
       eigene `navigation`/`webhooks`/`gallery`/`faq`/`preview-links`-
@@ -365,6 +366,7 @@ Webhooks, Benutzer, Rollen & Rechte, Einstellungen). Nachziehen, sobald die
 jeweiligen Module selbst gebaut sind.
 
 **Visuelles Redesign umgesetzt (2026-08-16):**
+
 - [x] Seite `/dashboard/roles` auf Split-View umgestellt (`?role=<id>`-
       URL-Pattern wie bei `/dashboard/navigation?menu=`, akzeptiert
       zusätzlich `?highlight=` von der globalen Suche): links Rollen-Liste
@@ -396,6 +398,7 @@ jeweiligen Module selbst gebaut sind.
 - [x] Alte Komponenten entfernt: `roles-table.tsx`, `role-row-actions.tsx`
 
 **Noch offen / nicht verifiziert:**
+
 - [ ] Echter Browser-/visueller Abgleich gegen die Bildvorlage (bisher nur
       per SSR-HTML-Inspektion über `curl` verifiziert – kein Playwright/
       Chromium in diesem Projekt verfügbar, kein Screenshot gemacht).
@@ -422,6 +425,7 @@ vormerken, nicht umsetzen.
 Nutzervorgabe: "Benutzer dürfen mehrere Rollen haben" – `User.roleId` war
 eine einzelne Pflicht-FK (`User` → `Role`, 1:n). Dafür jetzt eine n:m-
 Tabelle (`UserRole`, analog zu `RolePermission`). Umgesetzt:
+
 - Schema-Migration + Backfill (jeder bestehende `roleId`-Wert wurde zur
   ersten `UserRole`-Zeile; additiver Push, SQL-Backfill, dann `roleId`-
   Spalte entfernt – kein Datenverlust)
@@ -443,6 +447,7 @@ Tabelle (`UserRole`, analog zu `RolePermission`). Umgesetzt:
   Mehrfach-Rollen-Picker kommt erst mit der neuen Profilseite unten
 
 **Weitere neue Felder/Konzepte, die für die Vorlage fehlen:**
+
 - `User.department`, `User.phone` (Stammdaten-Felder "Abteilung"/"Telefon")
 - Fehlgeschlagene Login-Versuche zählen (`AUTHENTICATION` – "Fehlversuche"
   im "Konto"-Kasten) – neues Feld + Reset bei erfolgreichem Login
@@ -458,7 +463,7 @@ Tabelle (`UserRole`, analog zu `RolePermission`). Umgesetzt:
 - 2FA-Toggle in "Anmeldung": UI-Element schon mit vorsehen, Funktion
   bleibt Platzhalter bis zur separat geplanten echten 2FA-Umsetzung
   (siehe 2b.13-Notiz zur "2FA"-Spalte in der Benutzer-Tabelle)
-**Geklärt (Nutzerentscheidung 2026-08-16) – drei zuvor offene Punkte:**
+  **Geklärt (Nutzerentscheidung 2026-08-16) – drei zuvor offene Punkte:**
 
 - **"Benutzer löschen" = Anonymisierung, kein Hard-Delete.** Bestehende
   Deaktivierung (`UsersService.remove()`, nur `isActive: false`,
@@ -501,7 +506,7 @@ Tabelle (`UserRole`, analog zu `RolePermission`). Umgesetzt:
     eigene Account (keine Rechte-Ketten/Privilege-Loops)
   - Audit-Log-Eintrag (Tabelle existiert bereits, `AuditLog`/
     `audit_logs`) bei Start der Impersonation: `action:
-    "user.impersonate"`, `userId: <adminUserId>`, `entityType: "User"`,
+"user.impersonate"`, `userId: <adminUserId>`, `entityType: "User"`,
     `entityId: <targetUserId>`
   - Frontend: durchgängig sichtbarer Banner "Du siehst als X – Zurück zu
     deinem Konto", eigenes Konto bleibt während der Impersonation separat
@@ -517,6 +522,7 @@ sobald die echte Umsetzung folgt – konsistent mit der bereits
 platzierten "2FA"-Spalte in der Benutzer-Tabelle.
 
 **Aufgabenliste (Umsetzung):**
+
 - [x] Schema: `UserRole`-n:m-Tabelle + Migration/Backfill (2026-08-16,
       additiver Push → SQL-Backfill aus altem `roleId` → `roleId`-Spalte
       entfernt; siehe [rbac-rework.md](../knowledge-base/auth/rbac-rework.md))
@@ -529,7 +535,7 @@ platzierten "2FA"-Spalte in der Benutzer-Tabelle.
       `canAccessDashboard` = mind. eine Rolle erlaubt es;
       `CreateUserDto`/`UpdateUserDto` nutzen `roleIds: string[]`
 - [x] Backend: Sitzungs-Endpoints (2026-08-16) – `GET/DELETE
-      /users/:id/sessions`, `POST /users/:id/sessions/revoke-others`,
+    /users/:id/sessions`, `POST /users/:id/sessions/revoke-others`,
       `RefreshToken.userAgent`/`ipAddress`, `summarizeUserAgent()`
 - [x] Backend: `PATCH /users/:id` um `department`/`phone`/`roleIds`/
       `mustChangePassword` erweitert (2026-08-16)
@@ -560,19 +566,19 @@ platzierten "2FA"-Spalte in der Benutzer-Tabelle.
       [user-activity-log.md](../knowledge-base/auth/user-activity-log.md).
 
       **Laufende Konvention (Nutzervorgabe 2026-08-17):** jede künftige
-      Aktion, die für einen Nutzer relevant ist (neue Sicherheits-Funktion,
-      neue Content-/Medien-Aktion, neue Admin-Aktion an einem Konto),
-      bekommt beim Bauen einen passenden `AuditLogService.record()`-Aufruf
-      UND einen zugehörigen Fall in
-      `apps/web/src/components/user-activity-timeline.tsx`s
-      `describeActivity()` – die Zeitleiste soll nicht stillschweigend
-      hinter neuen Features zurückbleiben. Bei jedem neuen Feature mit
-      einer nutzerbezogenen Aktion kurz prüfen, ob es hier reingehört.
+          Aktion, die für einen Nutzer relevant ist (neue Sicherheits-Funktion,
+          neue Content-/Medien-Aktion, neue Admin-Aktion an einem Konto),
+          bekommt beim Bauen einen passenden `AuditLogService.record()`-Aufruf
+          UND einen zugehörigen Fall in
+          `apps/web/src/components/user-activity-timeline.tsx`s
+          `describeActivity()` – die Zeitleiste soll nicht stillschweigend
+          hinter neuen Features zurückbleiben. Bei jedem neuen Feature mit
+          einer nutzerbezogenen Aktion kurz prüfen, ob es hier reingehört.
+
 - [x] Frontend: 2FA-Toggle im Tab "Zugang & Sicherheit" als deaktivierter
       Platzhalter-Switch (2026-08-16; echte Umsetzung folgt separat in
       Phase 3) – Aus-Farbe wurde global für alle Switches vereinheitlicht
-- [x] Backend: `UsersService.anonymize()` + `POST /users/:id/anonymize`
-      + Berechtigung `users:delete` (2026-08-16)
+- [x] Backend: `UsersService.anonymize()` + `POST /users/:id/anonymize` + Berechtigung `users:delete` (2026-08-16)
 - [x] Backend: `POST /users/:id/impersonate` + Berechtigung
       `users:impersonate` + Audit-Log-Eintrag (2026-08-16)
 - [x] Frontend: "Benutzer löschen"-Bestätigungsdialog (2026-08-16) –
@@ -716,12 +722,13 @@ weitere Dev-Stub-Konsumenten statt der vorhergesagten Verzögerung.
 Siehe [data-subject-requests.md](../knowledge-base/auth/data-subject-requests.md)
 für Details. Zwei Folgevorhaben dabei zunächst vom Nutzer als
 **"später"** benannt, eines davon noch selbigen Tag doch umgesetzt:
+
 - [x] Selbstauskunft/-löschung aus dem eigenen Konto heraus – komplett
       umgesetzt (Backend zuerst, dann Klarstellung: "ich unterscheide
       backend und frontend. frontend ist die webseite für den
       endanwender und nicht die oberfläche des backends" → Dashboard-UI
       war gemeint, kein separates öffentliches Frontend): `POST
-      /deletion-requests/self-service` (ohne `@RequirePermission`,
+    /deletion-requests/self-service` (ohne `@RequirePermission`,
       jeder eingeloggte Nutzer; Name/E-Mail aus dem eigenen Konto,
       `linkedUserId` sofort gesetzt) + Karte "Meine Daten" in Mein
       Konto → Sicherheit (`self-service-request-card.tsx`).
@@ -818,6 +825,7 @@ Plan inkl. Token-Design, Sicherheitsüberlegungen und offenen Punkten:
 [master-slave-licensing.md](../knowledge-base/platform/master-slave-licensing.md).
 
 **Bereits entschieden (2026-08-24):**
+
 - [x] Ein Repo mit `DEPLOYMENT_MODE=master|slave`-Umgebungsschalter statt
       zwei getrennter Codebases
 - [x] Pull-Modell (Slave fragt wöchentlich beim Master ab, nicht
@@ -836,10 +844,11 @@ Plan inkl. Token-Design, Sicherheitsüberlegungen und offenen Punkten:
       Code-Basis)
 
 **Master-seitig umgesetzt (2026-08-24):**
+
 - [x] `Website`-Datenmodell (`packages/database/prisma/schema.prisma`)
 - [x] Token-Ausstellung: `POST /license/check` (Pull-Endpunkt, Site-API-Key-
       Auth, Ed25519-Signierung über `apps/api/src/websites/
-      license-token.util.ts`, generischer 401 für unbekannte Domain/falschen
+    license-token.util.ts`, generischer 401 für unbekannte Domain/falschen
       Key, monotoner `seq`-Zähler) – live gegen echte Requests verifiziert
       (korrekter/falscher Key, unbekannte Domain, Signaturprüfung,
       Manipulationserkennung, `seq`-Inkrement, Statuswechsel, Validierung,
@@ -852,9 +861,9 @@ Plan inkl. Token-Design, Sicherheitsüberlegungen und offenen Punkten:
       Card-Kasten, echte URL-Pagination, Statusänderung nur noch über den
       "Bearbeiten"-Dialog)
 - [x] Neue Sidebar-Gruppe "Administration" (nur Master, gesteuert über
-      `deploymentMode` aus `GET /auth/me`) mit Menüpunkt "Webseite" und
-      Unterpunkt "Module" (Platzhalter, künftige branchenspezifische
-      Erweiterungen)
+      `deploymentMode` aus `GET /auth/me`) – seit 2026-08-27 drei flache
+      Top-Level-Menüpunkte statt eines mit Unterpunkt: "Mandanten",
+      "Webseite", "Module" (siehe Mandantenfähigkeit unten)
 - [x] `DEPLOYMENT_MODE`-Env-Schalter im Master gesetzt (`master`) +
       Zod-Validierung (`env.validation.ts`)
 - [ ] Echter Browser-/visueller Abgleich der neuen Websites-Kacheln (bisher
@@ -862,6 +871,7 @@ Plan inkl. Token-Design, Sicherheitsüberlegungen und offenen Punkten:
       verfügbar, kein Login-Session-Cookie für einen echten Nutzer zur Hand)
 
 **Slave-seitige Phase umgesetzt (2026-08-24):**
+
 - [x] Modus liegt in `AppSettings.deploymentMode`, umschaltbar unter
       Einstellungen → Integrationen ("Bereitstellungsmodus") – Nutzer-
       entscheidung: UI-Schalter statt reiner Umgebungsvariable. "Slave"
@@ -899,7 +909,24 @@ Plan inkl. Token-Design, Sicherheitsüberlegungen und offenen Punkten:
       inkl. drei behobener Sicherheitslücken beim anschließenden Review,
       siehe Knowledge-Base.
 
+**Mandantenfähigkeit für Master (2026-08-27):** eigene `Mandant`-Entity
+(1:N zu `Website` – ein Kunde kann mehrere Installationen haben), buchbare
+Module aus einem festen Katalog (`websites/module-catalog.ts`: aktuell
+`datenschutz`, `magicline`), signiert über den bestehenden Lizenz-Token
+bis zur Client-Installation transportiert (`LicenseState.modules`),
+Mitgliedschaft-Status (`Mandant.status`) kaskadiert auf den technischen
+`Website.status` (gesperrt/inaktiv → Website gesperrt, aktiv → Website
+zurück auf live). Details, Datenmodell und offene Punkte (Guard noch
+nicht verdrahtet, Magicline-Modul-Inhalt existiert nicht):
+[master-slave-licensing.md](../knowledge-base/platform/master-slave-licensing.md#update-2026-08-27-mandantenfähigkeit-für-master--mandant-entity-modul-buchung-status-kaskade).
+Zu unterscheiden vom generellen CMS-Multi-Tenant-Punkt unter 4.2 (dortiges
+"Mandantenfähigkeit (Multi-Tenant)" meint eine geteilte DB für mehrere
+Kunden innerhalb EINER Installation – hier geht es um den Master, der
+mehrere physisch getrennte Installationen verwaltet, siehe Abgrenzung in
+der Knowledge-Base).
+
 **Noch offen:**
+
 - [x] strasev-Installation technisch lauffähig machen (`.env`, Datenbank,
       Port, `pnpm install`) – seit 2026-08-24 lokal lauffähig (Ports
       3010/3011), seitdem durchgehend als echte zweite Installation für
@@ -916,22 +943,18 @@ Plan inkl. Token-Design, Sicherheitsüberlegungen und offenen Punkten:
       dabei kam ein latenter Fehler ans Licht (`multer` fehlte als echte
       Dependency, nur `@types/multer` war eingetragen, siehe Knowledge-
       Base), der einen echten Neustart/Deploy sofort zum Absturz gebracht
-      hätte. Für einen echten Kunden-Rollout fehlen noch:
-      - Ein echter Build-Schritt (`nest build`/`next build`) statt der
-        Watch-Modi, ausgeführt von einem Prozessmanager (PM2, systemd,
-        Docker) statt manuell.
-      - Echte Prisma-Migrationen (`prisma migrate deploy`) als Teil eines
-        Deploy-Schritts statt `db push` von Hand (siehe auch
-        [feedback_prisma_db_push_not_migrate.md] – gilt nur für die
-        lokale Dev-DB, nicht als Aussage über den Produktivweg).
-      - Eine tatsächliche CI/CD-Pipeline, die Build+Migration+Neustart für
-        Master UND jede Slave-Installation automatisiert (überschneidet
-        sich mit dem allgemeinen "CI/CD-Pipeline"-Punkt oben, ist hier aber
-        Master/Slave-spezifisch: mehrere unabhängige Installationen statt
-        nur einer App).
-      - Ein Konzept, WIE eine neue Slave-Installation beim Kunden
-        überhaupt bereitgestellt wird (eigener Server? Docker-Image?
-        Managed Hosting?) – noch nicht entschieden.
+      hätte. Für einen echten Kunden-Rollout fehlen noch: - Ein echter Build-Schritt (`nest build`/`next build`) statt der
+      Watch-Modi, ausgeführt von einem Prozessmanager (PM2, systemd,
+      Docker) statt manuell. - Echte Prisma-Migrationen (`prisma migrate deploy`) als Teil eines
+      Deploy-Schritts statt `db push` von Hand (siehe auch
+      [feedback_prisma_db_push_not_migrate.md] – gilt nur für die
+      lokale Dev-DB, nicht als Aussage über den Produktivweg). - Eine tatsächliche CI/CD-Pipeline, die Build+Migration+Neustart für
+      Master UND jede Slave-Installation automatisiert (überschneidet
+      sich mit dem allgemeinen "CI/CD-Pipeline"-Punkt oben, ist hier aber
+      Master/Slave-spezifisch: mehrere unabhängige Installationen statt
+      nur einer App). - Ein Konzept, WIE eine neue Slave-Installation beim Kunden
+      überhaupt bereitgestellt wird (eigener Server? Docker-Image?
+      Managed Hosting?) – noch nicht entschieden.
 
 ## Priorisierungsprinzip
 

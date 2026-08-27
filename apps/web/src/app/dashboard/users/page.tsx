@@ -117,13 +117,11 @@ export default async function UsersPage({
                 deleted: deletedCount?.meta.total ?? 0,
               }}
             />
-            <div className="rounded-[10px] bg-card shadow-sm">
-              <UsersTable
-                users={users.items}
-                currentUserId={currentUser?.id}
-                allowTwoFactor={settings?.allowTwoFactor ?? true}
-              />
-            </div>
+            <UsersTable
+              users={users.items}
+              currentUserId={currentUser?.id}
+              allowTwoFactor={settings?.allowTwoFactor ?? true}
+            />
             <PaginationControls
               page={users.meta.page}
               pageCount={users.meta.pageCount}

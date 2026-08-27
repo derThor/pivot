@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { LicenseClientService } from './license-client.service';
 import { LicenseStateController } from './license-state.controller';
 import { LicenseEnforcementGuard } from './license-enforcement.guard';
+import { ModuleEntitlementGuard } from './guards/module-entitlement.guard';
 import { SettingsModule } from '../settings/settings.module';
 
 @Module({
@@ -12,7 +13,8 @@ import { SettingsModule } from '../settings/settings.module';
   providers: [
     LicenseClientService,
     { provide: APP_GUARD, useClass: LicenseEnforcementGuard },
+    ModuleEntitlementGuard,
   ],
-  exports: [LicenseClientService],
+  exports: [LicenseClientService, ModuleEntitlementGuard],
 })
 export class LicenseClientModule {}

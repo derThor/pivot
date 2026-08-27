@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CompanyLocationDialog } from "@/components/company-location-dialog";
 import { RowActionButtons } from "@/components/row-action-buttons";
 import { companyFields, type CompanyFieldKey } from "@/lib/company-fields";
+import { resolveImageSrc } from "@/lib/media";
 import { formatName, truncateMiddle } from "@/lib/utils";
 import type {
   CompanyChange,
@@ -37,10 +38,12 @@ export function CompanyView({
   settings,
   locations: initialLocations,
   changes,
+  logoUrl,
 }: {
   settings: CompanySettings;
   locations: CompanyLocation[];
   changes: CompanyChange[];
+  logoUrl: string | null;
 }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"stammdaten" | "standorte">(
@@ -164,9 +167,18 @@ export function CompanyView({
 
       <div className="flex flex-col gap-4 rounded-xl bg-card shadow-sm p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Building2 className="size-5" />
-          </span>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- Logo kommt aus Nutzer-Upload (beliebige externe/lokale URL), kein next/image-Optimierungsfall.
+            <img
+              src={resolveImageSrc(logoUrl)}
+              alt=""
+              className="h-11 w-auto max-w-[160px] shrink-0 object-contain"
+            />
+          ) : (
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+              <Building2 className="size-5" />
+            </span>
+          )}
           <div className="flex flex-col gap-1">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-semibold">

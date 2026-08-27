@@ -79,7 +79,12 @@ export interface LockedPageBranding {
 
 export type EffectiveLicenseStatus =
   | { mode: 'master' }
-  | { mode: 'slave'; status: 'live' | 'unchecked' }
+  | { mode: 'slave'; status: 'unchecked' }
+  // Mandantenfähigkeit, 2026-08-27: `modules` sind die zuletzt vom Master
+  // signiert bestätigten, gebuchten Modul-Keys dieser Installation (siehe
+  // LicenseState.modules) – einzige Stelle, an der eine Installation ihre
+  // eigenen Entitlements erfährt.
+  | { mode: 'slave'; status: 'live'; modules: string[] }
   | {
       mode: 'slave';
       status: 'development';
@@ -89,8 +94,9 @@ export type EffectiveLicenseStatus =
       // noch keinen Check mit diesem Feld hinter sich hat.
       developmentModeSince: Date | null;
       autoLockAt: Date | null;
+      modules: string[];
     }
-  | { mode: 'slave'; status: 'pending'; expiresAt: Date }
+  | { mode: 'slave'; status: 'pending'; expiresAt: Date; modules: string[] }
   | ({
       mode: 'slave';
       status: 'locked';
@@ -345,6 +351,9 @@ export class LicenseClientService implements OnModuleInit {
           lastCheckAttemptAt: now,
           lastObservedAt: now,
           developmentModeSince,
+          // Mandantenfähigkeit, 2026-08-27 – Fallback für Tokens, die ein
+          // Master vor diesem Feature ausgestellt hat (ohne `modules`-Feld).
+          modules: payload.modules ?? [],
         },
         update: {
           token: data.token,
@@ -356,6 +365,7 @@ export class LicenseClientService implements OnModuleInit {
           lastCheckAttemptAt: now,
           lastObservedAt: now,
           developmentModeSince,
+          modules: payload.modules ?? [],
         },
       });
       const message = `Status: ${payload.status}.`;
@@ -419,6 +429,7 @@ export class LicenseClientService implements OnModuleInit {
         status: 'development',
         developmentModeSince: state.developmentModeSince,
         autoLockAt,
+        modules: state.modules,
       };
     }
     if (state.status === 'locked') {
@@ -442,12 +453,17 @@ export class LicenseClientService implements OnModuleInit {
 
     const isExpired = effectiveNow.getTime() > state.expiresAt.getTime();
     if (!isExpired) {
-      return { mode: 'slave', status: 'live' };
+      return { mode: 'slave', status: 'live', modules: state.modules };
     }
 
     const graceDeadline = state.expiresAt.getTime() + GRACE_PERIOD_MS;
     if (effectiveNow.getTime() <= graceDeadline) {
-      return { mode: 'slave', status: 'pending', expiresAt: state.expiresAt };
+      return {
+        mode: 'slave',
+        status: 'pending',
+        expiresAt: state.expiresAt,
+        modules: state.modules,
+      };
     }
     return {
       mode: 'slave',

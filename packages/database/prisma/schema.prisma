@@ -1176,10 +1176,63 @@ model Webhook {
 // bei ihrem Master) laufen (`DEPLOYMENT_MODE`-Umgebungsschalter). Voller
 // Plan inkl. Token-Design und Sicherheitsüberlegungen:
 // knowledge-base/platform/master-slave-licensing.md.
+
+// Mandantenfähigkeit (Nutzervorgabe, 2026-08-27): "bei den Mandanten
+// gehört immer eine Webseite oder mehrere dazu" – ein Mandant ist der
+// eigentliche Kunde des Masters und kann mehrere Website-Installationen
+// haben (z.B. mehrere Marken/Domains desselben Kunden). Modul-Buchung
+// (siehe `MandantModule`) liegt bewusst HIER, nicht pro Website – ein
+// gebuchtes Modul gilt für den ganzen Mandanten und damit für alle seine
+// Websites gleichermaßen.
+model Mandant {
+  id   String @id @default(cuid())
+  name String
+
+  // Mitgliedschafts-Status (Master-seitige Verwaltung, unabhängig vom
+  // technischen `Website.status` live/development/locked einzelner
+  // Installationen): "active" | "inactive" | "locked".
+  status String @default("active")
+
+  // Freitext-Begründung einer Sperre (Nutzervorgabe, 2026-08-27: "wenn
+  // gesperrt, dann Sperrvermerk" – z.B. "Beitrag für Q3/2026 offen").
+  // Nur bei status="locked" im UI abgefragt/angezeigt, bleibt aber auch
+  // danach erhalten (Historie), falls später wieder entsperrt wird.
+  lockReason String?
+
+  // Firmenangaben (Nutzervorgabe, 2026-08-27: "speisen Impressum,
+  // Datenschutzhinweise und Systemmails dieses Mandanten") – Master-
+  // seitige Referenzdaten zu diesem Kunden. Alle optional, da beim
+  // Anlegen eines Mandanten noch nichts davon zwingend bekannt ist.
+  legalName          String?
+  representativeName String?
+  street             String?
+  postalCode         String?
+  city               String?
+  country            String?
+  email              String?
+  phone              String?
+  registerInfo       String?
+  vatId              String?
+
+  websites Website[]
+  modules  MandantModule[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("mandanten")
+}
+
 model Website {
   id     String @id @default(cuid())
   name   String
   domain String @unique
+
+  // Mandantenfähigkeit, 2026-08-27: jede Website gehört zu genau einem
+  // Mandanten – "Projekt anlegen" gibt es deshalb nicht mehr direkt auf
+  // der Webseite-Seite, sondern nur noch über den jeweiligen Mandanten.
+  mandantId String
+  mandant   Mandant @relation(fields: [mandantId], references: [id], onDelete: Cascade)
 
   // "live" | "development" | "locked" – "development" ist von der
   // Lizenzprüfung komplett ausgenommen (siehe Slave-seitige Durchsetzung,
@@ -1285,7 +1338,27 @@ model Website {
   // gefiltert – bei der aktuellen/realistischen Tabellengröße (Anzahl
   // Kundeninstallationen) irrelevant, aber kostenlos nachgerüstet.
   @@index([status])
+  @@index([mandantId])
   @@map("websites")
+}
+
+// Mandantenfähigkeit (Nutzervorgabe, 2026-08-27): welche Module ein
+// Mandant gebucht hat – gilt für ALLE seine Websites gleichermaßen (siehe
+// Kommentar bei `Mandant`). Der Modul-KATALOG selbst bleibt Code
+// (`websites/module-catalog.ts`, kein "Neu"-Button) – diese Tabelle hält
+// ausschließlich die Ja/Nein-Buchung, keine modulspezifische
+// Konfiguration (z.B. Zugangsdaten für ein Modul trägt der Kunde lokal in
+// seiner eigenen Installation ein, siehe Knowledge-Base).
+model MandantModule {
+  id         String   @id @default(cuid())
+  mandantId  String
+  mandant    Mandant  @relation(fields: [mandantId], references: [id], onDelete: Cascade)
+  moduleKey  String
+  bookedAt   DateTime @default(now())
+  bookedById String?
+
+  @@unique([mandantId, moduleKey])
+  @@map("mandant_modules")
 }
 
 // Slave-lokaler Zustand des zuletzt erfolgreich abgerufenen Lizenz-Tokens
@@ -1325,6 +1398,12 @@ model LicenseState {
   // automatisch mehr Vertrauen in ein sonst abgelaufenes Token schaffen
   // (siehe "Sicherheits-Realitätscheck" in der Knowledge-Base).
   lastObservedAt DateTime?
+
+  // Mandantenfähigkeit (Nutzervorgabe, 2026-08-27): die zuletzt vom Master
+  // signiert bestätigten, gebuchten Modul-Keys dieser Installation (siehe
+  // LicenseTokenPayload.modules) – einzige Quelle, aus der eine
+  // Client-Installation ihre eigenen Modul-Entitlements kennt.
+  modules String[] @default([])
 
   updatedAt DateTime @updatedAt
 
