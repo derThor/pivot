@@ -30,6 +30,16 @@ interface LicenseRecoveryPayload {
 // genug für die zwei Formular-Schritte im Popup.
 const LICENSE_RECOVERY_TOKEN_TTL_MS = 5 * 60 * 1000;
 
+// Sicherheits-Review, 2026-08-27: fester Dummy-Hash für
+// `verifyRecoveryCredentials()` – ohne ihn lief `argon2.verify()` nur,
+// wenn ein Nutzer mit dieser E-Mail existiert UND `settings:update` hat
+// (Kurzschlussauswertung), wodurch die Antwortzeit verriet, ob eine
+// E-Mail überhaupt existiert bzw. zu einem berechtigten Konto gehört.
+// Inhalt/Passwort dahinter sind irrelevant, nur das Format muss gültig
+// sein.
+const DUMMY_PASSWORD_HASH =
+  '$argon2id$v=19$m=65536,t=3,p=4$OLj+xHKa3w2ZW39BsDDAeQ$1UZP+LwHy7i6hPk0a4Ff77jxXDTFzJhnAPZjzR13cCI';
+
 // Karenzzeit nach Ablauf, bevor eine nicht erreichbare/fehlgeschlagene
 // erneute Prüfung tatsächlich zur Sperre führt (siehe
 // knowledge-base/platform/master-slave-licensing.md – verhindert, dass
@@ -490,7 +500,17 @@ export class LicenseClientService implements OnModuleInit {
    * Token für Schritt 2 (Key eintragen). Prüft Passwort UND
    * `settings:update`-Recht (nur wer den Key im normalen Betrieb ändern
    * dürfte, darf es auch hier tun) – generische Fehlermeldung wie beim
-   * normalen Login, keine Auskunft, welcher Teil falsch war. */
+   * normalen Login, keine Auskunft, welcher Teil falsch war.
+   *
+   * Sicherheits-Review, 2026-08-27: `argon2.verify()` läuft jetzt IMMER
+   * (gegen `DUMMY_PASSWORD_HASH`, falls kein Nutzer existiert), statt nur
+   * bei existierendem + berechtigtem Konto – sonst verrät allein die
+   * Antwortzeit, ob eine E-Mail existiert bzw. zu einem `settings:update`-
+   * Konto gehört. Ein falsches Passwort zählt außerdem auf dieselbe
+   * Fehlversuchssperre wie der normale Login (`AuthService.login()`),
+   * sonst wäre dieser Endpunkt ein zweiter, unlimitierter Rateweg fürs
+   * Erraten von Admin-Passwörtern, der die bestehende Kontosperre
+   * umgeht. */
   async verifyRecoveryCredentials(
     email: string,
     password: string,
@@ -512,6 +532,26 @@ export class LicenseClientService implements OnModuleInit {
         },
       },
     });
+    const passwordOk = await argon2.verify(
+      user?.passwordHash ?? DUMMY_PASSWORD_HASH,
+      password,
+    );
+
+    if (user && !passwordOk) {
+      const settings = await this.settingsService.get();
+      const failedLoginAttempts = user.failedLoginAttempts + 1;
+      const shouldLock =
+        settings.failedLoginLockoutThreshold != null &&
+        failedLoginAttempts >= settings.failedLoginLockoutThreshold;
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failedLoginAttempts,
+          ...(shouldLock && { isActive: false }),
+        },
+      });
+    }
+
     const permissions = user
       ? [
           ...new Set(
@@ -527,10 +567,17 @@ export class LicenseClientService implements OnModuleInit {
     const isValid =
       !!user &&
       user.isActive &&
-      permissions.includes('settings:update') &&
-      (await argon2.verify(user.passwordHash, password));
+      passwordOk &&
+      permissions.includes('settings:update');
     if (!isValid) {
       throw new UnauthorizedException('Ungültige Zugangsdaten.');
+    }
+
+    if (user.failedLoginAttempts > 0) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { failedLoginAttempts: 0 },
+      });
     }
 
     const payload: LicenseRecoveryPayload = {

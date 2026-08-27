@@ -125,9 +125,13 @@ export class LicenseStateController {
   }
 
   /** Schritt 2: nimmt das Token aus Schritt 1 plus den korrigierten Key
-   * entgegen, speichert ihn und löst sofort einen echten Re-Check aus. */
+   * entgegen, speichert ihn und löst sofort einen echten Re-Check aus.
+   * Eigenes Rate-Limit (Sicherheits-Review, 2026-08-27): ohne das ließe
+   * sich innerhalb der 5-Minuten-Gültigkeit eines echten Tokens beliebig
+   * oft ein Key raten. */
   @Public()
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('recovery/apply-key')
   async recoveryApplyKey(@Body() dto: LicenseRecoveryApplyKeyDto) {
     return this.licenseClient.applyRecoveryKey(dto.recoveryToken, dto.apiKey);
