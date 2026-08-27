@@ -329,7 +329,7 @@ export function NotificationsView({
                           "flex items-start gap-3 border-l-4 border-t border-t-border p-4 transition-colors first:border-t-0",
                           !n.isRead &&
                             n.isUrgent &&
-                            "border-l-red-500 bg-red-50/40 dark:bg-red-950/40",
+                            "border-l-red-500 bg-red-50 dark:bg-red-950/20",
                           !n.isRead &&
                             !n.isUrgent &&
                             "border-l-primary bg-primary/10",

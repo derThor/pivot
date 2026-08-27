@@ -112,7 +112,7 @@
   --pivot-app-bg: #f4f4f5;
   --pivot-shell: #ffffff;
   --pivot-dot: rgba(157, 200, 255, 0.5);
-  --pivot-switch-track-dark: #f4f4f5;
+  --pivot-switch-track-dark: #e6e6e6;
 
   /* Konstant in beiden Modi (Nutzervorgabe: NIE als Rollen-Mapping
      überschreiben – LIME/ON_LIME ändern sich nicht mit dem Theme). */
