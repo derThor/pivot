@@ -4,7 +4,6 @@ import { Blocks, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageHeader } from "@/components/page-header";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
 import type { MandantListItem, ModuleCatalogEntry } from "@/lib/api-server";
 
@@ -44,26 +43,55 @@ export function ModuleDetailView({
   appVersion: string | null;
 }) {
   const permissions = MODULE_PERMISSIONS[module.key] ?? [];
-  // Nutzervorgabe, 2026-08-28: "Bei Mandanten" statt "Auf Websites aktiv"
-  // – ALLE Mandanten (nicht nur die mit gebuchtem Modul), damit auch
-  // sichtbar ist, wer es noch nicht hat. Klick öffnet direkt das
-  // Bearbeiten-Popup der (ersten/Haupt-)Website dieses Mandanten auf
-  // `/dashboard/websites` (`?edit=<id>`, siehe websites-view.tsx).
+  // Nutzervorgabe, 2026-08-29: "es sollen da nur Mandanten angezeigt
+  // werden, die das Modul auf Mandantenebene hinzugefügt haben" – NICHT
+  // alle Mandanten, nur die mit einer `MandantModule`-Buchung für dieses
+  // Modul. Zwei Zustände (kein "offen"/dritter Zustand mehr): Schieberegler
+  // grün (`enabled: true`) → "freigeschaltet", Schieberegler aus
+  // (`enabled: false`, aber trotzdem hinzugefügt) → "nicht freigegeben".
+  // Klick öffnet das Bearbeiten-Popup der (ersten/Haupt-)Website dieses
+  // Mandanten auf `/dashboard/websites` (`?edit=<id>`, siehe
+  // websites-view.tsx) – fällt auf die Mandant-Detailseite zurück, falls
+  // (z.B. nach Website-Löschung) aktuell keine Website vorhanden ist.
   const mandantRows = mandanten
     .map((mandant) => {
-      const website = mandant.websites[0];
-      if (!website) return null;
       const booking = mandant.modules.find((m) => m.moduleKey === module.key);
-      const isSetUp = !!booking?.enabled;
-      return { mandant, website, isSetUp };
+      if (!booking) return null;
+      const website = mandant.websites[0] ?? null;
+      return {
+        mandant,
+        label: website?.name ?? mandant.name,
+        href: website
+          ? `/dashboard/websites?edit=${website.id}`
+          : `/dashboard/mandanten/${mandant.id}`,
+        status: booking.enabled
+          ? ("freigeschaltet" as const)
+          : ("nicht_freigegeben" as const),
+      };
     })
     .filter((row): row is NonNullable<typeof row> => row !== null);
+
+  const STATUS_BADGE: Record<
+    "freigeschaltet" | "nicht_freigegeben",
+    { label: string; className: string }
+  > = {
+    freigeschaltet: {
+      label: "freigeschaltet",
+      className: "badge--green border-0",
+    },
+    nicht_freigegeben: {
+      label: "nicht freigegeben",
+      className: "badge--slate border-0",
+    },
+  };
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <PageHeader title={module.label} />
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {module.label}
+          </h1>
           <DashboardBreadcrumbs overrideLast={module.label} />
         </div>
       </div>
@@ -136,31 +164,27 @@ export function ModuleDetailView({
         <div className="flex flex-col gap-4">
           <Card className="rounded-xl shadow-sm">
             <CardHeader>
-              <CardTitle className="text-base">Bei Mandanten</CardTitle>
+              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                Bei Mandanten
+              </p>
             </CardHeader>
-            <CardContent className="flex flex-col divide-y divide-border p-0">
+            <CardContent className="flex flex-col gap-2">
               {mandantRows.length === 0 ? (
-                <p className="px-6 py-4 text-sm text-muted-foreground">
-                  Noch keine Mandanten angelegt.
+                <p className="text-sm text-muted-foreground">
+                  Von keinem Mandanten hinzugefügt.
                 </p>
               ) : (
-                mandantRows.map(({ mandant, website, isSetUp }) => (
+                mandantRows.map(({ mandant, label, href, status }) => (
                   <Link
                     key={mandant.id}
-                    href={`/dashboard/websites?edit=${website.id}`}
-                    className="flex items-center justify-between gap-3 px-6 py-3 transition-colors hover:bg-muted/40"
+                    href={href}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted p-3 transition-colors hover:bg-muted/70"
                   >
-                    <span className="min-w-0 truncate text-sm">
-                      {website.name}
+                    <span className="min-w-0 truncate text-sm font-medium">
+                      {label}
                     </span>
-                    <Badge
-                      className={
-                        isSetUp
-                          ? "badge--green border-0"
-                          : "badge--slate border-0"
-                      }
-                    >
-                      {isSetUp ? "eingerichtet" : "nicht freigegeben"}
+                    <Badge className={STATUS_BADGE[status].className}>
+                      {STATUS_BADGE[status].label}
                     </Badge>
                   </Link>
                 ))
@@ -170,16 +194,22 @@ export function ModuleDetailView({
 
           <Card className="rounded-xl shadow-sm">
             <CardHeader>
-              <CardTitle className="text-base">Modul</CardTitle>
+              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                Modul
+              </p>
             </CardHeader>
-            <CardContent className="flex flex-col gap-2 text-sm">
-              <div className="flex items-center justify-between">
+            <CardContent className="flex flex-col divide-y divide-border px-6 py-0 text-sm">
+              <div className="flex items-center justify-between py-3">
                 <span className="text-muted-foreground">Version</span>
                 <span>{appVersion ?? "–"}</span>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between py-3">
                 <span className="text-muted-foreground">Kategorie</span>
                 <span>{CATEGORY_LABEL[module.category]}</span>
+              </div>
+              <div className="flex items-center justify-between py-3">
+                <span className="text-muted-foreground">Datenquelle</span>
+                <span>Lokal</span>
               </div>
             </CardContent>
           </Card>
