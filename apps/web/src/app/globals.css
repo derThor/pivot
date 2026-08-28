@@ -414,6 +414,54 @@
   box-shadow: inset 0 0 0 1px #475466;
 }
 
+/* Modul-Kachel-Hintergründe (Nutzervorgabe, 2026-08-29, exakte Vorlage) –
+   pro Modul eigener, fest gemalter Hintergrund statt eines generischen
+   Icon-Wasserzeichens. `::before` trägt Verlauf + SVG-Motiv + Punktraster,
+   `::after` das Lesbarkeits-Overlay; der Inhalt (Kachel-Content) liegt
+   per `z-index` darüber. Skalierung von `::before` auf Hover setzt die
+   zuvor verlangte "Schild vergrößert sich beim Hovern"-Vorgabe um, ohne
+   das fest gemalte Hintergrundbild in mehrere DOM-Elemente aufteilen zu
+   müssen. */
+.modul-kachel--datenschutz {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  background-color: #101a26;
+}
+
+.modul-kachel--datenschutz::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 75% 34%, rgba(188,230,77,0.34) 0%, rgba(188,230,77,0) 62%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 440'%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M600 6 L726 60 C726 180 672 246 600 300 C528 246 474 180 474 60 Z' fill='rgba(188,230,77,0.16)' stroke='rgba(200,240,110,0.85)' stroke-width='3.2'/%3E%3Cpath d='M614 21 L722 67 C722 170 675 227 614 274 C553 227 506 170 506 67 Z' stroke='rgba(188,230,77,0.35)' stroke-width='1.6'/%3E%3Cpath d='M543 153 L588 198 L666 96' stroke='rgba(210,245,130,0.95)' stroke-width='9'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(circle at center, rgba(255,255,255,0.13) 1.2px, transparent 1.6px),
+    linear-gradient(135deg, #243619 0%, #1a2734 45%, #101a26 100%);
+  background-size: auto, cover, 18px 18px, auto;
+  background-position: center, center, 0 0, center;
+  background-repeat: no-repeat, no-repeat, repeat, no-repeat;
+  transition: transform 300ms ease-out;
+}
+
+.modul-kachel--datenschutz:hover::before {
+  transform: scale(1.08);
+}
+
+.modul-kachel--datenschutz::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(100deg, rgba(13,21,32,0.86) 0%, rgba(13,21,32,0.55) 42%, rgba(13,21,32,0.12) 100%),
+    linear-gradient(to top, rgba(13,21,32,0.7) 0%, transparent 45%);
+}
+
+.modul-kachel--datenschutz > * {
+  position: relative;
+  z-index: 1;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;

@@ -85,11 +85,20 @@ export default async function ModulesPage() {
                 href={`/dashboard/modules/${module.key}`}
                 className="group"
               >
-                <Card className="relative overflow-hidden rounded-xl border-none bg-dark-surface text-dark-surface-foreground shadow-sm">
-                  <Icon
-                    className="pointer-events-none absolute -right-6 -bottom-6 size-36 text-white/5 transition-transform duration-300 ease-out group-hover:scale-125"
-                    strokeWidth={1}
-                  />
+                <Card
+                  className={cn(
+                    "relative overflow-hidden border-none text-dark-surface-foreground shadow-sm",
+                    module.key === "datenschutz"
+                      ? "modul-kachel--datenschutz"
+                      : "rounded-xl bg-dark-surface",
+                  )}
+                >
+                  {module.key !== "datenschutz" && (
+                    <Icon
+                      className="pointer-events-none absolute -right-6 -bottom-6 size-36 text-white/5 transition-transform duration-300 ease-out group-hover:scale-125"
+                      strokeWidth={1}
+                    />
+                  )}
                   <CardContent className="relative flex flex-col gap-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
