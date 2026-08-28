@@ -9,6 +9,7 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PrivacyIncidentsService } from './privacy-incidents.service';
@@ -17,9 +18,17 @@ import { UpdatePrivacyIncidentDto } from './dto/update-privacy-incident.dto';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
+import { RequireModule } from '../license-client/decorators/require-module.decorator';
+import { RequireModuleFeature } from '../license-client/decorators/require-module-feature.decorator';
+import { ModuleEntitlementGuard } from '../license-client/guards/module-entitlement.guard';
+import { ModuleFeatureGuard } from '../license-client/guards/module-feature.guard';
 
+// Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): Reiter "Vorfälle".
 @ApiTags('privacy-incidents')
 @ApiBearerAuth()
+@UseGuards(ModuleEntitlementGuard, ModuleFeatureGuard)
+@RequireModule('datenschutz')
+@RequireModuleFeature('datenschutz', 'vorfaelle')
 @Controller('privacy-incidents')
 export class PrivacyIncidentsController {
   constructor(

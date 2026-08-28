@@ -8,15 +8,16 @@ import { REQUIRE_MODULE_KEY } from '../decorators/require-module.decorator';
  * Mandantenfähigkeit (Nutzervorgabe, 2026-08-27): sperrt eine Route hart,
  * sofern diese Installation das per `@RequireModule('...')` geforderte
  * Modul nicht gebucht hat – 404 statt 403 (gleiche "existiert nicht"-
- * Konvention wie `MasterOnlyGuard`). Auf einer Master-Installation wirkt
- * der Guard NIE (Master ist das Hauptsystem, keine Modul-Freischaltung
- * für sich selbst nötig) – nur eine Slave-Installation prüft ihre eigenen,
- * vom Master signiert bestätigten Entitlements (`LicenseState.modules`,
- * siehe `LicenseClientService.getEffectiveStatus()`).
+ * Konvention wie `MasterOnlyGuard`).
  *
- * Noch nirgends angewendet (Nutzervorgabe: "Verdrahtung von 'Datenschutz'
- * hinter den Guard ist Folgearbeit, nicht Teil dieser Runde") – dieser
- * Guard ist die vorbereitete Infrastruktur dafür.
+ * Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): Master hat KEINEN
+ * pauschalen Bypass mehr ("Master wird nicht über Mandanten geregelt" –
+ * er bekommt stattdessen eine eigene, lokale Freischaltung über
+ * `ModuleSettings`, editierbar unter Einstellungen → Module). Master und
+ * Slave laufen dadurch über exakt dieselbe Prüfung:
+ * `LicenseClientService.getEffectiveStatus()` liefert auf beiden Modi ein
+ * `modules`-Feld (Slave: signiert vom Master über `LicenseState.modules`;
+ * Master: lokal aus `ModuleSettings`).
  */
 @Injectable()
 export class ModuleEntitlementGuard implements CanActivate {
@@ -35,9 +36,6 @@ export class ModuleEntitlementGuard implements CanActivate {
     }
 
     const effective = await this.licenseClient.getEffectiveStatus();
-    if (effective.mode === 'master') {
-      return true;
-    }
     const modules = 'modules' in effective ? effective.modules : [];
     if (!modules.includes(requiredModule)) {
       throw new NotFoundException();

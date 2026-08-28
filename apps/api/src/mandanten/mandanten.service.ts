@@ -5,7 +5,12 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebsitesService } from '../websites/websites.service';
-import { MODULE_CATALOG, isValidModuleKey } from '../websites/module-catalog';
+import {
+  MODULE_CATALOG,
+  isValidModuleKey,
+  isValidFeatureKey,
+  getAllFeatureKeys,
+} from '../websites/module-catalog';
 import { CreateMandantDto } from './dto/create-mandant.dto';
 import { UpdateMandantDto } from './dto/update-mandant.dto';
 import { QueryMandantDto } from './dto/query-mandant.dto';
@@ -16,7 +21,9 @@ const MANDANT_INCLUDE = {
     select: { id: true, name: true, domain: true, status: true },
     orderBy: { createdAt: 'asc' as const },
   },
-  modules: { select: { moduleKey: true } },
+  modules: {
+    select: { moduleKey: true, enabled: true, enabledFeatures: true },
+  },
 };
 
 /**
@@ -110,6 +117,22 @@ export class MandantenService {
       domain: dto.domain,
       mandantId: mandant.id,
     });
+    // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): "Modul bei neuen
+    // Mandanten vorinstallieren" – Module mit `autoInstallForNewMandants`
+    // werden direkt beim Anlegen mitgebucht, komplett aktiv.
+    const autoInstall = await this.prisma.moduleSettings.findMany({
+      where: { autoInstallForNewMandants: true },
+    });
+    for (const setting of autoInstall) {
+      if (!isValidModuleKey(setting.moduleKey)) continue;
+      await this.prisma.mandantModule.create({
+        data: {
+          mandantId: mandant.id,
+          moduleKey: setting.moduleKey,
+          enabledFeatures: getAllFeatureKeys(setting.moduleKey),
+        },
+      });
+    }
     return this.findOne(mandant.id);
   }
 
@@ -177,31 +200,94 @@ export class MandantenService {
     return MODULE_CATALOG;
   }
 
-  /** Ersetzt den kompletten Buchungsstand eines Mandanten (einfacher als
-   * einzelne add/remove-Endpunkte, passt zu einer Checkbox-/Toggle-Liste
-   * im Frontend). Jeder Key wird gegen den Katalog validiert – ein
-   * "Neu"-Button für Module gibt es bewusst nicht (Nutzervorgabe). */
-  async updateModules(
-    id: string,
-    moduleKeys: string[],
-    actingUserId: string,
-  ): Promise<void> {
+  /** Nutzervorgabe, 2026-08-27: "Module ... soll mit Button hinzugefügt
+   * werden" – ersetzt die frühere Ersetze-alles-PATCH durch einzelne
+   * Hinzufügen/Aktivieren-Deaktivieren/Entfernen-Aktionen (siehe
+   * `setModuleEnabled`/`removeModule` unten), passend zu einer Liste mit
+   * "+ Modul hinzufügen"-Button statt einer vorbefüllten Katalog-Liste
+   * mit lauter Schaltern. Neu hinzugefügte Module starten aktiv. */
+  async addModule(id: string, moduleKey: string, actingUserId: string) {
     await this.findOne(id);
-    const uniqueKeys = [...new Set(moduleKeys)];
-    for (const key of uniqueKeys) {
-      if (!isValidModuleKey(key)) {
-        throw new BadRequestException(`Unbekanntes Modul: "${key}".`);
-      }
+    if (!isValidModuleKey(moduleKey)) {
+      throw new BadRequestException(`Unbekanntes Modul: "${moduleKey}".`);
     }
-    await this.prisma.$transaction([
-      this.prisma.mandantModule.deleteMany({ where: { mandantId: id } }),
-      this.prisma.mandantModule.createMany({
-        data: uniqueKeys.map((moduleKey) => ({
-          mandantId: id,
-          moduleKey,
-          bookedById: actingUserId,
-        })),
-      }),
-    ]);
+    await this.prisma.mandantModule.upsert({
+      where: { mandantId_moduleKey: { mandantId: id, moduleKey } },
+      create: {
+        mandantId: id,
+        moduleKey,
+        bookedById: actingUserId,
+        enabledFeatures: getAllFeatureKeys(moduleKey),
+      },
+      update: {},
+    });
+    return this.findOne(id);
+  }
+
+  /** Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): "Module ...
+   * hinzugefügt, dann aktivierbar und deaktivierbar mit Schieberegler" –
+   * pro Unter-Feature (bei Datenschutz: die 7 Reiter), unabhängig vom
+   * Aktivsein des ganzen Moduls (siehe `setModuleEnabled` oben). */
+  async setModuleFeatureEnabled(
+    id: string,
+    moduleKey: string,
+    featureKey: string,
+    enabled: boolean,
+  ) {
+    if (!isValidFeatureKey(moduleKey, featureKey)) {
+      throw new BadRequestException(
+        `Unbekanntes Feature "${featureKey}" für Modul "${moduleKey}".`,
+      );
+    }
+    const mandant = await this.findOne(id);
+    const booking = mandant.modules.find((m) => m.moduleKey === moduleKey);
+    if (!booking) {
+      throw new NotFoundException(
+        `Modul "${moduleKey}" ist bei diesem Mandanten nicht hinzugefügt.`,
+      );
+    }
+    const nextFeatures = enabled
+      ? [...new Set([...booking.enabledFeatures, featureKey])]
+      : booking.enabledFeatures.filter((key) => key !== featureKey);
+    await this.prisma.mandantModule.update({
+      where: { mandantId_moduleKey: { mandantId: id, moduleKey } },
+      data: { enabledFeatures: nextFeatures },
+    });
+    return this.findOne(id);
+  }
+
+  /** Nutzervorgabe, 2026-08-27: "wenn dann hinzugefügt wurde, soll
+   * aktivierbar und deaktivierbar mit Schieberegler ... laufen" –
+   * Hinzufügen und Aktivsein sind getrennte Zustände, siehe Kommentar an
+   * `MandantModule.enabled` in schema.prisma. */
+  async setModuleEnabled(id: string, moduleKey: string, enabled: boolean) {
+    await this.findOne(id);
+    await this.prisma.mandantModule
+      .update({
+        where: { mandantId_moduleKey: { mandantId: id, moduleKey } },
+        data: { enabled },
+      })
+      .catch(() => {
+        throw new NotFoundException(
+          `Modul "${moduleKey}" ist bei diesem Mandanten nicht hinzugefügt.`,
+        );
+      });
+    return this.findOne(id);
+  }
+
+  /** Nutzervorgabe, 2026-08-27: "Module sollen auch entfernt werden
+   * können" – löscht die Buchung vollständig (nicht nur deaktivieren). */
+  async removeModule(id: string, moduleKey: string) {
+    await this.findOne(id);
+    await this.prisma.mandantModule
+      .delete({
+        where: { mandantId_moduleKey: { mandantId: id, moduleKey } },
+      })
+      .catch(() => {
+        throw new NotFoundException(
+          `Modul "${moduleKey}" ist bei diesem Mandanten nicht hinzugefügt.`,
+        );
+      });
+    return this.findOne(id);
   }
 }

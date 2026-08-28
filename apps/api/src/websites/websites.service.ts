@@ -79,7 +79,7 @@ const PUBLIC_SELECT = {
   createdAt: true,
   updatedAt: true,
   mandantId: true,
-  mandant: { select: { id: true, name: true } },
+  mandant: { select: { id: true, name: true, logoUrl: true } },
 } as const;
 
 @Injectable()
@@ -593,7 +593,13 @@ export class WebsitesService implements OnModuleInit {
     const website = await this.prisma.website.findUnique({
       where: { domain },
       include: {
-        mandant: { include: { modules: { select: { moduleKey: true } } } },
+        mandant: {
+          include: {
+            modules: {
+              select: { moduleKey: true, enabled: true, enabledFeatures: true },
+            },
+          },
+        },
       },
     });
     if (!website?.apiKeyEncrypted) {
@@ -626,7 +632,12 @@ export class WebsitesService implements OnModuleInit {
       expiresAt: issuedAt + TOKEN_VALIDITY_MS,
       seq,
       developmentModeSince: website.developmentModeSince?.getTime() ?? null,
-      modules: website.mandant.modules.map((entry) => entry.moduleKey),
+      modules: website.mandant.modules
+        .filter((entry) => entry.enabled)
+        .map((entry) => ({
+          key: entry.moduleKey,
+          features: entry.enabledFeatures,
+        })),
     };
     const token = signLicenseToken(payload);
 

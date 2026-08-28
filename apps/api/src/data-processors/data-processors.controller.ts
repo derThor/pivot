@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
@@ -18,9 +19,17 @@ import { UpdateDataProcessorDto } from './dto/update-data-processor.dto';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
+import { RequireModule } from '../license-client/decorators/require-module.decorator';
+import { RequireModuleFeature } from '../license-client/decorators/require-module-feature.decorator';
+import { ModuleEntitlementGuard } from '../license-client/guards/module-entitlement.guard';
+import { ModuleFeatureGuard } from '../license-client/guards/module-feature.guard';
 
+// Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): Reiter "Auftragsverarbeiter".
 @ApiTags('data-processors')
 @ApiBearerAuth()
+@UseGuards(ModuleEntitlementGuard, ModuleFeatureGuard)
+@RequireModule('datenschutz')
+@RequireModuleFeature('datenschutz', 'auftragsverarbeiter')
 @Controller('data-processors')
 export class DataProcessorsController {
   constructor(private readonly dataProcessorsService: DataProcessorsService) {}

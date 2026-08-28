@@ -925,6 +925,19 @@ Kunden innerhalb EINER Installation – hier geht es um den Master, der
 mehrere physisch getrennte Installationen verwaltet, siehe Abgrenzung in
 der Knowledge-Base).
 
+**Datenschutz als erstes echtes Modul (2026-08-28):** schließt die Lücke
+"Guard noch nicht verdrahtet" von oben – Datenschutz (`/dashboard/privacy`,
+7 Reiter) ist jetzt das erste Modul mit echter Durchsetzung, inkl. neuer
+Feature-Ebene (pro Reiter einzeln (de)aktivierbar). Master bekam dabei
+eine eigene, lokale Freischaltung (`ModuleSettings`, editierbar direkt auf
+`/dashboard/modules/[key]`), da "Master wird nicht über Mandanten
+geregelt" – `ModuleEntitlementGuard`/`ModuleFeatureGuard` prüfen dadurch
+Master und Slave einheitlich, ohne Sonderfall. Systemnachrichten
+(Rechtstexte/Löschanfragen) respektieren die Freischaltung ebenfalls.
+Details, Datenmodell, gelöster NestJS-Zirkelbezug und offene Punkte
+(`nutzer`-Reiter nur UI-seitig gegatet, `sccTemplateMediaId`-Randfall):
+[master-slave-licensing.md](../knowledge-base/platform/master-slave-licensing.md#update-2026-08-28-datenschutz-als-erstes-echtes-modul).
+
 **Noch offen:**
 
 - [x] strasev-Installation technisch lauffähig machen (`.env`, Datenbank,

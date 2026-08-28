@@ -5,11 +5,22 @@
 // Einträge aus dieser Liste buchen (siehe `MandantModule` in
 // schema.prisma – gilt für alle seine Websites gleichermaßen), aber
 // niemand kann über die UI neue Einträge erzeugen.
+// Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): manche Module
+// gliedern sich in einzeln (de)aktivierbare Unter-Features – bei
+// Datenschutz sind das exakt die 7 Reiter von `/dashboard/privacy`
+// (Keys 1:1 aus `apps/web/src/components/privacy-view.tsx`s `TabId`-Union
+// übernommen, damit Katalog und Frontend nie auseinanderlaufen).
+export interface ModuleFeatureEntry {
+  key: string;
+  label: string;
+}
+
 export interface ModuleCatalogEntry {
   key: string;
   label: string;
   description: string;
   category: 'compliance' | 'integration';
+  features?: ModuleFeatureEntry[];
 }
 
 export const MODULE_CATALOG: ModuleCatalogEntry[] = [
@@ -19,6 +30,15 @@ export const MODULE_CATALOG: ModuleCatalogEntry[] = [
     description:
       'DSGVO-Verwaltung: Rechtstexte, Löschanfragen, Verarbeitungsverzeichnis, Auftragsverarbeiter, Datenschutzvorfälle.',
     category: 'compliance',
+    features: [
+      { key: 'rechtstexte', label: 'Rechtstexte' },
+      { key: 'loeschanfragen', label: 'Anfragen' },
+      { key: 'verarbeitungen', label: 'Verarbeitungen' },
+      { key: 'auftragsverarbeiter', label: 'Auftragsverarbeiter' },
+      { key: 'vorfaelle', label: 'Vorfälle' },
+      { key: 'dsb', label: 'Datenschutzbeauftragter' },
+      { key: 'nutzer', label: 'Benutzer' },
+    ],
   },
   {
     key: 'magicline',
@@ -33,4 +53,21 @@ export const MODULE_KEYS = MODULE_CATALOG.map((entry) => entry.key);
 
 export function isValidModuleKey(key: string): boolean {
   return MODULE_KEYS.includes(key);
+}
+
+export function getModuleCatalogEntry(
+  key: string,
+): ModuleCatalogEntry | undefined {
+  return MODULE_CATALOG.find((entry) => entry.key === key);
+}
+
+export function getAllFeatureKeys(moduleKey: string): string[] {
+  return getModuleCatalogEntry(moduleKey)?.features?.map((f) => f.key) ?? [];
+}
+
+export function isValidFeatureKey(
+  moduleKey: string,
+  featureKey: string,
+): boolean {
+  return getAllFeatureKeys(moduleKey).includes(featureKey);
 }

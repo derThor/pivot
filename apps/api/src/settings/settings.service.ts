@@ -8,6 +8,7 @@ import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { UpdateMaintenancePageDto } from './dto/update-maintenance-page.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdatePrivacyDto } from './dto/update-privacy.dto';
+import { UpdatePrivacyDsbDto } from './dto/update-privacy-dsb.dto';
 import { UpdateSmtpSettingsDto } from './dto/update-smtp-settings.dto';
 import { UpdateLicenseClientSettingsDto } from './dto/update-license-client-settings.dto';
 import { encryptSecret } from '../common/utils/secret-encryption';
@@ -169,6 +170,15 @@ export class SettingsService {
   }
 
   async updatePrivacy(dto: UpdatePrivacyDto, actingUserId: string) {
+    await this.update(dto, actingUserId);
+    return this.getPrivacy();
+  }
+
+  // Datenschutz-als-Modul, 2026-08-28: eigene Methode für den
+  // "dsb"-Reiter (siehe UpdatePrivacyDsbDto), damit beide Reiter
+  // unabhängig voneinander gegatet werden können, auch wenn beide auf
+  // dieselbe `update()`/`getPrivacy()`-Grundlage aufsetzen.
+  async updatePrivacyDsb(dto: UpdatePrivacyDsbDto, actingUserId: string) {
     await this.update(dto, actingUserId);
     return this.getPrivacy();
   }

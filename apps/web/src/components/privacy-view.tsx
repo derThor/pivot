@@ -216,6 +216,7 @@ export function PrivacyView({
   users,
   avsFolderId,
   sccTemplateMedia: initialSccTemplateMedia,
+  enabledFeatures,
 }: {
   settings: PrivacyPageSettings;
   legalDocuments: LegalDocument[];
@@ -229,6 +230,9 @@ export function PrivacyView({
   users: CurrentUser[];
   avsFolderId: string | null;
   sccTemplateMedia: { id: string; filename: string; url: string } | null;
+  // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): `null` = unbeschränkt
+  // (Master/unchecked), sonst nur die hier gelisteten Reiter-Keys.
+  enabledFeatures: string[] | null;
 }) {
   const router = useRouter();
   // ?tab=-Deep-Link (z.B. von der Systemnachrichten-Seite aus, Nutzervorgabe
@@ -236,7 +240,7 @@ export function PrivacyView({
   // gleiches Muster wie my-account-view.tsx.
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const TAB_IDS: TabId[] = [
+  const ALL_TAB_IDS: TabId[] = [
     "rechtstexte",
     "loeschanfragen",
     "verarbeitungen",
@@ -245,10 +249,15 @@ export function PrivacyView({
     "dsb",
     "nutzer",
   ];
+  // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): pro Reiter
+  // (de)aktivierbar, `enabledFeatures === null` = unbeschränkt.
+  const TAB_IDS = enabledFeatures
+    ? ALL_TAB_IDS.filter((id) => enabledFeatures.includes(id))
+    : ALL_TAB_IDS;
   const initialTab =
     tabParam && (TAB_IDS as string[]).includes(tabParam)
       ? (tabParam as TabId)
-      : "rechtstexte";
+      : (TAB_IDS[0] ?? "rechtstexte");
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const tabsRef = useRef<HTMLDivElement>(null);
 
@@ -658,18 +667,20 @@ export function PrivacyView({
                 `${deactivatedAccountsDue.length} zu entfernen`,
               ],
             ] as const
-          ).map(([id, label, subtitle]) => (
-            <TabsTrigger
-              key={id}
-              value={id}
-              className="!h-auto min-h-[52px] flex-none flex-col items-start justify-center gap-0.5 rounded-lg px-4 py-2.5 text-left whitespace-normal"
-            >
-              <span className="text-sm font-semibold">{label}</span>
-              <span className="text-xs font-normal text-muted-foreground">
-                {subtitle}
-              </span>
-            </TabsTrigger>
-          ))}
+          )
+            .filter(([id]) => TAB_IDS.includes(id as TabId))
+            .map(([id, label, subtitle]) => (
+              <TabsTrigger
+                key={id}
+                value={id}
+                className="!h-auto min-h-[52px] flex-none flex-col items-start justify-center gap-0.5 rounded-lg px-4 py-2.5 text-left whitespace-normal"
+              >
+                <span className="text-sm font-semibold">{label}</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  {subtitle}
+                </span>
+              </TabsTrigger>
+            ))}
         </TabsList>
 
         <TabsContent value="rechtstexte">

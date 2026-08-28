@@ -12,6 +12,7 @@ import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { verifyLicenseToken } from '../websites/license-token.util';
+import { MODULE_CATALOG, getAllFeatureKeys } from '../websites/module-catalog';
 import { decryptSecret } from '../common/utils/secret-encryption';
 import { DEVELOPMENT_MODE_MAX_DAYS } from '../websites/websites.service';
 
@@ -78,13 +79,30 @@ export interface LockedPageBranding {
 }
 
 export type EffectiveLicenseStatus =
-  | { mode: 'master' }
+  // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): Master hat kein
+  // `Mandant`-Objekt für sich selbst ("Master wird nicht über Mandanten
+  // geregelt") und braucht daher eine eigene, lokale Freischaltungsquelle
+  // (`ModuleSettings`, editierbar unter Einstellungen → Module) statt des
+  // früheren pauschalen Bypasses – dadurch prüfen `ModuleEntitlementGuard`/
+  // `ModuleFeatureGuard` Master und Slave einheitlich über `modules`/
+  // `moduleFeatures`, ohne modusabhängige Sonderfälle im Guard selbst.
+  | {
+      mode: 'master';
+      modules: string[];
+      moduleFeatures: Record<string, string[]>;
+    }
   | { mode: 'slave'; status: 'unchecked' }
   // Mandantenfähigkeit, 2026-08-27: `modules` sind die zuletzt vom Master
   // signiert bestätigten, gebuchten Modul-Keys dieser Installation (siehe
   // LicenseState.modules) – einzige Stelle, an der eine Installation ihre
-  // eigenen Entitlements erfährt.
-  | { mode: 'slave'; status: 'live'; modules: string[] }
+  // eigenen Entitlements erfährt. `moduleFeatures` (2026-08-28) ergänzt,
+  // welche Unter-Features je Modul aktiv sind (siehe LicenseState.moduleFeatures).
+  | {
+      mode: 'slave';
+      status: 'live';
+      modules: string[];
+      moduleFeatures: Record<string, string[]>;
+    }
   | {
       mode: 'slave';
       status: 'development';
@@ -95,8 +113,15 @@ export type EffectiveLicenseStatus =
       developmentModeSince: Date | null;
       autoLockAt: Date | null;
       modules: string[];
+      moduleFeatures: Record<string, string[]>;
     }
-  | { mode: 'slave'; status: 'pending'; expiresAt: Date; modules: string[] }
+  | {
+      mode: 'slave';
+      status: 'pending';
+      expiresAt: Date;
+      modules: string[];
+      moduleFeatures: Record<string, string[]>;
+    }
   | ({
       mode: 'slave';
       status: 'locked';
@@ -338,6 +363,14 @@ export class LicenseClientService implements OnModuleInit {
       const developmentModeSince = payload.developmentModeSince
         ? new Date(payload.developmentModeSince)
         : null;
+      // Mandantenfähigkeit, 2026-08-27, erweitert 2026-08-28 um
+      // Feature-Ebene – Fallback für Tokens, die ein Master vor diesem
+      // Feature ausgestellt hat (ohne `modules`-Feld).
+      const bookedModules = payload.modules ?? [];
+      const moduleKeys = bookedModules.map((m) => m.key);
+      const moduleFeatures = Object.fromEntries(
+        bookedModules.map((m) => [m.key, m.features]),
+      );
       await this.prisma.licenseState.upsert({
         where: { id: 'singleton' },
         create: {
@@ -351,9 +384,8 @@ export class LicenseClientService implements OnModuleInit {
           lastCheckAttemptAt: now,
           lastObservedAt: now,
           developmentModeSince,
-          // Mandantenfähigkeit, 2026-08-27 – Fallback für Tokens, die ein
-          // Master vor diesem Feature ausgestellt hat (ohne `modules`-Feld).
-          modules: payload.modules ?? [],
+          modules: moduleKeys,
+          moduleFeatures,
         },
         update: {
           token: data.token,
@@ -365,7 +397,8 @@ export class LicenseClientService implements OnModuleInit {
           lastCheckAttemptAt: now,
           lastObservedAt: now,
           developmentModeSince,
-          modules: payload.modules ?? [],
+          modules: moduleKeys,
+          moduleFeatures,
         },
       });
       const message = `Status: ${payload.status}.`;
@@ -386,7 +419,7 @@ export class LicenseClientService implements OnModuleInit {
    * (siehe "Sicherheits-Realitätscheck" in der Knowledge-Base). */
   async getEffectiveStatus(): Promise<EffectiveLicenseStatus> {
     if (!(await this.isSlaveMode())) {
-      return { mode: 'master' };
+      return { mode: 'master', ...(await this.getMasterModuleEntitlements()) };
     }
 
     const state = await this.getState();
@@ -430,6 +463,7 @@ export class LicenseClientService implements OnModuleInit {
         developmentModeSince: state.developmentModeSince,
         autoLockAt,
         modules: state.modules,
+        moduleFeatures: state.moduleFeatures as Record<string, string[]>,
       };
     }
     if (state.status === 'locked') {
@@ -452,8 +486,14 @@ export class LicenseClientService implements OnModuleInit {
     const effectiveNow = clockRegressed ? state.lastObservedAt! : now;
 
     const isExpired = effectiveNow.getTime() > state.expiresAt.getTime();
+    const moduleFeatures = state.moduleFeatures as Record<string, string[]>;
     if (!isExpired) {
-      return { mode: 'slave', status: 'live', modules: state.modules };
+      return {
+        mode: 'slave',
+        status: 'live',
+        modules: state.modules,
+        moduleFeatures,
+      };
     }
 
     const graceDeadline = state.expiresAt.getTime() + GRACE_PERIOD_MS;
@@ -463,6 +503,7 @@ export class LicenseClientService implements OnModuleInit {
         status: 'pending',
         expiresAt: state.expiresAt,
         modules: state.modules,
+        moduleFeatures,
       };
     }
     return {
@@ -471,6 +512,31 @@ export class LicenseClientService implements OnModuleInit {
       keySuspect,
       ...(await this.getMaintenanceContent()),
     };
+  }
+
+  /** Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): Masters eigene
+   * Modul-/Feature-Freischaltung aus `ModuleSettings` – fehlt für einen
+   * Katalog-Eintrag noch eine Zeile (frisch hinzugefügtes Modul, noch nie
+   * unter Einstellungen → Module angefasst), gilt derselbe Default wie das
+   * Schema selbst vorgibt: `enabled: true`, alle Feature-Keys aktiv. */
+  private async getMasterModuleEntitlements(): Promise<{
+    modules: string[];
+    moduleFeatures: Record<string, string[]>;
+  }> {
+    const rows = await this.prisma.moduleSettings.findMany();
+    const rowByKey = new Map(rows.map((r) => [r.moduleKey, r]));
+    const modules: string[] = [];
+    const moduleFeatures: Record<string, string[]> = {};
+    for (const entry of MODULE_CATALOG) {
+      const row = rowByKey.get(entry.key);
+      const enabled = row?.enabled ?? true;
+      if (!enabled) continue;
+      modules.push(entry.key);
+      moduleFeatures[entry.key] = row
+        ? row.enabledFeatures
+        : getAllFeatureKeys(entry.key);
+    }
+    return { modules, moduleFeatures };
   }
 
   /** Nur bei "locked" gebraucht – eigener Query statt in jedem Aufruf von

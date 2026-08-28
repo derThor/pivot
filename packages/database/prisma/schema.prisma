@@ -1199,6 +1199,13 @@ model Mandant {
   // danach erhalten (Historie), falls später wieder entsperrt wird.
   lockReason String?
 
+  // Logo dieses Mandanten (Nutzervorgabe, 2026-08-27: "bau ein Logo
+  // Upload bei Mandanten ein") – eigenes Feld statt Wiederverwendung von
+  // `AppSettings.companyLogoUrl`, da das Firmenlogo dort IMMER Pivots
+  // eigenes ist, nicht das eines Kunden. Relative Medien-URL wie bei
+  // `companyLogoUrl`, gleicher `mediaUrl()`/`resolveImageSrc()`-Helfer.
+  logoUrl String?
+
   // Firmenangaben (Nutzervorgabe, 2026-08-27: "speisen Impressum,
   // Datenschutzhinweise und Systemmails dieses Mandanten") – Master-
   // seitige Referenzdaten zu diesem Kunden. Alle optional, da beim
@@ -1357,8 +1364,49 @@ model MandantModule {
   bookedAt   DateTime @default(now())
   bookedById String?
 
+  // Nutzervorgabe, 2026-08-27: "Module ... hinzugefügt, dann aktivierbar
+  // und deaktivierbar mit Schieberegler" – Hinzufügen (diese Zeile
+  // existiert) und Aktivsein sind zwei getrennte Zustände. Nur aktive
+  // Module gehen in den signierten Lizenz-Token ein (siehe
+  // `WebsitesService.checkLicense()`), ein hinzugefügtes, aber
+  // deaktiviertes Modul schaltet clientseitig nichts frei.
+  enabled Boolean @default(true)
+
+  // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): manche Module
+  // gliedern sich in Unter-Features (bei Datenschutz: die 7 Reiter der
+  // Seite, siehe `websites/module-catalog.ts` `ModuleCatalogEntry.features`).
+  // Hinzufügen/Aktivsein des ganzen Moduls (oben) und welche einzelnen
+  // Unter-Features aktiv sind, sind zwei getrennte Ebenen – ein
+  // deaktiviertes Feature schaltet nur diesen einen Reiter clientseitig
+  // ab, nicht das ganze Modul. Startet beim Hinzufügen mit ALLEN
+  // Feature-Keys des Katalog-Eintrags befüllt (frisch gebucht = komplett
+  // aktiv).
+  enabledFeatures String[] @default([])
+
   @@unique([mandantId, moduleKey])
   @@map("mandant_modules")
+}
+
+// Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): Masters EIGENE
+// Modul-/Feature-Freischaltung – Master hat kein `Mandant`-Objekt für sich
+// selbst ("Master wird nicht über Mandanten geregelt"), braucht aber
+// dieselbe Freischaltungs-Logik wie ein Client, damit `ModuleEntitlementGuard`/
+// `ModuleFeatureGuard` beide Installationstypen einheitlich prüfen können
+// (siehe `LicenseClientService.getEffectiveStatus()`). Editierbar unter
+// Einstellungen → Module (nur auf einer Master-Installation sichtbar).
+model ModuleSettings {
+  moduleKey String @id
+
+  enabled         Boolean  @default(true)
+  enabledFeatures String[] @default([])
+
+  // Wenn aktiv, bucht `MandantenService.create()` dieses Modul automatisch
+  // für jeden neu angelegten Mandanten mit.
+  autoInstallForNewMandants Boolean @default(false)
+
+  updatedAt DateTime @updatedAt
+
+  @@map("module_settings")
 }
 
 // Slave-lokaler Zustand des zuletzt erfolgreich abgerufenen Lizenz-Tokens
@@ -1404,6 +1452,13 @@ model LicenseState {
   // LicenseTokenPayload.modules) – einzige Quelle, aus der eine
   // Client-Installation ihre eigenen Modul-Entitlements kennt.
   modules String[] @default([])
+
+  // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): welche Unter-
+  // Features je gebuchtem Modul aktiv sind (Record<moduleKey, string[]>,
+  // z.B. `{"datenschutz": ["rechtstexte","vorfaelle"]}`) – JSON statt
+  // eines eigenen Feldes pro Modul, da die Anzahl/Namen der Module offen
+  // ist. Kommt aus `LicenseTokenPayload.modules[].features`.
+  moduleFeatures Json @default("{}")
 
   updatedAt DateTime @updatedAt
 

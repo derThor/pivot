@@ -43,15 +43,8 @@ export default async function SettingsPage({
   // Eigener Query-Param `webhooksPage`/`protocolPage`/`jobsRunsPage` statt
   // `page`, damit sich die Paginierungen der einzelnen
   // Einstellungen-Abschnitte nicht gegenseitig überschreiben.
-  const [
-    webhooks,
-    settingsChanges,
-    smtp,
-    jobs,
-    jobRuns,
-    mailTemplates,
-    websites,
-  ] = await Promise.all([
+  const [webhooks, settingsChanges, smtp, jobs, jobRuns, mailTemplates, websites] =
+    await Promise.all([
     getWebhooks({
       page: webhooksPage,
       pageSize: settings?.defaultPageSize ?? 10,

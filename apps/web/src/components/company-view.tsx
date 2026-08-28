@@ -166,7 +166,7 @@ export function CompanyView({
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       <div className="flex flex-col gap-4 rounded-xl bg-card shadow-sm p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-8">
           {logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- Logo kommt aus Nutzer-Upload (beliebige externe/lokale URL), kein next/image-Optimierungsfall.
             <img

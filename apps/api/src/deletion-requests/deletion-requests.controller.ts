@@ -9,6 +9,7 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { DeletionRequestsService } from './deletion-requests.service';
@@ -19,7 +20,17 @@ import { CreateSelfServiceRequestDto } from './dto/create-self-service-request.d
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
+import { RequireModule } from '../license-client/decorators/require-module.decorator';
+import { RequireModuleFeature } from '../license-client/decorators/require-module-feature.decorator';
+import { ModuleEntitlementGuard } from '../license-client/guards/module-entitlement.guard';
+import { ModuleFeatureGuard } from '../license-client/guards/module-feature.guard';
 
+// Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): Reiter "Anfragen" –
+// NUR die Admin-Routen unten bekommen `@RequireModule`/
+// `@RequireModuleFeature` einzeln (nicht auf Klassenebene!), die
+// Self-Service-Routen (`self-service`/`self-service/:id`) bleiben für
+// jeden eingeloggten Nutzer unverändert erreichbar, unabhängig von der
+// Modul-Buchung – Selbstauskunft/-löschung ist keine Admin-Funktion.
 @ApiTags('deletion-requests')
 @ApiBearerAuth()
 @Controller('deletion-requests')
@@ -28,12 +39,18 @@ export class DeletionRequestsController {
     private readonly deletionRequestsService: DeletionRequestsService,
   ) {}
 
+  @UseGuards(ModuleEntitlementGuard, ModuleFeatureGuard)
+  @RequireModule('datenschutz')
+  @RequireModuleFeature('datenschutz', 'loeschanfragen')
   @RequirePermission('privacy:read')
   @Get()
   findAll() {
     return this.deletionRequestsService.findAll();
   }
 
+  @UseGuards(ModuleEntitlementGuard, ModuleFeatureGuard)
+  @RequireModule('datenschutz')
+  @RequireModuleFeature('datenschutz', 'loeschanfragen')
   @RequirePermission('privacy:create')
   @Post()
   create(@Body() dto: CreateDeletionRequestDto) {
@@ -74,12 +91,18 @@ export class DeletionRequestsController {
     return this.deletionRequestsService.withdrawSelfService(id, user.sub);
   }
 
+  @UseGuards(ModuleEntitlementGuard, ModuleFeatureGuard)
+  @RequireModule('datenschutz')
+  @RequireModuleFeature('datenschutz', 'loeschanfragen')
   @RequirePermission('privacy:update')
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateDeletionRequestDto) {
     return this.deletionRequestsService.update(id, dto);
   }
 
+  @UseGuards(ModuleEntitlementGuard, ModuleFeatureGuard)
+  @RequireModule('datenschutz')
+  @RequireModuleFeature('datenschutz', 'loeschanfragen')
   @RequirePermission('privacy:delete')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
@@ -87,6 +110,9 @@ export class DeletionRequestsController {
     return this.deletionRequestsService.remove(id);
   }
 
+  @UseGuards(ModuleEntitlementGuard, ModuleFeatureGuard)
+  @RequireModule('datenschutz')
+  @RequireModuleFeature('datenschutz', 'loeschanfragen')
   @RequirePermission('privacy:read')
   @Header('Content-Type', 'text/csv; charset=utf-8')
   @Header('Content-Disposition', 'attachment; filename="datenauszug.csv"')
@@ -95,12 +121,18 @@ export class DeletionRequestsController {
     return this.deletionRequestsService.generateDataExtract(id);
   }
 
+  @UseGuards(ModuleEntitlementGuard, ModuleFeatureGuard)
+  @RequireModule('datenschutz')
+  @RequireModuleFeature('datenschutz', 'loeschanfragen')
   @RequirePermission('privacy:update')
   @Post(':id/complete')
   markCompleted(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.deletionRequestsService.markCompleted(id, user.sub);
   }
 
+  @UseGuards(ModuleEntitlementGuard, ModuleFeatureGuard)
+  @RequireModule('datenschutz')
+  @RequireModuleFeature('datenschutz', 'loeschanfragen')
   @RequirePermission('privacy:update')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post(':id/follow-up')

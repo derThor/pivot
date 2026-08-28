@@ -1,13 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsBoolean,
-  IsEmail,
-  IsInt,
-  IsISO8601,
-  IsOptional,
-  IsString,
-  Min,
-} from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 // Nur die Datenschutz-relevanten Felder (DSB-Kontakt, Aufbewahrungsfristen,
 // Formular-Einstellungen, SCC-Vorlage) – analog zu UpdateCompanyDto: eine
@@ -20,66 +12,6 @@ import {
 // Pivot-Einführung nicht mehr hat, obwohl `privacy:read` vollständig
 // vorhanden ist).
 export class UpdatePrivacyDto {
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsBoolean()
-  dpoIsExternal?: boolean;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  dpoName?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  dpoCompany?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsEmail()
-  dpoEmail?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  dpoPhone?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsISO8601()
-  dpoAppointedAt?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsISO8601()
-  dpoReportedAt?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  dpoSupervisoryAuthority?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsISO8601()
-  dpoLastContactAt?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsBoolean()
-  dpoListInLegalTexts?: boolean;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsBoolean()
-  dpoNotifyOnIncident?: boolean;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsBoolean()
-  dpoMonthlyReportEnabled?: boolean;
-
   @ApiPropertyOptional({ nullable: true })
   @IsOptional()
   @IsInt()

@@ -37,6 +37,7 @@ import { JobsModule } from './jobs/jobs.module';
 import { FormsModule } from './forms/forms.module';
 import { WebsitesModule } from './websites/websites.module';
 import { MandantenModule } from './mandanten/mandanten.module';
+import { ModuleSettingsModule } from './module-settings/module-settings.module';
 import { LicenseClientModule } from './license-client/license-client.module';
 import { validateEnv } from './common/config/env.validation';
 
@@ -83,6 +84,7 @@ import { validateEnv } from './common/config/env.validation';
     FormsModule,
     WebsitesModule,
     MandantenModule,
+    ModuleSettingsModule,
     LicenseClientModule,
   ],
   controllers: [AppController],

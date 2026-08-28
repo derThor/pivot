@@ -1,10 +1,10 @@
 import { proxyToApi } from "@/lib/bff-proxy";
 
-export async function PATCH(
+export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   const body = await request.json();
-  return proxyToApi("PATCH", `/mandanten/${id}/modules`, body);
+  return proxyToApi("POST", `/mandanten/${id}/modules`, body);
 }

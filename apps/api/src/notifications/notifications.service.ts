@@ -12,6 +12,7 @@ import { MailerService } from '../mailer/mailer.service';
 import { TRASH_TYPES, type TrashType } from '../trash/trash.types';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 import type { AppSettings } from '@pivot/database';
+import { LicenseClientService } from '../license-client/license-client.service';
 
 export type NotificationCategory =
   'system' | 'security' | 'privacy' | 'accounts';
@@ -76,7 +77,24 @@ export class NotificationsService {
     private readonly users: UsersService,
     private readonly legalDocuments: LegalDocumentsService,
     private readonly mailer: MailerService,
+    private readonly licenseClient: LicenseClientService,
   ) {}
+
+  /** Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): "bei Datenschutz
+   * dann auch keine Systemnachrichten zu Datenschutzthemen" – dieselbe
+   * Master-wie-Slave-einheitliche Quelle wie `ModuleEntitlementGuard`/
+   * `ModuleFeatureGuard` (siehe `LicenseClientService.getEffectiveStatus()`),
+   * damit eine deaktivierte Reiter-Freischaltung nicht nur die Seite/API
+   * sperrt, sondern auch keine dazugehörige Meldung mehr erzeugt. */
+  private async hasModuleFeature(
+    moduleKey: string,
+    featureKey: string,
+  ): Promise<boolean> {
+    const effective = await this.licenseClient.getEffectiveStatus();
+    const moduleFeatures =
+      'moduleFeatures' in effective ? effective.moduleFeatures : {};
+    return (moduleFeatures[moduleKey] ?? []).includes(featureKey);
+  }
 
   private async buildCandidates(user: JwtPayload): Promise<Candidate[]> {
     const permissions = user.permissions ?? [];
@@ -189,7 +207,11 @@ export class NotificationsService {
       }
     }
 
-    if (canViewPrivacy && settings.notifyLegalDocuments) {
+    if (
+      canViewPrivacy &&
+      settings.notifyLegalDocuments &&
+      (await this.hasModuleFeature('datenschutz', 'rechtstexte'))
+    ) {
       const docs = await this.legalDocuments.findAll();
       const stale = docs.filter((d) => d.status !== 'current');
       if (stale.length > 0) {
@@ -205,7 +227,11 @@ export class NotificationsService {
       }
     }
 
-    if (canViewPrivacy && settings.notifyDeletionRequests) {
+    if (
+      canViewPrivacy &&
+      settings.notifyDeletionRequests &&
+      (await this.hasModuleFeature('datenschutz', 'loeschanfragen'))
+    ) {
       const dueSoon = await this.prisma.deletionRequest.findMany({
         where: {
           status: { in: ['open', 'in_progress'] },

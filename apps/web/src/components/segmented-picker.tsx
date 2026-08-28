@@ -17,7 +17,17 @@ export function SegmentedPicker<T extends string | number>({
   /** Weggelassen = kein eigenes Label (z.B. wenn schon ein `FormLabel`
    * darüber steht, siehe Status-Feld im Content-Editor). */
   label?: string;
-  options: { label: string; value: T }[];
+  options: {
+    label: string;
+    value: T;
+    /** Ersetzt die sonst übliche weiße/dunkle aktive Pille durch eine
+     * bedeutungstragende Farbe für GENAU diese Option, wenn sie aktiv ist
+     * (z.B. Mandant-Mitgliedschaft: Aktiv grün/Inaktiv orange/Gesperrt
+     * rot, Nutzervorgabe 2026-08-27) – Klassenname einer der `badge--*`-
+     * Farbklassen aus globals.css, damit die Farbe app-weit konsistent
+     * und theme-fähig bleibt statt einer neu erfundenen Ad-hoc-Farbe. */
+    activeClassName?: string;
+  }[];
   value: T;
   onChange: (value: T) => void;
   /** "dark" = dunkle, hervorgehobene aktive Pille (Nutzervorgabe,
@@ -56,9 +66,10 @@ export function SegmentedPicker<T extends string | number>({
               className={cn(
                 "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                 value === option.value
-                  ? variant === "dark"
-                    ? "bg-dark-surface text-dark-surface-foreground"
-                    : "bg-card text-foreground shadow-sm"
+                  ? (option.activeClassName ??
+                      (variant === "dark"
+                        ? "bg-dark-surface text-dark-surface-foreground"
+                        : "bg-card text-foreground shadow-sm"))
                   : "text-muted-foreground hover:text-foreground",
               )}
             >

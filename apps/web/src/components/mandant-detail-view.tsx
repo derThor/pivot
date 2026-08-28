@@ -3,25 +3,49 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Building2, Diamond, Globe, Lock, ShieldCheck } from "lucide-react";
+import {
+  ChevronRight,
+  Diamond,
+  Globe,
+  Lock,
+  Plus,
+  ShieldCheck,
+  Trash2,
+} from "lucide-react";
 
-import { toastEdited } from "@/components/app-toast";
+import { toastDeleted, toastEdited } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MandantLogoField } from "@/components/mandant-logo-field";
 import { SegmentedPicker } from "@/components/segmented-picker";
 import { Switch } from "@/components/ui/switch";
 import { SystemMessage } from "@/components/ui/system-message";
 import { Textarea } from "@/components/ui/textarea";
 import type { MandantListItem, ModuleCatalogEntry } from "@/lib/api-server";
 
-const STATUS_OPTIONS: { value: MandantListItem["status"]; label: string }[] = [
-  { value: "active", label: "Aktiv" },
-  { value: "inactive", label: "Inaktiv" },
-  { value: "locked", label: "Gesperrt" },
+// Nutzervorgabe, 2026-08-27: "Aktiv in Pivot grün, Inaktiv in orange und
+// Gesperrt in rot" – wiederverwendet dieselben `badge--*`-Farbklassen wie
+// der Status-Badge oben in der Kopfzeile.
+const STATUS_OPTIONS: {
+  value: MandantListItem["status"];
+  label: string;
+  activeClassName: string;
+}[] = [
+  { value: "active", label: "Aktiv", activeClassName: "badge--green" },
+  { value: "inactive", label: "Inaktiv", activeClassName: "badge--amber" },
+  { value: "locked", label: "Gesperrt", activeClassName: "badge--red" },
 ];
 
 const STATUS_DESCRIPTION: Record<MandantListItem["status"], string> = {
@@ -51,9 +75,11 @@ const CATEGORY_LABEL: Record<ModuleCatalogEntry["category"], string> = {
 export function MandantDetailView({
   mandant,
   moduleCatalog,
+  logoFolderId,
 }: {
   mandant: MandantListItem;
   moduleCatalog: ModuleCatalogEntry[];
+  logoFolderId: string | null;
 }) {
   const router = useRouter();
   const [name, setName] = useState(mandant.name);
@@ -77,10 +103,29 @@ export function MandantDetailView({
   const [newDomain, setNewDomain] = useState("");
   const [domainError, setDomainError] = useState<string | null>(null);
   const [isAddingWebsite, setIsAddingWebsite] = useState(false);
+  const [deleteWebsiteTarget, setDeleteWebsiteTarget] = useState<
+    MandantListItem["websites"][number] | null
+  >(null);
 
   const [pendingModuleKey, setPendingModuleKey] = useState<string | null>(null);
+  const [pendingFeatureKey, setPendingFeatureKey] = useState<string | null>(
+    null,
+  );
+  const [removeModuleTarget, setRemoveModuleTarget] = useState<string | null>(
+    null,
+  );
+  // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): "unter Mandanten
+  // und da dann das Modul auswählen soll alles eingestellt werden" – Klick
+  // auf ein gebuchtes Modul mit Unter-Features klappt dessen Reiter-Regler
+  // auf.
+  const [expandedModuleKey, setExpandedModuleKey] = useState<string | null>(
+    null,
+  );
 
-  const bookedModuleKeys = new Set(mandant.modules.map((m) => m.moduleKey));
+  const addedModuleKeys = new Set(mandant.modules.map((m) => m.moduleKey));
+  const availableModules = moduleCatalog.filter(
+    (module) => !addedModuleKeys.has(module.key),
+  );
   const primaryDomain = mandant.websites[0]?.domain ?? "";
   const location = [postalCode, city].filter(Boolean).join(" ");
   const requiredFilled =
@@ -160,17 +205,55 @@ export function MandantDetailView({
     }
   }
 
-  async function handleToggleModule(moduleKey: string, enabled: boolean) {
+  // Nutzervorgabe, 2026-08-27: "webseiten dürfen nur noch über Mandanten
+  // entfernt werden" – die Löschen-Aktion zog von der Webseite-Seite
+  // hierher um, ruft aber denselben bestehenden Endpunkt auf
+  // (`DELETE /websites/:id`, unverändert).
+  async function handleDeleteWebsite() {
+    if (!deleteWebsiteTarget) return;
+    const res = await fetch(`/api/websites/${deleteWebsiteTarget.id}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) return;
+    toastDeleted(`„${deleteWebsiteTarget.domain}“ wurde entfernt.`);
+    router.refresh();
+  }
+
+  // Nutzervorgabe, 2026-08-27: "Module ... soll mit Button hinzugefügt
+  // werden. wenn dann hinzugefügt wurde, soll aktivierbar und
+  // deaktivierbar mit Schieberegler ... laufen. Module sollen auch
+  // entfernt werden können" – drei getrennte Aktionen statt der
+  // früheren Ersetze-alles-PATCH.
+  async function handleAddModule(moduleKey: string) {
     setPendingModuleKey(moduleKey);
-    const nextKeys = enabled
-      ? [...bookedModuleKeys, moduleKey]
-      : [...bookedModuleKeys].filter((key) => key !== moduleKey);
     try {
       const res = await fetch(`/api/mandanten/${mandant.id}/modules`, {
-        method: "PATCH",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ moduleKeys: nextKeys }),
+        body: JSON.stringify({ moduleKey }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toastEdited(data?.message ?? "Modul konnte nicht hinzugefügt werden.");
+        return;
+      }
+      router.refresh();
+    } finally {
+      setPendingModuleKey(null);
+    }
+  }
+
+  async function handleToggleModule(moduleKey: string, enabled: boolean) {
+    setPendingModuleKey(moduleKey);
+    try {
+      const res = await fetch(
+        `/api/mandanten/${mandant.id}/modules/${moduleKey}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled }),
+        },
+      );
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         toastEdited(data?.message ?? "Modul konnte nicht geändert werden.");
@@ -180,6 +263,43 @@ export function MandantDetailView({
     } finally {
       setPendingModuleKey(null);
     }
+  }
+
+  async function handleToggleFeature(
+    moduleKey: string,
+    featureKey: string,
+    enabled: boolean,
+  ) {
+    setPendingFeatureKey(featureKey);
+    try {
+      const res = await fetch(
+        `/api/mandanten/${mandant.id}/modules/${moduleKey}/features/${featureKey}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled }),
+        },
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toastEdited(data?.message ?? "Reiter konnte nicht geändert werden.");
+        return;
+      }
+      router.refresh();
+    } finally {
+      setPendingFeatureKey(null);
+    }
+  }
+
+  async function handleRemoveModule() {
+    if (!removeModuleTarget) return;
+    const res = await fetch(
+      `/api/mandanten/${mandant.id}/modules/${removeModuleTarget}`,
+      { method: "DELETE" },
+    );
+    if (!res.ok) return;
+    toastDeleted("Modul wurde entfernt.");
+    router.refresh();
   }
 
   return (
@@ -206,37 +326,46 @@ export function MandantDetailView({
         </div>
       </div>
 
-      <Card className="rounded-xl shadow-sm">
-        <CardContent className="flex flex-col gap-5 pt-6">
-          <div className="flex items-center gap-3">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-              <Building2 className="size-5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="font-semibold">{mandant.name}</p>
-                <Badge
-                  className={
-                    status === "active"
-                      ? "badge--green border-0"
-                      : status === "locked"
-                        ? "badge--red border-0"
-                        : "badge--slate border-0"
-                  }
-                >
-                  {STATUS_OPTIONS.find((o) => o.value === status)?.label}
-                </Badge>
-              </div>
-              <p className="truncate text-sm text-muted-foreground">
-                {primaryDomain}
-                {location && `, ${location}`}
-              </p>
+      <Card className="overflow-hidden rounded-xl py-0 shadow-sm">
+        <div
+          className="flex items-center gap-6 p-6"
+          style={{
+            backgroundImage:
+              "linear-gradient(135deg, #3c4d24 0%, #16202b 55%, #0a0e16 100%)",
+          }}
+        >
+          <MandantLogoField
+            mandantId={mandant.id}
+            currentUrl={mandant.logoUrl}
+            folderId={logoFolderId}
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-lg font-semibold text-white">{mandant.name}</p>
+              <Badge
+                className={
+                  status === "active"
+                    ? "badge--green border-0"
+                    : status === "locked"
+                      ? "badge--red border-0"
+                      : "badge--slate border-0"
+                }
+              >
+                {STATUS_OPTIONS.find((o) => o.value === status)?.label}
+              </Badge>
             </div>
+            <p className="truncate text-base text-white/70">
+              {primaryDomain}
+              {location && `, ${location}`}
+            </p>
           </div>
-
-          <div className="grid grid-cols-1 gap-4 border-t border-border pt-5 sm:grid-cols-2">
+        </div>
+        <CardContent className="flex flex-col gap-5 py-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mandant-name">Bezeichnung</Label>
+              <Label htmlFor="mandant-name" required>
+                Bezeichnung
+              </Label>
               <Input
                 id="mandant-name"
                 value={name}
@@ -287,9 +416,20 @@ export function MandantDetailView({
           </p>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          <SystemMessage
+            variant={requiredFilled ? "success" : "warning"}
+            title={
+              requiredFilled
+                ? "Pflichtangaben vollständig."
+                : "Pflichtangaben unvollständig."
+            }
+            icon={false}
+          />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mandant-legal-name">Firmierung</Label>
+              <Label htmlFor="mandant-legal-name" required>
+                Firmierung
+              </Label>
               <Input
                 id="mandant-legal-name"
                 value={legalName}
@@ -307,7 +447,9 @@ export function MandantDetailView({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mandant-street">Straße und Hausnummer</Label>
+              <Label htmlFor="mandant-street" required>
+                Straße und Hausnummer
+              </Label>
               <Input
                 id="mandant-street"
                 value={street}
@@ -315,7 +457,9 @@ export function MandantDetailView({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mandant-postal-code">PLZ</Label>
+              <Label htmlFor="mandant-postal-code" required>
+                PLZ
+              </Label>
               <Input
                 id="mandant-postal-code"
                 value={postalCode}
@@ -323,7 +467,9 @@ export function MandantDetailView({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mandant-city">Ort</Label>
+              <Label htmlFor="mandant-city" required>
+                Ort
+              </Label>
               <Input
                 id="mandant-city"
                 value={city}
@@ -339,7 +485,9 @@ export function MandantDetailView({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mandant-email">E-Mail</Label>
+              <Label htmlFor="mandant-email" required>
+                E-Mail
+              </Label>
               <Input
                 id="mandant-email"
                 type="email"
@@ -374,15 +522,6 @@ export function MandantDetailView({
               />
             </div>
           </div>
-          <SystemMessage
-            variant={requiredFilled ? "success" : "warning"}
-            title={
-              requiredFilled
-                ? "Pflichtangaben vollständig."
-                : "Pflichtangaben unvollständig."
-            }
-            icon={false}
-          />
         </CardContent>
       </Card>
 
@@ -412,21 +551,32 @@ export function MandantDetailView({
                     </p>
                   </div>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="border-border"
-                  render={
-                    <a
-                      href={`https://${website.domain}/login`}
-                      target="_blank"
-                      rel="noreferrer"
-                    />
-                  }
-                >
-                  Öffnen
-                </Button>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="border-border"
+                    render={
+                      <a
+                        href={`https://${website.domain}/login`}
+                        target="_blank"
+                        rel="noreferrer"
+                      />
+                    }
+                  >
+                    Öffnen
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`„${website.domain}“ löschen`}
+                    onClick={() => setDeleteWebsiteTarget(website)}
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -456,50 +606,167 @@ export function MandantDetailView({
 
       <Card className="rounded-xl shadow-sm">
         <CardHeader>
-          <CardTitle>Module</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Gilt für alle Websites dieses Mandanten gleichermaßen.
-          </p>
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <CardTitle>Module</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Gilt für alle Websites dieses Mandanten gleichermaßen.
+              </p>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="border-border"
+                    disabled={availableModules.length === 0}
+                  />
+                }
+              >
+                <Plus />
+                Modul hinzufügen
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {availableModules.length === 0 ? (
+                  <DropdownMenuLabel className="font-normal text-muted-foreground">
+                    Alle Module bereits hinzugefügt
+                  </DropdownMenuLabel>
+                ) : (
+                  availableModules.map((module) => (
+                    <DropdownMenuItem
+                      key={module.key}
+                      onClick={() => handleAddModule(module.key)}
+                    >
+                      {module.label}
+                    </DropdownMenuItem>
+                  ))
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
-          {moduleCatalog.map((module) => {
-            const Icon = MODULE_ICONS[module.key] ?? Diamond;
-            const isBooked = bookedModuleKeys.has(module.key);
-            return (
-              <div
-                key={module.key}
-                className="flex items-center justify-between gap-3 rounded-lg bg-muted p-3"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-card text-foreground shadow-sm">
-                    <Icon className="size-4" />
-                  </span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium">{module.label}</p>
-                      <Badge className="badge--slate border-0">
-                        {CATEGORY_LABEL[module.category]}
-                      </Badge>
+          {mandant.modules.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Noch keine Module hinzugefügt.
+            </p>
+          ) : (
+            mandant.modules.map((entry) => {
+              const catalogEntry = moduleCatalog.find(
+                (m) => m.key === entry.moduleKey,
+              );
+              if (!catalogEntry) return null;
+              const Icon = MODULE_ICONS[entry.moduleKey] ?? Diamond;
+              const hasFeatures = (catalogEntry.features?.length ?? 0) > 0;
+              const isExpanded = expandedModuleKey === entry.moduleKey;
+              return (
+                <div
+                  key={entry.moduleKey}
+                  className="flex flex-col gap-3 rounded-lg bg-muted p-3"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      disabled={!hasFeatures || !entry.enabled}
+                      onClick={() =>
+                        setExpandedModuleKey(
+                          isExpanded ? null : entry.moduleKey,
+                        )
+                      }
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:cursor-default"
+                    >
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-card text-foreground shadow-sm">
+                        <Icon className="size-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium">
+                            {catalogEntry.label}
+                          </p>
+                          <Badge className="badge--slate border-0">
+                            {CATEGORY_LABEL[catalogEntry.category]}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {entry.enabled
+                            ? `Für ${mandant.websites.length} ${mandant.websites.length === 1 ? "Website" : "Websites"} aktiv`
+                            : "Deaktiviert"}
+                        </p>
+                      </div>
+                      {hasFeatures && entry.enabled && (
+                        <ChevronRight
+                          className={`size-4 shrink-0 text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                        />
+                      )}
+                    </button>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <Switch
+                        checked={entry.enabled}
+                        disabled={pendingModuleKey === entry.moduleKey}
+                        onCheckedChange={(checked) =>
+                          handleToggleModule(entry.moduleKey, checked)
+                        }
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`${catalogEntry.label} entfernen`}
+                        onClick={() => setRemoveModuleTarget(entry.moduleKey)}
+                      >
+                        <Trash2 />
+                      </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {isBooked
-                        ? `Für ${mandant.websites.length} ${mandant.websites.length === 1 ? "Website" : "Websites"} aktiv`
-                        : module.description}
-                    </p>
                   </div>
+                  {isExpanded && hasFeatures && entry.enabled && (
+                    <div className="flex flex-col gap-1.5 border-t border-border pt-3 pl-11">
+                      {catalogEntry.features!.map((feature) => (
+                        <div
+                          key={feature.key}
+                          className="flex items-center justify-between gap-3 rounded-md bg-card p-2.5"
+                        >
+                          <p className="text-sm">{feature.label}</p>
+                          <Switch
+                            checked={entry.enabledFeatures.includes(
+                              feature.key,
+                            )}
+                            disabled={pendingFeatureKey === feature.key}
+                            onCheckedChange={(checked) =>
+                              handleToggleFeature(
+                                entry.moduleKey,
+                                feature.key,
+                                checked,
+                              )
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <Switch
-                  checked={isBooked}
-                  disabled={pendingModuleKey === module.key}
-                  onCheckedChange={(checked) =>
-                    handleToggleModule(module.key, checked)
-                  }
-                />
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </CardContent>
       </Card>
+
+      <ConfirmDeleteDialog
+        open={deleteWebsiteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteWebsiteTarget(null)}
+        title={`„${deleteWebsiteTarget?.domain}“ löschen?`}
+        description="Die Website wird endgültig aus diesem Mandanten entfernt. Die Installation selbst bleibt unberührt, meldet sich aber nicht mehr erfolgreich bei diesem Master."
+        onConfirm={handleDeleteWebsite}
+      />
+
+      <ConfirmDeleteDialog
+        open={removeModuleTarget !== null}
+        onOpenChange={(open) => !open && setRemoveModuleTarget(null)}
+        title="Modul entfernen?"
+        description="Das Modul wird für diesen Mandanten vollständig entfernt (nicht nur deaktiviert) und müsste danach erneut hinzugefügt werden."
+        onConfirm={handleRemoveModule}
+      />
     </div>
   );
 }

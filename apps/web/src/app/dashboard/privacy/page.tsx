@@ -4,6 +4,7 @@ import {
   getDataProcessors,
   getDeletionRequests,
   getLegalDocuments,
+  getLicenseState,
   getMediaFolders,
   getPrivacyIncidents,
   getPrivacySettings,
@@ -30,6 +31,7 @@ export default async function PrivacyPage() {
     trashDue,
     users,
     mediaFolders,
+    licenseState,
   ] = await Promise.all([
     // Zwei getrennte, engere Endpunkte statt getSettings() (Recht
     // `settings:read`, das Administrator seit der Pivot-Einführung nicht
@@ -53,9 +55,19 @@ export default async function PrivacyPage() {
     getRetentionTrashDue(),
     getUsers({ pageSize: 100 }),
     getMediaFolders(),
+    getLicenseState(),
   ]);
   const avsFolderId =
     mediaFolders?.find((f) => f.name === "AVs" && f.isSystem)?.id ?? null;
+  // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): pro Reiter
+  // (de)aktivierbar – gilt auf Master (eigene ModuleSettings) genauso wie
+  // auf einer Client-Installation (vom Master signiert). `null` bei
+  // fehlgeschlagenem/leerem Abruf bedeutet unbeschränkt (kein Reiter
+  // verschwindet wegen eines transienten Fehlers).
+  const enabledFeatures =
+    licenseState && "moduleFeatures" in licenseState
+      ? (licenseState.moduleFeatures.datenschutz ?? [])
+      : null;
 
   if (privacySettings === null || companySettings === null) {
     return (
@@ -86,6 +98,7 @@ export default async function PrivacyPage() {
       users={users?.items ?? []}
       avsFolderId={avsFolderId}
       sccTemplateMedia={publicSettings?.sccTemplateMedia ?? null}
+      enabledFeatures={enabledFeatures}
     />
   );
 }

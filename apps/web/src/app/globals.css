@@ -566,13 +566,13 @@
   scrollbar-width: thin;
   scrollbar-color: color-mix(
       in oklch,
-      var(--sidebar-foreground) 25%,
+      var(--sidebar-foreground) 12%,
       transparent
     )
     transparent;
 }
 .themed-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 3px;
 }
 .themed-scrollbar::-webkit-scrollbar-track {
   background: transparent;
@@ -580,7 +580,7 @@
 .themed-scrollbar::-webkit-scrollbar-thumb {
   background-color: color-mix(
     in oklch,
-    var(--sidebar-foreground) 25%,
+    var(--sidebar-foreground) 12%,
     transparent
   );
   border-radius: 9999px;
@@ -588,7 +588,7 @@
 .themed-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: color-mix(
     in oklch,
-    var(--sidebar-foreground) 45%,
+    var(--sidebar-foreground) 22%,
     transparent
   );
 }

@@ -12,6 +12,7 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { SettingsService } from './settings.service';
@@ -19,6 +20,11 @@ import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { UpdateMaintenancePageDto } from './dto/update-maintenance-page.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdatePrivacyDto } from './dto/update-privacy.dto';
+import { UpdatePrivacyDsbDto } from './dto/update-privacy-dsb.dto';
+import { RequireModule } from '../license-client/decorators/require-module.decorator';
+import { RequireModuleFeature } from '../license-client/decorators/require-module-feature.decorator';
+import { ModuleEntitlementGuard } from '../license-client/guards/module-entitlement.guard';
+import { ModuleFeatureGuard } from '../license-client/guards/module-feature.guard';
 import { QuerySettingsChangesDto } from './dto/query-settings-changes.dto';
 import { UpdateSmtpSettingsDto } from './dto/update-smtp-settings.dto';
 import { SendSmtpTestEmailDto } from './dto/send-smtp-test-email.dto';
@@ -124,6 +130,15 @@ export class SettingsController {
     return this.settingsService.getPrivacy();
   }
 
+  // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): die verbliebenen
+  // Felder in `UpdatePrivacyDto` (Aufbewahrung, Betroffenenrechte-Formular,
+  // SCC-Vorlage) gehören inhaltlich zum Reiter "Rechtstexte" – die
+  // DSB-Kontaktfelder wurden in eine eigene DTO/Route ausgelagert (siehe
+  // unten), damit beide Reiter unabhängig voneinander gegatet werden
+  // können.
+  @UseGuards(ModuleEntitlementGuard, ModuleFeatureGuard)
+  @RequireModule('datenschutz')
+  @RequireModuleFeature('datenschutz', 'rechtstexte')
   @ApiBearerAuth()
   @RequirePermission('privacy:update')
   @Patch('privacy')
@@ -132,6 +147,19 @@ export class SettingsController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.settingsService.updatePrivacy(dto, user.sub);
+  }
+
+  @UseGuards(ModuleEntitlementGuard, ModuleFeatureGuard)
+  @RequireModule('datenschutz')
+  @RequireModuleFeature('datenschutz', 'dsb')
+  @ApiBearerAuth()
+  @RequirePermission('privacy:update')
+  @Patch('privacy/dsb')
+  updatePrivacyDsbSettings(
+    @Body() dto: UpdatePrivacyDsbDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.settingsService.updatePrivacyDsb(dto, user.sub);
   }
 
   // "Protokoll"-Tab unter Einstellungen (Nutzervorgabe, 2026-08-22: "baue

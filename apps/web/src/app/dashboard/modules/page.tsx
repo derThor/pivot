@@ -50,33 +50,35 @@ export default async function ModulesPage() {
             const Icon = MODULE_ICONS[module.key] ?? Diamond;
             const bookedBy = bookingsByModule.get(module.key) ?? [];
             return (
-              <Card key={module.key} className="rounded-xl shadow-sm">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                      <Icon className="size-4.5" />
-                    </span>
-                    <div>
-                      <CardTitle className="text-base">
-                        {module.label}
-                      </CardTitle>
-                      <Badge className="badge--slate mt-1 border-0">
-                        {CATEGORY_LABEL[module.category]}
-                      </Badge>
+              <Link key={module.key} href={`/dashboard/modules/${module.key}`}>
+                <Card className="rounded-xl shadow-sm transition-colors hover:bg-muted/40">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                        <Icon className="size-4.5" />
+                      </span>
+                      <div>
+                        <CardTitle className="text-base">
+                          {module.label}
+                        </CardTitle>
+                        <Badge className="badge--slate mt-1 border-0">
+                          {CATEGORY_LABEL[module.category]}
+                        </Badge>
+                      </div>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-3">
-                  <p className="text-sm text-muted-foreground">
-                    {module.description}
-                  </p>
-                  <p className="text-sm">
-                    {bookedBy.length === 0
-                      ? "Von keinem Mandanten gebucht."
-                      : `Gebucht von ${bookedBy.length} ${bookedBy.length === 1 ? "Mandant" : "Mandanten"}: ${bookedBy.join(", ")}`}
-                  </p>
-                </CardContent>
-              </Card>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-3">
+                    <p className="text-sm text-muted-foreground">
+                      {module.description}
+                    </p>
+                    <p className="text-sm">
+                      {bookedBy.length === 0
+                        ? "Von keinem Mandanten gebucht."
+                        : `Gebucht von ${bookedBy.length} ${bookedBy.length === 1 ? "Mandant" : "Mandanten"}: ${bookedBy.join(", ")}`}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
             );
           })}
         </div>

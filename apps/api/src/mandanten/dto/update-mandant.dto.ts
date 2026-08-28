@@ -27,6 +27,11 @@ export class UpdateMandantDto {
   @MaxLength(500)
   lockReason?: string;
 
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @IsString()
+  logoUrl?: string | null;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

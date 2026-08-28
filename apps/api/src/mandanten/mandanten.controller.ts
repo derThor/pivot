@@ -15,7 +15,8 @@ import { CreateMandantDto } from './dto/create-mandant.dto';
 import { UpdateMandantDto } from './dto/update-mandant.dto';
 import { QueryMandantDto } from './dto/query-mandant.dto';
 import { AddMandantWebsiteDto } from './dto/add-mandant-website.dto';
-import { UpdateMandantModulesDto } from './dto/update-mandant-modules.dto';
+import { AddMandantModuleDto } from './dto/add-mandant-module.dto';
+import { UpdateMandantModuleDto } from './dto/update-mandant-module.dto';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
@@ -83,12 +84,44 @@ export class MandantenController {
   }
 
   @RequirePermission('settings:update')
-  @Patch(':id/modules')
-  updateModules(
+  @Post(':id/modules')
+  addModule(
     @Param('id') id: string,
-    @Body() dto: UpdateMandantModulesDto,
+    @Body() dto: AddMandantModuleDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.mandantenService.updateModules(id, dto.moduleKeys, user.sub);
+    return this.mandantenService.addModule(id, dto.moduleKey, user.sub);
+  }
+
+  @RequirePermission('settings:update')
+  @Patch(':id/modules/:moduleKey')
+  setModuleEnabled(
+    @Param('id') id: string,
+    @Param('moduleKey') moduleKey: string,
+    @Body() dto: UpdateMandantModuleDto,
+  ) {
+    return this.mandantenService.setModuleEnabled(id, moduleKey, dto.enabled);
+  }
+
+  @RequirePermission('settings:update')
+  @Delete(':id/modules/:moduleKey')
+  removeModule(@Param('id') id: string, @Param('moduleKey') moduleKey: string) {
+    return this.mandantenService.removeModule(id, moduleKey);
+  }
+
+  @RequirePermission('settings:update')
+  @Patch(':id/modules/:moduleKey/features/:featureKey')
+  setModuleFeatureEnabled(
+    @Param('id') id: string,
+    @Param('moduleKey') moduleKey: string,
+    @Param('featureKey') featureKey: string,
+    @Body() dto: UpdateMandantModuleDto,
+  ) {
+    return this.mandantenService.setModuleFeatureEnabled(
+      id,
+      moduleKey,
+      featureKey,
+      dto.enabled,
+    );
   }
 }

@@ -2,26 +2,19 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  ExternalLink,
-  Globe,
-  Info,
-  Pencil,
-  RotateCcw,
-  Trash2,
-} from "lucide-react";
+import { ExternalLink, Globe, Info, Pencil, RotateCcw } from "lucide-react";
 
 import { toast } from "sonner";
 
-import { toastDeleted, toastEdited } from "@/components/app-toast";
+import { toastEdited } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
 import { PaginationControls } from "@/components/pagination-controls";
 import { SystemMessage } from "@/components/ui/system-message";
 import { WebsiteCheckDetailsDialog } from "@/components/website-check-details-dialog";
 import { WebsiteDialog } from "@/components/website-dialog";
+import { resolveImageSrc } from "@/lib/media";
 import { WEBSITE_STATUS_BADGE } from "@/lib/website-status";
 import type { WebsiteCheckAllResult, WebsiteListItem } from "@/lib/api-server";
 
@@ -73,9 +66,6 @@ export function WebsitesView({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [dialogTarget, setDialogTarget] = useState<WebsiteListItem | null>(
-    null,
-  );
-  const [deleteTarget, setDeleteTarget] = useState<WebsiteListItem | null>(
     null,
   );
   const [isChecking, setIsChecking] = useState(false);
@@ -138,16 +128,6 @@ export function WebsitesView({
     }
   }
 
-  async function handleDelete() {
-    if (!deleteTarget) return;
-    const res = await fetch(`/api/websites/${deleteTarget.id}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) return;
-    toastDeleted("Website wurde entfernt.");
-    router.refresh();
-  }
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -178,9 +158,19 @@ export function WebsitesView({
               className="flex flex-col gap-3 rounded-2xl bg-card p-4 shadow-sm"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                  <Globe className="size-4.5" />
-                </span>
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                    <Globe className="size-4.5" />
+                  </span>
+                  {website.mandant.logoUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element -- Logo kommt aus Nutzer-Upload (beliebige externe/lokale URL), kein next/image-Optimierungsfall.
+                    <img
+                      src={resolveImageSrc(website.mandant.logoUrl)}
+                      alt=""
+                      className="h-9 w-auto max-w-[100px] shrink-0 object-contain"
+                    />
+                  )}
+                </div>
                 <div className="flex shrink-0 items-center gap-1.5">
                   <Badge className={badge.className}>{badge.label}</Badge>
                   <Button
@@ -191,15 +181,6 @@ export function WebsitesView({
                     onClick={() => setDialogTarget(website)}
                   >
                     <Pencil />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`„${website.domain}“ löschen`}
-                    onClick={() => setDeleteTarget(website)}
-                  >
-                    <Trash2 />
                   </Button>
                 </div>
               </div>
@@ -314,14 +295,6 @@ export function WebsitesView({
         target={dialogTarget}
         onOpenChange={(open) => !open && setDialogTarget(null)}
         onSaved={() => router.refresh()}
-      />
-
-      <ConfirmDeleteDialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-        title={`„${deleteTarget?.name}“ löschen?`}
-        description="Der Mandant wird endgültig entfernt. Die entfernte Installation selbst bleibt unberührt, meldet sich aber nicht mehr erfolgreich bei diesem Master."
-        onConfirm={handleDelete}
       />
 
       <WebsiteCheckDetailsDialog

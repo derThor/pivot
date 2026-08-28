@@ -1102,8 +1102,9 @@ und neu gestartete Master-API getestet (curl + handgemintetes HS256-JWT).
 
 ### Offene Punkte
 
-- `ModuleEntitlementGuard`/`@RequireModule('datenschutz')` noch an
-  keiner echten Route verwendet.
+- ~~`ModuleEntitlementGuard`/`@RequireModule('datenschutz')` noch an
+  keiner echten Route verwendet~~ – erledigt, siehe Update 2026-08-28
+  unten.
 - Magicline-Modul hat noch keinen Code, nur den Katalog-Eintrag.
 - Modul-interne Mandantenfähigkeit (z.B. falls ein Modul selbst mehrere
   Unter-Einheiten pro Kunde verwalten muss) – laut Nutzervorgabe bewusst
@@ -1112,3 +1113,159 @@ und neu gestartete Master-API getestet (curl + handgemintetes HS256-JWT).
   da keine echte Aktion dahintersteht.
 
 **Lehre, ergänzt zur bestehenden "lokaler Workflow ist reine Simulation"-Doku oben:** die Annahme "alle vier Prozesse laufen im Watch-Modus" war für Pivots eigenen API-Prozess falsch – vor jedem Versionsvergleich-Test lohnt sich eine kurze Prüfung, ob der jeweilige Prozess tatsächlich den aktuellen Code-Stand ausführt, statt sich allein auf den Git-Log zu verlassen.
+
+## Update 2026-08-28: Datenschutz als erstes echtes Modul
+
+Nutzervorgabe: "jetzt erstellen wir unser erstes Modul. das Datenschutzmodul
+... alle Funktionen sollen über das Modul ausgespielt werden" – schließt
+die Lücke aus dem vorherigen Update: `ModuleEntitlementGuard` war gebaut,
+aber an keiner echten Route verwendet. Datenschutz (`/dashboard/privacy`,
+7 Reiter) ist jetzt das erste Modul mit echter Durchsetzung, inkl. neuer
+Feature-Ebene (pro Reiter einzeln (de)aktivierbar, nicht nur das ganze
+Modul).
+
+### Architektur-Wende: Master bekommt eine EIGENE Freischaltung
+
+Bisher galt für `ModuleEntitlementGuard`: "Master ist das Hauptsystem,
+braucht keine Freischaltung für sich selbst" (Blanket-Bypass bei
+`mode==='master'`). Nutzerkorrektur mitten in der Umsetzung: "Master wird
+nicht über Mandanten geregelt" + "für den Master sind die Einstellungen
+für Module unter Einstellungen zu setzen" – Master ist kein `Mandant` von
+sich selbst, braucht aber trotzdem eine ECHTE, editierbare
+Freischaltung (z.B. um testweise einen Reiter nur für die eigene
+Installation abzuschalten). Neues Modell:
+
+```prisma
+model ModuleSettings {
+  moduleKey                 String   @id
+  enabled                   Boolean  @default(true)
+  enabledFeatures           String[] @default([])
+  autoInstallForNewMandants Boolean  @default(false)
+  updatedAt                 DateTime @updatedAt
+}
+```
+
+`LicenseClientService.getEffectiveStatus()` liefert jetzt auch für
+`mode: 'master'` echte `modules`/`moduleFeatures` (gelesen aus
+`ModuleSettings`, Default bei fehlender Zeile: aktiv, alle Feature-Keys).
+Dadurch brauchen `ModuleEntitlementGuard` und der neue `ModuleFeatureGuard`
+**keinen Sonderfall pro Installationsmodus mehr** – beide prüfen
+einheitlich `effective.modules`/`effective.moduleFeatures`, egal ob Master
+(lokale `ModuleSettings`) oder Slave (vom Master signiert über
+`LicenseState`).
+
+**Ort der Bearbeitung, per Nutzerkorrektur mitten in der Umsetzung
+verschoben:** ursprünglich unter Einstellungen → Module gebaut (passend zu
+"für den Master sind die Einstellungen für Module unter Einstellungen zu
+setzen"), dann noch am selben Tag zurückgeholt: "das soll direkt in dem
+Modul unter Module und Datenschutz eingestellt werden und nicht in
+Einstellung Module". Die Schalter (Modul an/aus, pro Feature, "bei neuen
+Mandanten vorinstallieren") sitzen jetzt direkt auf
+`/dashboard/modules/[key]` (`module-detail-view.tsx`, dafür zur Client-
+Komponente geworden) – die zwischenzeitlich gebaute `ModuleSettingsCard`
+unter Einstellungen wurde wieder entfernt, `settings-form.tsx` hat keinen
+"Module"-Bereich mehr. Backend-Endpunkte (`/module-settings`) sind
+unverändert dieselben, nur der Frontend-Ort hat sich geändert.
+
+### Feature-Ebene: `MandantModule`/`ModuleSettings` bekommen `enabledFeatures`
+
+`ModuleCatalogEntry` (`websites/module-catalog.ts`) bekommt ein optionales
+`features?: { key, label }[]` – bei `datenschutz` die 7 echten Tab-Keys aus
+`privacy-view.tsx`s `TabId`-Union (`rechtstexte`, `loeschanfragen`,
+`verarbeitungen`, `auftragsverarbeiter`, `vorfaelle`, `dsb`, `nutzer`),
+damit Katalog und Frontend nie auseinanderlaufen. `MandantModule` und
+`ModuleSettings` bekommen je ein `enabledFeatures String[]`, vorbefüllt
+mit ALLEN Feature-Keys beim erstmaligen Buchen/Aktivieren (frisch
+gebucht = komplett aktiv). `LicenseTokenPayload.modules` ändert die Form
+von `string[]` zu `{ key, features }[]` (Vor-Launch, kein Bestand an alten
+Tokens zu schützen); `LicenseState` bekommt ein neues `moduleFeatures Json`
+(Record<moduleKey, string[]>) zusätzlich zum unverändert bestehenden
+`modules String[]`.
+
+Neuer `ModuleFeatureGuard`/`@RequireModuleFeature('datenschutz', 'key')`
+(gleiches Verzeichnis-Muster wie `module-entitlement.guard.ts`), 404 bei
+fehlender Freischaltung. Angewendet auf die 5 sauber 1:1 abgrenzbaren
+Reiter-Controller (`LegalDocumentsController` → rechtstexte,
+`ProcessingActivitiesController` → verarbeitungen,
+`DataProcessorsController` → auftragsverarbeiter,
+`PrivacyIncidentsController` → vorfaelle, `DeletionRequestsController` →
+loeschanfragen, **nur** die Admin-Routen dort – die Self-Service-Routen
+für den eigenen Nutzer bleiben bewusst ungegatet).
+
+**Stolperstein `dsb`/`nutzer`:** deren Felder hingen an generischeren
+Controllern, die auch andere Reiter mitversorgen (`SettingsController`s
+`PATCH /settings/privacy` bediente sowohl DSB-Kontaktfelder als auch
+Aufbewahrung/Betroffenenrechte-Formular/SCC-Vorlage). Gelöst durch
+Aufspalten: `dpo*`-Felder aus `UpdatePrivacyDto` in eine neue
+`UpdatePrivacyDsbDto` + eigene Route `PATCH /settings/privacy/dsb`
+ausgelagert, unabhängig von `rechtstexte` gegatet. `nutzer`-Reiter bleibt
+bewusst NUR UI-seitig ausgeblendet (kein Backend-404) – die
+Aufbewahrungs-/Anonymisierungs-Endpunkte dahinter versorgen zu eng
+verzahnt auch den `rechtstexte`-Reiter bzw. sind allgemeine
+Nutzerverwaltungs-Aktionen, eine saubere 1:1-Trennung hätte einen
+unverhältnismäßig größeren Umbau gebraucht.
+
+### `NestJS`-Zirkelbezug gelöst durch `@Global()`
+
+`LegalDocumentsModule` & Co. brauchten `ModuleEntitlementGuard`/
+`ModuleFeatureGuard` aus `LicenseClientModule` – für `SettingsModule`
+(Reiter `dsb`) wäre das ein echter Modul-Zirkelbezug gewesen, da
+`LicenseClientModule` selbst bereits `SettingsModule` importiert.
+Lösung: `LicenseClientModule` bekam `@Global()` – seine Exports sind
+dadurch app-weit ohne expliziten Modul-Import nutzbar, kein `forwardRef()`
+nötig.
+
+### Frontend: Reiter ausblenden + neue Master-Seiten
+
+`privacy-view.tsx` filtert `TAB_IDS` gegen eine neue `enabledFeatures:
+string[] | null`-Prop (`null` = unbeschränkt, z.B. bei "unchecked");
+`privacy/page.tsx` lädt dafür `getLicenseState()` (liefert jetzt auf
+Master UND Slave `moduleFeatures` mit). `/dashboard/modules/[key]` (neu,
+`module-detail-view.tsx`, Client-Komponente) zeigt Katalog-Beschreibung,
+Reiter-Badges, Berechtigungen mit Link zu "Rollen & Rechte" (kein
+Deep-Link auf eine bestimmte Rolle, `roles-explorer.tsx` unterstützt das
+nicht), "Auf Websites aktiv", echte App-Version – bewusst OHNE
+Update-/Entfernen-/Lizenzstufen-Mechanik (keine reale Grundlage, keine
+Fake-UI) – UND direkt hier (nicht unter Einstellungen, siehe Korrektur
+oben) Masters eigene Freischaltung: Haupt-Schalter, pro-Feature-Schalter,
+"bei neuen Mandanten vorinstallieren". Mandant-Detailseite: Klick auf ein
+gebuchtes Modul mit Unter-Features klappt die 7 Reiter-Schalter für
+DIESEN Mandanten auf (`PATCH
+/mandanten/:id/modules/:moduleKey/features/:featureKey`).
+
+### Systemnachrichten respektieren die Freischaltung
+
+Nutzervorgabe: "bei Datenschutz dann auch keine Systemnachrichten zu
+Datenschutzthemen." `NotificationsService` bekam `LicenseClientService`
+injiziert; die zwei Datenschutz-bezogenen Kandidaten
+(`notifyLegalDocuments` → Reiter `rechtstexte`, `notifyDeletionRequests` →
+Reiter `loeschanfragen`) prüfen jetzt zusätzlich zur bestehenden
+`privacy:read`-Rechteprüfung dieselbe `getEffectiveStatus()`-Quelle wie
+die Guards. `notifyCompanyIncomplete` (Impressum/Firmendaten allgemein)
+bleibt unverändert, gehört nicht zum Datenschutz-Modul.
+
+### Live verifiziert (2026-08-28)
+
+Auf Master: `PATCH /module-settings/datenschutz/features/vorfaelle`
+`{enabled:false}` → `GET /privacy-incidents` 404, `GET /legal-documents`
+weiterhin 200; `PATCH /module-settings/datenschutz` `{enabled:false}` →
+auch `/legal-documents` 404, nach Reaktivieren wieder 200;
+`dsb`-Split: `PATCH /settings/privacy/dsb` 404 bei deaktiviertem `dsb`,
+`PATCH /settings/privacy` bleibt 200 (unabhängig gegatet). Mandanten-
+Seite: Datenschutz für Mandant "strasev" gebucht, `vorfaelle`-Feature
+deaktiviert, echter "Wecken"-Aufruf ausgelöst – strasevs eigener Prozess
+war zu diesem Zeitpunkt noch auf altem Schema (kein `moduleFeatures`-Feld
+in `LicenseState`), Fehler exakt wie erwartet (strasev hatte den
+Code-/Schema-Stand zu diesem Zeitpunkt noch nicht gepullt/migriert) –
+kein Bug in der neuen Logik selbst.
+
+### Offene Punkte
+
+- `nutzer`-Reiter nur UI-seitig gegatet, kein Backend-404 (siehe
+  Stolperstein oben).
+- `sccTemplateMediaId` bleibt am `rechtstexte`-gegateten
+  `PATCH /settings/privacy`, obwohl es inhaltlich eher zu
+  `auftragsverarbeiter` gehört (Drittlandtransfer-Vorlage) – einzelnes
+  Feld, kein eigener Endpunkt dafür gebaut.
+- Gleiches Muster (Feature-Katalog + Guards) für Magicline, sobald dessen
+  Inhalt drankommt.

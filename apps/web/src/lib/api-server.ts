@@ -975,9 +975,23 @@ export interface LockedPageBranding {
   accentColor: string | null;
 }
 
+// Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): `modules`/
+// `moduleFeatures` kommen jetzt auf Master UND Slave mit (siehe
+// EffectiveLicenseStatus im Backend) – Master über seine eigenen
+// `ModuleSettings`, Slave signiert vom Master.
 export type LicenseState =
-  | { mode: "master" }
-  | { mode: "slave"; status: "live" | "unchecked" }
+  | {
+      mode: "master";
+      modules: string[];
+      moduleFeatures: Record<string, string[]>;
+    }
+  | { mode: "slave"; status: "unchecked" }
+  | {
+      mode: "slave";
+      status: "live";
+      modules: string[];
+      moduleFeatures: Record<string, string[]>;
+    }
   | {
       mode: "slave";
       status: "development";
@@ -986,8 +1000,16 @@ export type LicenseState =
       // Anzeige im Toast (siehe license-development-toast.tsx).
       developmentModeSince: string | null;
       autoLockAt: string | null;
+      modules: string[];
+      moduleFeatures: Record<string, string[]>;
     }
-  | { mode: "slave"; status: "pending"; expiresAt: string }
+  | {
+      mode: "slave";
+      status: "pending";
+      expiresAt: string;
+      modules: string[];
+      moduleFeatures: Record<string, string[]>;
+    }
   | ({
       mode: "slave";
       status: "locked";
@@ -1412,7 +1434,7 @@ export interface WebsiteListItem {
   // Mandantenfähigkeit, 2026-08-27 – jede Website gehört zu genau einem
   // Mandanten (siehe MandantListItem).
   mandantId: string;
-  mandant: { id: string; name: string };
+  mandant: { id: string; name: string; logoUrl: string | null };
   testUrl: string | null;
   lastCheckInAt: string | null;
   // Ergebnis des letzten "Wecken"-Diagnose-Durchlaufs (Nutzervorgabe,
@@ -1467,11 +1489,20 @@ export function getWebsites(params?: { page?: number; pageSize?: number }) {
 // Nutzervorgabe, 2026-08-27: ein Mandant ist der eigentliche Kunde des
 // Masters und kann mehrere Website-Installationen haben. Modul-Buchung
 // liegt am Mandanten, nicht an der einzelnen Website.
+// Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): manche Module
+// gliedern sich in einzeln (de)aktivierbare Unter-Features (bei
+// Datenschutz: die 7 Reiter von /dashboard/privacy).
+export interface ModuleFeatureEntry {
+  key: string;
+  label: string;
+}
+
 export interface ModuleCatalogEntry {
   key: string;
   label: string;
   description: string;
   category: "compliance" | "integration";
+  features?: ModuleFeatureEntry[];
 }
 
 export interface MandantWebsite {
@@ -1486,6 +1517,7 @@ export interface MandantListItem {
   name: string;
   status: "active" | "inactive" | "locked";
   lockReason: string | null;
+  logoUrl: string | null;
   legalName: string | null;
   representativeName: string | null;
   street: string | null;
@@ -1499,7 +1531,11 @@ export interface MandantListItem {
   createdAt: string;
   updatedAt: string;
   websites: MandantWebsite[];
-  modules: { moduleKey: string }[];
+  modules: {
+    moduleKey: string;
+    enabled: boolean;
+    enabledFeatures: string[];
+  }[];
 }
 
 export interface MandantListResponse {
@@ -1535,6 +1571,23 @@ export function getMandant(id: string) {
 
 export function getMandantModuleCatalog() {
   return apiFetch<ModuleCatalogEntry[]>("/mandanten/modules");
+}
+
+// Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): Masters EIGENE
+// Modul-/Feature-Freischaltung ("Master wird nicht über Mandanten
+// geregelt") – editierbar unter Einstellungen → Module.
+export interface ModuleSettingsEntry {
+  moduleKey: string;
+  label: string;
+  category: "compliance" | "integration";
+  features: ModuleFeatureEntry[];
+  enabled: boolean;
+  enabledFeatures: string[];
+  autoInstallForNewMandants: boolean;
+}
+
+export function getModuleSettings() {
+  return apiFetch<ModuleSettingsEntry[]>("/module-settings");
 }
 
 export type NotificationCategory =

@@ -11,6 +11,7 @@ import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
 import { PaginationControls } from "@/components/pagination-controls";
 import { StatCard } from "@/components/stat-card";
 import { MandantDialog } from "@/components/mandant-dialog";
+import { resolveImageSrc } from "@/lib/media";
 import type { MandantListItem, MandantStats } from "@/lib/api-server";
 
 // Reines Frontend-Mapping (Nutzervorgabe, 2026-08-27, Mockup: kleine
@@ -106,55 +107,76 @@ export function MandantenView({
             <Link
               key={mandant.id}
               href={`/dashboard/mandanten/${mandant.id}`}
-              className="flex flex-col gap-3 rounded-2xl bg-card p-4 shadow-sm transition-colors hover:bg-muted/40"
+              className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-sm transition-shadow hover:shadow-md"
             >
-              <div className="flex items-start gap-3">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                  <Building2 className="size-4.5" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <p className="truncate font-semibold">{mandant.name}</p>
-                  </div>
-                  <p className="truncate text-sm text-muted-foreground">
-                    {primaryWebsite?.domain}
-                    {location && ` · ${location}`}
-                  </p>
-                </div>
-                <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-              </div>
-
-              <div className="flex flex-wrap items-center gap-1.5">
-                <Badge className={badge.className}>{badge.label}</Badge>
-                <Badge className="badge--slate border-0">
-                  {mandant.websites.length}{" "}
-                  {mandant.websites.length === 1 ? "Website" : "Websites"}
-                </Badge>
-              </div>
-
-              <div className="flex items-center justify-between border-t border-border pt-3">
-                <span />
-                {mandant.modules.length > 0 ? (
-                  <div className="flex items-center gap-1.5">
-                    {mandant.modules.map((entry) => {
-                      const config = MODULE_ICONS[entry.moduleKey];
-                      if (!config) return null;
-                      const Icon = config.icon;
-                      return (
-                        <span
-                          key={entry.moduleKey}
-                          className={`flex size-6 shrink-0 items-center justify-center rounded-md ${config.className}`}
-                        >
-                          <Icon className="size-3.5" />
-                        </span>
-                      );
-                    })}
-                  </div>
+              <div
+                className="relative flex items-center gap-3 p-4"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(135deg, #3c4d24 0%, #16202b 55%, #0a0e16 100%)",
+                }}
+              >
+                {mandant.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- Logo kommt aus Nutzer-Upload (beliebige externe/lokale URL), kein next/image-Optimierungsfall.
+                  <img
+                    src={resolveImageSrc(mandant.logoUrl)}
+                    alt=""
+                    className="h-10 w-24 shrink-0 rounded-lg bg-primary object-contain px-3 py-1"
+                  />
                 ) : (
-                  <span className="text-sm text-muted-foreground">
-                    Keine Module
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                    <Building2 className="size-5" />
                   </span>
                 )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold text-white">
+                    {mandant.name}
+                  </p>
+                  <p className="truncate text-sm text-white/70">
+                    {primaryWebsite?.domain}
+                  </p>
+                  {location && (
+                    <p className="truncate text-xs text-white/60">{location}</p>
+                  )}
+                </div>
+                <ChevronRight className="size-4 shrink-0 text-white/60" />
+              </div>
+
+              <div className="flex flex-col gap-3 p-4">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Badge className={badge.className}>{badge.label}</Badge>
+                  <Badge className="badge--slate border-0">
+                    {mandant.websites.length}{" "}
+                    {mandant.websites.length === 1 ? "Website" : "Websites"}
+                  </Badge>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-border pt-3">
+                  <span />
+                  {mandant.modules.some((entry) => entry.enabled) ? (
+                    <div className="flex items-center gap-1.5">
+                      {mandant.modules
+                        .filter((entry) => entry.enabled)
+                        .map((entry) => {
+                          const config = MODULE_ICONS[entry.moduleKey];
+                          if (!config) return null;
+                          const Icon = config.icon;
+                          return (
+                            <span
+                              key={entry.moduleKey}
+                              className={`flex size-6 shrink-0 items-center justify-center rounded-md ${config.className}`}
+                            >
+                              <Icon className="size-3.5" />
+                            </span>
+                          );
+                        })}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">
+                      Keine Module
+                    </span>
+                  )}
+                </div>
               </div>
             </Link>
           );
