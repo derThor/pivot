@@ -52,8 +52,18 @@ export default async function DashboardLayout({
   // "unchecked"/"pending" (Lizenzprüfung noch offen/überfällig, aber noch
   // innerhalb der Karenzzeit) relevant. "locked" wird nie hier sichtbar,
   // da der Backend-Guard das Dashboard dann bereits komplett blockt.
-  const licenseState =
-    user.deploymentMode === "slave" ? await getLicenseState() : null;
+  // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): jetzt auf Master
+  // UND Slave abgefragt (vorher nur Slave, nur für den
+  // Entwicklungsmodus-Hinweis gebraucht) – `moduleFeatures` steuert
+  // zusätzlich, welche Verwaltung-Menüpunkte mit `moduleKey` (aktuell nur
+  // "Datenschutz") überhaupt angezeigt werden.
+  const licenseState = await getLicenseState();
+  const enabledModules =
+    licenseState && "moduleFeatures" in licenseState
+      ? Object.entries(licenseState.moduleFeatures)
+          .filter(([, features]) => features.length > 0)
+          .map(([key]) => key)
+      : [];
 
   // Cookie-Name muss mit SIDEBAR_COOKIE_NAME in ui/sidebar.tsx übereinstimmen.
   // Kann nicht importiert werden: sidebar.tsx ist "use client", einfache
@@ -125,6 +135,7 @@ export default async function DashboardLayout({
             keyboardShortcutsEnabled={
               settings?.keyboardShortcutsEnabled !== false
             }
+            enabledModules={enabledModules}
           />
           <div className="flex min-w-0 flex-1 flex-col gap-6 bg-background px-5 pt-4 pb-5 sm:px-10 sm:pt-6 sm:pb-10">
             {children}

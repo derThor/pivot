@@ -65,8 +65,15 @@ export function WebsitesView({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  // Deep-Link von der Modul-Detailseite ("Bei Mandanten" → Website
+  // anklicken, Nutzervorgabe 2026-08-28: "wenn ich das anklicke soll auf
+  // Webseite gehen und das Bearbeiten Popup der Webseite geöffnet
+  // werden") – öffnet den Bearbeiten-Dialog direkt beim Laden, falls
+  // `?edit=<websiteId>` gesetzt ist und die Website auf der aktuellen
+  // Seite liegt.
+  const editParam = searchParams.get("edit");
   const [dialogTarget, setDialogTarget] = useState<WebsiteListItem | null>(
-    null,
+    () => items.find((w) => w.id === editParam) ?? null,
   );
   const [isChecking, setIsChecking] = useState(false);
   const [wakingId, setWakingId] = useState<string | null>(null);

@@ -1244,6 +1244,70 @@ Reiter `loeschanfragen`) prüfen jetzt zusätzlich zur bestehenden
 die Guards. `notifyCompanyIncomplete` (Impressum/Firmendaten allgemein)
 bleibt unverändert, gehört nicht zum Datenschutz-Modul.
 
+### Nachschärfung nach erstem Test: Seite zeigte trotz deaktiviertem Modul alles an
+
+Echter Bug, vom Nutzer selbst beim Testen gefunden: "wenn ich unter Master
+- Einstellungen Module Datenschutz deaktiviere bleibt alles beim alten.
+Datenschutz ist erreichbar und Funktionen gehen." Ursache: `privacy-view.tsx`
+blendete bei komplett leerem `enabledFeatures` nur die Reiter-**Buttons**
+aus, nicht die dahinterliegenden Karten – UND der `initialTab`-Fallback
+sprang bei leerem `TAB_IDS` hart auf `"rechtstexte"` zurück, obwohl das
+gar nicht freigeschaltet war. Backend-Guards blockten die 5 sauber
+gegateten Endpunkte zwar bereits korrekt (404), aber die ungegateten
+Settings-Felder (DSB-Kontakt, Aufbewahrung) blieben sichtbar/bedienbar –
+"halb deaktiviert" statt "komplett deaktiviert" (Nutzervorgabe: "es muss
+Datenschutz komplett deaktiviert werden"). Fix: `privacy/page.tsx` zeigt
+bei `enabledFeatures.length === 0` jetzt eine eigene "Modul nicht
+aktiviert"-Seite statt `PrivacyView` überhaupt zu rendern – analog zum
+bestehenden "Keine Berechtigung"-Muster.
+
+**Zusätzlich, Nutzervorgabe: "der Navigationspunkt muss auch raus" /
+"mein Client natürlich auch nichts anzeigen, wenn Modul nicht gebucht
+ist"** – der sichtbare "Datenschutz"-Menüpunkt sitzt nicht in der
+Sidebar selbst, sondern im Header-Dropdown `admin-menu.tsx` (die Sidebar
+filtert die komplette "Verwaltung"-Gruppe schon vorher heraus, siehe
+`frontend/header-admin-menu-and-search.md`). Der `navGroups`-Eintrag für
+"Datenschutz" bekam ein neues `moduleKey: "datenschutz"`-Feld;
+`AdminMenu` filtert Items jetzt zusätzlich zu `permission` gegen eine neue
+`enabledModules: string[]`-Prop (Module mit mindestens einem aktiven
+Feature). `dashboard/layout.tsx` fragt `getLicenseState()` jetzt
+unconditional auf Master UND Slave ab (vorher nur Slave, nur für den
+Entwicklungsmodus-Toast) und reicht die berechnete Liste über
+`DashboardHeader` durch.
+
+### Ort der Freischaltung nochmal korrigiert (mehrfach hin und her am selben Tag)
+
+Chronologie der Korrekturen, damit klar ist, WARUM der finale Stand so
+aussieht: Einstellungen → Module gebaut → auf die Modul-Detailseite
+verschoben ("das soll direkt in dem Modul ... eingestellt werden") → **auf
+Zuruf zurück nach Einstellungen** verschoben, nachdem der Nutzer die
+Modul-Detailseite live sah und fragte "warum gehe ich auf Module, und
+dann das Modul, und habe da Settings? das soll doch auf Mandantenebene
+sein". Antwort/Klarstellung: es gibt bewusst ZWEI Ebenen – Mandanten-
+Ebene für Kundenbuchungen, UND eine Master-eigene Ebene, weil Master kein
+`Mandant`-Objekt für sich selbst hat. Endgültiger Stand: Masters eigene
+Freischaltung (Modul an/aus, pro Feature, "bei neuen Mandanten
+vorinstallieren") liegt unter **Einstellungen → Module**
+(`module-settings-card.tsx`, wiederhergestellt); `/dashboard/modules/[key]`
+(`module-detail-view.tsx`) ist wieder eine reine Lese-Seite ("ganz
+grundsätzliche Sachen": Beschreibung, Reiter, Rechte, **"Bei Mandanten"**
+– siehe unten).
+
+### "Bei Mandanten"-Kachel: Rollout-Überblick statt reiner Website-Liste
+
+Ersetzt die frühere "Auf Websites aktiv"-Kachel (die nur Mandanten mit
+bereits gebuchtem Modul zeigte). Zeigt jetzt ALLE Mandanten mit ihrer
+jeweiligen Haupt-Website, Badge "eingerichtet" (grün, Modul gebucht+aktiv)
+oder "nicht freigegeben" (grau) – macht sichtbar, wer das Modul noch
+nicht hat, nicht nur wer es hat. Klick auf eine Zeile
+(Nutzervorgabe: "wenn ich das anklicke soll auf Webseite gehen und das
+Bearbeiten Popup der Webseite geöffnet werden") führt zu
+`/dashboard/websites?edit=<websiteId>` – neuer Deep-Link-Mechanismus in
+`websites-view.tsx` (`dialogTarget`-Lazy-Init liest `?edit=` beim Laden),
+funktioniert nur, wenn die Ziel-Website auf der ersten Seite der
+Website-Liste liegt (kein Problem bei der aktuellen/realistischen
+Website-Zahl, keine serverseitige Suche über alle Seiten gebaut).
+
 ### Live verifiziert (2026-08-28)
 
 Auf Master: `PATCH /module-settings/datenschutz/features/vorfaelle`

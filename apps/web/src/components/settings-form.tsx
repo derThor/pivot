@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
   Bell,
+  Blocks,
   Construction,
   Contrast,
   History,
@@ -41,6 +42,7 @@ import { WebhooksManager } from "@/components/webhooks-manager";
 import { SettingsServicesCard } from "@/components/settings-services-card";
 import { MaintenancePageCard } from "@/components/maintenance-page-card";
 import { MasterClientCard } from "@/components/master-client-card";
+import { ModuleSettingsCard } from "@/components/module-settings-card";
 import { ScheduledJobsCard } from "@/components/scheduled-jobs-card";
 import { RecentJobRunsCard } from "@/components/recent-job-runs-card";
 import { MailingSettingsCard } from "@/components/mailing-settings-card";
@@ -50,6 +52,7 @@ import type {
   AppSettings,
   JobRunsResponse,
   MailTemplateListItem,
+  ModuleSettingsEntry,
   ScheduledJobsResponse,
   SettingsChangesResponse,
   SmtpSettings,
@@ -109,6 +112,7 @@ type SectionId =
   | "webhooks"
   | "notifications"
   | "master-client"
+  | "module"
   | "maintenance-page"
   | "jobs"
   | "mailing"
@@ -119,12 +123,24 @@ const SECTIONS: {
   title: string;
   subtitle: string;
   icon: LucideIcon;
+  // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28: "das soll unter
+  // Einstellungen sein") – nur auf einer Master-Installation sinnvoll
+  // (Slave hat kein eigenes `ModuleSettings`, Backend gated zusätzlich
+  // hart über `MasterOnlyGuard`).
+  masterOnly?: boolean;
 }[] = [
   {
     id: "master-client",
     title: "Master-Client",
     subtitle: "Mandanten & Modus",
     icon: ShieldCheck,
+  },
+  {
+    id: "module",
+    title: "Module",
+    subtitle: "Freischaltung & Reiter",
+    icon: Blocks,
+    masterOnly: true,
   },
   {
     id: "access",
@@ -214,6 +230,7 @@ export function SettingsForm({
   jobRuns,
   mailTemplates,
   websites,
+  moduleSettings,
 }: {
   settings: AppSettings;
   logoFolderId: string | null;
@@ -224,6 +241,7 @@ export function SettingsForm({
   jobRuns: JobRunsResponse;
   mailTemplates: MailTemplateListItem[];
   websites: WebsiteListResponse;
+  moduleSettings: ModuleSettingsEntry[] | null;
 }) {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<SectionId>("access");
@@ -410,7 +428,11 @@ export function SettingsForm({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
           <div className="overflow-hidden rounded-xl bg-card shadow-sm lg:w-80 lg:shrink-0">
             <div className="flex flex-col divide-y divide-border">
-              {SECTIONS.map((section) => {
+              {SECTIONS.filter(
+                (section) =>
+                  !section.masterOnly ||
+                  settings.deploymentMode === "master",
+              ).map((section) => {
                 const isActive = section.id === activeSection;
                 const Icon = section.icon;
                 return (
@@ -1128,6 +1150,10 @@ export function SettingsForm({
 
             {activeSection === "master-client" && (
               <MasterClientCard settings={settings} websites={websites} />
+            )}
+
+            {activeSection === "module" && (
+              <ModuleSettingsCard modules={moduleSettings ?? []} />
             )}
 
             {activeSection === "maintenance-page" && (

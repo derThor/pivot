@@ -1,23 +1,12 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Blocks, ChevronRight, Globe } from "lucide-react";
+import { Blocks, ChevronRight } from "lucide-react";
 
-import { toastEdited } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import { PageHeader } from "@/components/page-header";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
-import { WEBSITE_STATUS_BADGE } from "@/lib/website-status";
-import type {
-  MandantListItem,
-  ModuleCatalogEntry,
-  ModuleSettingsEntry,
-} from "@/lib/api-server";
+import type { MandantListItem, ModuleCatalogEntry } from "@/lib/api-server";
 
 const CATEGORY_LABEL: Record<ModuleCatalogEntry["category"], string> = {
   integration: "Schnittstelle",
@@ -38,69 +27,37 @@ const MODULE_PERMISSIONS: Record<string, string[]> = {
 };
 
 /** Administration → Module → [key] (Nutzervorgabe, 2026-08-28, nach
- * Mockup, aber ohne die bewusst nicht gebauten Elemente:
+ * Mockup, aber ohne die drei bewusst nicht gebauten Elemente:
  * Versions-/Update-/Entfernen-Mechanik ist rein informativ, es gibt keinen
  * "Freigaben"-Tab hier (Mandanten-spezifisches passiert auf der jeweiligen
- * Mandant-Detailseite). Masters EIGENE Freischaltung (Nutzervorgabe: "das
- * soll direkt in dem Modul unter Module und Datenschutz eingestellt
- * werden und nicht in Einstellung Module") sitzt direkt hier, nicht unter
- * Einstellungen. `settings` ist `null` auf einer Client-Installation
- * (`MasterOnlyGuard`) – dann werden keine Schalter angezeigt. */
+ * Mandant-Detailseite) und keine "Grundeinstellungen" (Masters eigene
+ * Freischaltung liegt unter Einstellungen → Module, siehe
+ * `module-settings-card.tsx` – Nutzervorgabe: "das soll unter
+ * Einstellungen sein"). Rein lesende Seite. */
 export function ModuleDetailView({
   module,
-  activeMandanten,
+  mandanten,
   appVersion,
-  settings,
 }: {
   module: ModuleCatalogEntry;
-  activeMandanten: MandantListItem[];
+  mandanten: MandantListItem[];
   appVersion: string | null;
-  settings: ModuleSettingsEntry | null;
 }) {
-  const router = useRouter();
   const permissions = MODULE_PERMISSIONS[module.key] ?? [];
-  const [pendingKey, setPendingKey] = useState<string | null>(null);
-
-  async function patchModule(body: Record<string, boolean>) {
-    setPendingKey("module");
-    try {
-      const res = await fetch(`/api/module-settings/${module.key}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        toastEdited(data?.message ?? "Konnte nicht gespeichert werden.");
-        return;
-      }
-      router.refresh();
-    } finally {
-      setPendingKey(null);
-    }
-  }
-
-  async function patchFeature(featureKey: string, enabled: boolean) {
-    setPendingKey(featureKey);
-    try {
-      const res = await fetch(
-        `/api/module-settings/${module.key}/features/${featureKey}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ enabled }),
-        },
-      );
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        toastEdited(data?.message ?? "Konnte nicht gespeichert werden.");
-        return;
-      }
-      router.refresh();
-    } finally {
-      setPendingKey(null);
-    }
-  }
+  // Nutzervorgabe, 2026-08-28: "Bei Mandanten" statt "Auf Websites aktiv"
+  // – ALLE Mandanten (nicht nur die mit gebuchtem Modul), damit auch
+  // sichtbar ist, wer es noch nicht hat. Klick öffnet direkt das
+  // Bearbeiten-Popup der (ersten/Haupt-)Website dieses Mandanten auf
+  // `/dashboard/websites` (`?edit=<id>`, siehe websites-view.tsx).
+  const mandantRows = mandanten
+    .map((mandant) => {
+      const website = mandant.websites[0];
+      if (!website) return null;
+      const booking = mandant.modules.find((m) => m.moduleKey === module.key);
+      const isSetUp = !!booking?.enabled;
+      return { mandant, website, isSetUp };
+    })
+    .filter((row): row is NonNullable<typeof row> => row !== null);
 
   return (
     <div className="flex flex-col gap-6">
@@ -127,65 +84,8 @@ export function ModuleDetailView({
               {module.description}
             </p>
           </div>
-          {settings && (
-            <Switch
-              checked={settings.enabled}
-              disabled={pendingKey === "module"}
-              onCheckedChange={(checked) => patchModule({ enabled: checked })}
-            />
-          )}
         </CardContent>
       </Card>
-
-      {settings &&
-        settings.enabled &&
-        module.features &&
-        module.features.length > 0 && (
-        <Card className="rounded-xl shadow-sm">
-          <CardHeader>
-            <CardTitle>Freischaltung für diese Installation</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Gilt für Master selbst – unabhängig von der Buchung einzelner
-              Mandanten.
-            </p>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            {module.features.map((feature) => (
-              <div
-                key={feature.key}
-                className="flex items-center justify-between gap-3 rounded-lg bg-muted p-3"
-              >
-                <p className="text-sm font-medium">{feature.label}</p>
-                <Switch
-                  checked={settings.enabledFeatures.includes(feature.key)}
-                  disabled={pendingKey === feature.key}
-                  onCheckedChange={(checked) =>
-                    patchFeature(feature.key, checked)
-                  }
-                />
-              </div>
-            ))}
-            <div className="flex items-center justify-between gap-3 rounded-lg bg-muted p-3">
-              <div>
-                <p className="text-sm font-medium">
-                  Bei neuen Mandanten vorinstallieren
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Wird beim Anlegen eines neuen Mandanten automatisch
-                  gebucht.
-                </p>
-              </div>
-              <Switch
-                checked={settings.autoInstallForNewMandants}
-                disabled={pendingKey === "module"}
-                onCheckedChange={(checked) =>
-                  patchModule({ autoInstallForNewMandants: checked })
-                }
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
         <Card className="rounded-xl shadow-sm">
@@ -236,33 +136,34 @@ export function ModuleDetailView({
         <div className="flex flex-col gap-4">
           <Card className="rounded-xl shadow-sm">
             <CardHeader>
-              <CardTitle className="text-base">Auf Websites aktiv</CardTitle>
+              <CardTitle className="text-base">Bei Mandanten</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col divide-y divide-border p-0">
-              {activeMandanten.length === 0 ? (
+              {mandantRows.length === 0 ? (
                 <p className="px-6 py-4 text-sm text-muted-foreground">
-                  Von keinem Mandanten gebucht.
+                  Noch keine Mandanten angelegt.
                 </p>
               ) : (
-                activeMandanten.flatMap((mandant) =>
-                  mandant.websites.map((website) => {
-                    const badge = WEBSITE_STATUS_BADGE[website.status];
-                    return (
-                      <div
-                        key={website.id}
-                        className="flex items-center justify-between gap-3 px-6 py-3"
-                      >
-                        <div className="flex min-w-0 items-center gap-2">
-                          <Globe className="size-4 shrink-0 text-muted-foreground" />
-                          <span className="truncate text-sm">
-                            {website.domain}
-                          </span>
-                        </div>
-                        <Badge className={badge.className}>{badge.label}</Badge>
-                      </div>
-                    );
-                  }),
-                )
+                mandantRows.map(({ mandant, website, isSetUp }) => (
+                  <Link
+                    key={mandant.id}
+                    href={`/dashboard/websites?edit=${website.id}`}
+                    className="flex items-center justify-between gap-3 px-6 py-3 transition-colors hover:bg-muted/40"
+                  >
+                    <span className="min-w-0 truncate text-sm">
+                      {website.name}
+                    </span>
+                    <Badge
+                      className={
+                        isSetUp
+                          ? "badge--green border-0"
+                          : "badge--slate border-0"
+                      }
+                    >
+                      {isSetUp ? "eingerichtet" : "nicht freigegeben"}
+                    </Badge>
+                  </Link>
+                ))
               )}
             </CardContent>
           </Card>

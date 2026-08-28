@@ -82,6 +82,27 @@ export default async function PrivacyPage() {
     );
   }
 
+  // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28: "es muss Datenschutz
+  // komplett deaktiviert werden") – ist kein einziger Reiter freigeschaltet
+  // (Modul komplett aus oder alle Features einzeln deaktiviert), wird die
+  // Seite gar nicht erst gerendert, statt eine leere/funktionslose Hülle
+  // zu zeigen (die zugrundeliegenden Daten wären zwar über die Guards
+  // ohnehin blockiert, aber Formulare/Karten, die nicht am Modul hängen –
+  // z.B. die DSB-Kontaktdaten aus den allgemeinen Settings –, würden sonst
+  // trotzdem sichtbar/bedienbar bleiben).
+  if (enabledFeatures !== null && enabledFeatures.length === 0) {
+    return (
+      <div className="flex flex-col gap-10">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Datenschutz</h1>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Das Datenschutz-Modul ist für diese Installation nicht aktiviert.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <PrivacyView
       settings={{ ...companySettings, ...privacySettings }}

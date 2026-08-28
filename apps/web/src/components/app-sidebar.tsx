@@ -185,6 +185,13 @@ export const navGroups = [
         url: "/dashboard/privacy",
         icon: ShieldKeyhole,
         permission: "privacy:read",
+        // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28: "wenn
+        // deaktiviert, soll der Menüpunkt Datenschutz auch weg" – gilt für
+        // Master (ModuleSettings) genauso wie für einen Client, dem das
+        // Modul nicht gebucht ist) – siehe `AdminMenu`, das zusätzlich zu
+        // `permission` auch `moduleKey` gegen die aktuell freigeschalteten
+        // Module prüft.
+        moduleKey: "datenschutz",
       },
       {
         title: "Benutzer",

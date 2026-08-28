@@ -30,10 +30,22 @@ const ADMIN_GROUP = navGroups.find((group) => group.label === "Verwaltung")!;
  * bekommt selbst einen grünen Hintergrund + grüne Icon-Box – dieselbe
  * `findBestMatchingUrl`/`ROUTE_ALIASES`-Logik wie in der Sidebar, damit
  * beide nicht auseinanderlaufen. */
-export function AdminMenu({ permissions }: { permissions: string[] }) {
+export function AdminMenu({
+  permissions,
+  enabledModules,
+}: {
+  permissions: string[];
+  // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): Keys der Module,
+  // die für DIESE Installation mit mindestens einem aktiven Reiter
+  // freigeschaltet sind (Master: `ModuleSettings`, Client: vom Master
+  // signiert) – Items mit `moduleKey` blenden sonst aus.
+  enabledModules: string[];
+}) {
   const pathname = usePathname();
   const items = ADMIN_GROUP.items.filter(
-    (item) => !("permission" in item) || permissions.includes(item.permission),
+    (item) =>
+      (!("permission" in item) || permissions.includes(item.permission)) &&
+      (!("moduleKey" in item) || enabledModules.includes(item.moduleKey)),
   );
   if (items.length === 0) return null;
 

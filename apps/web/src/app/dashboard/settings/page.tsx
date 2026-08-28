@@ -5,6 +5,7 @@ import {
   getJobs,
   getMailTemplates,
   getMediaFolders,
+  getModuleSettings,
   getSettings,
   getSettingsChanges,
   getSmtpSettings,
@@ -43,8 +44,16 @@ export default async function SettingsPage({
   // Eigener Query-Param `webhooksPage`/`protocolPage`/`jobsRunsPage` statt
   // `page`, damit sich die Paginierungen der einzelnen
   // Einstellungen-Abschnitte nicht gegenseitig überschreiben.
-  const [webhooks, settingsChanges, smtp, jobs, jobRuns, mailTemplates, websites] =
-    await Promise.all([
+  const [
+    webhooks,
+    settingsChanges,
+    smtp,
+    jobs,
+    jobRuns,
+    mailTemplates,
+    websites,
+    moduleSettings,
+  ] = await Promise.all([
     getWebhooks({
       page: webhooksPage,
       pageSize: settings?.defaultPageSize ?? 10,
@@ -64,6 +73,9 @@ export default async function SettingsPage({
       page: mandantenPage,
       pageSize: settings?.defaultPageSize ?? 10,
     }),
+    // 404 auf einer Client-Installation (`MasterOnlyGuard`) – dann `null`,
+    // die "Module"-Sidebar-Sektion wird dort ohnehin nicht angezeigt.
+    getModuleSettings(),
   ]);
   // Nach Namen filtern statt nur `isSystem`: seit dem "Avatare"-Systemordner
   // (Profilfoto-Upload, 2026-08-17) gibt es mehr als einen isSystem-Ordner.
@@ -126,6 +138,7 @@ export default async function SettingsPage({
           meta: { page: 1, pageSize: 10, total: 0, pageCount: 1 },
         }
       }
+      moduleSettings={moduleSettings}
     />
   );
 }

@@ -38,12 +38,14 @@ export function DashboardHeader({
   systemMessageCount = 0,
   allowTwoFactor = false,
   keyboardShortcutsEnabled = true,
+  enabledModules,
 }: {
   user: CurrentUser;
   defaultPageSize: number;
   systemMessageCount?: number;
   allowTwoFactor?: boolean;
   keyboardShortcutsEnabled?: boolean;
+  enabledModules: string[];
 }) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -80,7 +82,7 @@ export function DashboardHeader({
         <>
           <SidebarTrigger />
           <div className="ml-6">
-            <AdminMenu permissions={permissions} />
+            <AdminMenu permissions={permissions} enabledModules={enabledModules} />
           </div>
         </>
       )}
