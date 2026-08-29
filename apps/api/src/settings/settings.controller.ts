@@ -21,6 +21,7 @@ import { UpdateMaintenancePageDto } from './dto/update-maintenance-page.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdatePrivacyDto } from './dto/update-privacy.dto';
 import { UpdatePrivacyDsbDto } from './dto/update-privacy-dsb.dto';
+import { UpdatePrivacySccTemplateDto } from './dto/update-privacy-scc-template.dto';
 import { RequireModule } from '../license-client/decorators/require-module.decorator';
 import { RequireModuleFeature } from '../license-client/decorators/require-module-feature.decorator';
 import { ModuleEntitlementGuard } from '../license-client/guards/module-entitlement.guard';
@@ -131,11 +132,11 @@ export class SettingsController {
   }
 
   // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): die verbliebenen
-  // Felder in `UpdatePrivacyDto` (Aufbewahrung, Betroffenenrechte-Formular,
-  // SCC-Vorlage) gehören inhaltlich zum Reiter "Rechtstexte" – die
-  // DSB-Kontaktfelder wurden in eine eigene DTO/Route ausgelagert (siehe
-  // unten), damit beide Reiter unabhängig voneinander gegatet werden
-  // können.
+  // Felder in `UpdatePrivacyDto` (Aufbewahrung, Betroffenenrechte-Formular)
+  // gehören inhaltlich zum Reiter "Rechtstexte" – die DSB-Kontaktfelder und
+  // (Korrektur 2026-08-29) die SCC-Vorlage wurden in jeweils eigene
+  // DTOs/Routen ausgelagert (siehe unten), damit alle drei Reiter
+  // unabhängig voneinander gegatet werden können.
   @UseGuards(ModuleEntitlementGuard, ModuleFeatureGuard)
   @RequireModule('datenschutz')
   @RequireModuleFeature('datenschutz', 'rechtstexte')
@@ -160,6 +161,24 @@ export class SettingsController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.settingsService.updatePrivacyDsb(dto, user.sub);
+  }
+
+  // Korrektur 2026-08-29: "sccTemplateMediaId gehört inhaltlich eher zu
+  // auftragsverarbeiter" – eigene Route/DTO analog zu `dsb` oben, gegated
+  // über das Feature, auf dessen Reiter die Vorlage in privacy-view.tsx
+  // tatsächlich liegt (Drittlandtransfer-Karte im Auftragsverarbeiter-
+  // Reiter), nicht über `rechtstexte`.
+  @UseGuards(ModuleEntitlementGuard, ModuleFeatureGuard)
+  @RequireModule('datenschutz')
+  @RequireModuleFeature('datenschutz', 'auftragsverarbeiter')
+  @ApiBearerAuth()
+  @RequirePermission('privacy:update')
+  @Patch('privacy/scc-template')
+  updatePrivacySccTemplateSettings(
+    @Body() dto: UpdatePrivacySccTemplateDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.settingsService.updatePrivacySccTemplate(dto, user.sub);
   }
 
   // "Protokoll"-Tab unter Einstellungen (Nutzervorgabe, 2026-08-22: "baue

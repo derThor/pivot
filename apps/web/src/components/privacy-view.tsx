@@ -328,7 +328,7 @@ export function PrivacyView({
       });
       const uploaded = await uploadRes.json().catch(() => null);
       if (!uploadRes.ok) return;
-      await fetch("/api/settings/privacy", {
+      await fetch("/api/settings/privacy/scc-template", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sccTemplateMediaId: uploaded.id }),
@@ -345,7 +345,7 @@ export function PrivacyView({
     if (!sccTemplateMedia) return;
     setIsRemovingSccTemplate(true);
     try {
-      await fetch("/api/settings/privacy", {
+      await fetch("/api/settings/privacy/scc-template", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sccTemplateMediaId: null }),

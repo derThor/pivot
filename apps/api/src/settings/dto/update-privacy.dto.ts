@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, Min } from 'class-validator';
 
 // Nur die Datenschutz-relevanten Felder (DSB-Kontakt, Aufbewahrungsfristen,
 // Formular-Einstellungen, SCC-Vorlage) – analog zu UpdateCompanyDto: eine
@@ -55,9 +55,4 @@ export class UpdatePrivacyDto {
   @IsOptional()
   @IsBoolean()
   dsrDeadlineReminderEnabled?: boolean;
-
-  @ApiPropertyOptional({ nullable: true })
-  @IsOptional()
-  @IsString()
-  sccTemplateMediaId?: string | null;
 }

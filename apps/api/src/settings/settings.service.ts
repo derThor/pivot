@@ -9,6 +9,7 @@ import { UpdateMaintenancePageDto } from './dto/update-maintenance-page.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdatePrivacyDto } from './dto/update-privacy.dto';
 import { UpdatePrivacyDsbDto } from './dto/update-privacy-dsb.dto';
+import { UpdatePrivacySccTemplateDto } from './dto/update-privacy-scc-template.dto';
 import { UpdateSmtpSettingsDto } from './dto/update-smtp-settings.dto';
 import { UpdateLicenseClientSettingsDto } from './dto/update-license-client-settings.dto';
 import { encryptSecret } from '../common/utils/secret-encryption';
@@ -179,6 +180,18 @@ export class SettingsService {
   // unabhängig voneinander gegatet werden können, auch wenn beide auf
   // dieselbe `update()`/`getPrivacy()`-Grundlage aufsetzen.
   async updatePrivacyDsb(dto: UpdatePrivacyDsbDto, actingUserId: string) {
+    await this.update(dto, actingUserId);
+    return this.getPrivacy();
+  }
+
+  // Nutzervorgabe, 2026-08-29: `sccTemplateMediaId` gehört inhaltlich zum
+  // "Auftragsverarbeiter"-Reiter (Drittlandtransfer-Vorlage), lief bisher
+  // aber am `rechtstexte`-gegateten `updatePrivacy()` mit – gleiches
+  // Split-Muster wie `updatePrivacyDsb()` oben.
+  async updatePrivacySccTemplate(
+    dto: UpdatePrivacySccTemplateDto,
+    actingUserId: string,
+  ) {
     await this.update(dto, actingUserId);
     return this.getPrivacy();
   }
