@@ -1215,6 +1215,37 @@ Lösung: `LicenseClientModule` bekam `@Global()` – seine Exports sind
 dadurch app-weit ohne expliziten Modul-Import nutzbar, kein `forwardRef()`
 nötig.
 
+### Regression durch den `dsb`-Split: Speichern komplett kaputt (gefunden 2026-08-29)
+
+Der DTO-Split oben (`dpo*`-Felder raus aus `UpdatePrivacyDto`) wurde nie
+vollständig aufs Frontend übertragen: `privacy-view.tsx`s `handleSave()`
+schickte weiterhin `dpo*` UND die Aufbewahrungsfelder in einem PATCH an
+`/settings/privacy`, außerdem fehlte die BFF-Proxy-Route für
+`/settings/privacy/dsb` komplett. Da `ValidationPipe({forbidNonWhitelisted:
+true})` (`main.ts`) unbekannte Felder mit 400 quittiert, schlug die
+GESAMTE Anfrage fehl – auch die eigentlich gültigen Aufbewahrungsfelder
+wurden nie gespeichert, und `handleSave()` hatte keinen Fehlerpfad (`if
+(res.ok)` ohne `else`), der Nutzer sah also gar nichts, nur nach F5 den
+alten Stand. Nutzer-Bugreport: "ich kann in Datenschutz nichts mehr
+speichern. wenn ich die Frist für deaktivierte Konten ändere und
+speichere, passiert nichts."
+
+Fix: neue Route `apps/web/src/app/api/settings/privacy/dsb/route.ts`,
+`handleSave()` feuert jetzt zwei parallele Requests (Aufbewahrung an
+`/settings/privacy`, `dpo*` an `/settings/privacy/dsb`) und überspringt
+den zweiten, wenn der `dsb`-Reiter deaktiviert ist (sonst würde
+`ModuleFeatureGuard` ihn 404en und den kompletten Speichervorgang
+fälschlich als fehlgeschlagen melden, obwohl die Aufbewahrungsfelder
+längst durch wären). Live gegen die laufende API verifiziert (`PATCH
+/settings/privacy` und `/settings/privacy/dsb` beide 200, Wert persistiert
+nach erneutem `GET`).
+
+**Lehre:** ein Backend-DTO-Split ist erst fertig, wenn auch die
+BFF-Proxy-Route UND der aufrufende Frontend-Code entsprechend aufgeteilt
+sind – `tsc`/`eslint` fangen das nicht ab, da beide Seiten unabhängig
+typprüfen (die alte `fetch()`-Aufruf-Payload ist für TypeScript einfach
+ein `JSON.stringify()`-Objektliteral ohne Bezug zum Backend-DTO).
+
 ### Frontend: Reiter ausblenden + neue Master-Seiten
 
 `privacy-view.tsx` filtert `TAB_IDS` gegen eine neue `enabledFeatures:
