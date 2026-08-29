@@ -35,6 +35,17 @@ const MODULE_PERMISSIONS: Record<string, string[]> = {
   ],
 };
 
+// Ausführlichere Zusammenfassung für "Was das Modul mitbringt"
+// (Nutzervorgabe, 2026-08-29) – ergänzt die knappe Katalog-Beschreibung
+// (`module.description`, die z.B. auf der Kachel steht) um einen Absatz,
+// der auch ohne Vorwissen erklärt, was das Modul konkret leistet. Fällt
+// auf `module.description` zurück, solange ein Modul (z.B. Magicline)
+// noch keinen eigenen Text hat.
+const MODULE_SUMMARY: Record<string, string> = {
+  datenschutz:
+    "Bündelt alle datenschutzrelevanten Aufgaben rund um die Website in einem eigenen Arbeitsbereich: Rechtstexte wie Impressum und Datenschutzerklärung pflegen, Betroffenenanfragen (Auskunft, Löschung) bearbeiten, das Verzeichnis von Verarbeitungstätigkeiten führen, Auftragsverarbeiter dokumentieren und Datenschutzvorfälle melden. Jeder dieser Bereiche lässt sich einzeln freischalten – so sieht jeder Mandant nur die Reiter, die für ihn aktiviert sind.",
+};
+
 /** Administration → Module → [key] (Nutzervorgabe, 2026-08-28, nach
  * Mockup, aber ohne die drei bewusst nicht gebauten Elemente:
  * Versions-/Update-/Entfernen-Mechanik ist rein informativ, es gibt keinen
@@ -59,6 +70,7 @@ export function ModuleDetailView({
   autoInstallForNewMandants: boolean;
 }) {
   const permissions = MODULE_PERMISSIONS[module.key] ?? [];
+  const summary = MODULE_SUMMARY[module.key] ?? module.description;
   // Nutzervorgabe, 2026-08-29: "es sollen da nur Mandanten angezeigt
   // werden, die das Modul auf Mandantenebene hinzugefügt haben" – NICHT
   // alle Mandanten, nur die mit einer `MandantModule`-Buchung für dieses
@@ -145,44 +157,50 @@ export function ModuleDetailView({
           <CardHeader>
             <CardTitle>Was das Modul mitbringt</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-5">
-            {module.features && module.features.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                  Reiter
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {module.features.map((feature) => (
-                    <Badge key={feature.key} className="badge--slate border-0">
-                      {feature.label}
-                    </Badge>
-                  ))}
+          <CardContent className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <p className="text-sm text-muted-foreground">{summary}</p>
+            <div className="flex flex-col gap-5">
+              {module.features && module.features.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Reiter
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {module.features.map((feature) => (
+                      <Badge
+                        key={feature.key}
+                        className="badge--slate border-0"
+                      >
+                        {feature.label}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-            {permissions.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                  Zusätzliche Rechte
-                </p>
-                <ul className="flex flex-col gap-1">
-                  {permissions.map((key) => (
-                    <li key={key} className="text-sm">
-                      {key}
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-fit border-border"
-                  render={<Link href="/dashboard/roles" />}
-                >
-                  In Rollen & Rechte öffnen
-                </Button>
-              </div>
-            )}
+              )}
+              {permissions.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Zusätzliche Rechte
+                  </p>
+                  <ul className="flex flex-col gap-1">
+                    {permissions.map((key) => (
+                      <li key={key} className="text-sm">
+                        {key}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-fit border-border"
+                    render={<Link href="/dashboard/roles" />}
+                  >
+                    In Rollen & Rechte öffnen
+                  </Button>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
