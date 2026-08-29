@@ -462,6 +462,14 @@
   z-index: 1;
 }
 
+/* Breite, flache Header-Kachel (Modul-Detailseite) statt der eher
+   quadratischen Übersichts-Kachel – der prozentuale Breiten-Bezug von
+   oben würde das Schild hier riesig und größtenteils abgeschnitten
+   darstellen, deshalb eigene, an der Höhe orientierte Größe. */
+.modul-kachel--datenschutz.modul-kachel--wide::before {
+  background-size: auto, auto 150%, 18px 18px, auto;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;

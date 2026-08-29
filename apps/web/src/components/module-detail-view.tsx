@@ -118,7 +118,7 @@ export function ModuleDetailView({
         className={cn(
           "relative overflow-hidden border-none text-dark-surface-foreground shadow-sm",
           module.key === "datenschutz"
-            ? "modul-kachel--datenschutz"
+            ? "modul-kachel--datenschutz modul-kachel--wide"
             : "rounded-xl bg-dark-surface",
         )}
       >
