@@ -3,7 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Building2, ChevronRight, Diamond, ShieldCheck } from "lucide-react";
+import {
+  Building2,
+  ChevronRight,
+  Diamond,
+  Globe,
+  ShieldCheck,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -65,7 +71,8 @@ export function MandantenView({
             className="border-border"
             render={<Link href="/dashboard/websites" />}
           >
-            Zu den Websites
+            <Globe />
+            Zu den Webseiten
           </Button>
           <Button type="button" onClick={() => setCreateOpen(true)}>
             + Mandant anlegen

@@ -648,7 +648,7 @@ export function MandantDetailView({
                           type="button"
                           disabled={pendingModuleKey === module.key}
                           onClick={() => handleAddModule(module.key)}
-                          className="flex items-center gap-3 rounded-lg bg-muted p-3 text-left transition-colors hover:bg-muted/70 disabled:cursor-default disabled:opacity-60"
+                          className="flex items-center gap-3 rounded-lg border border-border bg-muted p-3 text-left transition-colors hover:bg-muted/70 disabled:cursor-default disabled:opacity-60"
                         >
                           <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-card text-foreground shadow-sm">
                             <Icon className="size-4.5" />
