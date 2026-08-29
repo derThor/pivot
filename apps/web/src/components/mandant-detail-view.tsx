@@ -320,7 +320,7 @@ export function MandantDetailView({
             className="border-border"
             render={<Link href="/dashboard/websites" />}
           >
-            Websites öffnen
+            Webseite öffnen
           </Button>
           <Button type="button" disabled={isSaving} onClick={handleSave}>
             {isSaving ? "Speichert…" : "Speichern"}
