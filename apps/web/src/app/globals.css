@@ -467,7 +467,8 @@
    oben würde das Schild hier riesig und größtenteils abgeschnitten
    darstellen, deshalb eigene, an der Höhe orientierte Größe. */
 .modul-kachel--datenschutz.modul-kachel--wide::before {
-  background-size: auto, auto 150%, 18px 18px, auto;
+  background-size: auto, auto 110%, 18px 18px, auto;
+  background-position: center, 90% 50%, 0 0, center;
 }
 
 .chip {
