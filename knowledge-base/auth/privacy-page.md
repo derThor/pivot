@@ -523,6 +523,26 @@ Frage "wo legst du die Dokumente an" hin) und der Link-Button dorthin.
   (CSV-Weiche auf `arrayBuffer()` umgestellt) – Nachtrag 2026-08-19
 - `packages/database/prisma/seed.ts` (System-Ordner "AVs")
 
+## Nachtrag 2026-08-29: Anonymisierungs-Countdown im Reiter "Nutzer"
+
+Nutzervorgabe: "je Benutzer eine Zeitanzeige, wann anonymisiert werden
+muss, wie bei Papierkorb". `UsersService.findDeleted()` rechnet jetzt pro
+Nutzer eine individuelle Deadline (`deletedAt` + `retentionDeactivated
+AccountsMonths`) und `daysLeft` aus, statt nur ein geteiltes
+`overdue`-Flag gegen einen einzigen Cutoff – analog zu
+`TrashService.withExpiryMeta`s `deletedAt` + `retentionDays` (dort Tage,
+hier Monate, da so konfiguriert). `PrivacyService.findDeactivatedAccountsDue()`
+übergibt dafür die rohe Monatszahl statt eines vorgerechneten Datums.
+Frontend zeigt dieselbe "in X T."-plus-Fortschrittsbalken-Optik wie
+`trash-view.tsx` (Badge "überfällig" ersetzt durch "Frist abgelaufen" mit
+Schloss-Icon, sobald `daysLeft <= 0`).
+
+Hängt mit dem Bugfix aus
+[master-slave-licensing.md](../platform/master-slave-licensing.md#bugfix-gelöschte-nutzer-blieben-für-immer-hängen-wenn-datenschutz-inaktiv-ist-2026-08-29)
+zusammen (gleicher Tag): der dort behobene Fall (Datenschutz-Modul
+komplett inaktiv → sofortige Anonymisierung statt Warteschlange) betrifft
+genau diese Liste.
+
 ## Offene Punkte
 
 - Manuelle Ergänzung (`manualAddendum`) hat einen Backend-Endpoint, aber
