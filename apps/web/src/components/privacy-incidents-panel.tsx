@@ -44,13 +44,13 @@ function formatDateTime(iso: string | null) {
 const RISK_BADGE_CLASSNAME: Record<PrivacyIncidentSeverity, string> = {
   low: "badge--slate border-0",
   medium: "badge--amber border-0",
-  high: "badge--ink border-0",
+  high: "badge--red border-0",
 };
 
 const RISK_ICON_BOX_CLASSNAME: Record<PrivacyIncidentSeverity, string> = {
   low: "badge--slate",
   medium: "badge--amber",
-  high: "badge--ink",
+  high: "badge--red",
 };
 
 /** Ablauf-Schritte 3–5 (Meldung/Information/Maßnahmen) sind bei
