@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
@@ -9,6 +14,9 @@ import {
   defaultFormTemplate,
   formFieldPlaceholders,
   formFieldLabels,
+  hasShellContentPlaceholder,
+  htmlToPlainText,
+  MAIL_SHELL_CONTENT_PLACEHOLDER,
   type FormMailKind,
 } from './mail-templates.catalog';
 
@@ -31,11 +39,12 @@ interface MailAttachment {
 interface RenderedMail {
   subject: string;
   text: string;
+  html?: string;
 }
 
 export interface MailTemplateListItem {
   id: string;
-  category: 'auth' | 'privacy' | 'forms';
+  category: 'auth' | 'privacy' | 'forms' | 'custom';
   label: string;
   subject: string;
   body: string;
@@ -48,13 +57,43 @@ export interface MailTemplateListItem {
   placeholderLabels?: Record<string, string>;
   isCustomized: boolean;
   formId: string | null;
+  // Ab hier nur für individuelle (kind: "custom") Vorlagen relevant.
+  format: 'text' | 'html';
+  bodyHtml: string | null;
+  shellId: string | null;
 }
 
 export interface UpdateMailTemplateInput {
   subject?: string;
   body?: string;
+  bodyHtml?: string;
+  name?: string;
+  shellId?: string | null;
   enabled?: boolean;
   recipientTo?: string | null;
+}
+
+export interface CreateMailTemplateInput {
+  name: string;
+}
+
+export interface MailShellListItem {
+  id: string;
+  name: string;
+  content: string;
+  isDefault: boolean;
+  updatedAt: Date;
+  usedByCount: number;
+}
+
+export interface CreateMailShellInput {
+  name: string;
+}
+
+export interface UpdateMailShellInput {
+  name?: string;
+  content?: string;
+  isDefault?: boolean;
 }
 
 /**
@@ -196,8 +235,12 @@ export class MailerService {
     subject: string,
     text: string,
     attachments?: MailAttachment[],
+    // Nur für individuelle (kind: "custom") Vorlagen gesetzt – die Hülle
+    // trägt dort bereits Kopf/Fuß/CI, der automatische Firmen-Footer aus
+    // `appendFooter()` würde sich damit überschneiden/wiederholen.
+    html?: string,
   ): Promise<void> {
-    const fullText = await this.appendFooter(text);
+    const fullText = html ? text : await this.appendFooter(text);
     const cfg = await this.loadConfig();
     if (!cfg) {
       this.logger.log(`[Dev-Stub] "${subject}" an ${to}: ${fullText}`);
@@ -209,6 +252,7 @@ export class MailerService {
         to,
         subject,
         text: fullText,
+        html,
         attachments,
       });
     } catch (err) {
@@ -273,6 +317,67 @@ export class MailerService {
       ),
       text: this.renderPlaceholders(override?.body ?? fallback.body, vars),
     };
+  }
+
+  // Mitgelieferte, neutrale Standard-Hülle (Nutzervorgabe: eine neue,
+  // noch nicht konfigurierte Installation braucht trotzdem sofort
+  // brauchbare Mails) – greift, solange kein Client eine eigene Hülle
+  // gebaut hat.
+  private static readonly DEFAULT_SHELL_CONTENT = `<div style="max-width:600px;margin:0 auto;padding:32px 24px;font-family:sans-serif;color:#111827;">${MAIL_SHELL_CONTENT_PLACEHOLDER}</div>`;
+
+  /** Setzt den gerenderten Vorlagen-Inhalt an der `{{content}}`-Stelle der
+   * gewählten (oder Standard-)Hülle ein. `shellId` ohne Treffer fällt auf
+   * die Standard-Hülle der Installation zurück, keine Hülle konfiguriert
+   * fällt auf die mitgelieferte Standard-Hülle zurück (siehe oben). */
+  private async wrapInShell(
+    contentHtml: string,
+    shellId: string | null,
+  ): Promise<string> {
+    const shell = shellId
+      ? await this.prisma.mailShell.findUnique({ where: { id: shellId } })
+      : await this.prisma.mailShell.findFirst({ where: { isDefault: true } });
+    const shellContent = shell?.content ?? MailerService.DEFAULT_SHELL_CONTENT;
+    return shellContent.replaceAll(MAIL_SHELL_CONTENT_PLACEHOLDER, contentHtml);
+  }
+
+  /** Individuelle (kind: "custom") Vorlage – anders als System-/Formular-
+   * Vorlagen gibt es hier keinen Katalog-Fallback, die Zeile MUSS
+   * existieren. Liefert zusätzlich zu Betreff/Plaintext das fertige,
+   * in die Hülle eingesetzte HTML. */
+  private async renderCustomTemplate(
+    id: string,
+    vars: Record<string, string>,
+    options?: { ignoreEnabled?: boolean },
+  ): Promise<RenderedMail | null> {
+    const template = await this.prisma.mailTemplate.findUnique({
+      where: { id },
+    });
+    if (!template || template.kind !== 'custom') return null;
+    if (!template.enabled && !options?.ignoreEnabled) return null;
+    const subject = this.renderPlaceholders(template.subject, vars);
+    const contentHtml = this.renderPlaceholders(template.bodyHtml ?? '', vars);
+    const html = await this.wrapInShell(contentHtml, template.shellId);
+    return { subject, html, text: htmlToPlainText(html) };
+  }
+
+  /** Öffentlich, für künftige Auslöser (Nutzervorgabe, 2026-08-29-Konzept:
+   * "Auslösung ... soll aber programmatisch referenzierbar sein können") –
+   * bewusst schon jetzt gebaut, auch wenn die UI in der ersten
+   * Ausbaustufe nur den manuellen Testversand freischaltet. */
+  async sendCustomTemplate(
+    id: string,
+    to: string,
+    vars: Record<string, string>,
+  ): Promise<void> {
+    const rendered = await this.renderCustomTemplate(id, vars);
+    if (!rendered) return;
+    await this.deliver(
+      to,
+      rendered.subject,
+      rendered.text,
+      undefined,
+      rendered.html,
+    );
   }
 
   async sendVerificationEmail(to: string, link: string): Promise<void> {
@@ -462,12 +567,14 @@ export class MailerService {
   }
 
   // ---------- Mailing (Einstellungen → Mailing) ----------
-  // Vereinheitlichte Liste aus System-Mails UND formulargebundenen
-  // Vorlagen (Nutzervorgabe: zusammen unter Mailing bearbeitbar). Die
-  // virtuelle Id ist entweder der feste `key` (System-Mails, enthält kein
-  // ":") oder `${formId}:${formKind}` (Formular-Vorlagen) – daran wird in
-  // updateMailTemplate()/resetMailTemplate()/sendMailTemplateTest()
-  // unterschieden.
+  // Vereinheitlichte Liste aus System-Mails, formulargebundenen UND
+  // individuellen (kind: "custom") Vorlagen (Nutzervorgabe: zusammen
+  // unter Mailing bearbeitbar). Die Id ist entweder der feste `key`
+  // (System-Mails, enthält kein ":"), `${formId}:${formKind}`
+  // (Formular-Vorlagen) oder die echte `MailTemplate.id` (individuelle
+  // Vorlagen, existieren nur als echte DB-Zeile, kein Katalog-Fallback) –
+  // daran wird in updateMailTemplate()/resetMailTemplate()/
+  // sendMailTemplateTest() unterschieden.
 
   private isFormTemplateId(id: string): boolean {
     return id.includes(':');
@@ -479,6 +586,10 @@ export class MailerService {
   } {
     const [formId, formKind] = id.split(':');
     return { formId, formKind: formKind as FormMailKind };
+  }
+
+  private isSystemTemplateId(id: string): boolean {
+    return SYSTEM_MAIL_TEMPLATES.some((t) => t.key === id);
   }
 
   async listMailTemplates(): Promise<MailTemplateListItem[]> {
@@ -509,6 +620,9 @@ export class MailerService {
           placeholders: def.placeholders,
           isCustomized: Boolean(override),
           formId: null,
+          format: 'text' as const,
+          bodyHtml: null,
+          shellId: null,
         };
       },
     );
@@ -553,14 +667,41 @@ export class MailerService {
           placeholderLabels,
           isCustomized: Boolean(override),
           formId: form.id,
+          format: 'text' as const,
+          bodyHtml: null,
+          shellId: null,
         };
       });
     });
 
-    return [...systemItems, ...formItems];
+    const customRows = overrides.filter((o) => o.kind === 'custom');
+    const customItems: MailTemplateListItem[] = customRows.map((row) => ({
+      id: row.id,
+      category: 'custom' as const,
+      label: row.name ?? 'Unbenannte Vorlage',
+      subject: row.subject,
+      body: row.body,
+      enabled: row.enabled,
+      // Kein "Empfänger"-Tab: es gibt (noch) keinen automatischen Auslöser
+      // für individuelle Vorlagen, nur den manuellen Testversand unten.
+      recipientTo: null,
+      recipientEditable: false,
+      placeholders: [],
+      isCustomized: true,
+      formId: null,
+      format: 'html' as const,
+      bodyHtml: row.bodyHtml,
+      shellId: row.shellId,
+    }));
+
+    return [...systemItems, ...formItems, ...customItems];
   }
 
   async updateMailTemplate(id: string, dto: UpdateMailTemplateInput) {
+    if (!this.isFormTemplateId(id) && !this.isSystemTemplateId(id)) {
+      return this.updateCustomMailTemplate(id, dto);
+    }
+
     if (this.isFormTemplateId(id)) {
       const { formId, formKind } = this.splitFormTemplateId(id);
       const form = await this.prisma.form.findUnique({
@@ -614,9 +755,55 @@ export class MailerService {
     });
   }
 
-  /** "Auf Standard zurücksetzen" – löscht schlicht die DB-Zeile, danach
-   * greift wieder der Standardtext (siehe render*Template()). */
+  /** Individuelle (kind: "custom") Vorlage – existiert nur als echte
+   * DB-Zeile, kein Katalog-Fallback wie bei System-/Formular-Vorlagen.
+   * `body` (Plaintext-Fallback) wird bei jeder Änderung an `bodyHtml`
+   * automatisch neu abgeleitet, nicht separat vom Client übergeben. */
+  private async updateCustomMailTemplate(
+    id: string,
+    dto: UpdateMailTemplateInput,
+  ) {
+    const existing = await this.prisma.mailTemplate.findUnique({
+      where: { id },
+    });
+    if (!existing || existing.kind !== 'custom') {
+      throw new NotFoundException(`Unbekannte Mail-Vorlage: ${id}`);
+    }
+    if (dto.shellId) {
+      const shell = await this.prisma.mailShell.findUnique({
+        where: { id: dto.shellId },
+      });
+      if (!shell) {
+        throw new NotFoundException(`Unbekannte E-Mail-Hülle: ${dto.shellId}`);
+      }
+    }
+    return this.prisma.mailTemplate.update({
+      where: { id },
+      data: {
+        name: dto.name,
+        subject: dto.subject,
+        bodyHtml: dto.bodyHtml,
+        body:
+          dto.bodyHtml !== undefined
+            ? htmlToPlainText(dto.bodyHtml)
+            : undefined,
+        shellId: dto.shellId === undefined ? undefined : dto.shellId,
+        enabled: dto.enabled,
+      },
+    });
+  }
+
+  /** "Auf Standard zurücksetzen" (System-/Formular-Vorlagen) bzw.
+   * endgültiges Löschen (individuelle Vorlagen, kein Standard zum
+   * Zurückfallen vorhanden) – beides läuft über denselben
+   * DELETE-Endpunkt, da beides bedeutet "diese Zeile entfernen". */
   async resetMailTemplate(id: string): Promise<void> {
+    if (!this.isFormTemplateId(id) && !this.isSystemTemplateId(id)) {
+      await this.prisma.mailTemplate.deleteMany({
+        where: { id, kind: 'custom' },
+      });
+      return;
+    }
     if (this.isFormTemplateId(id)) {
       const { formId, formKind } = this.splitFormTemplateId(id);
       await this.prisma.mailTemplate.deleteMany({
@@ -627,10 +814,45 @@ export class MailerService {
     await this.prisma.mailTemplate.deleteMany({ where: { key: id } });
   }
 
+  /** "+ Neue Vorlage" – legt nur den Namen fest, Standardwerte sind leer/
+   * minimal, Betreff/Inhalt/Hülle werden danach im normalen
+   * Vorlagen-Editor gesetzt (updateMailTemplate()/updateCustomMailTemplate()). */
+  async createMailTemplate(dto: CreateMailTemplateInput) {
+    return this.prisma.mailTemplate.create({
+      data: {
+        kind: 'custom',
+        name: dto.name,
+        subject: dto.name,
+        body: '',
+        bodyHtml: '<p></p>',
+        format: 'html',
+      },
+    });
+  }
+
   /** Vorlagen-Editor, Button "Testmail senden" – rendert mit Beispielwerten
    * und verschickt unabhängig vom "Versand aktiv"-Schalter (der Nutzer
    * will die Vorlage sehen, nicht den Pausenzustand testen). */
   async sendMailTemplateTest(id: string, to: string): Promise<void> {
+    if (!this.isFormTemplateId(id) && !this.isSystemTemplateId(id)) {
+      const rendered = await this.renderCustomTemplate(
+        id,
+        {},
+        { ignoreEnabled: true },
+      );
+      if (!rendered) {
+        throw new NotFoundException(`Unbekannte Mail-Vorlage: ${id}`);
+      }
+      await this.deliver(
+        to,
+        `[Test] ${rendered.subject}`,
+        rendered.text,
+        undefined,
+        rendered.html,
+      );
+      return;
+    }
+
     if (this.isFormTemplateId(id)) {
       const { formId, formKind } = this.splitFormTemplateId(id);
       const form = await this.prisma.form.findUnique({
@@ -665,5 +887,91 @@ export class MailerService {
     if (rendered) {
       await this.deliver(to, `[Test] ${rendered.subject}`, rendered.text);
     }
+  }
+
+  // ---------- E-Mail-Hüllen (Einstellungen → Mailing) ----------
+  // Nutzervorgabe, 2026-08-30: "mache mehrere Hüllen für eine Installation
+  // möglich" – eigene Tabelle statt eines einzelnen Felds, genau eine
+  // davon `isDefault`.
+
+  async listMailShells(): Promise<MailShellListItem[]> {
+    const shells = await this.prisma.mailShell.findMany({
+      orderBy: { name: 'asc' },
+      include: { _count: { select: { templates: true } } },
+    });
+    return shells.map((s) => ({
+      id: s.id,
+      name: s.name,
+      content: s.content,
+      isDefault: s.isDefault,
+      updatedAt: s.updatedAt,
+      usedByCount: s._count.templates,
+    }));
+  }
+
+  /** "+ Neue Hülle" – erste angelegte Hülle wird automatisch Standard
+   * (sonst gäbe es sonst kurzzeitig gar keine Standard-Hülle). */
+  async createMailShell(dto: CreateMailShellInput) {
+    const existingCount = await this.prisma.mailShell.count();
+    return this.prisma.mailShell.create({
+      data: {
+        name: dto.name,
+        content: MailerService.DEFAULT_SHELL_CONTENT,
+        isDefault: existingCount === 0,
+      },
+    });
+  }
+
+  async updateMailShell(id: string, dto: UpdateMailShellInput) {
+    const existing = await this.prisma.mailShell.findUnique({
+      where: { id },
+    });
+    if (!existing) {
+      throw new NotFoundException(`Unbekannte E-Mail-Hülle: ${id}`);
+    }
+    if (dto.content !== undefined && !hasShellContentPlaceholder(dto.content)) {
+      throw new BadRequestException(
+        `Die Hülle muss den Platzhalter ${MAIL_SHELL_CONTENT_PLACEHOLDER} genau einmal enthalten.`,
+      );
+    }
+    // Genau eine Standard-Hülle pro Installation – eine neue Standard-
+    // Markierung nimmt sie allen anderen weg, statt mehrere zuzulassen.
+    if (dto.isDefault) {
+      await this.prisma.mailShell.updateMany({
+        where: { id: { not: id }, isDefault: true },
+        data: { isDefault: false },
+      });
+    }
+    return this.prisma.mailShell.update({
+      where: { id },
+      data: {
+        name: dto.name,
+        content: dto.content,
+        isDefault: dto.isDefault,
+      },
+    });
+  }
+
+  /** Löschschutz: eine Hülle, die aktuell von mindestens einer Vorlage
+   * genutzt wird oder die Standard-Hülle ist, kann nicht gelöscht werden
+   * – gleiches Prinzip wie an anderen Stellen im System (z.B. Rollen/
+   * Ordner in Benutzung). */
+  async deleteMailShell(id: string): Promise<void> {
+    const shell = await this.prisma.mailShell.findUnique({
+      where: { id },
+      include: { _count: { select: { templates: true } } },
+    });
+    if (!shell) return;
+    if (shell.isDefault) {
+      throw new BadRequestException(
+        'Die Standard-Hülle kann nicht gelöscht werden. Erst eine andere Hülle als Standard festlegen.',
+      );
+    }
+    if (shell._count.templates > 0) {
+      throw new BadRequestException(
+        `Diese Hülle wird noch von ${shell._count.templates} ${shell._count.templates === 1 ? 'Vorlage' : 'Vorlagen'} genutzt.`,
+      );
+    }
+    await this.prisma.mailShell.delete({ where: { id } });
   }
 }

@@ -31,6 +31,9 @@ import { UpdateSmtpSettingsDto } from './dto/update-smtp-settings.dto';
 import { SendSmtpTestEmailDto } from './dto/send-smtp-test-email.dto';
 import { UpdateLicenseClientSettingsDto } from './dto/update-license-client-settings.dto';
 import { UpdateMailTemplateDto } from './dto/update-mail-template.dto';
+import { CreateMailTemplateDto } from './dto/create-mail-template.dto';
+import { CreateMailShellDto } from './dto/create-mail-shell.dto';
+import { UpdateMailShellDto } from './dto/update-mail-shell.dto';
 import { MailerService } from '../mailer/mailer.service';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
 import { Public } from '../auth/decorators/public.decorator';
@@ -335,6 +338,47 @@ export class SettingsController {
     @Body() dto: SendSmtpTestEmailDto,
   ) {
     return this.mailer.sendMailTemplateTest(id, dto.to);
+  }
+
+  // "+ Neue Vorlage" (Nutzervorgabe, 2026-08-30: individuelle HTML-
+  // Vorlagen). Legt nur den Namen fest, Rest über PATCH .../:id.
+  @ApiBearerAuth()
+  @RequirePermission('settings:update')
+  @Post('mail-templates')
+  createMailTemplate(@Body() dto: CreateMailTemplateDto) {
+    return this.mailer.createMailTemplate(dto);
+  }
+
+  // E-Mail-Hüllen (Nutzervorgabe, 2026-08-30: "mache mehrere Hüllen für
+  // eine Installation möglich") – gleiches Recht wie der Rest von
+  // Mailing.
+  @ApiBearerAuth()
+  @RequirePermission('settings:read')
+  @Get('mail-shells')
+  listMailShells() {
+    return this.mailer.listMailShells();
+  }
+
+  @ApiBearerAuth()
+  @RequirePermission('settings:update')
+  @Post('mail-shells')
+  createMailShell(@Body() dto: CreateMailShellDto) {
+    return this.mailer.createMailShell(dto);
+  }
+
+  @ApiBearerAuth()
+  @RequirePermission('settings:update')
+  @Patch('mail-shells/:id')
+  updateMailShell(@Param('id') id: string, @Body() dto: UpdateMailShellDto) {
+    return this.mailer.updateMailShell(id, dto);
+  }
+
+  @ApiBearerAuth()
+  @RequirePermission('settings:update')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('mail-shells/:id')
+  deleteMailShell(@Param('id') id: string) {
+    return this.mailer.deleteMailShell(id);
   }
 
   // "Cache leeren" unter Einstellungen (Nutzervorgabe, 2026-08-16) – leert

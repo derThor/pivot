@@ -54,8 +54,8 @@ model RolePermission {
 model UserRole {
   userId String
   roleId String
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
@@ -70,7 +70,7 @@ model UserRole {
 }
 
 model AppSettings {
-  id                         Int      @id @default(1)
+  id                                 Int       @id @default(1)
   // "master" (verwaltet Websites/stellt Lizenz-Tokens aus) oder "slave"
   // (eine ausgelieferte Installation, prüft wöchentlich beim Master) –
   // Nutzervorgabe, 2026-08-24: vom Pivot-Admin unter Einstellungen
@@ -81,7 +81,7 @@ model AppSettings {
   // isolierte Datenbank hat und der Signierschlüssel für echte Lizenz-
   // Tokens ausschließlich auf dem echten Master liegt (siehe
   // knowledge-base/platform/master-slave-licensing.md).
-  deploymentMode             String   @default("master")
+  deploymentMode                     String    @default("master")
   // Nur im Client-Modus relevant: der Schlüssel, mit dem sich DIESE
   // Installation beim Master ausweist (Nutzervorgabe, 2026-08-24: "eine
   // Eingabe, wo man den Schlüssel ändern kann" – bisher nur per
@@ -91,9 +91,9 @@ model AppSettings {
   // zurückgegeben – schreibt-only-Feld wie `smtpPasswordEncrypted`. `null`
   // = noch nichts über die UI gesetzt, `LicenseClientService` fällt dann
   // auf die `LICENSE_API_KEY`-Umgebungsvariable zurück (Erstinbetriebnahme).
-  licenseApiKeyEncrypted     String?
-  allowRegistration          Boolean  @default(true)
-  allowPasswordReset         Boolean  @default(true)
+  licenseApiKeyEncrypted             String?
+  allowRegistration                  Boolean   @default(true)
+  allowPasswordReset                 Boolean   @default(true)
   // Getrennt nach Rolle (Nutzervorgabe, 2026-08-21): `allowEmailChange` gilt
   // für alle Nutzer außer Manager/Administrator/Pivot ("Benutzer können
   // E-Mail-Adresse anpassen"), `allowAdminEmailChange` eigens für
@@ -102,21 +102,21 @@ model AppSettings {
   // selbst ändern ("manager nicht"). Pivot ist von beidem ausgenommen und
   // darf immer ändern (siehe UsersService.assertEmailChangeAllowed –
   // Pivot "kann alles").
-  allowEmailChange           Boolean  @default(true)
-  allowAdminEmailChange      Boolean  @default(true)
-  requireAdminActivation     Boolean  @default(false)
-  autosaveEnabled            Boolean  @default(true)
-  mediaResponsiveVariantsEnabled Boolean @default(true)
-  maintenanceModeEnabled     Boolean  @default(false)
+  allowEmailChange                   Boolean   @default(true)
+  allowAdminEmailChange              Boolean   @default(true)
+  requireAdminActivation             Boolean   @default(false)
+  autosaveEnabled                    Boolean   @default(true)
+  mediaResponsiveVariantsEnabled     Boolean   @default(true)
+  maintenanceModeEnabled             Boolean   @default(false)
   // Inhalt der Wartungsseite, die eine Slave-Installation öffentlichen
   // Besuchern zeigt, sobald der Master sie sperrt (siehe
   // knowledge-base/platform/master-slave-licensing.md – "Wartungsseite
   // konfigurierbar"). Bewusst getrennt vom bestehenden
   // `maintenanceModeEnabled`-Schalter oben (eigenständiges, manuelles
   // Konzept). `null` = eingebauter Standardtext.
-  maintenancePageTitle       String?
-  maintenancePageMessage     String?
-  mediaStorageQuotaMb        Int?
+  maintenancePageTitle               String?
+  maintenancePageMessage             String?
+  mediaStorageQuotaMb                Int?
   // Maximale Dateigröße pro Upload (Nutzervorgabe, 2026-08-18) – gilt für
   // jeden Upload-Weg in der App (Medienbibliothek, Avatar, Firmenlogo,
   // alle laufen über MediaService.create()). null = keine Admin-Grenze,
@@ -124,115 +124,115 @@ model AppSettings {
   // weiterhin. Ist ein Wert gesetzt, gilt das Minimum aus beiden – die
   // Kategorie-Obergrenze kann per Einstellung nur verschärft, nie
   // aufgeweicht werden.
-  maxUploadSizeMb            Int?
-  passwordMinLength          Int      @default(8)
-  passwordRequireUppercase   Boolean  @default(true)
-  passwordRequireLowercase   Boolean  @default(true)
-  passwordRequireNumber      Boolean  @default(true)
-  passwordRequireSpecialChar Boolean  @default(true)
-  defaultPageSize            Int      @default(10)
+  maxUploadSizeMb                    Int?
+  passwordMinLength                  Int       @default(8)
+  passwordRequireUppercase           Boolean   @default(true)
+  passwordRequireLowercase           Boolean   @default(true)
+  passwordRequireNumber              Boolean   @default(true)
+  passwordRequireSpecialChar         Boolean   @default(true)
+  defaultPageSize                    Int       @default(10)
   // Globaler Schalter fürs gesamte 2FA/TOTP-Feature (Nutzervorgabe,
   // 2026-08-17) – bei false bleibt jeder vorhandene UserRole.twoFactorEnabled
   // wirkungslos (Login überspringt den zweiten Faktor komplett) und die
   // Einrichtung wird im Dashboard nirgends mehr angezeigt. Gleiche
   // "allow*"-Namenskonvention wie allowRegistration/allowPasswordReset.
-  allowTwoFactor             Boolean  @default(true)
+  allowTwoFactor                     Boolean   @default(true)
   // Erzwingt bei aktivem allowTwoFactor, dass Administrator-Konten 2FA
   // eingerichtet haben, bevor der Rest des Dashboards nutzbar ist (siehe
   // TwoFactorSetupGuard) – gleiche "require*"-Konvention wie
   // requireAdminActivation.
-  requireTwoFactorForAdmins  Boolean  @default(false)
+  requireTwoFactorForAdmins          Boolean   @default(false)
   // Zusätzliche, feingranulare 2FA-Pflicht-Stufen (Nutzervorgabe,
   // 2026-08-17, "Sicherheit"-Tab-Redesign) – bestehen unabhängig
   // nebeneinander (jede kann für sich an/aus sein), TwoFactorSetupGuard
   // prüft alle drei ODER-verknüpft. "…ForAll" gilt für jedes Konto,
   // "…ForPublishers" nur für Rollen mit `content:publish`-Recht.
-  requireTwoFactorForAll        Boolean  @default(false)
-  requireTwoFactorForPublishers Boolean  @default(false)
+  requireTwoFactorForAll             Boolean   @default(false)
+  requireTwoFactorForPublishers      Boolean   @default(false)
   // Passwort-Ablauf: erzwingt nach N Tagen seit der letzten Passwort-
   // Änderung (User.passwordChangedAt) beim nächsten Login einen
   // Passwortwechsel (setzt mustChangePassword, gleicher Mechanismus wie
   // requireAdminActivation). null = kein Ablauf.
-  passwordExpiryDays         Int?
+  passwordExpiryDays                 Int?
   // Sperrt ein Konto automatisch (isActive=false, gleicher Zustand wie
   // die manuelle "Sperren"-Aktion) nach N aufeinanderfolgenden
   // Fehlversuchen (siehe AuthService.login()). null = keine automatische
   // Sperre – User.failedLoginAttempts zählt dann weiterhin nur zur
   // Anzeige/Systembenachrichtigung.
-  failedLoginLockoutThreshold Int?
+  failedLoginLockoutThreshold        Int?
   // Prüft ein neues Passwort bei Registrierung/Passwortwechsel/-Reset
   // gegen die Have-I-Been-Pwned-Passwort-API (k-Anonymitäts-Abfrage,
   // Klartext-Passwort verlässt den Server nie – siehe
   // common/utils/pwned-password.ts).
-  passwordBlockLeaked        Boolean  @default(false)
+  passwordBlockLeaked                Boolean   @default(false)
   // Verhindert die Wiederverwendung eines der letzten 5 Passwörter eines
   // Kontos (siehe PasswordHistory-Modell unten). Feste Anzahl 5 (wie in
   // der Bildvorlage "Letzte 5 Passwörter nicht erneut zulassen") statt
   // eines weiteren konfigurierbaren Zahlenfelds.
-  passwordPreventReuseEnabled Boolean @default(false)
+  passwordPreventReuseEnabled        Boolean   @default(false)
   // Beendet eine Sitzung (Refresh-Token), wenn seit der letzten
   // Token-Erneuerung mehr als N Minuten vergangen sind (siehe
   // RefreshToken.lastUsedAt, AuthService.refresh()). null = kein
   // Inaktivitäts-Timeout, nur die feste expiresAt-Ablaufzeit gilt.
-  sessionIdleTimeoutMinutes  Int?
+  sessionIdleTimeoutMinutes          Int?
   // Darstellung (Nutzervorgabe, 2026-08-17, "Darstellung"-Tab-Redesign).
   // Hex-Farbe, null = Standard-Markenfarbe (#C8EE44, siehe globals.css).
   // Nur der Farbton wird übernommen (siehe lib/accent-color.ts) – Helligkeit
   // /Sättigung folgen demselben Muster wie die bisherige Lime-Palette, damit
   // Kontrast/Lesbarkeit für jede gewählte Farbe konsistent bleiben.
-  accentColor                String?
+  accentColor                        String?
   // "compact" | "normal" | "airy" – Standard-Zeilenhöhe in Tabellen.
-  tableDensity               String   @default("normal")
-  sidebarCollapsedByDefault  Boolean  @default(false)
-  keyboardShortcutsEnabled   Boolean  @default(true)
-  reduceMotion               Boolean  @default(false)
+  tableDensity                       String    @default("normal")
+  sidebarCollapsedByDefault          Boolean   @default(false)
+  keyboardShortcutsEnabled           Boolean   @default(true)
+  reduceMotion                       Boolean   @default(false)
   // Ein/Aus je Systembenachrichtigung-Kategorie (Nutzervorgabe, 2026-08-16:
   // Karte auf /dashboard/system-messages) – bestimmt, ob die jeweilige
   // Kategorie überhaupt als Banner/Glocken-Zähler auftaucht, unabhängig
   // vom zugrunde liegenden Zustand (z.B. Wartungsmodus kann aktiv sein,
   // aber die Benachrichtigung dazu ausgeblendet).
-  notifyMaintenanceMode        Boolean @default(true)
-  notifyStorageQuota           Boolean @default(true)
-  notifyWebhookFailures        Boolean @default(true)
-  notifyLocalDrafts            Boolean @default(true)
-  notifyPendingActivations     Boolean @default(true)
-  notifyFailedLogins           Boolean @default(true)
-  notifyPendingPasswordChanges Boolean @default(true)
+  notifyMaintenanceMode              Boolean   @default(true)
+  notifyStorageQuota                 Boolean   @default(true)
+  notifyWebhookFailures              Boolean   @default(true)
+  notifyLocalDrafts                  Boolean   @default(true)
+  notifyPendingActivations           Boolean   @default(true)
+  notifyFailedLogins                 Boolean   @default(true)
+  notifyPendingPasswordChanges       Boolean   @default(true)
   // Nutzervorgabe, 2026-08-19: bestehende Inline-Warnhinweise (Firma-
   // Vollständigkeit, Datenschutz-Rechtstexte) müssen zusätzlich als
   // Systembenachrichtigung erscheinen, nicht nur lokal auf ihrer Seite.
-  notifyCompanyIncomplete      Boolean @default(true)
-  notifyLegalDocuments         Boolean @default(true)
+  notifyCompanyIncomplete            Boolean   @default(true)
+  notifyLegalDocuments               Boolean   @default(true)
   // Betroffenenanfragen-Automatik (Nutzervorgabe, 2026-08-19, Löschanfragen-
   // Neugestaltung): "Eingang automatisch bestätigen" (Mail an Absender bei
   // Anlage), "Erinnerung 7 Tage vor Fristende" (Mail an DSB, täglicher Cron).
-  dsrAutoAcknowledgeReceipt    Boolean @default(true)
-  dsrDeadlineReminderEnabled   Boolean @default(true)
-  notifyDeletionRequests       Boolean @default(true)
-  notifyTrashExpiring          Boolean @default(true)
+  dsrAutoAcknowledgeReceipt          Boolean   @default(true)
+  dsrDeadlineReminderEnabled         Boolean   @default(true)
+  notifyDeletionRequests             Boolean   @default(true)
+  notifyTrashExpiring                Boolean   @default(true)
   // Master-seitige Live-Überwachung gesperrter Websites (Nutzervorgabe,
   // 2026-08-24: "baue einen test ein, der regelmäßig testet, ob eine
   // Seite live ist. wenn gesperrt, dennoch live, dass ich in Master
   // gewarnt werde") – siehe WebsiteMonitorService.
-  notifyWebsiteAnomaly         Boolean @default(true)
+  notifyWebsiteAnomaly               Boolean   @default(true)
   // Gemeinsame Empfänger-Adresse für alle Systembenachrichtigungen
   // (Nutzervorgabe, 2026-08-22: "wie stelle ich ein, das die
   // benachrichtigungen an eine bestimmte email gesendet werden" – eine
   // Adresse für alle Kategorien statt pro Kategorie einzeln, analog zum
   // DSB-Kontakt). null = keine E-Mail-Zustellung, nur die bestehenden
   // In-App-Banner/Glocke (siehe NotificationsService.sync()).
-  notificationRecipientEmail String?
+  notificationRecipientEmail         String?
   // "Alle Jobs pausieren" auf dem neuen "Jobs"-Reiter (Nutzervorgabe,
   // 2026-08-22) – bewusst EIGENSTÄNDIG vom bestehenden
   // maintenanceModeEnabled (Nutzerentscheidung: kein gemeinsamer Schalter,
   // obwohl die Bildvorlage "Wartungsmodus" nennt). Kritische Jobs
   // (ScheduledJob.isCritical) ignorieren diesen Schalter.
-  jobsGloballyPaused Boolean @default(false)
+  jobsGloballyPaused                 Boolean   @default(false)
   // Auftragsverarbeiter-Tab, Karte "Drittlandtransfer" (Nutzervorgabe,
   // 2026-08-20): admin-hochgeladene SCC-Vorlage (Standardvertragsklauseln)
   // zum Download – kein erfundenes Rechtsmuster im Repo, echte Datei nötig.
-  sccTemplateMediaId String?
-  sccTemplateMedia   Media?  @relation(fields: [sccTemplateMediaId], references: [id])
+  sccTemplateMediaId                 String?
+  sccTemplateMedia                   Media?    @relation(fields: [sccTemplateMediaId], references: [id])
   // Einstellungen → Integrationen, Karte "Dienste" (Nutzervorgabe,
   // 2026-08-22: "email versand bauen ... als dienst", 1:1 nach
   // Bildvorlage "E-Mail-Versand (SMTP)"). smtpPasswordEncrypted nutzt
@@ -242,84 +242,84 @@ model AppSettings {
   // und erst nach erfolgreichem Verbindungstest neu gesetzt – daraus
   // leitet sich der "aktiv"/"offen"-Status in der UI ab, kein separates
   // Status-Feld nötig.
-  smtpHost               String?
-  smtpPort               Int?
-  smtpUsername            String?
-  smtpPasswordEncrypted   String?
-  smtpFromAddress         String?
-  smtpFromName            String?
+  smtpHost                           String?
+  smtpPort                           Int?
+  smtpUsername                       String?
+  smtpPasswordEncrypted              String?
+  smtpFromAddress                    String?
+  smtpFromName                       String?
   // "none" | "starttls" | "ssl"
-  smtpSecure              String  @default("starttls")
-  smtpVerifiedAt          DateTime?
-  companyLogoUrl             String?
-  companyName                String?
-  companyStreet              String?
-  companyPostalCode          String?
-  companyCity                String?
-  companyCountry             String?
-  companyRepresentative      String?
-  companyEmail               String?
-  companyPhone               String?
-  companyRegisterCourt       String?
-  companyRegisterNumber      String?
-  companyVatId               String?
+  smtpSecure                         String    @default("starttls")
+  smtpVerifiedAt                     DateTime?
+  companyLogoUrl                     String?
+  companyName                        String?
+  companyStreet                      String?
+  companyPostalCode                  String?
+  companyCity                        String?
+  companyCountry                     String?
+  companyRepresentative              String?
+  companyEmail                       String?
+  companyPhone                       String?
+  companyRegisterCourt               String?
+  companyRegisterNumber              String?
+  companyVatId                       String?
   // Firma-Seite (Nutzervorgabe, 2026-08-17, unter Verwaltung statt
   // Einstellungen) – ergänzt die bestehenden Firmenangaben um das in der
   // Bildvorlage gezeigte Feld "Aufsichtsbehörde" (z.B. Kammer bei
   // reglementierten Berufen).
-  companySupervisoryAuthority String?
+  companySupervisoryAuthority        String?
   // Pflichtangaben-Check (Datenschutz → Rechtstexte, Nutzervorgabe
   // 2026-08-20, 1:1 nach Bildvorlage) – nach §36 VSBG vorgeschriebene
   // Streitschlichtungs-Angabe (Teilnahme an bzw. Verweis auf eine
   // Verbraucherschlichtungsstelle). "Berufsrechtliche Regelung" bewusst
   // NICHT ergänzt (Nutzervorgabe, gleicher Tag: "komplett weg") – nur für
   // reglementierte Berufe relevant, trifft auf diese Firma nicht zu.
-  companyDisputeResolution String?
+  companyDisputeResolution           String?
   // Datenschutz-Seite (Nutzervorgabe, 2026-08-18, "Verwaltung → Datenschutz"
   // 1:1 nach Bildvorlage). Datenschutzbeauftragter: entweder eine externe
   // Person/Kanzlei (dpoIsExternal=true) oder intern benannt – reine
   // Kontaktfelder, keine eigene Rolle/Berechtigung.
-  dpoIsExternal Boolean @default(true)
-  dpoName       String?
-  dpoCompany    String?
-  dpoEmail      String?
-  dpoPhone      String?
+  dpoIsExternal                      Boolean   @default(true)
+  dpoName                            String?
+  dpoCompany                         String?
+  dpoEmail                           String?
+  dpoPhone                           String?
   // Erweiterung "Datenschutzbeauftragter"-Tab (Nutzervorgabe, 2026-08-18,
   // 1:1 nach Bildvorlage). dpoSupervisoryAuthority ist bewusst ein eigenes
   // Feld statt companySupervisoryAuthority wiederzuverwenden: dort geht es
   // um berufsständische Kammern, hier um die für Datenschutz zuständige
   // Aufsichtsbehörde – zwei unterschiedliche reale Konzepte.
-  dpoAppointedAt          DateTime?
-  dpoReportedAt           DateTime?
-  dpoSupervisoryAuthority String?
-  dpoLastContactAt        DateTime?
+  dpoAppointedAt                     DateTime?
+  dpoReportedAt                      DateTime?
+  dpoSupervisoryAuthority            String?
+  dpoLastContactAt                   DateTime?
   // Wirkt sich auf die Rechtstexte-Generierung aus (Impressum/
   // Datenschutzerklärung bekommen einen DSB-Absatz, siehe
   // LegalDocumentsService) – kein reiner Anzeige-Schalter.
-  dpoListInLegalTexts     Boolean @default(false)
+  dpoListInLegalTexts                Boolean   @default(false)
   // Löst beim Anlegen eines Vorfalls eine Mail (Dev-Stub wie alle
   // System-Mails, siehe MailerService) an dpoEmail aus.
-  dpoNotifyOnIncident     Boolean @default(false)
+  dpoNotifyOnIncident                Boolean   @default(false)
   // Monatlicher Bericht per Cron (PrivacyReportSchedulerService), nutzt
   // denselben CSV-Generator wie der manuelle "Bericht erzeugen"-Button.
-  dpoMonthlyReportEnabled Boolean @default(false)
+  dpoMonthlyReportEnabled            Boolean   @default(false)
   // Aufbewahrungsfristen – reine Richtwerte, KEINE automatische
   // Hintergrund-Löschung (explizite Nutzervorgabe: Löschung immer manuell
   // über die Review-Listen auf der Datenschutz-Seite). null bei
   // retentionFormSubmissionsDays = "unbegrenzt". Für Formular-Einsendungen
   // existiert in dieser App kein Formular-Modul – der Wert wird nur
   // gespeichert, es gibt dafür keine Review-Liste (siehe privacy-view.tsx).
-  retentionFormSubmissionsDays       Int?    @default(90)
-  retentionAccessLogMonths           Int     @default(12)
-  retentionDeactivatedAccountsMonths Int     @default(6)
-  retentionTrashDays                 Int     @default(30)
+  retentionFormSubmissionsDays       Int?      @default(90)
+  retentionAccessLogMonths           Int       @default(12)
+  retentionDeactivatedAccountsMonths Int       @default(6)
+  retentionTrashDays                 Int       @default(30)
   // Betroffenenrechte-Kachel (Datenschutz → Rechtstexte, Art. 15/17 DSGVO,
   // Nutzervorgabe 2026-08-19). Wie retentionFormSubmissionsDays: kein
   // Formular-Modul vorhanden, Werte werden nur vorgehalten (kein
   // tatsächlicher Formular-Footer, der sie auswerten könnte).
-  dsbFormSelfServiceDisclosure Boolean @default(false)
-  dsbFormStoreSubmissionIp     Boolean @default(false)
-  updatedAt                  DateTime @updatedAt
+  dsbFormSelfServiceDisclosure       Boolean   @default(false)
+  dsbFormStoreSubmissionIp           Boolean   @default(false)
+  updatedAt                          DateTime  @updatedAt
 
   @@map("app_settings")
 }
@@ -361,34 +361,34 @@ model LegalDocument {
 /// Rechenschaftspflicht (Art. 5(2) DSGVO): Name/E-Mail bleiben als freier
 /// Text erhalten, unabhängig vom optionalen `linkedUser`.
 model DeletionRequest {
-  id             String    @id @default(cuid())
+  id                   String    @id @default(cuid())
   // "DSR-2026-014" – pro Kalenderjahr fortlaufend, siehe generateDsrId()
   // in DeletionRequestsService. Als String statt reiner Zahl gespeichert,
   // damit der Wert nach dem Anlegen stabil bleibt (kein Neuberechnen).
-  dsrId          String    @unique
-  type           String    @default("deletion") // deletion | access | rectification
-  requesterName  String
-  requesterEmail String
-  reason         String?
+  dsrId                String    @unique
+  type                 String    @default("deletion") // deletion | access | rectification
+  requesterName        String
+  requesterEmail       String
+  reason               String?
   // Woher die Anfrage kam (Formular, Telefon, Post, ...) – freier Text,
   // da es kein Formular-Modul mit fester Quellen-Liste gibt.
-  source         String?
+  source               String?
   affectedRecordsCount Int?
   // Nachträgliche Verknüpfung mit einem echten Konto (Nutzervorgabe:
   // "wenn ein echtes Konto vorhanden ist, dann verknüpfen") – gesetzt,
   // sobald "Datenauszug erstellen" per E-Mail-Abgleich einen Treffer
   // findet. Absichtlich nullable/lose: die Anfrage bleibt auch bestehen,
   // wenn das verknüpfte Konto später anonymisiert wird.
-  linkedUserId   String?
-  linkedUser     User?     @relation(fields: [linkedUserId], references: [id], onDelete: SetNull)
-  status         String    @default("open") // open | in_progress | completed | rejected
-  dueAt          DateTime?
-  completedAt    DateTime?
+  linkedUserId         String?
+  linkedUser           User?     @relation(fields: [linkedUserId], references: [id], onDelete: SetNull)
+  status               String    @default("open") // open | in_progress | completed | rejected
+  dueAt                DateTime?
+  completedAt          DateTime?
   // "Erinnerung 7 Tage vor Fristende" – verhindert doppelten Versand
   // durch den täglichen Cron.
-  reminderSentAt DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  reminderSentAt       DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   @@map("deletion_requests")
 }
@@ -410,11 +410,11 @@ model ProcessingActivity {
 }
 
 model DataProcessor {
-  id           String    @id @default(cuid())
-  name         String
-  purpose      String?
-  hasContract  Boolean   @default(false)
-  contractDate DateTime?
+  id             String    @id @default(cuid())
+  name           String
+  purpose        String?
+  hasContract    Boolean   @default(false)
+  contractDate   DateTime?
   // Nutzervorgabe, 2026-08-20 ("setze auftragsverarbeiter genau nach
   // screener um"): Ort (z.B. "Hamburg, DE"), Zusatzhinweis in der
   // Listenzeile (z.B. "ISO 27001", "Angemessenheitsbeschluss", "eigener
@@ -424,10 +424,10 @@ model DataProcessor {
   // anfordern".
   location       String?
   complianceNote String?
-  outsideEu      Boolean @default(false)
+  outsideEu      Boolean   @default(false)
   contactEmail   String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   // Hochgeladene Vertrags-PDF (Ordner "AVs", siehe seed.ts) – getrennt von
   // `hasContract` (bleibt der manuelle Ja/Nein-Haken für "AV-Vertrag
@@ -436,7 +436,7 @@ model DataProcessor {
   // "AVs"-Ordner, nicht gezielt diese Relation – die Relation ist für die
   // Anzeige/Verlinkung je Auftragsverarbeiter (Nutzervorgabe, 2026-08-19).
   contractMediaId String?
-  contractMedia    Media?  @relation(fields: [contractMediaId], references: [id])
+  contractMedia   Media?  @relation(fields: [contractMediaId], references: [id])
 
   @@map("data_processors")
 }
@@ -453,19 +453,19 @@ model DataProcessor {
 // severity="low" ("kein Risiko" bewertet) macht alle drei Meldeschritte
 // gegenstandslos – Art. 33/34 verlangen dann keine Meldung/Information.
 model PrivacyIncident {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  severity    String    @default("low") // low | medium | high
-  status      String    @default("open") // open | resolved
-  occurredAt  DateTime?
+  id                  String    @id @default(cuid())
+  title               String
+  description         String?
+  severity            String    @default("low") // low | medium | high
+  status              String    @default("open") // open | resolved
+  occurredAt          DateTime?
   affectedCount       Int?
   authorityNotifiedAt DateTime?
   subjectsNotifiedAt  DateTime?
   measuresDocumented  String?   @db.Text
-  resolvedAt  DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  resolvedAt          DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   @@map("privacy_incidents")
 }
@@ -497,55 +497,55 @@ model CompanyLocation {
 }
 
 model User {
-  id                  String    @id @default(cuid())
-  email               String    @unique
-  passwordHash        String
-  firstName           String?
-  lastName            String
-  avatarUrl           String?
-  department          String?
-  phone               String?
+  id                     String    @id @default(cuid())
+  email                  String    @unique
+  passwordHash           String
+  firstName              String?
+  lastName               String
+  avatarUrl              String?
+  department             String?
+  phone                  String?
   // Nutzervorgabe, 2026-08-19: "bei mein profil und benutzer detail
   // strasse, plz ort mit aufnehmen. berücksichtige das bei allem
   // datenschutzauskünften" – fließt in den Art.-15-Datenauszug
   // (PrivacyService.generateSubjectAccessReportCsv) mit ein.
-  street              String?
-  postalCode          String?
-  city                String?
-  isActive            Boolean   @default(true)
+  street                 String?
+  postalCode             String?
+  city                   String?
+  isActive               Boolean   @default(true)
   // Zeitpunkt, seit dem `isActive` zuletzt auf false steht – Grundlage für
   // die Datenschutz-Aufbewahrungsfrist "Deaktivierte Konten" (siehe
   // AppSettings.retentionDeactivatedAccountsMonths). Wird bei Deaktivierung
   // gesetzt und bei Reaktivierung wieder auf null geräumt (gleiches Muster
   // wie pendingActivation).
-  deactivatedAt       DateTime?
+  deactivatedAt          DateTime?
   // Selbstregistrierung bei aktivierter `AppSettings.requireAdminActivation`
   // (siehe AuthService.register()) – unterscheidet "wartet auf
   // Freischaltung" von einer normalen, von einem Admin deaktivierten
   // Zeile (beide haben `isActive: false`, aber nur diese hier braucht eine
   // Systembenachrichtigung). Wird gelöscht, sobald `isActive` auf `true`
   // gesetzt wird (siehe UsersService.update()).
-  pendingActivation   Boolean   @default(false)
-  emailVerifiedAt     DateTime?
-  lastLoginAt         DateTime?
+  pendingActivation      Boolean   @default(false)
+  emailVerifiedAt        DateTime?
+  lastLoginAt            DateTime?
   // Erzwingt beim nächsten Login einen Passwortwechsel, bevor der Rest des
   // Dashboards nutzbar ist (siehe `RequirePasswordChangeGuard`).
-  mustChangePassword  Boolean   @default(false)
+  mustChangePassword     Boolean   @default(false)
   // Zählt fehlgeschlagene Login-Versuche in Folge, wird bei erfolgreichem
   // Login zurückgesetzt (siehe `AuthService.login()`). Aktuell nur
   // Anzeige im "Konto"-Kasten, keine automatische Sperre nach X Versuchen.
-  failedLoginAttempts Int       @default(0)
+  failedLoginAttempts    Int       @default(0)
   // Zeitpunkt der letzten Passwort-Änderung (Erstanlage, Self-Service-
   // Änderung, Reset) – Grundlage für AppSettings.passwordExpiryDays.
   // Bewusst kein Rückwirkungs-Backfill nötig: NULL zählt in der
   // Ablauf-Prüfung als "läuft nie ab", bis das Passwort das erste Mal
   // nach Einführung dieses Felds geändert wird (kein erfundener Wert für
   // bereits bestehende Konten).
-  passwordChangedAt  DateTime?
+  passwordChangedAt      DateTime?
   // Zeitpunkt der Anonymisierung ("Benutzer löschen", nicht reversibel) –
   // unterscheidet den Zustand von einer normalen Deaktivierung
   // (`isActive: false`, reversibel). Siehe UsersService.anonymize().
-  anonymizedAt        DateTime?
+  anonymizedAt           DateTime?
   // Drei getrennte Zustände (Nutzervorgabe, 2026-08-21: "unterscheide
   // zwischen löschen und sperren, das sind 2 unterschiedliche zustände" –
   // vorher teilten sich "Sperren" (Benutzerliste) und "Löschen"
@@ -558,7 +558,7 @@ model User {
   //    anonymisiert, `email`/Name etc. bleiben vorerst erhalten.
   // 3. Anonymisiert (`anonymizedAt`) – nur noch von dort aus auslösbar,
   //    endgültig, personenbezogene Daten entfernt.
-  deletedAt           DateTime?
+  deletedAt              DateTime?
   // TOTP-2FA (Nutzervorgabe, 2026-08-17). `twoFactorSecret` liegt
   // AES-256-GCM-verschlüsselt vor (siehe totp-encryption.ts) – anders als
   // Passwort-/Token-Hashes muss das Secret bei jeder Login-Prüfung wieder
@@ -568,14 +568,14 @@ model User {
   // nie bestätigtes Secret aktiviert 2FA nicht. `twoFactorRecoveryCodes`
   // sind einzeln argon2-gehashte Einmal-Codes, verbrauchte werden aus dem
   // Array entfernt (siehe AuthService.loginWithTwoFactor()).
-  twoFactorSecret         String?
-  twoFactorEnabled        Boolean   @default(false)
+  twoFactorSecret        String?
+  twoFactorEnabled       Boolean   @default(false)
   // Nur zur Anzeige ("eingerichtet am ..." auf "Mein Konto") – bewusst
   // kein erfundener Wert, wird bei jeder verifyTwoFactorSetup() gesetzt.
-  twoFactorEnabledAt      DateTime?
-  twoFactorRecoveryCodes  String[]  @default([])
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  twoFactorEnabledAt     DateTime?
+  twoFactorRecoveryCodes String[]  @default([])
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   userRoles UserRole[]
 
@@ -584,12 +584,12 @@ model User {
   // Papierkorb (Nutzervorgabe, 2026-08-18): wer hat den Eintrag gelöscht
   // (in den Papierkorb verschoben) – für die "Gelöscht von"-Spalte auf
   // der Papierkorb-Seite.
-  deletedContents      Content[]      @relation("ContentDeletedBy")
-  deletedMedia         Media[]        @relation("MediaDeletedBy")
-  deletedCategories    Category[]     @relation("CategoryDeletedBy")
-  deletedTags          Tag[]          @relation("TagDeletedBy")
-  deletedGlobalModules GlobalModule[] @relation("GlobalModuleDeletedBy")
-  deletedForms         Form[]         @relation("FormDeletedBy")
+  deletedContents         Content[]                @relation("ContentDeletedBy")
+  deletedMedia            Media[]                  @relation("MediaDeletedBy")
+  deletedCategories       Category[]               @relation("CategoryDeletedBy")
+  deletedTags             Tag[]                    @relation("TagDeletedBy")
+  deletedGlobalModules    GlobalModule[]           @relation("GlobalModuleDeletedBy")
+  deletedForms            Form[]                   @relation("FormDeletedBy")
   createdPreviewTokens    ContentPreviewToken[]
   contentVersions         ContentVersion[]
   media                   Media[]                  @relation("MediaUploadedBy")
@@ -745,18 +745,18 @@ model JobRun {
 }
 
 model RefreshToken {
-  id        String    @id @default(cuid())
-  tokenHash String    @unique
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  revokedAt DateTime?
-  createdAt DateTime  @default(now())
+  id         String    @id @default(cuid())
+  tokenHash  String    @unique
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
   // Für "Aktive Sitzungen" (2b.14): Roh-User-Agent + IP der Anfrage bei
   // Ausstellung. Kein Geolocation-Dienst angebunden – Anzeige nutzt die
   // IP-Adresse direkt statt einer (sonst erfundenen) Stadt.
-  userAgent String?
-  ipAddress String?
+  userAgent  String?
+  ipAddress  String?
   // Für AppSettings.sessionIdleTimeoutMinutes: bei jedem Refresh
   // aktualisiert (siehe AuthService.refresh()), Startwert = createdAt.
   lastUsedAt DateTime  @default(now())
@@ -854,24 +854,24 @@ model ModuleType {
 // `resolveInstanceValues`), nicht als Kopie in die einbindenden Seiten
 // geschrieben – Änderungen wirken sich dadurch sofort überall aus.
 model GlobalModule {
-  id        String   @id @default(cuid())
-  name      String
-  values    Json
+  id          String    @id @default(cuid())
+  name        String
+  values      Json
   // Anzeige-Einstellungen der einzelnen Modul-Instanz (z.B. Swiper-Effekt/
   // Autoplay/Navigation bei Galerien) – bewusst getrennt von `values`
   // (dem eigentlichen Inhalt), da diese Einstellungen nicht Teil des
   // ModuleType-Schemas sind, sondern pro Galerie individuell gesetzt
   // werden (siehe gallery-settings.ts). `null`/fehlende Keys fallen im
   // Frontend auf Defaults zurück.
-  settings  Json?
+  settings    Json?
   // Papierkorb, siehe Content.deletedAt – Galerien/FAQs teilen sich dieses
   // Modell (unterschieden nur über moduleType.slug), daher hier statt in
   // zwei getrennten Modellen.
   deletedAt   DateTime?
   deletedById String?
-  deletedBy   User?      @relation("GlobalModuleDeletedBy", fields: [deletedById], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  deletedBy   User?     @relation("GlobalModuleDeletedBy", fields: [deletedById], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   moduleTypeId String
   moduleType   ModuleType @relation(fields: [moduleTypeId], references: [id])
@@ -880,32 +880,32 @@ model GlobalModule {
 }
 
 model Content {
-  id          String        @id @default(cuid())
-  title       String
-  slug        String
-  status      ContentStatus @default(DRAFT)
-  locale      String        @default("de")
-  data        Json
-  excerpt     String?
-  seoTitle    String?
+  id             String        @id @default(cuid())
+  title          String
+  slug           String
+  status         ContentStatus @default(DRAFT)
+  locale         String        @default("de")
+  data           Json
+  excerpt        String?
+  seoTitle       String?
   seoDescription String?
   canonicalUrl   String?
   ogTitle        String?
   ogDescription  String?
   ogImageUrl     String?
   twitterCard    String?
-  robotsIndex    Boolean   @default(true)
-  robotsFollow   Boolean   @default(true)
+  robotsIndex    Boolean       @default(true)
+  robotsFollow   Boolean       @default(true)
   scheduledFor   DateTime?
-  publishedAt DateTime?
+  publishedAt    DateTime?
   // Papierkorb (Nutzervorgabe, 2026-08-18, "überall da wo man löschen
   // kann") – Soft-Delete statt Hard-Delete. null = nicht gelöscht. Jede
   // Leseabfrage in ContentService (inkl. der beiden rohen SQL-Queries in
   // search()/searchCount()) muss deletedAt: null filtern, sonst tauchen
   // Papierkorb-Einträge wieder in normalen Listen auf.
-  deletedAt   DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  deletedAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   contentTypeId String
   contentType   ContentType @relation(fields: [contentTypeId], references: [id])
@@ -990,16 +990,16 @@ model ContentCategory {
 }
 
 model Tag {
-  id        String       @id @default(cuid())
-  name      String       @unique
-  slug      String       @unique
+  id          String       @id @default(cuid())
+  name        String       @unique
+  slug        String       @unique
   // Papierkorb, siehe Content.deletedAt.
   deletedAt   DateTime?
   deletedById String?
   deletedBy   User?        @relation("TagDeletedBy", fields: [deletedById], references: [id])
-  createdAt DateTime     @default(now())
-  contents  ContentTag[]
-  media     MediaTag[]
+  createdAt   DateTime     @default(now())
+  contents    ContentTag[]
+  media       MediaTag[]
 
   @@map("tags")
 }
@@ -1029,17 +1029,17 @@ model Navigation {
 }
 
 model NavigationItem {
-  id          String   @id @default(cuid())
-  label       String
-  externalUrl String?
+  id           String   @id @default(cuid())
+  label        String
+  externalUrl  String?
   // Gilt für Inhalts- UND externe Ziele gleichermaßen (Nutzervorgabe,
   // 2026-08-21: "bei jedem menüpunkt") – nicht nur für externe Links, da
   // auch ein interner Inhalt in einem neuen Tab geöffnet werden können
   // soll.
-  openInNewTab Boolean @default(false)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  openInNewTab Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   navigationId String
   navigation   Navigation @relation(fields: [navigationId], references: [id], onDelete: Cascade)
@@ -1074,26 +1074,26 @@ model MediaFolder {
 }
 
 model Media {
-  id          String   @id @default(cuid())
-  filename    String
-  url         String
-  mimeType    String
-  size        Int
-  width       Int?
-  height      Int?
-  alt         String?
-  focalX      Float?
-  focalY      Float?
+  id           String    @id @default(cuid())
+  filename     String
+  url          String
+  mimeType     String
+  size         Int
+  width        Int?
+  height       Int?
+  alt          String?
+  focalX       Float?
+  focalY       Float?
   thumbnailUrl String?
   // Papierkorb, siehe Content.deletedAt. Anders als bei Content löscht
   // remove() aktuell auch die physische Datei von Disk – das ändert sich:
   // Soft-Delete lässt die Datei liegen, erst permanentDelete() löscht sie
   // wirklich (siehe MediaService).
-  deletedAt   DateTime?
-  deletedById String?
-  deletedBy   User?      @relation("MediaDeletedBy", fields: [deletedById], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
+  deletedAt    DateTime?
+  deletedById  String?
+  deletedBy    User?     @relation("MediaDeletedBy", fields: [deletedById], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
 
   uploadedById String
   uploadedBy   User   @relation("MediaUploadedBy", fields: [uploadedById], references: [id])
@@ -1127,8 +1127,8 @@ model MediaVariant {
 model MediaTag {
   mediaId String
   tagId   String
-  media   Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
-  tag     Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  media   Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  tag     Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([mediaId, tagId])
   @@map("media_tags")
@@ -1155,16 +1155,16 @@ model AuditLog {
 // ---------- Webhooks ----------
 
 model Webhook {
-  id                   String    @id @default(cuid())
-  url                  String
-  events               String[]
-  isActive             Boolean   @default(true)
-  lastDeliveryStatus   String?
-  lastDeliveryAt       DateTime?
-  lastDeliveryError    String?
-  consecutiveFailures  Int       @default(0)
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  id                  String    @id @default(cuid())
+  url                 String
+  events              String[]
+  isActive            Boolean   @default(true)
+  lastDeliveryStatus  String?
+  lastDeliveryAt      DateTime?
+  lastDeliveryError   String?
+  consecutiveFailures Int       @default(0)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   @@map("webhooks")
 }
@@ -1478,29 +1478,29 @@ model LicenseState {
 // "viele Einsendungen zu einer Definition"-Konzept (nur 1 `values`-Json
 // pro Instanz, keine Kind-Tabelle).
 model Form {
-  id     String @id @default(cuid())
-  name   String
-  slug   String @unique
+  id                String  @id @default(cuid())
+  name              String
+  slug              String  @unique
   // draft | published | paused – Sidebar-Filterpills, Status-Badge.
-  status String @default("draft")
+  status            String  @default("draft")
   // [{ id, type, label, required, width, options? }] – `id` ist die
   // stabile Feld-ID (= Platzhalter-Name in den Mail-Vorlagen dieses
   // Formulars, z.B. {{name}}). `type` ∈ text/textarea/email/tel/number
   // (Basis), select/radio/checkbox (Auswahl, mit `options`), date/file
   // (Erweitert – "file" nur strukturell vorgesehen, kein Upload-Handling
   // in dieser Ausbaustufe).
-  fields Json
+  fields            Json
   // Welche Feld-`id` die Ziel-Adresse der Bestätigungsmail liefert;
   // null = kein E-Mail-Feld vorhanden, Bestätigung technisch nicht
   // möglich (siehe `sendConfirmation`).
-  emailFieldId     String?
-  sendConfirmation Boolean @default(false)
+  emailFieldId      String?
+  sendConfirmation  Boolean @default(false)
   // Absenden-Button des öffentlichen Formulars (form-block-render.tsx).
   submitButtonText  String  @default("Absenden")
   submitButtonAlign String  @default("left") // left | center | right
   // Optionale Weiterleitung nach erfolgreichem Absenden statt der
   // eingebauten "Vielen Dank"-Meldung – leer = Standardmeldung bleibt.
-  redirectUrl String?
+  redirectUrl       String?
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -1515,10 +1515,10 @@ model Form {
 }
 
 model FormSubmission {
-  id     String @id @default(cuid())
-  formId String
-  form   Form   @relation(fields: [formId], references: [id], onDelete: Cascade)
-  values Json
+  id          String   @id @default(cuid())
+  formId      String
+  form        Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  values      Json
   // Nur befüllt, wenn AppSettings.dsbFormStoreSubmissionIp aktiv ist –
   // aktiviert erstmals diese bisher wirkungslose Datenschutz-Einstellung
   // (siehe privacy-view.tsx, dort bislang als "vorgehalten, nicht
@@ -1526,8 +1526,8 @@ model FormSubmission {
   submitterIp String?
   // Basis für den "unbearbeitet"-Zähler in der Formulare-Übersicht,
   // gleiches Prinzip wie Notification.isRead.
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
 
   @@index([formId, createdAt])
   @@map("form_submissions")
@@ -1542,25 +1542,57 @@ model FormSubmission {
 // "auth.verify-email"), `formId`+`formKind` = für formulargebundene
 // Vorlagen. Genau eine der beiden Zuordnungen ist pro Zeile gesetzt.
 model MailTemplate {
-  id       String  @id @default(cuid())
-  key      String? @unique
-  formId   String?
-  form     Form?   @relation(fields: [formId], references: [id], onDelete: Cascade)
-  formKind String? // "admin_notification" | "confirmation"
-  subject  String
-  body     String
+  id          String     @id @default(cuid())
+  key         String?    @unique
+  formId      String?
+  form        Form?      @relation(fields: [formId], references: [id], onDelete: Cascade)
+  formKind    String? // "admin_notification" | "confirmation"
+  // Nutzervorgabe, 2026-08-30: frei anlegbare, individuelle HTML-Vorlagen
+  // (weder an einen System-`key` noch an ein Formular gebunden) – "custom"
+  // statt "override". `name` ist nur bei "custom" gesetzt (System-/
+  // Formular-Vorlagen leiten ihr Label aus dem Katalog/Formular ab, siehe
+  // MailerService.listMailTemplates()).
+  kind        String     @default("override") // "override" | "custom"
+  name        String?
+  subject     String
+  body        String
+  // Nur bei "custom" gesetzt (HTML-Quelle, Tiptap-Ausgabe) – `body` bleibt
+  // bei diesen Zeilen ein aus `bodyHtml` abgeleiteter Plaintext-Fallback
+  // fürs Multipart-Mailing, kein separat editierbares Feld.
+  bodyHtml    String?
+  format      String     @default("text") // "text" | "html"
+  shellId     String?
+  shell       MailShell? @relation(fields: [shellId], references: [id], onDelete: SetNull)
   // "Versand aktiv"-Schalter pro Vorlage – gleiches Prinzip wie
   // ScheduledJob.isPaused: deaktiviert überspringt den Versand beim
   // nächsten Auslöser, statt etwas zu löschen.
-  enabled Boolean @default(true)
+  enabled     Boolean    @default(true)
   // Nur bei admin-gerichteten Mails mit editierbarem Empfänger gesetzt
   // (z.B. Formular-Admin-Benachrichtigung). System-Mails mit
   // kontextabhängigem Empfänger (Passwort-Reset geht an den
   // anfragenden Nutzer, DSB-Mails an den DSB-Kontakt, ...) lassen das
   // bewusst leer – kein editierbares Empfänger-Feld in der UI dafür.
   recipientTo String?
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime   @updatedAt
 
   @@unique([formId, formKind])
   @@map("mail_templates")
+}
+
+// Nutzervorgabe, 2026-08-30: "mache mehrere Hüllen für eine Installation
+// möglich" – der äußere Rahmen (Kopf/Fuß/CI) individueller HTML-Mails,
+// getrennt vom eigentlichen Vorlagen-Inhalt. Mehrere pro Installation,
+// genau eine davon `isDefault`. `content` enthält als normalen Text den
+// Platzhalter `{{content}}` (gleiches `{{...}}`-Muster wie überall sonst
+// im Mailing, siehe MailerService.renderPlaceholders) – dort wird beim
+// Versand der gerenderte Vorlagen-Inhalt eingesetzt.
+model MailShell {
+  id        String         @id @default(cuid())
+  name      String
+  content   String
+  isDefault Boolean        @default(false)
+  updatedAt DateTime       @updatedAt
+  templates MailTemplate[]
+
+  @@map("mail_shells")
 }

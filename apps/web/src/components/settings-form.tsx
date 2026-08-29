@@ -51,6 +51,7 @@ import { cn } from "@/lib/utils";
 import type {
   AppSettings,
   JobRunsResponse,
+  MailShellListItem,
   MailTemplateListItem,
   ModuleSettingsEntry,
   ScheduledJobsResponse,
@@ -229,6 +230,7 @@ export function SettingsForm({
   jobs,
   jobRuns,
   mailTemplates,
+  mailShells,
   websites,
   moduleSettings,
 }: {
@@ -240,6 +242,7 @@ export function SettingsForm({
   jobs: ScheduledJobsResponse;
   jobRuns: JobRunsResponse;
   mailTemplates: MailTemplateListItem[];
+  mailShells: MailShellListItem[];
   websites: WebsiteListResponse;
   moduleSettings: ModuleSettingsEntry[] | null;
 }) {
@@ -1227,7 +1230,10 @@ export function SettingsForm({
             )}
 
             {activeSection === "mailing" && (
-              <MailingSettingsCard templates={mailTemplates} />
+              <MailingSettingsCard
+                templates={mailTemplates}
+                shells={mailShells}
+              />
             )}
 
             {activeSection === "protocol" && (

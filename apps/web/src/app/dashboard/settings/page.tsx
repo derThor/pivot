@@ -3,6 +3,7 @@ import { PageContent } from "@/components/page-content";
 import {
   getJobRuns,
   getJobs,
+  getMailShells,
   getMailTemplates,
   getMediaFolders,
   getModuleSettings,
@@ -51,6 +52,7 @@ export default async function SettingsPage({
     jobs,
     jobRuns,
     mailTemplates,
+    mailShells,
     websites,
     moduleSettings,
   ] = await Promise.all([
@@ -69,6 +71,7 @@ export default async function SettingsPage({
       pageSize: settings?.defaultPageSize ?? 10,
     }),
     getMailTemplates(),
+    getMailShells(),
     getWebsites({
       page: mandantenPage,
       pageSize: settings?.defaultPageSize ?? 10,
@@ -132,6 +135,7 @@ export default async function SettingsPage({
         }
       }
       mailTemplates={mailTemplates ?? []}
+      mailShells={mailShells ?? []}
       websites={
         websites ?? {
           items: [],

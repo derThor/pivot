@@ -1415,7 +1415,7 @@ export function getAllFormSubmissions(params?: {
   );
 }
 
-export type MailTemplateCategory = "auth" | "privacy" | "forms";
+export type MailTemplateCategory = "auth" | "privacy" | "forms" | "custom";
 
 export interface MailTemplateListItem {
   id: string;
@@ -1430,10 +1430,27 @@ export interface MailTemplateListItem {
   placeholderLabels?: Record<string, string>;
   isCustomized: boolean;
   formId: string | null;
+  // Individuelle HTML-Vorlagen + E-Mail-Hüllen (Nutzervorgabe, 2026-08-30).
+  format: "text" | "html";
+  bodyHtml: string | null;
+  shellId: string | null;
 }
 
 export function getMailTemplates() {
   return apiFetch<MailTemplateListItem[]>("/settings/mail-templates");
+}
+
+export interface MailShellListItem {
+  id: string;
+  name: string;
+  content: string;
+  isDefault: boolean;
+  updatedAt: string;
+  usedByCount: number;
+}
+
+export function getMailShells() {
+  return apiFetch<MailShellListItem[]>("/settings/mail-shells");
 }
 
 export type WebsiteStatus = "live" | "development" | "locked";
