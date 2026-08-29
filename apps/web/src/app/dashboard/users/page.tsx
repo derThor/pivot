@@ -9,9 +9,11 @@ import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 import {
   getCurrentUser,
+  getLicenseState,
   getPublicSettings,
   getRoles,
   getUsers,
+  isModuleActive,
 } from "@/lib/api-server";
 
 export default async function UsersPage({
@@ -55,6 +57,7 @@ export default async function UsersPage({
     inactiveCount,
     anonymizedCount,
     deletedCount,
+    licenseState,
   ] = await Promise.all([
     getPublicSettings(),
     getCurrentUser(),
@@ -67,8 +70,10 @@ export default async function UsersPage({
     getUsers({ page: 1, pageSize: 1, roleId, q, isActive: false }),
     getUsers({ page: 1, pageSize: 1, roleId, q, anonymized: true }),
     getUsers({ page: 1, pageSize: 1, roleId, q, deleted: true }),
+    getLicenseState(),
   ]);
   const pageSize = settings?.defaultPageSize ?? 10;
+  const datenschutzActive = isModuleActive(licenseState, "datenschutz");
   const users = await getUsers({
     page,
     pageSize,
@@ -121,6 +126,7 @@ export default async function UsersPage({
               users={users.items}
               currentUserId={currentUser?.id}
               allowTwoFactor={settings?.allowTwoFactor ?? true}
+              datenschutzActive={datenschutzActive}
             />
             <PaginationControls
               page={users.meta.page}

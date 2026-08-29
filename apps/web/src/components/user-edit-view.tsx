@@ -77,6 +77,7 @@ export function UserEditView({
   sessions,
   stats,
   activity,
+  datenschutzActive,
 }: {
   user: CurrentUser;
   roles: Role[];
@@ -92,6 +93,12 @@ export function UserEditView({
   sessions: UserSession[];
   stats: { contentCount: number; mediaCount: number };
   activity: ActivityLogResponse;
+  /** Bugreport, 2026-08-29: ist der Reiter "Nutzer" unter Datenschutz
+   * nirgends erreichbar (Modul komplett aus oder alle Features
+   * einzeln deaktiviert), anonymisiert `UsersService.delete()`
+   * serverseitig sofort statt in die Warteschlange zu legen – der
+   * Bestätigungstext muss das widerspiegeln. */
+  datenschutzActive: boolean;
 }) {
   const router = useRouter();
   const name = formatName(user);
@@ -258,7 +265,10 @@ export function UserEditView({
   // die Anonymisierung aus, sondern nur noch den reversiblen Löschen-
   // Zustand (`deletedAt`) – der Nutzer verschwindet aus dieser Liste und
   // taucht unter Datenschutz → "Nutzer" auf. Erst von dort aus wird
-  // endgültig anonymisiert.
+  // endgültig anonymisiert. Ist Datenschutz nicht aktiv, anonymisiert
+  // `UsersService.delete()` serverseitig direkt (siehe `datenschutzActive`
+  // oben) – dieser Aufruf bleibt derselbe, nur das Backend-Verhalten und
+  // der Bestätigungstext unten unterscheiden sich.
   async function handleDelete() {
     await fetch(`/api/users/${user.id}/delete`, { method: "POST" });
     toastDeleted(`„${name}“ wurde gelöscht.`);
@@ -654,9 +664,9 @@ export function UserEditView({
                         Konto entfernen
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        Der Nutzer wird aus der Benutzerliste entfernt und
-                        erscheint stattdessen unter Datenschutz → „Benutzer“.
-                        Die endgültige Anonymisierung erfolgt erst von dort aus.
+                        {datenschutzActive
+                          ? "Der Nutzer wird aus der Benutzerliste entfernt und erscheint stattdessen unter Datenschutz → „Benutzer“. Die endgültige Anonymisierung erfolgt erst von dort aus."
+                          : "Das Datenschutz-Modul ist auf dieser Installation nicht aktiv – der Nutzer wird deshalb sofort und unwiderruflich anonymisiert."}
                       </p>
                       <ConfirmDeleteDialog
                         trigger={
@@ -668,7 +678,11 @@ export function UserEditView({
                           </Button>
                         }
                         title={`„${truncateMiddle(name)}“ löschen?`}
-                        description="Wird aus der Benutzerliste entfernt und steht unter Datenschutz → „Benutzer“ zur endgültigen Anonymisierung bereit."
+                        description={
+                          datenschutzActive
+                            ? "Wird aus der Benutzerliste entfernt und steht unter Datenschutz → „Benutzer“ zur endgültigen Anonymisierung bereit."
+                            : "Datenschutz ist nicht aktiv: Der Nutzer wird sofort und unwiderruflich anonymisiert, nicht nur gelöscht."
+                        }
                         onConfirm={handleDelete}
                       />
                     </div>

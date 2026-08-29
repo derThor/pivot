@@ -12,6 +12,7 @@ import { SettingsService } from '../settings/settings.service';
 import { CacheService } from '../cache/cache.service';
 import { MediaService } from '../media/media.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { LicenseClientService } from '../license-client/license-client.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -63,7 +64,27 @@ export class UsersService {
     private readonly cache: CacheService,
     private readonly media: MediaService,
     private readonly auditLog: AuditLogService,
+    private readonly licenseClient: LicenseClientService,
   ) {}
+
+  // Bugreport, 2026-08-29: "wenn man bei einer App, wo Datenschutz nicht
+  // aktiviert ist, einen Nutzer löscht, kommt im Popup: wird unter
+  // Datenschutz -> Benutzer abgelegt und muss dort anonymisiert werden.
+  // das geht nicht" – `/dashboard/privacy` blockt komplett (siehe
+  // privacy/page.tsx), sobald KEIN einziger Reiter freigeschaltet ist
+  // (Modul komplett aus ODER alle Features einzeln deaktiviert – gleiche
+  // Bedingung wie dort, bewusst NICHT nur `modules.includes('datenschutz')`,
+  // das würde den zweiten Fall übersehen). Der Reiter "Nutzer" ist dann
+  // nie erreichbar, ein gelöschter, aber nie anonymisierter Nutzer bliebe
+  // für immer in der Warteschlange hängen. Gleiche Quelle wie
+  // `ModuleEntitlementGuard`/`NotificationsService.hasModuleFeature`
+  // (Master wie Slave einheitlich).
+  private async isDatenschutzModuleActive(): Promise<boolean> {
+    const effective = await this.licenseClient.getEffectiveStatus();
+    const moduleFeatures =
+      'moduleFeatures' in effective ? effective.moduleFeatures : {};
+    return (moduleFeatures.datenschutz ?? []).length > 0;
+  }
 
   async findAll(query: QueryUserDto) {
     const { page, pageSize, roleId, isActive, anonymized, deleted, q } = query;
@@ -369,7 +390,10 @@ export class UsersService {
   // (`anonymize()`) – noch reversibel (kein Datenverlust), verschwindet
   // aber aus der normalen Benutzerliste (siehe `findAll()`) und taucht
   // stattdessen unter Datenschutz → "Nutzer" auf. Erst von dort aus wird
-  // endgültig anonymisiert.
+  // endgültig anonymisiert. Ist das Datenschutz-Modul auf dieser
+  // Installation gar nicht aktiv, gibt es diesen Reiter nirgends erreichbar
+  // – dann sofort anonymisieren statt in der Warteschlange hängen zu
+  // bleiben (Bugreport, 2026-08-29, siehe `isDatenschutzModuleActive`).
   async delete(id: string, currentUserId: string) {
     if (id === currentUserId) {
       throw new BadRequestException(
@@ -377,6 +401,10 @@ export class UsersService {
       );
     }
     await this.findOne(id);
+    if (!(await this.isDatenschutzModuleActive())) {
+      await this.anonymize(id, currentUserId);
+      return;
+    }
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id },
@@ -448,6 +476,11 @@ export class UsersService {
           city: null,
           passwordHash,
           isActive: false,
+          // Fällt normalerweise schon aus `delete()` mit – bei direktem
+          // Aufruf (Datenschutz-Modul inaktiv, siehe `delete()`) noch nicht
+          // gesetzt, deshalb hier zur Sicherheit mit übernommen statt sich
+          // auf den Aufrufer zu verlassen.
+          deletedAt: existing.deletedAt ?? new Date(),
           anonymizedAt: new Date(),
         },
       }),

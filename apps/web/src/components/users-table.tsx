@@ -25,10 +25,12 @@ export function UsersTable({
   users,
   currentUserId,
   allowTwoFactor,
+  datenschutzActive,
 }: {
   users: CurrentUser[];
   currentUserId: string | undefined;
   allowTwoFactor: boolean;
+  datenschutzActive: boolean;
 }) {
   const { activeId, query: highlightQuery } = useHighlightParam("user-row");
 
@@ -148,7 +150,11 @@ export function UsersTable({
                         />
                       </div>
                     ) : (
-                      <UserRowActions user={user} isSelf={isSelf} />
+                      <UserRowActions
+                        user={user}
+                        isSelf={isSelf}
+                        datenschutzActive={datenschutzActive}
+                      />
                     )}
                   </TableCell>
                 </TableRow>

@@ -3,12 +3,14 @@ import { notFound } from "next/navigation";
 import { UserEditView } from "@/components/user-edit-view";
 import {
   getCurrentUser,
+  getLicenseState,
   getPublicSettings,
   getRoles,
   getUser,
   getUserActivity,
   getUserSessions,
   getUserStats,
+  isModuleActive,
 } from "@/lib/api-server";
 import { canChangeEmail } from "@/lib/utils";
 
@@ -26,20 +28,31 @@ export default async function EditUserPage({
   // hat und wäre sonst still auf die `?? true`-Fallbacks zurückgefallen,
   // obwohl die echten Werte etwas anderes sein könnten (Nutzer-Bugreport,
   // 2026-08-22).
-  const [user, roles, settings, currentUser, sessions, stats, activity] =
-    await Promise.all([
-      getUser(id),
-      getRoles({ pageSize: 100 }),
-      getPublicSettings(),
-      getCurrentUser(),
-      getUserSessions(id),
-      getUserStats(id),
-      getUserActivity(id),
-    ]);
+  const [
+    user,
+    roles,
+    settings,
+    currentUser,
+    sessions,
+    stats,
+    activity,
+    licenseState,
+  ] = await Promise.all([
+    getUser(id),
+    getRoles({ pageSize: 100 }),
+    getPublicSettings(),
+    getCurrentUser(),
+    getUserSessions(id),
+    getUserStats(id),
+    getUserActivity(id),
+    getLicenseState(),
+  ]);
 
   if (!user || !roles || !currentUser) {
     notFound();
   }
+
+  const datenschutzActive = isModuleActive(licenseState, "datenschutz");
 
   return (
     <UserEditView
@@ -67,6 +80,7 @@ export default async function EditUserPage({
           meta: { page: 1, pageSize: 10, total: 0, pageCount: 0 },
         }
       }
+      datenschutzActive={datenschutzActive}
     />
   );
 }

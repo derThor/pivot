@@ -1040,6 +1040,26 @@ export function getLicenseState() {
   return publicApiFetch<LicenseState>("/license/state");
 }
 
+// Kleiner Helfer statt Duplikation der `moduleFeatures`-Prüfung an jeder
+// Stelle, die wissen muss, ob ein Modul auf dieser Installation aktiv ist
+// (z.B. users/page.tsx für den "sofort anonymisieren statt unter
+// Datenschutz ablegen"-Hinweis, Bugreport 2026-08-29). Bewusst NICHT
+// `modules.includes(moduleKey)` – ein Modul mit komplett deaktivierten
+// Einzel-Features gilt für den Nutzer genauso als "nicht erreichbar" wie
+// ein komplett ausgeschaltetes Modul (gleiche Bedingung wie
+// `privacy/page.tsx`s Komplett-Sperre und das Backend-Gegenstück
+// `UsersService.isDatenschutzModuleActive`).
+export function isModuleActive(
+  licenseState: LicenseState | null,
+  moduleKey: string,
+): boolean {
+  return Boolean(
+    licenseState && "moduleFeatures" in licenseState
+      ? (licenseState.moduleFeatures[moduleKey]?.length ?? 0) > 0
+      : false,
+  );
+}
+
 export interface MessageResponse {
   message: string;
 }
