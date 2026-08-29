@@ -1344,10 +1344,74 @@ Master-only-Toggles: steuert es MEINE eigene Nutzung → Einstellungen →
 Module; steuert es das Verhalten gegenüber Mandanten/anderen
 Installationen → Administration → Modul-Detailseite.
 
+### Modul-Kacheln: dunkles Redesign, echter Kill-Switch, Dialog statt Dropdown (2026-08-29)
+
+Kachel-Design für die Übersicht (`dashboard/modules/page.tsx`) und die
+Header-Kachel der Detailseite (`module-detail-view.tsx`) nach Mockup:
+dunkle Karte (`bg-dark-surface`-Token), grüne Icon-Box, Versions-Badge,
+für Datenschutz ein eigenes, exakt gemaltes Hintergrundmotiv (Verlauf +
+Schild/Häkchen-SVG + Punktraster, `.modul-kachel--datenschutz` in
+`globals.css`, wächst beim Hovern) statt des generischen Icon-
+Wasserzeichens der übrigen Module. "Was das Modul mitbringt" bekam einen
+mehrabsätzigen Zusammenfassungstext (links) neben Reiter/Zusätzliche-
+Rechte (rechts, Reiter-Badges grün, Rechte über die bestehende
+`resourceLabels`/`actionLabels`-Tabelle aus `permission-labels.ts` auf
+Deutsch statt roher `privacy:read`-Keys).
+
+Der Freischaltungs-Schalter auf der Kachel ist kein reiner Statusanzeiger
+mehr, sondern ein echter Kill-Switch (Nutzervorgabe: "wenn der deaktiviert
+wird, wird das Modul überall auf inaktiv gesetzt. wenn aktiviert, dann nur
+da auf aktiv setzen, die das Modul schon hatten"). Neue Client-Komponente
+`module-enabled-toggle.tsx` ruft weiterhin nur `PATCH
+/module-settings/:key`, die Kaskade läuft zentral in
+`ModuleSettingsService.update()`: bei `enabled:false` werden ALLE
+bestehenden `MandantModule`-Zeilen dieses `moduleKey` per `updateMany` auf
+`enabled:false` gesetzt; bei `enabled:true` wieder auf `true` – aber
+NUR bestehende Zeilen, `updateMany` legt nie neue an, Mandanten ohne
+eigene Buchung bleiben unberührt. Gilt unabhängig davon, ob über die
+Kachel oder unter Einstellungen → Module umgeschaltet wird (eine
+Service-Methode, zwei Aufrufer).
+
+`mandant-detail-view.tsx`s "Modul hinzufügen" ist jetzt ein `Dialog`
+(anklickbare Modul-Zeilen mit Icon/Label/Kategorie/Beschreibung) statt
+eines `DropdownMenu` – gleiches Muster wie die übrigen Anlegen-Dialoge im
+Repo (z.B. `folder-dialog.tsx`).
+
+### Bugfix: gelöschte Nutzer blieben für immer hängen, wenn Datenschutz inaktiv ist (2026-08-29)
+
+Nutzer-Bugreport: Löschen eines Benutzers zeigte immer den Hinweis "wird
+unter Datenschutz → Benutzer abgelegt und muss dort anonymisiert werden"
+– aber dieser Reiter ist unerreichbar, sobald `privacy/page.tsx` komplett
+sperrt (kein einziges Feature freigeschaltet, siehe deren Kommentar "Modul
+komplett aus ODER alle Features einzeln deaktiviert"). Ein so gelöschter
+Nutzer (`deletedAt` gesetzt, `anonymizedAt` nie) blieb dadurch für immer
+in der Warteschlange.
+
+Fix in `UsersService`: neue private `isDatenschutzModuleActive()` (nutzt
+`LicenseClientService.getEffectiveStatus()`, dieselbe Quelle wie die
+Guards) prüft **exakt dieselbe Bedingung** wie `privacy/page.tsx`
+(`moduleFeatures.datenschutz.length > 0`, NICHT nur
+`modules.includes('datenschutz')` – ein Modul mit komplett deaktivierten
+Einzel-Features zählt genauso als "nicht erreichbar"). `delete()` ruft bei
+`false` sofort `anonymize()` auf, statt den reversiblen
+Zwischenzustand zu setzen. `anonymize()` setzt jetzt zusätzlich selbst
+`deletedAt` (`existing.deletedAt ?? new Date()`), da es nicht mehr davon
+ausgehen kann, dass `delete()` vorher lief.
+
+Frontend-Gegenstück: neuer Helfer `isModuleActive(licenseState, key)` in
+`api-server.ts` (gleiche Bedingung), durchgereicht von `users/page.tsx`
+bzw. `users/[id]/edit/page.tsx` bis zu den beiden
+Lösch-Bestätigungsdialogen (`user-row-actions.tsx`,
+`user-edit-view.tsx`) – zeigen bei inaktivem Modul "wird sofort und
+unwiderruflich anonymisiert" statt des Datenschutz-Verweises.
+
 ### Offene Punkte
 
 - `nutzer`-Reiter nur UI-seitig gegatet, kein Backend-404 (siehe
-  Stolperstein oben).
+  Stolperstein oben) – bewusst akzeptiert: die dahinterliegenden
+  `anonymize`/`restore`-Endpunkte sind ohnehin über `users:delete`
+  gegated, nicht über ein `privacy:*`-Recht, ein fehlendes 404 hier gibt
+  also niemandem eine Fähigkeit, die er nicht schon hätte.
 - `sccTemplateMediaId` bleibt am `rechtstexte`-gegateten
   `PATCH /settings/privacy`, obwohl es inhaltlich eher zu
   `auftragsverarbeiter` gehört (Drittlandtransfer-Vorlage) – einzelnes
