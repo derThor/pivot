@@ -1293,13 +1293,15 @@ vorinstallieren") liegt unter **Einstellungen → Module**
 grundsätzliche Sachen": Beschreibung, Reiter, Rechte, **"Bei Mandanten"**
 – siehe unten).
 
-### "Bei Mandanten"-Kachel: Rollout-Überblick statt reiner Website-Liste
+### "Bei Mandanten"-Kachel: nur gebuchte Mandanten, zwei Zustände
 
-Ersetzt die frühere "Auf Websites aktiv"-Kachel (die nur Mandanten mit
-bereits gebuchtem Modul zeigte). Zeigt jetzt ALLE Mandanten mit ihrer
-jeweiligen Haupt-Website, Badge "eingerichtet" (grün, Modul gebucht+aktiv)
-oder "nicht freigegeben" (grau) – macht sichtbar, wer das Modul noch
-nicht hat, nicht nur wer es hat. Klick auf eine Zeile
+Ersetzt die frühere "Auf Websites aktiv"-Kachel. Nach zwei Korrekturen
+(erst "alle Mandanten anzeigen", dann zurückgenommen: "es sollen da nur
+Mandanten angezeigt werden, die das Modul auf Mandantenebene hinzugefügt
+haben") zeigt sie NUR Mandanten mit einer `MandantModule`-Buchung für
+dieses Modul, mit Badge "freigeschaltet" (grün, `booking.enabled: true`)
+oder "nicht freigegeben" (grau, gebucht aber `enabled: false`) – kein
+dritter Zustand, keine ungebuchten Mandanten. Klick auf eine Zeile
 (Nutzervorgabe: "wenn ich das anklicke soll auf Webseite gehen und das
 Bearbeiten Popup der Webseite geöffnet werden") führt zu
 `/dashboard/websites?edit=<websiteId>` – neuer Deep-Link-Mechanismus in
@@ -1322,6 +1324,25 @@ war zu diesem Zeitpunkt noch auf altem Schema (kein `moduleFeatures`-Feld
 in `LicenseState`), Fehler exakt wie erwartet (strasev hatte den
 Code-/Schema-Stand zu diesem Zeitpunkt noch nicht gepullt/migriert) –
 kein Bug in der neuen Logik selbst.
+
+### "Bei neuen Mandanten vorinstallieren" nachträglich richtig einsortiert (2026-08-29)
+
+Wurde beim vorigen "Ort der Freischaltung"-Umbau (siehe oben) fälschlich
+mit unter **Einstellungen → Module** eingeordnet, weil es oberflächlich
+wie "noch eine Master-only Modul-Einstellung" aussah. Ist es aber nicht:
+Es steuert das Verhalten des Moduls gegenüber NEUEN MANDANTEN (Auto-
+Buchung bei `MandantenService.create()`), nicht Masters eigene lokale
+Nutzung des Moduls – gehört damit inhaltlich zu
+**Administration → Module → [key]**, nicht zu Masters eigener
+Freischaltung. Korrektur: Switch aus `module-settings-card.tsx` entfernt,
+neue eigene Komponente `module-auto-install-toggle.tsx` (einziges
+interaktives Element auf der ansonsten rein lesenden Modul-Detailseite)
+zeigt ihn jetzt dort an, `PATCH /module-settings/:key` (unverändert)
+bleibt der Backend-Endpunkt. Siehe Memory
+`feedback_module_settings_placement` – Faustregel für künftige
+Master-only-Toggles: steuert es MEINE eigene Nutzung → Einstellungen →
+Module; steuert es das Verhalten gegenüber Mandanten/anderen
+Installationen → Administration → Modul-Detailseite.
 
 ### Offene Punkte
 
