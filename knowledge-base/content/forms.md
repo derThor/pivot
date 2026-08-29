@@ -432,6 +432,86 @@ generische Text sei "blöd".
   Datenschutzhinweis-Feldern verifiziert: `placeholderLabels` liefert
   korrekt z.B. `feld_2: "Datum"`, `feld_9: "Mehrfachauswahl"`.
 
+## Konzept (noch NICHT umgesetzt, 2026-08-29): individuelle HTML-Mail-Vorlagen + E-Mail-Hüllen
+
+Nutzervorgabe: unter Einstellungen → Mailing soll man komplett individuelle,
+frei anlegbare Mail-Vorlagen mit echtem HTML/CSS bauen können, nicht nur
+die 8 festen System-Mails/Formular-Mails im aktuellen Plaintext-Format
+bearbeiten. Reine Planungsrunde, noch keine Zeile Code – hier nur
+festgehalten, damit eine spätere Umsetzung nicht bei null anfängt.
+
+**Ausgangslage (wichtig für die Einordnung):** `MailerService` verschickt
+aktuell ausschließlich Plaintext (`text:` an nodemailer, nirgends ein
+`html:`-Part). `MailTemplate` (siehe oben) ist reiner Text mit
+`{{platzhalter}}`, bearbeitet über eine Textarea. Der Rich-Text-Editor für
+Seiteninhalte (`rich-text-editor.tsx`, Tiptap) existiert bereits und ist
+der vorgesehene Baustein für die HTML-Bearbeitung unten – kein neuer
+Code-Editor, kein Datei-Upload (beide Alternativen mit dem Nutzer
+diskutiert und verworfen: Upload hat kein Live-Preview/keine
+Platzhalter-Chips, ein freier Code-Editor setzt Mail-HTML-Fachwissen
+voraus und ist riskanter als Tiptaps eingeschränktes, von Haus aus
+sicheres Schema).
+
+**Zwei getrennte Bearbeitungsebenen:**
+
+1. **E-Mail-Hüllen** (`MailShell`, neue Tabelle) – der äußere Rahmen
+   (Kopf mit Logo, Fußzeile, CI-Farben). **Mehrere pro Installation**
+   (Nutzerkorrektur: nicht nur eine) – z. B. eine schlichte für
+   Systemmails, eine auffälligere für individuelle Mailings. Felder:
+   `id`, `name`, HTML-Inhalt (Tiptap), `isDefault` (genau eine pro
+   Installation). Bearbeitet über denselben Tiptap-Editor wie Vorlagen,
+   mit einem speziellen, in Tiptap gesperrten (nicht löschbaren)
+   Platzhalter-Baustein, der markiert, wo der eigentliche Vorlagen-Inhalt
+   eingesetzt wird. Zusätzliche Server-Validierung beim Speichern: genau
+   ein Platzhalter muss vorhanden sein.
+2. **Inhalt** (`MailTemplate`, erweitert) – der eigentliche Text/Inhalt
+   einer einzelnen Vorlage, weiterhin mit den bestehenden
+   Platzhalter-Chips. Neue, frei anlegbare Vorlagen (nicht an einen
+   System-`key` oder ein Formular gebunden) über einen neuen
+   "+ Neue Vorlage"-Button im Mailing-Bereich. Jede Vorlage bekommt ein
+   optionales `shellId` – leer = nutzt die Standard-Hülle der
+   Installation.
+
+**Warum das architektonisch einfach reinpasst:** jede Client-Installation
+hat schon heute eigene `AppSettings` mit eigenem Logo/eigener
+Akzentfarbe/eigener Firmierung (siehe
+[master-slave-licensing.md](../platform/master-slave-licensing.md)) –
+`MailShell` ist einfach eine weitere, installationseigene Tabelle,
+kein neues Beziehungsgeflecht zum Master nötig. "Sein eigenes System mit
+eigener CI aufsetzen" bedeutet für einen Client dann: einmalig seine
+Hülle(n) bauen, genau wie er heute einmalig Logo/Farbe setzt.
+
+**Versand-Pipeline (Reihenfolge wichtig):**
+1. Vorlagen-Inhalt rendern (Platzhalter ersetzen).
+2. In die gewählte (oder Standard-)Hülle an der markierten Stelle einsetzen.
+3. Am fertigen Gesamt-HTML EINMAL CSS inlinen (z. B. `juice`) – nicht
+   getrennt für Hülle und Inhalt, das wäre unnötig komplex und könnte zu
+   doppelt inlineten/widersprüchlichen Styles führen.
+4. Serverseitig sanitisieren (zweite Sicherheitsschicht zusätzlich zu
+   Tiptaps eingeschränktem Schema).
+5. Plaintext-Fallback aus dem fertigen HTML ableiten (Tags entfernen),
+   Mail als Multipart (`html` + `text`) verschicken.
+
+**Vorschau:** zeigt Inhalt-in-Hülle kombiniert, nicht isoliert – sonst
+sieht man nicht, was der Empfänger tatsächlich bekommt.
+
+**Fallback:** eine neue, noch nicht konfigurierte Installation bekommt
+eine mitgelieferte, neutrale Standard-Hülle, bis der Client seine eigene
+baut – kein Zwang, das sofort beim Setup zu erledigen.
+
+**Bewusst NICHT in der ersten Ausbaustufe:** die 8 festen System-Mails
+und Formular-Mails bleiben vorerst Plaintext/ohne Hülle – nur neu
+angelegte individuelle Vorlagen bekommen HTML+Hülle. Auslösung
+(manueller Versand vs. später programmatisch referenzierbar wie
+`sendDataProcessorContractRequest`) ebenfalls offen, Rendering-Funktion
+sollte aber von Anfang an beides zulassen.
+
+**Vor Umsetzungsbeginn zu klären:** ob/wie diese neuen individuellen
+Vorlagen ins Modul-Entitlement-System (siehe
+master-slave-licensing.md) einsortiert werden – eigenes Feature, Teil
+eines bestehenden Moduls, oder erstmal ungegatet wie der Rest von
+Mailing heute.
+
 ## Offene Punkte / mögliche Folgearbeiten
 
 - Datei-Upload-Feldtyp (Backend-Katalog vorhanden, kein Upload-Handling).
