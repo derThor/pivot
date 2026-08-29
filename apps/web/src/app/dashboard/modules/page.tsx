@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { PageContent } from "@/components/page-content";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { ModuleEnabledToggle } from "@/components/module-enabled-toggle";
 import {
   getMandanten,
   getMandantModuleCatalog,
@@ -33,14 +34,17 @@ const CATEGORY_LABEL: Record<ModuleCatalogEntry["category"], string> = {
  * Kachel-Design nach Mockup (Nutzervorgabe, 2026-08-29): dunkle Karte
  * (bestehendes `bg-dark-surface`-Token, siehe dashboard/page.tsx) mit
  * großem, transparentem Icon-Wasserzeichen im Hintergrund, das beim
- * Hovern der Kachel vergrößert wird. Der Schalter zeigt nur den
- * aktuellen Freischaltungsstatus dieser Installation (rein informativ,
- * daher kein echter `Switch`, sondern ein optisch identischer, aber
- * unklickbarer Nachbau – die Seite bleibt eine Server Component, das
- * Umschalten passiert bewusst nur unter Einstellungen → Module). Explizit
- * KEINE "Gebucht von <Mandant>"-Aufzählung mehr in der Kachel
- * (Nutzervorgabe) – stattdessen die Anzahl der Websites, auf denen das
- * Modul aktuell aktiv freigeschaltet ist. */
+ * Hovern der Kachel vergrößert wird. Explizit KEINE "Gebucht von
+ * <Mandant>"-Aufzählung mehr in der Kachel (Nutzervorgabe) – stattdessen
+ * die Anzahl der Websites, auf denen das Modul aktuell aktiv
+ * freigeschaltet ist.
+ *
+ * Der Schalter (`ModuleEnabledToggle`) ist ein echter Kill-Switch, kein
+ * rein visueller Status mehr (Nutzervorgabe, 2026-08-29: "wenn der
+ * deaktiviert wird, wird das Modul überall auf inaktiv gesetzt. wenn
+ * aktiviert, dann nur da auf aktiv setzen, die das Modul schon hatten") –
+ * die Kaskade auf bestehende `MandantModule`-Buchungen läuft serverseitig
+ * in `ModuleSettingsService.update`. */
 export default async function ModulesPage() {
   const [catalog, mandanten, moduleSettings, publicSettings] =
     await Promise.all([
@@ -123,22 +127,10 @@ export default async function ModulesPage() {
                           </p>
                         </div>
                       </div>
-                      <span
-                        aria-hidden
-                        className={cn(
-                          "relative inline-flex h-[18.4px] w-[32px] shrink-0 items-center rounded-full transition-colors",
-                          enabled ? "bg-primary" : "bg-white/15",
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            "block size-4 rounded-full bg-white transition-transform",
-                            enabled
-                              ? "translate-x-[calc(100%-2px)]"
-                              : "translate-x-0",
-                          )}
-                        />
-                      </span>
+                      <ModuleEnabledToggle
+                        moduleKey={module.key}
+                        enabled={enabled}
+                      />
                     </div>
                     <p className="text-sm text-dark-surface-foreground/70">
                       {module.description}

@@ -67,6 +67,20 @@ export class ModuleSettingsService {
       where: { moduleKey },
       data: dto,
     });
+    // Nutzervorgabe, 2026-08-29: der Schalter in den Modul-Kacheln ist ein
+    // Kill-Switch für ALLE Mandanten, kein rein lokaler Master-Schalter
+    // mehr. Deaktivieren setzt jede bestehende `MandantModule`-Buchung
+    // dieses Moduls auf `enabled: false` ("überall auf inaktiv"). Beim
+    // Reaktivieren werden NUR bestehende Buchungen wieder auf `true`
+    // gesetzt ("nur die, die das Modul schon hatten") – Mandanten ohne
+    // eigene Buchung sind von `updateMany` gar nicht betroffen und
+    // bekommen das Modul dadurch nicht automatisch zugewiesen.
+    if (dto.enabled !== undefined) {
+      await this.prisma.mandantModule.updateMany({
+        where: { moduleKey },
+        data: { enabled: dto.enabled },
+      });
+    }
     return this.findOne(moduleKey);
   }
 

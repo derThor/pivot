@@ -20,12 +20,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MandantLogoField } from "@/components/mandant-logo-field";
@@ -121,6 +121,7 @@ export function MandantDetailView({
   const [expandedModuleKey, setExpandedModuleKey] = useState<string | null>(
     null,
   );
+  const [moduleDialogOpen, setModuleDialogOpen] = useState(false);
 
   const addedModuleKeys = new Set(mandant.modules.map((m) => m.moduleKey));
   const availableModules = moduleCatalog.filter(
@@ -237,6 +238,7 @@ export function MandantDetailView({
         toastEdited(data?.message ?? "Modul konnte nicht hinzugefügt werden.");
         return;
       }
+      setModuleDialogOpen(false);
       router.refresh();
     } finally {
       setPendingModuleKey(null);
@@ -613,8 +615,8 @@ export function MandantDetailView({
                 Gilt für alle Websites dieses Mandanten gleichermaßen.
               </p>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger
+            <Dialog open={moduleDialogOpen} onOpenChange={setModuleDialogOpen}>
+              <DialogTrigger
                 render={
                   <Button
                     type="button"
@@ -627,24 +629,50 @@ export function MandantDetailView({
               >
                 <Plus />
                 Modul hinzufügen
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {availableModules.length === 0 ? (
-                  <DropdownMenuLabel className="font-normal text-muted-foreground">
-                    Alle Module bereits hinzugefügt
-                  </DropdownMenuLabel>
-                ) : (
-                  availableModules.map((module) => (
-                    <DropdownMenuItem
-                      key={module.key}
-                      onClick={() => handleAddModule(module.key)}
-                    >
-                      {module.label}
-                    </DropdownMenuItem>
-                  ))
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Modul hinzufügen</DialogTitle>
+                </DialogHeader>
+                <div className="flex flex-col gap-2">
+                  {availableModules.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Alle Module bereits hinzugefügt.
+                    </p>
+                  ) : (
+                    availableModules.map((module) => {
+                      const Icon = MODULE_ICONS[module.key] ?? Diamond;
+                      return (
+                        <button
+                          key={module.key}
+                          type="button"
+                          disabled={pendingModuleKey === module.key}
+                          onClick={() => handleAddModule(module.key)}
+                          className="flex items-center gap-3 rounded-lg bg-muted p-3 text-left transition-colors hover:bg-muted/70 disabled:cursor-default disabled:opacity-60"
+                        >
+                          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-card text-foreground shadow-sm">
+                            <Icon className="size-4.5" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-sm font-medium">
+                                {module.label}
+                              </p>
+                              <Badge className="badge--slate border-0">
+                                {CATEGORY_LABEL[module.category]}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {module.description}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
