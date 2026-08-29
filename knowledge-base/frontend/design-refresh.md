@@ -596,6 +596,25 @@ Listen-Aktionen:
 > `top-1/2 -translate-y-1/2` (bei `absolute`) oder ein Flex-Container mit
 > `items-center` verwenden.
 
+> **Update 2026-08-29 (TabsList-Hintergrund fest statt Theme-Token):**
+> Nutzervorgabe: "Tab Hintergrund in dunkel #2a2f38 und hell #eeeeee,
+> global für alle Tabs". `tabsListVariants`s `default`-Variante
+> (`ui/tabs.tsx`) nutzte bisher `bg-secondary` (siehe Update 2026-08-16
+> unten) – das Token selbst wird aber auch von Badges, Buttons u.a.
+> verwendet, eine Änderung dort hätte weiter ausgestrahlt. Stattdessen
+> feste Werte direkt in der Variante: `bg-[#eeeeee] dark:bg-[#2a2f38]`.
+>
+> **Stolperstein:** drei Stellen (`privacy-view.tsx`, `company-view.tsx`,
+> `mailing-settings-card.tsx`) übergeben `<TabsList className="... bg-
+> secondary ...">` und überschreiben damit die Komponenten-Variante direkt
+> im Aufruf – die erste Fassung des Fixes blieb dadurch dort unsichtbar
+> ("wo??? du hast nichts angezeigt?"). Notwendiger zweiter Schritt:
+> `bg-secondary` aus allen drei `className`-Strings entfernt, damit der
+> Variant-Default wieder greift. **Lehre:** bei einer Komponenten-Token-
+> Änderung immer nach `<Komponente ... bg-`/`className=".*bg-` grep'en,
+> nicht nur die Komponentendatei selbst anpassen – einzelne Call-Sites
+> überschreiben Varianten gerne lokal.
+
 ## Offene Punkte
 
 - Dashboard-Startseite zeigt weiterhin nur die einfachen Statistik-
