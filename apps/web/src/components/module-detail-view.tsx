@@ -122,7 +122,7 @@ export function ModuleDetailView({
             : "rounded-xl bg-dark-surface",
         )}
       >
-        <CardContent className="relative flex flex-wrap items-center gap-3 pt-6">
+        <CardContent className="relative flex flex-wrap items-center gap-3">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Icon className="size-5" />
           </span>
