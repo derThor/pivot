@@ -29,11 +29,13 @@ const tabsListVariants = cva(
     variants: {
       variant: {
         // `bg-muted` ist praktisch unsichtbar (--muted liegt bei ~98%
-        // Helligkeit, kaum Unterschied zu --card/--background) – `secondary`
-        // (SUB2-Token, exakt für "Segmented Controls" gedacht) statt Theme-
-        // Token `muted`, damit die Tab-Leiste als eigene Spur erkennbar
-        // bleibt (Nutzervorgabe, 2026-08-16, 1:1 nach Bildvorlage).
-        default: "bg-secondary",
+        // Helligkeit, kaum Unterschied zu --card/--background) – feste,
+        // eigene Farbwerte statt des geteilten `secondary`-Tokens
+        // (Nutzervorgabe, 2026-08-29: "#eeeeee hell, #2a2f38 dunkel, global
+        // für alle Tabs") – `secondary` wird an vielen anderen Stellen
+        // (Badges, Buttons, …) verwendet, eine Änderung am Token selbst
+        // hätte dort mit ausgestrahlt.
+        default: "bg-[#eeeeee] dark:bg-[#2a2f38]",
         line: "gap-1 bg-transparent",
       },
     },
