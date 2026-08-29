@@ -1436,6 +1436,19 @@ Lösch-Bestätigungsdialogen (`user-row-actions.tsx`,
 `user-edit-view.tsx`) – zeigen bei inaktivem Modul "wird sofort und
 unwiderruflich anonymisiert" statt des Datenschutz-Verweises.
 
+### `sccTemplateMediaId` bekam seine eigene Route (2026-08-29)
+
+Behoben statt weiter als offener Punkt geführt: eigenes
+`UpdatePrivacySccTemplateDto` + `PATCH /settings/privacy/scc-template`,
+gegated über `@RequireModuleFeature('datenschutz', 'auftragsverarbeiter')`
+– passt jetzt zu dem Reiter, auf dem die Drittlandtransfer-Karte in
+`privacy-view.tsx` tatsächlich liegt, statt am `rechtstexte`-gegateten
+`PATCH /settings/privacy` mitzulaufen. Gleiches Split-Muster wie `dsb`
+(siehe oben). Live verifiziert: neue Route speichert bei aktivem
+`auftragsverarbeiter`, 404 bei deaktiviertem Feature, `rechtstexte`
+bleibt davon unabhängig weiter speicherbar, alte Route lehnt
+`sccTemplateMediaId` jetzt per Whitelist ab.
+
 ### Offene Punkte
 
 - `nutzer`-Reiter nur UI-seitig gegatet, kein Backend-404 (siehe
@@ -1443,9 +1456,5 @@ unwiderruflich anonymisiert" statt des Datenschutz-Verweises.
   `anonymize`/`restore`-Endpunkte sind ohnehin über `users:delete`
   gegated, nicht über ein `privacy:*`-Recht, ein fehlendes 404 hier gibt
   also niemandem eine Fähigkeit, die er nicht schon hätte.
-- `sccTemplateMediaId` bleibt am `rechtstexte`-gegateten
-  `PATCH /settings/privacy`, obwohl es inhaltlich eher zu
-  `auftragsverarbeiter` gehört (Drittlandtransfer-Vorlage) – einzelnes
-  Feld, kein eigener Endpunkt dafür gebaut.
 - Gleiches Muster (Feature-Katalog + Guards) für Magicline, sobald dessen
   Inhalt drankommt.
