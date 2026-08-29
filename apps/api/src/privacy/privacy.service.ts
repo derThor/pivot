@@ -91,7 +91,6 @@ export class PrivacyService {
     const settings = await this.settings.get();
     return {
       accessLog: monthsAgo(settings.retentionAccessLogMonths),
-      deactivatedAccounts: monthsAgo(settings.retentionDeactivatedAccountsMonths),
       trash: daysAgo(settings.retentionTrashDays),
     };
   }
@@ -114,9 +113,16 @@ export class PrivacyService {
   // Name/Route bewusst unverändert gelassen (nur die Implementierung
   // dahinter zeigt jetzt auf `deletedAt` statt `deactivatedAt`, siehe
   // UsersService.findDeleted) – kein Frontend-Vertragsbruch nötig.
+  //
+  // Übergibt die rohe Monatszahl statt eines vorgerechneten Cutoff-Datums
+  // (Nutzervorgabe, 2026-08-29: "je Benutzer eine Zeitanzeige, wann
+  // anonymisiert werden muss, wie bei Papierkorb") – `findDeleted` braucht
+  // den Rohwert, um pro Nutzer eine individuelle Deadline
+  // (`deletedAt` + Monate) statt eines global geteilten Cutoffs
+  // auszurechnen (analog zu `TrashService.withExpiryMeta`).
   async findDeactivatedAccountsDue() {
-    const { deactivatedAccounts } = await this.cutoffs();
-    return this.users.findDeleted(deactivatedAccounts);
+    const settings = await this.settings.get();
+    return this.users.findDeleted(settings.retentionDeactivatedAccountsMonths);
   }
 
   async findTrashDue() {
@@ -128,10 +134,26 @@ export class PrivacyService {
       this.tags.findTrashedOlderThan(trash),
     ]);
     return {
-      content: content.map((c) => ({ id: c.id, label: c.title, deletedAt: c.deletedAt })),
-      media: media.map((m) => ({ id: m.id, label: m.filename, deletedAt: m.deletedAt })),
-      categories: categories.map((c) => ({ id: c.id, label: c.name, deletedAt: c.deletedAt })),
-      tags: tags.map((t) => ({ id: t.id, label: t.name, deletedAt: t.deletedAt })),
+      content: content.map((c) => ({
+        id: c.id,
+        label: c.title,
+        deletedAt: c.deletedAt,
+      })),
+      media: media.map((m) => ({
+        id: m.id,
+        label: m.filename,
+        deletedAt: m.deletedAt,
+      })),
+      categories: categories.map((c) => ({
+        id: c.id,
+        label: c.name,
+        deletedAt: c.deletedAt,
+      })),
+      tags: tags.map((t) => ({
+        id: t.id,
+        label: t.name,
+        deletedAt: t.deletedAt,
+      })),
     };
   }
 
@@ -166,7 +188,10 @@ export class PrivacyService {
     ]);
 
     const trashTotal =
-      trash.content.length + trash.media.length + trash.categories.length + trash.tags.length;
+      trash.content.length +
+      trash.media.length +
+      trash.categories.length +
+      trash.tags.length;
     const iso = (d: Date | null) => d?.toISOString() ?? '';
     const yn = (b: boolean) => (b ? 'ja' : 'nein');
 
@@ -174,7 +199,11 @@ export class PrivacyService {
 
     for (const doc of legalDocuments) {
       rows.push([`Rechtstexte: ${doc.title}`, 'Status', doc.status]);
-      rows.push([`Rechtstexte: ${doc.title}`, 'Zuletzt erzeugt', iso(doc.lastGeneratedAt)]);
+      rows.push([
+        `Rechtstexte: ${doc.title}`,
+        'Zuletzt erzeugt',
+        iso(doc.lastGeneratedAt),
+      ]);
     }
 
     for (const r of deletionRequests) {
@@ -184,7 +213,11 @@ export class PrivacyService {
       rows.push([label, 'E-Mail', r.requesterEmail]);
       rows.push([label, 'Status', r.status]);
       rows.push([label, 'Quelle', r.source ?? '']);
-      rows.push([label, 'Betroffene Datensätze', r.affectedRecordsCount != null ? String(r.affectedRecordsCount) : '']);
+      rows.push([
+        label,
+        'Betroffene Datensätze',
+        r.affectedRecordsCount != null ? String(r.affectedRecordsCount) : '',
+      ]);
       rows.push([label, 'Eingang', iso(r.createdAt)]);
       rows.push([label, 'Frist', iso(r.dueAt)]);
       rows.push([label, 'Erledigt am', iso(r.completedAt)]);
@@ -213,7 +246,11 @@ export class PrivacyService {
       rows.push([label, 'Risiko', i.severity]);
       rows.push([label, 'Status', i.status]);
       rows.push([label, 'Bekannt geworden', iso(i.occurredAt)]);
-      rows.push([label, 'Betroffene', i.affectedCount != null ? String(i.affectedCount) : '']);
+      rows.push([
+        label,
+        'Betroffene',
+        i.affectedCount != null ? String(i.affectedCount) : '',
+      ]);
       rows.push([label, 'Behörde gemeldet', iso(i.authorityNotifiedAt)]);
       rows.push([label, 'Betroffene informiert', iso(i.subjectsNotifiedAt)]);
       rows.push([label, 'Maßnahmen', i.measuresDocumented ?? '']);
@@ -229,17 +266,45 @@ export class PrivacyService {
       rows.push([label, 'Überfällig', yn(u.overdue)]);
     }
 
-    rows.push(['Datenschutzbeauftragter', 'Extern', yn(settings.dpoIsExternal)]);
+    rows.push([
+      'Datenschutzbeauftragter',
+      'Extern',
+      yn(settings.dpoIsExternal),
+    ]);
     rows.push(['Datenschutzbeauftragter', 'Name', settings.dpoName ?? '']);
-    rows.push(['Datenschutzbeauftragter', 'Kanzlei/Abteilung', settings.dpoCompany ?? '']);
+    rows.push([
+      'Datenschutzbeauftragter',
+      'Kanzlei/Abteilung',
+      settings.dpoCompany ?? '',
+    ]);
     rows.push(['Datenschutzbeauftragter', 'E-Mail', settings.dpoEmail ?? '']);
     rows.push(['Datenschutzbeauftragter', 'Telefon', settings.dpoPhone ?? '']);
-    rows.push(['Datenschutzbeauftragter', 'Benannt seit', iso(settings.dpoAppointedAt)]);
-    rows.push(['Datenschutzbeauftragter', 'Aufsichtsbehörde', settings.dpoSupervisoryAuthority ?? '']);
+    rows.push([
+      'Datenschutzbeauftragter',
+      'Benannt seit',
+      iso(settings.dpoAppointedAt),
+    ]);
+    rows.push([
+      'Datenschutzbeauftragter',
+      'Aufsichtsbehörde',
+      settings.dpoSupervisoryAuthority ?? '',
+    ]);
 
-    rows.push(['Aufbewahrung', 'Zugriffsprotokoll fällig zur Löschung', String(accessLogDue.length)]);
-    rows.push(['Aufbewahrung', 'Deaktivierte Konten fällig zur Löschung', String(deactivatedDue.length)]);
-    rows.push(['Aufbewahrung', 'Papierkorb fällig zur Löschung', String(trashTotal)]);
+    rows.push([
+      'Aufbewahrung',
+      'Zugriffsprotokoll fällig zur Löschung',
+      String(accessLogDue.length),
+    ]);
+    rows.push([
+      'Aufbewahrung',
+      'Deaktivierte Konten fällig zur Löschung',
+      String(deactivatedDue.length),
+    ]);
+    rows.push([
+      'Aufbewahrung',
+      'Papierkorb fällig zur Löschung',
+      String(trashTotal),
+    ]);
 
     const header = 'Bereich,Feld,Wert';
     const lines = rows.map((r) => r.map(csvEscape).join(','));
@@ -270,7 +335,11 @@ export class PrivacyService {
     const rows: string[][] = [
       ['Bereich', 'Feld', 'Wert'],
       ['Konto', 'E-Mail', user.email],
-      ['Konto', 'Name', [user.firstName, user.lastName].filter(Boolean).join(' ')],
+      [
+        'Konto',
+        'Name',
+        [user.firstName, user.lastName].filter(Boolean).join(' '),
+      ],
       ['Konto', 'Abteilung', user.department ?? ''],
       ['Konto', 'Telefon', user.phone ?? ''],
       ['Konto', 'Straße', user.street ?? ''],

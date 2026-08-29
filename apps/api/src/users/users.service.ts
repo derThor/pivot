@@ -652,9 +652,14 @@ export class UsersService {
   /** Datenschutz → Tab "Nutzer": alle gelöschten, noch nicht anonymisierten
    * Konten (nicht nur die schon überfälligen wie zuvor – "und dann taucht
    * er nichtmal in datenschutz im reiter gelöschte nutzer auf", Nutzer-
-   * Bugreport 2026-08-21). `cutoff` dient nur noch der `overdue`-Markierung
-   * (Aufbewahrungsfrist überschritten), kein Filter mehr. */
-  async findDeleted(cutoff: Date) {
+   * Bugreport 2026-08-21). `retentionMonths` dient sowohl der `overdue`-
+   * Markierung als auch (Nutzervorgabe, 2026-08-29: "je Benutzer eine
+   * Zeitanzeige, wann anonymisiert werden muss, wie bei Papierkorb") der
+   * individuellen Deadline pro Nutzer (`deletedAt` + `retentionMonths`,
+   * analog zu `TrashService.withExpiryMeta`s `deletedAt` + `retentionDays`
+   * – dort in Tagen, hier in Monaten, da `retentionDeactivatedAccountsMonths`
+   * so konfiguriert wird). */
+  async findDeleted(retentionMonths: number) {
     const rows = await this.prisma.user.findMany({
       where: { deletedAt: { not: null }, anonymizedAt: null },
       select: {
@@ -666,7 +671,14 @@ export class UsersService {
       },
       orderBy: { deletedAt: 'asc' },
     });
-    return rows.map((u) => ({ ...u, overdue: u.deletedAt! < cutoff }));
+    const now = Date.now();
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
+    return rows.map((u) => {
+      const deadlineAt = new Date(u.deletedAt!);
+      deadlineAt.setMonth(deadlineAt.getMonth() + retentionMonths);
+      const daysLeft = Math.ceil((deadlineAt.getTime() - now) / MS_PER_DAY);
+      return { ...u, deadlineAt, daysLeft, overdue: daysLeft <= 0 };
+    });
   }
 
   private async findOneRaw(id: string) {

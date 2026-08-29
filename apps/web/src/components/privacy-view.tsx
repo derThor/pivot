@@ -8,6 +8,7 @@ import {
   Check,
   Download,
   ExternalLink,
+  Lock,
   MapPin,
   Plus,
   RefreshCw,
@@ -36,7 +37,7 @@ import { ProcessingActivityDialog } from "@/components/processing-activity-dialo
 import { DataProcessorDialog } from "@/components/data-processor-dialog";
 import { PrivacyIncidentsPanel } from "@/components/privacy-incidents-panel";
 import { mediaUrl } from "@/lib/media";
-import { formatName, initials, truncateMiddle } from "@/lib/utils";
+import { cn, formatName, initials, truncateMiddle } from "@/lib/utils";
 import type {
   CompanySettings,
   CurrentUser,
@@ -1614,14 +1615,34 @@ export function PrivacyView({
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
-                      {u.overdue && (
-                        <Badge className="badge--amber border-0">
-                          überfällig
-                        </Badge>
-                      )}
                       <span className="text-xs text-muted-foreground">
                         Gelöscht seit {formatDate(u.deletedAt)}
                       </span>
+                      {u.overdue ? (
+                        <div className="flex items-center gap-1.5 text-sm text-destructive">
+                          <Lock className="size-3.5" />
+                          Frist abgelaufen
+                        </div>
+                      ) : (
+                        <div className="flex w-28 flex-col items-end gap-1">
+                          <span className="text-sm font-medium">
+                            {u.daysLeft === 0
+                              ? "heute"
+                              : `in ${u.daysLeft} T.`}
+                          </span>
+                          <div className="h-1.5 w-full rounded-full bg-muted">
+                            <div
+                              className={cn(
+                                "h-full rounded-full",
+                                u.daysLeft <= 7 ? "bg-amber-500" : "bg-primary",
+                              )}
+                              style={{
+                                width: `${Math.max(0, Math.min(100, (u.daysLeft / (retentionDeactivatedAccountsMonths * 30)) * 100))}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
                       <UserRestoreButton
                         userId={u.id}
                         name={formatName(u)}

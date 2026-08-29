@@ -1222,6 +1222,8 @@ export interface RetentionDeactivatedAccount {
   firstName: string | null;
   lastName: string;
   deletedAt: string;
+  deadlineAt: string;
+  daysLeft: number;
   overdue: boolean;
 }
 
