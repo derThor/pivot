@@ -154,61 +154,73 @@ export function ModuleDetailView({
       </Card>
 
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_320px]">
-        <Card className="rounded-xl shadow-sm">
-          <CardHeader>
-            <CardTitle>Was das Modul mitbringt</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <p className="text-sm text-muted-foreground">{summary}</p>
-            <div className="flex flex-col gap-5">
-              {module.features && module.features.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                    Reiter
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {module.features.map((feature) => (
-                      <Badge
-                        key={feature.key}
-                        className="badge--green border-0"
-                      >
-                        {feature.label}
-                      </Badge>
-                    ))}
+        <div className="flex flex-col gap-4">
+          <Card className="rounded-xl shadow-sm">
+            <CardHeader>
+              <CardTitle>Was das Modul mitbringt</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <p className="text-sm text-muted-foreground">{summary}</p>
+              <div className="flex flex-col gap-5">
+                {module.features && module.features.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                      Reiter
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {module.features.map((feature) => (
+                        <Badge
+                          key={feature.key}
+                          className="badge--green border-0"
+                        >
+                          {feature.label}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-              {permissions.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                    Zusätzliche Rechte
-                  </p>
-                  <ul className="flex flex-col gap-1">
-                    {permissions.map((key) => {
-                      const [resource, action] = key.split(":");
-                      return (
-                        <li key={key} className="text-sm">
-                          {resourceLabels[resource] ?? resource}
-                          {" · "}
-                          {actionLabels[action] ?? action}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-fit border-border"
-                    render={<Link href="/dashboard/roles" />}
-                  >
-                    In Rollen & Rechte öffnen
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                )}
+                {permissions.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                      Zusätzliche Rechte
+                    </p>
+                    <ul className="flex flex-col gap-1">
+                      {permissions.map((key) => {
+                        const [resource, action] = key.split(":");
+                        return (
+                          <li key={key} className="text-sm">
+                            {resourceLabels[resource] ?? resource}
+                            {" · "}
+                            {actionLabels[action] ?? action}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-fit border-border"
+                      render={<Link href="/dashboard/roles" />}
+                    >
+                      In Rollen & Rechte öffnen
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-fit border-border"
+            render={<Link href="/dashboard/mandanten" />}
+          >
+            Zu den Mandanten
+            <ChevronRight />
+          </Button>
+        </div>
 
         <div className="flex flex-col gap-4">
           <Card className="rounded-xl shadow-sm">
@@ -267,16 +279,6 @@ export function ModuleDetailView({
             moduleKey={module.key}
             autoInstallForNewMandants={autoInstallForNewMandants}
           />
-
-          <Button
-            type="button"
-            variant="outline"
-            className="border-border"
-            render={<Link href="/dashboard/mandanten" />}
-          >
-            Zu den Mandanten
-            <ChevronRight />
-          </Button>
         </div>
       </div>
     </div>
