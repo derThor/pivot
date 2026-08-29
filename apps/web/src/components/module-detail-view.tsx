@@ -199,7 +199,7 @@ export function ModuleDetailView({
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl shadow-sm">
+          <Card className="gap-3 rounded-xl shadow-sm">
             <CardHeader>
               <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                 Modul
