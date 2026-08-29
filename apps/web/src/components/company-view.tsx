@@ -213,7 +213,7 @@ export function CompanyView({
         onValueChange={(value) => setActiveTab(value as typeof activeTab)}
         className="gap-4"
       >
-        <TabsList className="!h-auto w-fit justify-start gap-1 !overflow-visible bg-secondary p-1">
+        <TabsList className="!h-auto w-fit justify-start gap-1 !overflow-visible p-1">
           <TabsTrigger
             value="stammdaten"
             className="!h-auto min-h-[52px] flex-none flex-col items-start justify-center gap-0.5 rounded-lg px-4 py-2.5 text-left whitespace-normal"

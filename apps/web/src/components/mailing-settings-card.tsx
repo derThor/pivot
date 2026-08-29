@@ -206,7 +206,7 @@ function TemplateDetail({
       />
 
       <Tabs defaultValue="template">
-        <TabsList className="!h-auto w-fit justify-start gap-1 !overflow-visible bg-secondary p-1">
+        <TabsList className="!h-auto w-fit justify-start gap-1 !overflow-visible p-1">
           <TabsTrigger value="template">Vorlage</TabsTrigger>
           {template.recipientEditable && (
             <TabsTrigger value="recipient">Empfänger</TabsTrigger>

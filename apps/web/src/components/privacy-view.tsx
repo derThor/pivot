@@ -666,7 +666,7 @@ export function PrivacyView({
         onValueChange={(value) => setActiveTab(value as TabId)}
         className="gap-4"
       >
-        <TabsList className="!h-auto w-fit max-w-full flex-wrap justify-start gap-1 !overflow-visible bg-secondary p-1">
+        <TabsList className="!h-auto w-fit max-w-full flex-wrap justify-start gap-1 !overflow-visible p-1">
           {(
             [
               [
