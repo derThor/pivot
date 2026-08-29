@@ -496,42 +496,75 @@ export function PrivacyView({
     }
   }
 
+  // Bugreport, 2026-08-29: "ich kann in Datenschutz nichts mehr speichern"
+  // – Backend-Aufteilung von 2026-08-28 (Datenschutz-als-Modul, `dsb`-Reiter
+  // unabhängig vom Rest gegatet) zog `dpo*`-Felder aus `UpdatePrivacyDto` in
+  // eine eigene `UpdatePrivacyDsbDto`/`PATCH /settings/privacy/dsb` aus,
+  // dieser Handler hier schickte sie aber weiterhin zusammen mit den
+  // Aufbewahrungsfeldern an `PATCH /settings/privacy` – mit `dpo*` als
+  // (jetzt) unbekannten Feldern lehnt `ValidationPipe({forbidNonWhitelisted:
+  // true})` die GESAMTE Anfrage mit 400 ab, auch die eigentlich gültigen
+  // Aufbewahrungsfelder wurden dadurch nie gespeichert. Zwei getrennte
+  // Requests statt einem, da beide Feldgruppen weiterhin über denselben
+  // "Speichern"-Button dieses einen Formulars laufen.
   async function handleSave() {
     setIsSaving(true);
     try {
-      const res = await fetch("/api/settings/privacy", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dpoIsExternal: dpo.dpoIsExternal,
-          dpoName: dpo.dpoName || undefined,
-          dpoCompany: dpo.dpoCompany || undefined,
-          dpoEmail: dpo.dpoEmail || undefined,
-          dpoPhone: dpo.dpoPhone || undefined,
-          dpoAppointedAt: dpo.dpoAppointedAt
-            ? new Date(dpo.dpoAppointedAt).toISOString()
-            : undefined,
-          dpoReportedAt: dpo.dpoReportedAt
-            ? new Date(dpo.dpoReportedAt).toISOString()
-            : undefined,
-          dpoSupervisoryAuthority: dpo.dpoSupervisoryAuthority || undefined,
-          dpoLastContactAt: dpo.dpoLastContactAt
-            ? new Date(dpo.dpoLastContactAt).toISOString()
-            : undefined,
-          dpoListInLegalTexts: dpo.dpoListInLegalTexts,
-          dpoNotifyOnIncident: dpo.dpoNotifyOnIncident,
-          dpoMonthlyReportEnabled: dpo.dpoMonthlyReportEnabled,
-          retentionFormSubmissionsDays: retentionFormSubmissionsDays ?? null,
-          retentionAccessLogMonths,
-          retentionDeactivatedAccountsMonths,
-          retentionTrashDays,
-          dsbFormSelfServiceDisclosure,
-          dsbFormStoreSubmissionIp,
+      // `dsb` einzeln deaktivierbar (siehe TAB_IDS oben) – der Reiter ist
+      // dann gar nicht editierbar, ein PATCH mit unveränderten Werten
+      // würde nur unnötig an `ModuleFeatureGuard` scheitern (404) und den
+      // Speichern-Vorgang fälschlich als Ganzes fehlschlagen lassen.
+      const requests = [
+        fetch("/api/settings/privacy", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            retentionFormSubmissionsDays: retentionFormSubmissionsDays ?? null,
+            retentionAccessLogMonths,
+            retentionDeactivatedAccountsMonths,
+            retentionTrashDays,
+            dsbFormSelfServiceDisclosure,
+            dsbFormStoreSubmissionIp,
+          }),
         }),
-      });
-      if (res.ok) {
+      ];
+      if (TAB_IDS.includes("dsb")) {
+        requests.push(
+          fetch("/api/settings/privacy/dsb", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              dpoIsExternal: dpo.dpoIsExternal,
+              dpoName: dpo.dpoName || undefined,
+              dpoCompany: dpo.dpoCompany || undefined,
+              dpoEmail: dpo.dpoEmail || undefined,
+              dpoPhone: dpo.dpoPhone || undefined,
+              dpoAppointedAt: dpo.dpoAppointedAt
+                ? new Date(dpo.dpoAppointedAt).toISOString()
+                : undefined,
+              dpoReportedAt: dpo.dpoReportedAt
+                ? new Date(dpo.dpoReportedAt).toISOString()
+                : undefined,
+              dpoSupervisoryAuthority:
+                dpo.dpoSupervisoryAuthority || undefined,
+              dpoLastContactAt: dpo.dpoLastContactAt
+                ? new Date(dpo.dpoLastContactAt).toISOString()
+                : undefined,
+              dpoListInLegalTexts: dpo.dpoListInLegalTexts,
+              dpoNotifyOnIncident: dpo.dpoNotifyOnIncident,
+              dpoMonthlyReportEnabled: dpo.dpoMonthlyReportEnabled,
+            }),
+          }),
+        );
+      }
+      const results = await Promise.all(requests);
+      const failed = results.find((res) => !res.ok);
+      if (!failed) {
         toastEdited("Einstellungen wurden gespeichert.");
         router.refresh();
+      } else {
+        const data = await failed.json().catch(() => null);
+        toastEdited(data?.message ?? "Konnte nicht gespeichert werden.");
       }
     } finally {
       setIsSaving(false);
