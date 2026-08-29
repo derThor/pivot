@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Blocks, ChevronRight } from "lucide-react";
+import { ChevronRight, Diamond, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,10 +7,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
 import { ModuleAutoInstallToggle } from "@/components/module-auto-install-toggle";
 import type { MandantListItem, ModuleCatalogEntry } from "@/lib/api-server";
+import { cn } from "@/lib/utils";
 
 const CATEGORY_LABEL: Record<ModuleCatalogEntry["category"], string> = {
   integration: "Schnittstelle",
   compliance: "Compliance",
+};
+
+// Gleiche Zuordnung wie dashboard/modules/page.tsx (Kachel-Icons) – kein
+// gemeinsamer Katalog dafür, da nur diese zwei Stellen ein Icon pro Modul
+// brauchen.
+const MODULE_ICONS: Record<string, typeof Diamond> = {
+  magicline: Diamond,
+  datenschutz: ShieldCheck,
 };
 
 // Rein informativ (Nutzervorgabe, 2026-08-28: "Zusätzliche Rechte" auf der
@@ -92,6 +101,8 @@ export function ModuleDetailView({
     },
   };
 
+  const Icon = MODULE_ICONS[module.key] ?? Diamond;
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -103,19 +114,26 @@ export function ModuleDetailView({
         </div>
       </div>
 
-      <Card className="rounded-xl shadow-sm">
-        <CardContent className="flex flex-wrap items-center gap-3 pt-6">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <Blocks className="size-5" />
+      <Card
+        className={cn(
+          "relative overflow-hidden border-none text-dark-surface-foreground shadow-sm",
+          module.key === "datenschutz"
+            ? "modul-kachel--datenschutz"
+            : "rounded-xl bg-dark-surface",
+        )}
+      >
+        <CardContent className="relative flex flex-wrap items-center gap-3 pt-6">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Icon className="size-5" />
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <p className="font-semibold">{module.label}</p>
-              <Badge className="badge--slate border-0">
+              <Badge className="border-0 bg-white/10 text-inherit">
                 {CATEGORY_LABEL[module.category]}
               </Badge>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-dark-surface-foreground/70">
               {module.description}
             </p>
           </div>
