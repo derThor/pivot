@@ -16,13 +16,16 @@ const CATEGORY_LABEL: Record<ModuleSettingsEntry["category"], string> = {
 };
 
 /** Einstellungen → Module (Nutzervorgabe, 2026-08-28: "das soll unter
- * Einstellungen sein") – Masters EIGENE Modul-/Feature-Freischaltung,
- * komplett getrennt vom Mandanten-Buchungssystem ("Master wird nicht über
- * Mandanten geregelt"). `/dashboard/modules/[key]` bleibt dagegen rein
- * informativ ("ganz grundsätzliche Sachen": Beschreibung, Reiter,
- * Rechte, welche Mandanten es gebucht haben). Nur sichtbar/erreichbar auf
- * einer Master-Installation (Backend gated zusätzlich hart über
- * `MasterOnlyGuard`). */
+ * Einstellungen sein") – NUR Masters EIGENE Modul-/Feature-Freischaltung
+ * für die eigene Installation, komplett getrennt vom Mandanten-
+ * Buchungssystem ("Master wird nicht über Mandanten geregelt").
+ * "Bei neuen Mandanten vorinstallieren" gehört NICHT hierher, auch wenn
+ * es ebenfalls master-only ist – es steuert das Verhalten des Moduls
+ * gegenüber Mandanten, nicht Masters eigene Nutzung, und lebt deshalb auf
+ * `/dashboard/modules/[key]` (siehe `module-auto-install-toggle.tsx`,
+ * Korrektur 2026-08-29 – ursprünglich fälschlich hier eingebaut). Diese
+ * Seite ist ansonsten nur sichtbar/erreichbar auf einer Master-
+ * Installation (Backend gated zusätzlich hart über `MasterOnlyGuard`). */
 export function ModuleSettingsCard({
   modules,
 }: {
@@ -126,26 +129,6 @@ export function ModuleSettingsCard({
                   />
                 </div>
               ))}
-              <div className="flex items-center justify-between gap-3 rounded-lg bg-muted p-3">
-                <div>
-                  <p className="text-sm font-medium">
-                    Bei neuen Mandanten vorinstallieren
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Wird beim Anlegen eines neuen Mandanten automatisch
-                    gebucht.
-                  </p>
-                </div>
-                <Switch
-                  checked={module.autoInstallForNewMandants}
-                  disabled={pendingKey === module.moduleKey}
-                  onCheckedChange={(checked) =>
-                    patchModule(module.moduleKey, {
-                      autoInstallForNewMandants: checked,
-                    })
-                  }
-                />
-              </div>
             </CardContent>
           )}
         </Card>

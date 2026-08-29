@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
+import { ModuleAutoInstallToggle } from "@/components/module-auto-install-toggle";
 import type { MandantListItem, ModuleCatalogEntry } from "@/lib/api-server";
 
 const CATEGORY_LABEL: Record<ModuleCatalogEntry["category"], string> = {
@@ -32,15 +33,21 @@ const MODULE_PERMISSIONS: Record<string, string[]> = {
  * Mandant-Detailseite) und keine "Grundeinstellungen" (Masters eigene
  * Freischaltung liegt unter Einstellungen → Module, siehe
  * `module-settings-card.tsx` – Nutzervorgabe: "das soll unter
- * Einstellungen sein"). Rein lesende Seite. */
+ * Einstellungen sein"). Ansonsten rein lesende Seite – EINZIGE Ausnahme
+ * ist `ModuleAutoInstallToggle` (Korrektur 2026-08-29: steuert das
+ * Verhalten des Moduls gegenüber neuen Mandanten, nicht Masters eigene
+ * Nutzung, gehört deshalb hierher statt zu Masters eigener
+ * Freischaltung – siehe Kommentar in `module-settings-card.tsx`). */
 export function ModuleDetailView({
   module,
   mandanten,
   appVersion,
+  autoInstallForNewMandants,
 }: {
   module: ModuleCatalogEntry;
   mandanten: MandantListItem[];
   appVersion: string | null;
+  autoInstallForNewMandants: boolean;
 }) {
   const permissions = MODULE_PERMISSIONS[module.key] ?? [];
   // Nutzervorgabe, 2026-08-29: "es sollen da nur Mandanten angezeigt
@@ -213,6 +220,11 @@ export function ModuleDetailView({
               </div>
             </CardContent>
           </Card>
+
+          <ModuleAutoInstallToggle
+            moduleKey={module.key}
+            autoInstallForNewMandants={autoInstallForNewMandants}
+          />
 
           <Button
             type="button"
