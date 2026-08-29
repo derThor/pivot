@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
 import { ModuleAutoInstallToggle } from "@/components/module-auto-install-toggle";
 import type { MandantListItem, ModuleCatalogEntry } from "@/lib/api-server";
+import { actionLabels, resourceLabels } from "@/lib/permission-labels";
 import { cn } from "@/lib/utils";
 
 const CATEGORY_LABEL: Record<ModuleCatalogEntry["category"], string> = {
@@ -183,11 +184,16 @@ export function ModuleDetailView({
                     Zusätzliche Rechte
                   </p>
                   <ul className="flex flex-col gap-1">
-                    {permissions.map((key) => (
-                      <li key={key} className="text-sm">
-                        {key}
-                      </li>
-                    ))}
+                    {permissions.map((key) => {
+                      const [resource, action] = key.split(":");
+                      return (
+                        <li key={key} className="text-sm">
+                          {resourceLabels[resource] ?? resource}
+                          {" · "}
+                          {actionLabels[action] ?? action}
+                        </li>
+                      );
+                    })}
                   </ul>
                   <Button
                     type="button"
