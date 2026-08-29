@@ -38,13 +38,18 @@ const MODULE_PERMISSIONS: Record<string, string[]> = {
 
 // Ausführlichere Zusammenfassung für "Was das Modul mitbringt"
 // (Nutzervorgabe, 2026-08-29) – ergänzt die knappe Katalog-Beschreibung
-// (`module.description`, die z.B. auf der Kachel steht) um einen Absatz,
-// der auch ohne Vorwissen erklärt, was das Modul konkret leistet. Fällt
-// auf `module.description` zurück, solange ein Modul (z.B. Magicline)
+// (`module.description`, die z.B. auf der Kachel steht) um mehrere
+// Absätze, die auch ohne Vorwissen erklären, was das Modul konkret
+// leistet. Array statt einem langen String (Nutzervorgabe: "mit Absatz"
+// – ein einzelner Fließtext-Block wirkte erdrückend), fällt auf
+// `[module.description]` zurück, solange ein Modul (z.B. Magicline)
 // noch keinen eigenen Text hat.
-const MODULE_SUMMARY: Record<string, string> = {
-  datenschutz:
-    "Bündelt alle datenschutzrelevanten Aufgaben rund um die Website in einem eigenen Arbeitsbereich, statt sie über mehrere Menüs zu verteilen. Rechtstexte wie Impressum und Datenschutzerklärung werden zentral gepflegt und automatisch verlinkt, Betroffenenanfragen (Auskunft, Löschung) durchlaufen einen nachvollziehbaren Bearbeitungsprozess mit Fristen, das Verzeichnis von Verarbeitungstätigkeiten und die Auftragsverarbeiter-Übersicht erfüllen die Dokumentationspflicht nach Art. 30 DSGVO, und Datenschutzvorfälle lassen sich erfassen und bis zur Meldung nachverfolgen. Jeder dieser Bereiche entspricht einem eigenen Reiter und lässt sich einzeln freischalten oder deaktivieren – ein Mandant sieht dadurch immer nur die Funktionen, die für ihn aktiviert sind, alle anderen Reiter bleiben sowohl in der Navigation als auch serverseitig unsichtbar.",
+const MODULE_SUMMARY: Record<string, string[]> = {
+  datenschutz: [
+    "Bündelt alle datenschutzrelevanten Aufgaben rund um die Website in einem eigenen Arbeitsbereich, statt sie über mehrere Menüs zu verteilen.",
+    "Rechtstexte wie Impressum und Datenschutzerklärung werden zentral gepflegt und automatisch verlinkt, Betroffenenanfragen (Auskunft, Löschung) durchlaufen einen nachvollziehbaren Bearbeitungsprozess mit Fristen, das Verzeichnis von Verarbeitungstätigkeiten und die Auftragsverarbeiter-Übersicht erfüllen die Dokumentationspflicht nach Art. 30 DSGVO, und Datenschutzvorfälle lassen sich erfassen und bis zur Meldung nachverfolgen.",
+    "Jeder dieser Bereiche entspricht einem eigenen Reiter und lässt sich einzeln freischalten oder deaktivieren – ein Mandant sieht dadurch immer nur die Funktionen, die für ihn aktiviert sind, alle anderen Reiter bleiben sowohl in der Navigation als auch serverseitig unsichtbar.",
+  ],
 };
 
 /** Administration → Module → [key] (Nutzervorgabe, 2026-08-28, nach
@@ -71,7 +76,7 @@ export function ModuleDetailView({
   autoInstallForNewMandants: boolean;
 }) {
   const permissions = MODULE_PERMISSIONS[module.key] ?? [];
-  const summary = MODULE_SUMMARY[module.key] ?? module.description;
+  const summary = MODULE_SUMMARY[module.key] ?? [module.description];
   // Nutzervorgabe, 2026-08-29: "es sollen da nur Mandanten angezeigt
   // werden, die das Modul auf Mandantenebene hinzugefügt haben" – NICHT
   // alle Mandanten, nur die mit einer `MandantModule`-Buchung für dieses
@@ -160,7 +165,21 @@ export function ModuleDetailView({
               <CardTitle>Was das Modul mitbringt</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <p className="text-sm text-muted-foreground">{summary}</p>
+              <div className="flex flex-col gap-3">
+                {summary.map((paragraph, index) => (
+                  <p
+                    key={index}
+                    className={cn(
+                      "text-sm",
+                      index === 0
+                        ? "font-medium text-foreground"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
               <div className="flex flex-col gap-5">
                 {module.features && module.features.length > 0 && (
                   <div className="flex flex-col gap-2">
