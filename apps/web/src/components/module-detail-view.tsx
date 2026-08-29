@@ -122,7 +122,7 @@ export function ModuleDetailView({
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_320px]">
         <Card className="rounded-xl shadow-sm">
           <CardHeader>
             <CardTitle>Was das Modul mitbringt</CardTitle>
