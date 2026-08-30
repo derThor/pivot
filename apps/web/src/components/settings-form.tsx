@@ -1240,16 +1240,20 @@ export function SettingsForm({
             )}
 
             {activeSection === "jobs" && (
-              <div className="flex flex-col gap-4">
-                <JobRunRetentionCard
-                  jobRunRetentionDays={settings.jobRunRetentionDays}
-                  jobsGloballyPaused={settings.jobsGloballyPaused}
-                />
-                <ActivityLogRetentionCard
-                  activityLogRetentionDays={settings.activityLogRetentionDays}
-                />
-                <ScheduledJobsCard jobs={jobs} />
-                <RecentJobRunsCard runs={jobRuns} />
+              <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+                <div className="flex flex-col gap-4 lg:col-span-2">
+                  <ScheduledJobsCard jobs={jobs} />
+                  <RecentJobRunsCard runs={jobRuns} />
+                </div>
+                <div className="flex flex-col gap-4">
+                  <JobRunRetentionCard
+                    jobRunRetentionDays={settings.jobRunRetentionDays}
+                    jobsGloballyPaused={settings.jobsGloballyPaused}
+                  />
+                  <ActivityLogRetentionCard
+                    activityLogRetentionDays={settings.activityLogRetentionDays}
+                  />
+                </div>
               </div>
             )}
 
