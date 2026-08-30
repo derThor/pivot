@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { PaginationControls } from "@/components/pagination-controls";
 import { formatName } from "@/lib/utils";
+import { describeSettingsAction } from "@/lib/settings-change-labels";
 import type { ActivityLogEntry, ActivityLogResponse } from "@/lib/api-server";
 
 function formatDate(iso: string) {
@@ -108,7 +109,44 @@ function describeActivity(entry: ActivityLogEntry) {
           : "Inhalt veröffentlicht",
         category: "Inhalte",
       };
+    case "deletion_request.completed":
+      return {
+        title: `Betroffenenanfrage ${metadata.dsrId ?? ""} abgeschlossen`,
+        category: `Datenschutz · von ${actorName}`,
+      };
+    case "privacy_incident.reported":
+      return {
+        title: `Vorfall „${metadata.title}“ der Aufsichtsbehörde gemeldet`,
+        category: `Datenschutz · von ${actorName}`,
+      };
+    case "privacy_incident.subjects_notified":
+      return {
+        title: `Betroffene zu „${metadata.title}“ informiert`,
+        category: `Datenschutz · von ${actorName}`,
+      };
+    case "auth.all_sessions_revoked":
+      return {
+        title: `Alle Sitzungen beendet (${metadata.count ?? 0})`,
+        category: `Sicherheit · von ${actorName}`,
+      };
+    case "auth.password_reset_forced_all":
+      return {
+        title: `Passwortwechsel für alle Konten erzwungen (${metadata.count ?? 0})`,
+        category: `Sicherheit · von ${actorName}`,
+      };
     default:
+      // Deckt alle "settings.*"-Aktionen ab (field_updated, smtp_updated,
+      // license_api_key_updated, job_runs_deleted, ...) mit derselben
+      // Übersetzung wie Einstellungen → Protokoll (Nutzer-Bugreport,
+      // 2026-08-30: "settings.field_updated" erschien roh in der
+      // Aktivität) – alles andere fällt weiterhin auf den rohen
+      // Action-Code zurück, statt eine erfundene Beschreibung zu zeigen.
+      if (entry.action.startsWith("settings.")) {
+        return {
+          title: describeSettingsAction(entry.action, entry.metadata),
+          category: `Einstellungen · von ${actorName}`,
+        };
+      }
       return { title: entry.action, category: actorName };
   }
 }
