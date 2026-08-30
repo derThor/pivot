@@ -873,23 +873,26 @@ export function UserEditView({
           </TabsContent>
 
           <TabsContent value="aktivitaet">
-            <div className="rounded-xl bg-card shadow-sm p-6">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="font-semibold">Verlauf</h2>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="border-border"
-                  onClick={handleExportActivity}
-                  disabled={activity.meta.total === 0 || isExportingActivity}
-                >
-                  <Download className="size-4" />
-                  {isExportingActivity ? "Exportiert…" : "Export"}
-                </Button>
-              </div>
-              <UserActivityTimeline userId={user.id} initialData={activity} />
-            </div>
+            <UserActivityTimeline
+              userId={user.id}
+              initialData={activity}
+              header={
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                  <h2 className="font-semibold">Verlauf</h2>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="border-border"
+                    onClick={handleExportActivity}
+                    disabled={activity.meta.total === 0 || isExportingActivity}
+                  >
+                    <Download className="size-4" />
+                    {isExportingActivity ? "Exportiert…" : "Export"}
+                  </Button>
+                </div>
+              }
+            />
           </TabsContent>
         </Tabs>
       </form>

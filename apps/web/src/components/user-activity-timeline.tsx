@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { PaginationControls } from "@/components/pagination-controls";
 import { formatName } from "@/lib/utils";
@@ -154,9 +154,16 @@ function describeActivity(entry: ActivityLogEntry) {
 export function UserActivityTimeline({
   userId,
   initialData,
+  header,
 }: {
   userId: string;
   initialData: ActivityLogResponse;
+  /** Über der Liste, noch innerhalb derselben weißen Kachel (z.B. Titel +
+   * Export-Button) – die Pagination selbst sitzt bewusst außerhalb dieser
+   * Kachel, direkt auf dem Seitenhintergrund (Nutzervorgabe, 2026-08-30:
+   * "so wie überall anders auch, wenn die ganze Seite den Inhalt hat und
+   * es keine Sidebar gibt", siehe z.B. websites-view.tsx). */
+  header?: ReactNode;
 }) {
   const [data, setData] = useState(initialData);
   const [isLoading, setIsLoading] = useState(false);
@@ -178,48 +185,54 @@ export function UserActivityTimeline({
 
   if (data.items.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Für dieses Konto liegt noch kein Aktivitätsverlauf vor.
-      </p>
+      <div className="rounded-xl bg-card shadow-sm p-6">
+        {header}
+        <p className="text-sm text-muted-foreground">
+          Für dieses Konto liegt noch kein Aktivitätsverlauf vor.
+        </p>
+      </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <ol
-        className={
-          isLoading
-            ? "flex flex-col opacity-50 transition-opacity"
-            : "flex flex-col transition-opacity"
-        }
-      >
-        {data.items.map((entry, index) => {
-          const { title, category } = describeActivity(entry);
-          const isLast = index === data.items.length - 1;
-          const isLatest = data.meta.page === 1 && index === 0;
-          return (
-            <li key={entry.id} className="flex gap-3">
-              <div className="flex flex-col items-center">
-                <span
-                  className={
-                    isLatest
-                      ? "mt-1.5 size-2.5 shrink-0 rounded-full bg-primary"
-                      : "mt-1.5 size-2.5 shrink-0 rounded-full bg-muted-foreground/30"
-                  }
-                />
-                {!isLast && <span className="w-px flex-1 bg-pivot-line2" />}
-              </div>
-              <div className={isLast ? "pb-0" : "pb-6"}>
-                <p className="text-sm font-medium">{title}</p>
-                <p className="text-xs text-muted-foreground">
-                  {category} · {formatDate(entry.createdAt)} ·{" "}
-                  {formatTime(entry.createdAt)}
-                </p>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
+      <div className="rounded-xl bg-card shadow-sm p-6">
+        {header}
+        <ol
+          className={
+            isLoading
+              ? "flex flex-col opacity-50 transition-opacity"
+              : "flex flex-col transition-opacity"
+          }
+        >
+          {data.items.map((entry, index) => {
+            const { title, category } = describeActivity(entry);
+            const isLast = index === data.items.length - 1;
+            const isLatest = data.meta.page === 1 && index === 0;
+            return (
+              <li key={entry.id} className="flex gap-3">
+                <div className="flex flex-col items-center">
+                  <span
+                    className={
+                      isLatest
+                        ? "mt-1.5 size-2.5 shrink-0 rounded-full bg-primary"
+                        : "mt-1.5 size-2.5 shrink-0 rounded-full bg-muted-foreground/30"
+                    }
+                  />
+                  {!isLast && <span className="w-px flex-1 bg-pivot-line2" />}
+                </div>
+                <div className={isLast ? "pb-0" : "pb-6"}>
+                  <p className="text-sm font-medium">{title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {category} · {formatDate(entry.createdAt)} ·{" "}
+                    {formatTime(entry.createdAt)}
+                  </p>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
       <PaginationControls
         page={data.meta.page}
         pageCount={data.meta.pageCount}
