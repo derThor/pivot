@@ -803,7 +803,7 @@ export function MailingSettingsCard({
     .filter((group) => group.items.length > 0);
 
   return (
-    <Card className="rounded-xl shadow-sm">
+    <Card className="rounded-xl shadow-sm overflow-visible">
       <CardHeader>
         <CardTitle>Mailing</CardTitle>
       </CardHeader>
