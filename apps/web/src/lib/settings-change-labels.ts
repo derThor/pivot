@@ -42,6 +42,7 @@ export const SETTINGS_FIELD_LABELS: Record<string, string> = {
   keyboardShortcutsEnabled: "Tastaturkürzel aktiv",
   reduceMotion: "Bewegungen reduzieren",
   companyLogoUrl: "Firmenlogo",
+  companyLogoUrlDark: "Firmenlogo (Dunkelmodus)",
   notifyMaintenanceMode: "Benachrichtigung „Wartungsmodus“",
   notifyStorageQuota: "Benachrichtigung „Speicherplatz fast voll“",
   notifyWebhookFailures: "Benachrichtigung „Fehlschlagende Webhooks“",
@@ -62,6 +63,11 @@ export const SETTINGS_FIELD_LABELS: Record<string, string> = {
   // SettingsService.updateLicenseClientSettings()) – ebenfalls kein
   // echtes before/after (Secret wird nie im Klartext geloggt).
   licenseApiKey: "Lizenz-API-Key",
+  // Einstellungen → Jobs (Nutzervorgabe, 2026-08-30) – 1:1 dieselben
+  // Texte wie job-run-retention-card.tsx/activity-log-retention-card.tsx.
+  jobsGloballyPaused: "Alle Jobs pausieren",
+  jobRunRetentionDays: "Job-Lauf-Historie aufbewahren",
+  activityLogRetentionDays: "Aktivitäten-Historie aufbewahren",
 };
 
 // Für Protokoll-/Aktivitäts-Einträge, die kein Feld ändern, sondern eine

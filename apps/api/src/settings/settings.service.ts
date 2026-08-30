@@ -33,6 +33,68 @@ const ACTION_LABELS: Record<string, string> = {
   'settings.job_runs_deleted': 'Job-Lauf-Historie gelöscht',
 };
 
+// Deutsche Labels für die "Feld"-Spalte im CSV-Export (Nutzer-Bugreport,
+// 2026-08-30: die Protokoll-Karte selbst übersetzt über
+// SETTINGS_FIELD_LABELS in apps/web/src/lib/settings-change-labels.ts,
+// der CSV-Export schrieb bisher aber `metadata.field` roh in die Datei –
+// "activityLogRetentionDays" statt "Aktivitäten-Historie aufbewahren").
+// Hier separat dupliziert statt geteilt (kein gemeinsames Package
+// zwischen apps/api und apps/web außer @pivot/database), gleiches Muster
+// wie ACTION_LABELS oben – bei einem neuen protokollierten Feld IMMER
+// BEIDE Maps pflegen, sonst taucht der rohe Feldname wieder irgendwo auf.
+const FIELD_LABELS: Record<string, string> = {
+  allowRegistration: 'Registrierung erlauben',
+  allowPasswordReset: 'Passwort-vergessen erlauben',
+  allowEmailChange: 'Benutzer können E-Mail-Adresse anpassen',
+  allowAdminEmailChange: 'Administratoren können E-Mail-Adresse anpassen',
+  requireAdminActivation: 'Admin-Freischaltung erforderlich',
+  autosaveEnabled: 'Autosave im Content-Editor',
+  mediaResponsiveVariantsEnabled: 'Automatische Bildvarianten',
+  maintenanceModeEnabled: 'Wartungsmodus',
+  mediaStorageQuotaMb: 'Medien-Speicherkontingent',
+  maxUploadSizeMb: 'Maximale Dateigröße pro Upload',
+  passwordMinLength: 'Passwort-Mindestlänge',
+  passwordRequireUppercase: 'Groß-/Kleinschreibung und Zahl erforderlich',
+  passwordRequireLowercase: 'Groß-/Kleinschreibung und Zahl erforderlich',
+  passwordRequireNumber: 'Groß-/Kleinschreibung und Zahl erforderlich',
+  passwordRequireSpecialChar: 'Sonderzeichen erforderlich',
+  passwordExpiryDays: 'Passwortwechsel nach Tagen',
+  failedLoginLockoutThreshold: 'Sperre nach Fehlversuchen',
+  passwordBlockLeaked: 'Bekannte geleakte Passwörter blockieren',
+  passwordPreventReuseEnabled: 'Letzte 5 Passwörter nicht erneut zulassen',
+  allowTwoFactor: '2FA verfügbar machen',
+  requireTwoFactorForAdmins: 'Zwei-Faktor für Administratoren erzwingen',
+  requireTwoFactorForAll: 'Zwei-Faktor für alle Konten erzwingen',
+  requireTwoFactorForPublishers:
+    'Zwei-Faktor für Rollen mit Veröffentlichungsrecht',
+  sessionIdleTimeoutMinutes: 'Sitzungs-Timeout bei Inaktivität',
+  defaultPageSize: 'Einträge pro Seite',
+  accentColor: 'Akzentfarbe',
+  tableDensity: 'Tabellendichte',
+  sidebarCollapsedByDefault: 'Seitenleiste eingeklappt starten',
+  keyboardShortcutsEnabled: 'Tastaturkürzel aktiv',
+  reduceMotion: 'Bewegungen reduzieren',
+  companyLogoUrl: 'Firmenlogo',
+  companyLogoUrlDark: 'Firmenlogo (Dunkelmodus)',
+  notifyMaintenanceMode: 'Benachrichtigung „Wartungsmodus“',
+  notifyStorageQuota: 'Benachrichtigung „Speicherplatz fast voll“',
+  notifyWebhookFailures: 'Benachrichtigung „Fehlschlagende Webhooks“',
+  notifyLocalDrafts: 'Benachrichtigung „Lokale Entwürfe“',
+  notifyPendingActivations: 'Benachrichtigung „Wartende Freischaltungen“',
+  notifyFailedLogins: 'Benachrichtigung „Auffällige Fehlversuche“',
+  notifyPendingPasswordChanges: 'Benachrichtigung „Anstehende Passwortwechsel“',
+  notifyCompanyIncomplete: 'Benachrichtigung „Unvollständige Firmendaten“',
+  notifyLegalDocuments: 'Benachrichtigung „Veraltete/fehlende Rechtstexte“',
+  notifyDeletionRequests: 'Benachrichtigung „Offene Betroffenenanfragen“',
+  notifyTrashExpiring: 'Benachrichtigung „Papierkorb-Einträge laufen ab“',
+  notificationRecipientEmail: 'Benachrichtigungsempfänger',
+  emailSmtp: 'E-Mail-Versand (SMTP)',
+  licenseApiKey: 'Lizenz-API-Key',
+  jobsGloballyPaused: 'Alle Jobs pausieren',
+  jobRunRetentionDays: 'Job-Lauf-Historie aufbewahren',
+  activityLogRetentionDays: 'Aktivitäten-Historie aufbewahren',
+};
+
 // Firma-Stammdaten-Felder (Verwaltung → Firma, "Letzte Änderungen"-Karte,
 // 2026-08-17) – deutsche Labels leben zusätzlich im Frontend
 // (company-view.tsx), hier nur als Schlüssel-Liste für die Diff-Prüfung
@@ -442,13 +504,17 @@ export class SettingsService {
       const user = row.user
         ? `${row.user.firstName ?? ''} ${row.user.lastName}`.trim()
         : '';
+      const field = metadata?.field;
       return [
         row.createdAt.toISOString(),
         // Für Aktionen ohne echtes Feld (z.B. "Alle löschen" bei den
         // Job-Läufen, siehe ACTION_LABELS in settings-protocol-card.tsx
         // fürs Frontend-Pendant) sonst leere Spalte statt einer
-        // aussagekräftigen Beschreibung.
-        metadata?.field ?? ACTION_LABELS[row.action] ?? row.action,
+        // aussagekräftigen Beschreibung. Deutsches Label statt des rohen
+        // camelCase-Feldnamens (Nutzer-Bugreport, 2026-08-30).
+        field
+          ? (FIELD_LABELS[field] ?? field)
+          : (ACTION_LABELS[row.action] ?? row.action),
         metadata?.before ?? '',
         metadata?.after ?? '',
         user,

@@ -65,6 +65,7 @@ const SETTINGS_FIELD_LABELS: Record<string, string> = {
   keyboardShortcutsEnabled: 'Tastaturkürzel aktiv',
   reduceMotion: 'Bewegungen reduzieren',
   companyLogoUrl: 'Firmenlogo',
+  companyLogoUrlDark: 'Firmenlogo (Dunkelmodus)',
   notifyMaintenanceMode: 'Benachrichtigung „Wartungsmodus“',
   notifyStorageQuota: 'Benachrichtigung „Speicherplatz fast voll“',
   notifyWebhookFailures: 'Benachrichtigung „Fehlschlagende Webhooks“',
@@ -79,6 +80,9 @@ const SETTINGS_FIELD_LABELS: Record<string, string> = {
   notificationRecipientEmail: 'Benachrichtigungsempfänger',
   emailSmtp: 'E-Mail-Versand (SMTP)',
   licenseApiKey: 'Lizenz-API-Key',
+  jobsGloballyPaused: 'Alle Jobs pausieren',
+  jobRunRetentionDays: 'Job-Lauf-Historie aufbewahren',
+  activityLogRetentionDays: 'Aktivitäten-Historie aufbewahren',
 };
 
 const SETTINGS_ACTION_LABELS: Record<string, string> = {
