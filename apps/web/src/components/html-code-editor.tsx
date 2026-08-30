@@ -76,8 +76,8 @@ export function HtmlCodeEditor({
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-1.5 overflow-hidden rounded-lg border border-input">
-      <div className="sticky top-0 z-10 flex flex-col gap-2 border-b border-input bg-background p-2">
+    <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-input">
+      <div className="sticky top-0 z-10 flex flex-col gap-2 rounded-t-lg border-b border-input bg-background p-2">
         {note && <p className="text-xs text-muted-foreground">{note}</p>}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap gap-1.5">
@@ -128,7 +128,7 @@ export function HtmlCodeEditor({
         onChange={onChange}
         extensions={[html(), EditorView.lineWrapping]}
         minHeight={minHeight}
-        className="min-w-0 text-sm"
+        className="min-w-0 overflow-hidden rounded-b-lg text-sm"
       />
     </div>
   );
