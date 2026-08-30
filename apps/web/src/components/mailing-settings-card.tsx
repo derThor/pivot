@@ -705,24 +705,26 @@ function ShellDetail({
 
       <div className="flex flex-col gap-1.5">
         <Label>Inhalt (HTML/CSS)</Label>
-        <p className="text-xs text-muted-foreground">
-          Der Platzhalter {SHELL_CONTENT_PLACEHOLDER} markiert die Stelle,
-          an der der Vorlagen-Inhalt eingesetzt wird – muss genau einmal
-          vorhanden sein. Betreff und Firmenangaben (siehe Legende unten)
-          sind zusätzlich verfügbar und dürfen beliebig oft vorkommen.
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Automatisches Umschalten zwischen {"{{companyLogo}}"} und{" "}
-          {"{{companyLogoDark}}"} je nach Mail-Programm: beide{" "}
-          <code>{'<img>'}</code>-Tags einbetten und per CSS{" "}
-          <code>@media (prefers-color-scheme: dark)</code> zwischen ihnen
-          umschalten (Anzeige/Verstecken per <code>display</code>). Wird
-          nicht von jedem Mail-Programm unterstützt (u. a. nicht
-          zuverlässig in der Gmail-App).
-        </p>
         <HtmlCodeEditor
           value={content}
           onChange={setContent}
+          note={
+            <>
+              Der Platzhalter {SHELL_CONTENT_PLACEHOLDER} markiert die
+              Stelle, an der der Vorlagen-Inhalt eingesetzt wird – muss
+              genau einmal vorhanden sein. Betreff und Firmenangaben (siehe
+              Legende unten) sind zusätzlich verfügbar und dürfen beliebig
+              oft vorkommen.
+              <br />
+              Automatisches Umschalten zwischen {"{{companyLogo}}"} und{" "}
+              {"{{companyLogoDark}}"} je nach Mail-Programm: beide{" "}
+              <code>{"<img>"}</code>-Tags einbetten und per CSS{" "}
+              <code>@media (prefers-color-scheme: dark)</code> zwischen
+              ihnen umschalten (Anzeige/Verstecken per{" "}
+              <code>display</code>). Wird nicht von jedem Mail-Programm
+              unterstützt (u. a. nicht zuverlässig in der Gmail-App).
+            </>
+          }
           placeholderChips={[
             {
               token: SHELL_CONTENT_PLACEHOLDER,

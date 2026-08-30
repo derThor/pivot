@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 import CodeMirror, {
   EditorView,
   type ReactCodeMirrorRef,
@@ -29,6 +29,7 @@ export function HtmlCodeEditor({
   value,
   onChange,
   placeholderChips,
+  note,
   // Nutzervorgabe, 2026-08-30: "bitte den html editor auf maximale height
   // stellen" – komplette Mail-Hüllen sind lange Dokumente, 20rem zeigte
   // kaum mehr als den `<head>`-Block.
@@ -39,6 +40,11 @@ export function HtmlCodeEditor({
   /** Klickbare `{{token}}`-Chips, fügen an der aktuellen Cursor-Position
    * ein (gleiches Muster wie bei den Textarea-basierten Vorlagen). */
   placeholderChips?: { token: string; description: string }[];
+  /** Erklärungstext(e) über den Chips, Teil derselben fixierten
+   * Kopfzeile (Nutzervorgabe, 2026-08-30: "diesen Bereich mitscrollen
+   * lassen" – die Hinweise zu den Platzhaltern sollen beim Scrollen durch
+   * ein langes HTML-Dokument sichtbar bleiben, nicht nach oben wegscrollen). */
+  note?: ReactNode;
   minHeight?: string;
 }) {
   const editorRef = useRef<ReactCodeMirrorRef>(null);
@@ -71,40 +77,43 @@ export function HtmlCodeEditor({
 
   return (
     <div className="flex min-w-0 flex-col gap-1.5 overflow-hidden rounded-lg border border-input">
-      <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 border-b border-input bg-background p-2">
-        <div className="flex flex-wrap gap-1.5">
-          {placeholderChips?.map((chip) => (
-            <Tooltip key={chip.token}>
-              <TooltipTrigger
-                render={
-                  <Badge
-                    variant="secondary"
-                    render={
-                      <button
-                        type="button"
-                        onClick={() => insertAtCursor(chip.token)}
-                        className="cursor-pointer transition-colors hover:bg-primary/10 hover:text-primary"
-                      />
-                    }
-                  />
-                }
-              >
-                {chip.token}
-              </TooltipTrigger>
-              <TooltipContent>{chip.description}</TooltipContent>
-            </Tooltip>
-          ))}
+      <div className="sticky top-0 z-10 flex flex-col gap-2 border-b border-input bg-background p-2">
+        {note && <p className="text-xs text-muted-foreground">{note}</p>}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap gap-1.5">
+            {placeholderChips?.map((chip) => (
+              <Tooltip key={chip.token}>
+                <TooltipTrigger
+                  render={
+                    <Badge
+                      variant="outline"
+                      render={
+                        <button
+                          type="button"
+                          onClick={() => insertAtCursor(chip.token)}
+                          className="cursor-pointer transition-colors hover:bg-primary/10 hover:text-primary"
+                        />
+                      }
+                    />
+                  }
+                >
+                  {chip.token}
+                </TooltipTrigger>
+                <TooltipContent>{chip.description}</TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="border-border"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="size-4" />
+            HTML-Datei hochladen
+          </Button>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="border-border"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Upload className="size-4" />
-          HTML-Datei hochladen
-        </Button>
         <input
           ref={fileInputRef}
           type="file"
