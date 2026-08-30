@@ -394,6 +394,7 @@ export class MailerService {
         companyCity: true,
         companyEmail: true,
         companyPhone: true,
+        companyLogoUrl: true,
       },
     });
     const address = [
@@ -409,6 +410,12 @@ export class MailerService {
       companyAddress: address,
       companyEmail: settings?.companyEmail ?? '',
       companyPhone: settings?.companyPhone ?? '',
+      // Absolute URL (Medien-URLs sind API-relativ gespeichert) – in
+      // einer E-Mail gibt es keinen "aktuellen Ursprung", auf den eine
+      // relative URL sich beziehen könnte.
+      companyLogo: settings?.companyLogoUrl
+        ? `${this.apiOrigin()}${settings.companyLogoUrl}`
+        : '',
     };
   }
 
@@ -694,6 +701,15 @@ export class MailerService {
 
   private frontendOrigin(): string {
     return this.config.get<string>('CORS_ORIGIN', 'http://localhost:3000');
+  }
+
+  // Medien-URLs (u.a. `companyLogoUrl`) sind API-relativ gespeichert
+  // (siehe MediaService) – gleiches `API_URL`-Fallback-Muster wie
+  // `NEXT_PUBLIC_API_ORIGIN` im Frontend (apps/web/src/lib/media.ts),
+  // hier separat, da die API ihre eigene öffentliche Adresse nicht aus
+  // `CORS_ORIGIN` (das ist die Web-App) ableiten kann.
+  private apiOrigin(): string {
+    return this.config.get<string>('API_URL', 'http://localhost:3001');
   }
 
   // ---------- Mailing (Einstellungen → Mailing) ----------

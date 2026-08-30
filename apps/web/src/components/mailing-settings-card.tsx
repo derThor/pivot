@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { HtmlCodeEditor } from "@/components/html-code-editor";
 import { cn } from "@/lib/utils";
+import { mediaUrl } from "@/lib/media";
 import type {
   MailShellListItem,
   MailTemplateCategory,
@@ -61,6 +62,7 @@ const PLACEHOLDER_DESCRIPTIONS: Record<string, string> = {
   companyAddress: "Firmenadresse (Straße, PLZ, Ort)",
   companyEmail: "Firmen-E-Mail-Adresse",
   companyPhone: "Firmen-Telefonnummer",
+  companyLogo: "URL des Firmenlogos (für ein <img src=\"...\">)",
   link: "Bestätigungs- bzw. Zurücksetzen-Link",
   title: "Titel des Datenschutzvorfalls",
   severity: "Schweregrad des Vorfalls",
@@ -123,6 +125,47 @@ function plainTextToHtmlPreview(text: string): string {
         `<p>${linkifyPreview(escapeHtmlPreview(para)).replace(/\n/g, "<br>")}</p>`,
     )
     .join("\n");
+}
+
+interface CompanyInfo {
+  name: string | null;
+  street: string | null;
+  postalCode: string | null;
+  city: string | null;
+  email: string | null;
+  phone: string | null;
+  logoUrl: string | null;
+}
+
+// Backend-Pendant: MailerService.companyVars() – dieselben Firmen-
+// Platzhalter, hier mit den echten Werten aus AppSettings statt eines
+// Beispielwerts, damit die Vorschau exakt zeigt, was auch verschickt wird.
+function companyPlaceholderVars(company: CompanyInfo): Record<string, string> {
+  const address = [
+    company.street,
+    [company.postalCode, company.city].filter(Boolean).join(" "),
+  ]
+    .filter(Boolean)
+    .join(", ");
+  return {
+    companyName: company.name ?? "",
+    companyAddress: address,
+    companyEmail: company.email ?? "",
+    companyPhone: company.phone ?? "",
+    companyLogo: company.logoUrl ? mediaUrl({ url: company.logoUrl }) : "",
+  };
+}
+
+// Backend-Pendant: MailerService.renderPlaceholders() – generischer
+// `{{key}}`-Ersatz für die komplette Hülle (Content, Betreff, Firmen-
+// Platzhalter), nicht nur der eine `{{content}}`-Sonderfall.
+function renderShellPlaceholders(
+  text: string,
+  vars: Record<string, string>,
+): string {
+  return text.replace(/\{\{(\w+)\}\}/g, (_match, key: string) =>
+    key in vars ? vars[key] : "",
+  );
 }
 
 /** "+ Neue Vorlage"/"+ Neue Hülle" (Nutzervorgabe, 2026-08-30) – beide
@@ -217,10 +260,12 @@ function CreateNamedItemDialog({
 function TemplateDetail({
   template,
   shells,
+  company,
   onSaved,
 }: {
   template: MailTemplateListItem;
   shells: MailShellListItem[];
+  company: CompanyInfo;
   onSaved: () => void;
 }) {
   const [subject, setSubject] = useState(template.subject);
@@ -527,17 +572,23 @@ function TemplateDetail({
                (Nutzer-Bugreport, 2026-08-30: "sehe nur das Design, nicht
                die Daten"). Ein <iframe srcDoc> gibt der Hülle einen
                echten, isolierten Dokumentkontext, in dem sie exakt so
-               rendert wie im tatsächlichen Mail-Programm. */}
+               rendert wie im tatsächlichen Mail-Programm. Backend-Pendant:
+               MailerService.wrapInShell() – gleiche Platzhalter (Content,
+               Betreff, Firmendaten), damit die Vorschau nicht nur das
+               Design, sondern auch die eingesetzten Daten zeigt (Nutzer-
+               Bugreport, 2026-08-30: "die platzhalter ... sollten in den
+               vorlagen auch belegt sein"). */}
             <iframe
               title="Vorschau"
               sandbox=""
               className="h-[32rem] w-full bg-white"
-              srcDoc={previewShellContent.replaceAll(
-                SHELL_CONTENT_PLACEHOLDER,
-                plainTextToHtmlPreview(
+              srcDoc={renderShellPlaceholders(previewShellContent, {
+                ...companyPlaceholderVars(company),
+                subject: renderPreview(subject, template.placeholders),
+                content: plainTextToHtmlPreview(
                   renderPreview(body, template.placeholders),
                 ),
-              )}
+              })}
             />
           </div>
         </TabsContent>
@@ -679,6 +730,10 @@ function ShellDetail({
               token: "{{companyPhone}}",
               description: "Firmen-Telefonnummer",
             },
+            {
+              token: "{{companyLogo}}",
+              description: 'URL des Firmenlogos (für ein <img src="...">)',
+            },
           ]}
         />
       </div>
@@ -702,9 +757,11 @@ function ShellDetail({
 export function MailingSettingsCard({
   templates,
   shells,
+  company,
 }: {
   templates: MailTemplateListItem[];
   shells: MailShellListItem[];
+  company: CompanyInfo;
 }) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState(templates[0]?.id ?? null);
@@ -781,6 +838,7 @@ export function MailingSettingsCard({
                     key={selected.id}
                     template={selected}
                     shells={shells}
+                    company={company}
                     onSaved={() => router.refresh()}
                   />
                 )}

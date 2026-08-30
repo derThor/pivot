@@ -676,6 +676,33 @@ Hüllen-Layout, die je Vorlage variiert).
   editor auf maximale height stellen") – 20rem zeigte bei einem
   vollständigen HTML-Dokument kaum mehr als den `<head>`-Block.
 
+### Nachtrag: Vorschau löste `{{subject}}`/Firmen-Platzhalter nicht auf + `{{companyLogo}}`
+
+Zwei weitere Lücken direkt beim Testen der obigen Korrektur gefunden:
+
+- **Vorschau zeigte `{{subject}}` roh statt aufgelöst**: `TemplateDetail`s
+  Vorschau ersetzte in der Hülle bisher nur `{{content}}`
+  (`.replaceAll(SHELL_CONTENT_PLACEHOLDER, ...)`) – der neue generische
+  `wrapInShell()`-Mechanismus im Backend (Betreff + Firmendaten +
+  Content) war dort nie nachgezogen worden. Neue Frontend-Pendants
+  `companyPlaceholderVars()` + `renderShellPlaceholders()` (gleiches
+  Prinzip wie `MailerService.companyVars()`/`renderPlaceholders()`)
+  ersetzen jetzt alle Hüllen-Platzhalter mit den **echten** Firmenwerten
+  (nicht "Beispielwert (...)", die sind ja tatsächlich bekannt) – dafür
+  bekommt `MailingSettingsCard` einen neuen `company`-Prop, durchgereicht
+  von `settings-form.tsx` (`settings.companyName` usw., ohnehin schon auf
+  der Einstellungen-Seite geladen).
+- **`{{companyLogo}}`** ergänzt (`COMPANY_MAIL_PLACEHOLDER_KEYS`) – löst
+  zur absoluten URL des hochgeladenen Firmenlogos auf (`companyLogoUrl`
+  ist API-relativ gespeichert, eine E-Mail hat keinen "aktuellen
+  Ursprung" für eine relative URL). Neuer `MailerService.apiOrigin()`
+  (Fallback `http://localhost:3001`, analog zu
+  `NEXT_PUBLIC_API_ORIGIN` im Frontend) für die serverseitige Auflösung,
+  `mediaUrl()` (bereits vorhanden) fürs Vorschau-Pendant. Damit lässt
+  sich die zuvor hart im Hüllen-HTML verdrahtete Logo-URL
+  (`<img src="https://IHRE-DOMAIN.de/pivot_badge.png">`) durch
+  `<img src="{{companyLogo}}">` ersetzen.
+
 ## Offene Punkte / mögliche Folgearbeiten
 
 - Datei-Upload-Feldtyp (Backend-Katalog vorhanden, kein Upload-Handling).

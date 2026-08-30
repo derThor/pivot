@@ -1233,6 +1233,15 @@ export function SettingsForm({
               <MailingSettingsCard
                 templates={mailTemplates}
                 shells={mailShells}
+                company={{
+                  name: settings.companyName,
+                  street: settings.companyStreet,
+                  postalCode: settings.companyPostalCode,
+                  city: settings.companyCity,
+                  email: settings.companyEmail,
+                  phone: settings.companyPhone,
+                  logoUrl: settings.companyLogoUrl,
+                }}
               />
             )}
 

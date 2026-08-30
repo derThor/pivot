@@ -114,6 +114,7 @@ export const COMPANY_MAIL_PLACEHOLDER_KEYS = [
   'companyAddress',
   'companyEmail',
   'companyPhone',
+  'companyLogo',
 ] as const;
 
 // E-Mail-Templates (Hüllen) – Kopf/Fuß/CI, in die der Klartext-Inhalt
