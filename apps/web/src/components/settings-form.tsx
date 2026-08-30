@@ -45,6 +45,7 @@ import { MasterClientCard } from "@/components/master-client-card";
 import { ModuleSettingsCard } from "@/components/module-settings-card";
 import { ScheduledJobsCard } from "@/components/scheduled-jobs-card";
 import { RecentJobRunsCard } from "@/components/recent-job-runs-card";
+import { JobRunRetentionCard } from "@/components/job-run-retention-card";
 import { MailingSettingsCard } from "@/components/mailing-settings-card";
 import { PaginationControls } from "@/components/pagination-controls";
 import { cn } from "@/lib/utils";
@@ -1239,11 +1240,12 @@ export function SettingsForm({
 
             {activeSection === "jobs" && (
               <div className="flex flex-col gap-4">
-                <ScheduledJobsCard jobs={jobs} />
-                <RecentJobRunsCard
-                  runs={jobRuns}
+                <JobRunRetentionCard
+                  jobRunRetentionDays={settings.jobRunRetentionDays}
                   jobsGloballyPaused={settings.jobsGloballyPaused}
                 />
+                <ScheduledJobsCard jobs={jobs} />
+                <RecentJobRunsCard runs={jobRuns} />
               </div>
             )}
 

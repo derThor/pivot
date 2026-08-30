@@ -228,6 +228,11 @@ model AppSettings {
   // obwohl die Bildvorlage "Wartungsmodus" nennt). Kritische Jobs
   // (ScheduledJob.isCritical) ignorieren diesen Schalter.
   jobsGloballyPaused                 Boolean   @default(false)
+  // "Job-Lauf-Historie aufräumen" (Nutzervorgabe, 2026-08-30: "bau das,
+  // aber einstellbar unter einstellung- jobs") – `null` = unbegrenzt
+  // aufbewahren (kein automatisches Löschen), gleiches Nullable-Muster
+  // wie retentionFormSubmissionsDays.
+  jobRunRetentionDays                 Int?      @default(90)
   // Auftragsverarbeiter-Tab, Karte "Drittlandtransfer" (Nutzervorgabe,
   // 2026-08-20): admin-hochgeladene SCC-Vorlage (Standardvertragsklauseln)
   // zum Download – kein erfundenes Rechtsmuster im Repo, echte Datei nötig.

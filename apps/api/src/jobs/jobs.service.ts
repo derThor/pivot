@@ -90,6 +90,14 @@ export class JobsService implements OnModuleInit {
       defaultCronExpression: '0 0 1 * *',
       run: () => this.dpoReport.sendMonthlyReport(),
     },
+    {
+      id: 'job-run-cleanup',
+      title: 'Job-Lauf-Historie aufräumen',
+      description:
+        'Löscht Job-Läufe (über alle Jobs hinweg, inkl. Live-Überwachung), die älter sind als die eingestellte Aufbewahrungsfrist.',
+      defaultCronExpression: '0 3 * * *',
+      run: () => this.cleanupOldJobRuns(),
+    },
   ];
 
   constructor(
@@ -384,6 +392,29 @@ export class JobsService implements OnModuleInit {
       userId: actingUserId,
       metadata: { count },
     });
+  }
+
+  /** "Job-Lauf-Historie aufräumen" (Nutzervorgabe, 2026-08-30: "wie sieht
+   * das mit der history aus, wenn dann hunderte einträge bei jobs ist?")
+   * – ohne dieses Aufräumen wächst `job_runs` unbegrenzt, allein die
+   * Live-Überwachung gesperrter Websites erzeugt 48 Zeilen pro Tag.
+   * `jobRunRetentionDays: null` = unbegrenzt aufbewahren, kein Löschen.
+   * Löscht über ALLE `jobId`s hinweg, nicht nur die hier registrierten
+   * `definitions` – sonst blieben gerade die häufigsten Verursacher
+   * (Live-Überwachung, Lizenzprüfung) unberührt. */
+  private async cleanupOldJobRuns(): Promise<string> {
+    const settings = await this.settings.get();
+    if (settings.jobRunRetentionDays == null) {
+      return 'Unbegrenzte Aufbewahrung eingestellt, nichts zu löschen.';
+    }
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - settings.jobRunRetentionDays);
+    const { count } = await this.prisma.jobRun.deleteMany({
+      where: { startedAt: { lt: cutoff } },
+    });
+    return count > 0
+      ? `${count} Job-Lauf/Läufe älter als ${settings.jobRunRetentionDays} Tage gelöscht.`
+      : 'Keine fälligen Job-Läufe.';
   }
 
   /** "Letztes Protokoll"-Dialog – auf einen Job gefiltert. */

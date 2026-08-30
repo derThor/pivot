@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/card";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { PaginationControls } from "@/components/pagination-controls";
-import { SwitchRow } from "@/components/switch-row";
 import { formatRelativePast } from "@/lib/jobs-format";
 import type { JobRunsResponse } from "@/lib/api-server";
 
@@ -28,21 +27,15 @@ const STATUS_DOT: Record<string, string> = {
  * 2026-08-22, 1:1 nach Bildvorlage) – app-weit über alle Jobs hinweg,
  * neueste zuerst, mit echter Server-Pagination (Nutzervorgabe: "bei den
  * letzte läufe pagination beachten", in der Bildvorlage selbst nicht
- * gezeigt). "Alle Jobs pausieren" ist bewusst ein EIGENSTÄNDIGER Schalter
- * (Nutzerentscheidung), nicht der bestehende Wartungsmodus – Beschreibung
- * daher ohne das Wort "Wartungsmodus", um keine Verbindung zur echten
- * Wartungsmodus-Funktion vorzutäuschen. */
+ * gezeigt). "Alle Jobs pausieren" ist nach oben in JobRunRetentionCard
+ * gewandert (Nutzervorgabe, 2026-08-30). */
 export function RecentJobRunsCard({
   runs: initialRuns,
-  jobsGloballyPaused,
 }: {
   runs: JobRunsResponse;
-  jobsGloballyPaused: boolean;
 }) {
   const router = useRouter();
   const [runs, setRuns] = useState(initialRuns);
-  const [globallyPaused, setGloballyPaused] = useState(jobsGloballyPaused);
-  const [isSavingPause, setIsSavingPause] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [confirmAllOpen, setConfirmAllOpen] = useState(false);
 
@@ -74,21 +67,6 @@ export function RecentJobRunsCard({
     await fetch("/api/jobs/runs", { method: "DELETE" });
     toastDeleted("Alle Läufe wurden gelöscht.");
     router.refresh();
-  }
-
-  async function handleToggleGlobalPause(checked: boolean) {
-    setGloballyPaused(checked);
-    setIsSavingPause(true);
-    try {
-      await fetch("/api/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobsGloballyPaused: checked }),
-      });
-      router.refresh();
-    } finally {
-      setIsSavingPause(false);
-    }
   }
 
   return (
@@ -166,13 +144,6 @@ export function RecentJobRunsCard({
             buildHref={(p) => `?jobsRunsPage=${p}`}
           />
         )}
-        <SwitchRow
-          label="Alle Jobs pausieren"
-          description="Nichts läuft automatisch, bis wieder aktiviert – kritische Jobs ausgenommen."
-          checked={globallyPaused}
-          disabled={isSavingPause}
-          onCheckedChange={handleToggleGlobalPause}
-        />
       </CardContent>
     </Card>
   );

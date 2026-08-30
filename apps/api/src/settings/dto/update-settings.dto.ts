@@ -491,4 +491,12 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsBoolean()
   jobsGloballyPaused?: boolean;
+
+  // "Job-Lauf-Historie aufräumen" (Nutzervorgabe, 2026-08-30) – `null` =
+  // unbegrenzt aufbewahren.
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  jobRunRetentionDays?: number | null;
 }
