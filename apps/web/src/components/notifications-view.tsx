@@ -295,8 +295,8 @@ export function NotificationsView({
         </div>
       )}
 
-      <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_360px]">
-        <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+        <div className="flex flex-col gap-4 lg:col-span-2">
           <label className="inline-flex w-fit items-center gap-2 rounded-xl bg-card px-4 py-2.5 text-sm shadow-sm">
             <Switch checked={onlyUnread} onCheckedChange={setOnlyUnread} />
             Nur ungelesen

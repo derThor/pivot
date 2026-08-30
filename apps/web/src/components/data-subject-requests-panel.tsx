@@ -288,8 +288,8 @@ export function DataSubjectRequestsPanel({
   }
 
   return (
-    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_360px]">
-      <div className="overflow-hidden rounded-xl bg-card shadow-sm">
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+      <div className="overflow-hidden rounded-xl bg-card shadow-sm lg:col-span-2">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
           <div className="flex items-center gap-3">
             <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">

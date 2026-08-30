@@ -302,8 +302,8 @@ export default async function DashboardPage() {
 
       <StorageQuotaBanner usage={storageUsage} />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
-        <Card className="border-none bg-dark-surface text-dark-surface-foreground">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
+        <Card className="border-none bg-dark-surface text-dark-surface-foreground lg:col-span-2">
           <CardContent className="flex flex-col gap-6">
             <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium">
               Willkommen zurück, {user?.firstName ?? user?.lastName ?? ""} 👋
@@ -407,8 +407,8 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
-        <Card>
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle>Zuletzt bearbeitet</CardTitle>
             <Link

@@ -236,8 +236,8 @@ export function CompanyView({
         </TabsList>
 
         <TabsContent value="stammdaten">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
-            <Card className="rounded-xl shadow-sm">
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+            <Card className="rounded-xl shadow-sm lg:col-span-2">
               <CardHeader>
                 <CardTitle>Firmenangaben</CardTitle>
                 <p className="text-sm text-muted-foreground">
@@ -363,8 +363,8 @@ export function CompanyView({
         </TabsContent>
 
         <TabsContent value="standorte">
-          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_360px]">
-            <div className="overflow-hidden rounded-xl bg-card shadow-sm">
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+            <div className="overflow-hidden rounded-xl bg-card shadow-sm lg:col-span-2">
               {locations.length === 0 ? (
                 <div className="p-6 text-sm text-muted-foreground">
                   Noch keine Standorte angelegt.

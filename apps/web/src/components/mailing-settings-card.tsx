@@ -377,7 +377,7 @@ function TemplateDetail({
           {isHtml ? (
             <>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="mail-shell">Hülle</Label>
+                <Label htmlFor="mail-shell">E-Mail-Template</Label>
                 <Select
                   value={shellId || "__default"}
                   onValueChange={(next) =>
@@ -389,7 +389,7 @@ function TemplateDetail({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__default">
-                      Standard-Hülle{defaultShell ? ` (${defaultShell.name})` : ""}
+                      Standard-Template{defaultShell ? ` (${defaultShell.name})` : ""}
                     </SelectItem>
                     {shells.map((shell) => (
                       <SelectItem key={shell.id} value={shell.id}>
@@ -553,7 +553,7 @@ function ShellDetail({
         setError(data?.message ?? "Konnte nicht gespeichert werden.");
         return;
       }
-      toastEdited("Hülle wurde gespeichert.");
+      toastEdited("E-Mail-Template wurde gespeichert.");
       onSaved();
     } finally {
       setIsSaving(false);
@@ -567,7 +567,7 @@ function ShellDetail({
     );
     if (!res.ok) {
       const data = await res.json().catch(() => null);
-      toastEdited(data?.message ?? "Hülle konnte nicht gelöscht werden.");
+      toastEdited(data?.message ?? "E-Mail-Template konnte nicht gelöscht werden.");
       return;
     }
     toastDeleted(`„${shell.name}“ wurde gelöscht.`);
@@ -595,24 +595,24 @@ function ShellDetail({
               disabled={shell.isDefault || shell.usedByCount > 0}
             >
               <Trash2 className="size-4" />
-              Hülle löschen
+              Template löschen
             </Button>
           }
           title={`„${shell.name}“ löschen?`}
           description={
             shell.isDefault
-              ? "Die Standard-Hülle kann nicht gelöscht werden. Erst eine andere Hülle als Standard festlegen."
+              ? "Das Standard-Template kann nicht gelöscht werden. Erst ein anderes Template als Standard festlegen."
               : shell.usedByCount > 0
-                ? `Diese Hülle wird noch von ${shell.usedByCount} ${shell.usedByCount === 1 ? "Vorlage" : "Vorlagen"} genutzt.`
-                : "Diese Hülle wird endgültig gelöscht."
+                ? `Dieses Template wird noch von ${shell.usedByCount} ${shell.usedByCount === 1 ? "Vorlage" : "Vorlagen"} genutzt.`
+                : "Dieses Template wird endgültig gelöscht."
           }
           onConfirm={handleDelete}
         />
       </div>
 
       <SwitchRow
-        label="Standard-Hülle"
-        description="Wird von Vorlagen ohne eigene Hüllen-Auswahl verwendet."
+        label="Standard-Template"
+        description="Wird von Vorlagen ohne eigene Template-Auswahl verwendet."
         checked={isDefault}
         onCheckedChange={setIsDefault}
       />
@@ -685,7 +685,7 @@ export function MailingSettingsCard({
         <Tabs defaultValue="templates">
           <TabsList className="!h-auto w-fit justify-start gap-1 !overflow-visible p-1">
             <TabsTrigger value="templates">Vorlagen</TabsTrigger>
-            <TabsTrigger value="shells">E-Mail-Hüllen</TabsTrigger>
+            <TabsTrigger value="shells">E-Mail-Templates</TabsTrigger>
           </TabsList>
 
           <TabsContent value="templates" className="pt-4">
@@ -762,11 +762,11 @@ export function MailingSettingsCard({
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between gap-2 border-b border-border px-2 pb-1.5">
                   <p className="text-xs font-semibold tracking-wide text-accent-foreground uppercase">
-                    Hüllen
+                    Templates
                   </p>
                   <CreateNamedItemDialog
                     triggerLabel="Neu"
-                    dialogTitle="Neue Hülle anlegen"
+                    dialogTitle="Neues E-Mail-Template anlegen"
                     nameLabel="Name"
                     endpoint="/api/settings/mail-shells"
                     onCreated={setSelectedShellId}
@@ -774,7 +774,7 @@ export function MailingSettingsCard({
                 </div>
                 {shells.length === 0 ? (
                   <p className="px-2 py-2 text-sm text-muted-foreground">
-                    Noch keine E-Mail-Hüllen angelegt.
+                    Noch keine E-Mail-Templates angelegt.
                   </p>
                 ) : (
                   shells.map((shell) => (
@@ -808,7 +808,7 @@ export function MailingSettingsCard({
                   />
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    Noch keine E-Mail-Hülle angelegt.
+                    Noch kein E-Mail-Template angelegt.
                   </p>
                 )}
               </div>

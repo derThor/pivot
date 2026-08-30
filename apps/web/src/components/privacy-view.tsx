@@ -718,8 +718,8 @@ export function PrivacyView({
         </TabsList>
 
         <TabsContent value="rechtstexte">
-          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_360px]">
-            <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+            <div className="flex flex-col gap-4 lg:col-span-2">
               <Card className="rounded-xl shadow-sm">
                 <CardHeader>
                   <CardTitle>Rechtstexte</CardTitle>
@@ -1137,8 +1137,8 @@ export function PrivacyView({
         </TabsContent>
 
         <TabsContent value="auftragsverarbeiter">
-          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_360px]">
-            <div className="overflow-hidden rounded-xl bg-card shadow-sm">
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+            <div className="overflow-hidden rounded-xl bg-card shadow-sm lg:col-span-2">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
                 <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                   Dienstleister mit Datenzugriff · {dataProcessors.length}
@@ -1336,8 +1336,8 @@ export function PrivacyView({
         </TabsContent>
 
         <TabsContent value="dsb">
-          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_360px]">
-            <Card className="rounded-xl shadow-sm">
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+            <Card className="rounded-xl shadow-sm lg:col-span-2">
               <CardHeader>
                 <CardTitle>Benannte Person</CardTitle>
                 <p className="text-sm text-muted-foreground">
