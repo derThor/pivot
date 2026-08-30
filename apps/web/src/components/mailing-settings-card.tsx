@@ -8,6 +8,7 @@ import {
   toastCreated,
   toastDeleted,
   toastEdited,
+  toastSent,
   toastWarning,
 } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
@@ -301,7 +302,7 @@ function TemplateDetail({
       );
       const data = await res.json().catch(() => null);
       if (res.ok && data?.ok) {
-        toastEdited(`Testmail an ${testEmail} gesendet.`);
+        toastSent(`Testmail an ${testEmail} gesendet.`);
       } else {
         toastWarning(
           "Testmail konnte nicht gesendet werden.",

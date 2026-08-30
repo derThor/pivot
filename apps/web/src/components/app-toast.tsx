@@ -126,6 +126,20 @@ export function toastEdited(
   ));
 }
 
+// Für Testmails/Ähnliches (Nutzervorgabe, 2026-08-30: "soll email
+// erfolgreich gesendet ... in dem toast stehen" – toastEdited() zeigte
+// dafür bisher missverständlich "Erfolgreich bearbeitet").
+export function toastSent(description = "Die E-Mail wurde versendet.") {
+  toast.custom((id) => (
+    <ActionToast
+      id={id}
+      variant="created"
+      title="E-Mail erfolgreich gesendet"
+      description={description}
+    />
+  ));
+}
+
 export function toastDeleted(description = "Der Eintrag wurde entfernt.") {
   toast.custom((id) => (
     <ActionToast
