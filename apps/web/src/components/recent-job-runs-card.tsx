@@ -118,15 +118,17 @@ export function RecentJobRunsCard({
           runs.items.map((run) => (
             <div
               key={run.id}
-              className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted p-4"
+              className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg border border-border bg-muted p-4"
             >
-              <div className="flex items-start gap-2.5">
+              <div className="flex min-w-0 items-start gap-2.5">
                 <span
                   className={`mt-1.5 size-2 shrink-0 rounded-full ${STATUS_DOT[run.status] ?? "bg-muted-foreground"}`}
                 />
-                <div>
-                  <p className="text-sm font-medium">{run.jobTitle}</p>
-                  <p className="text-sm text-muted-foreground">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">
+                    {run.jobTitle}
+                  </p>
+                  <p className="truncate text-sm text-muted-foreground">
                     {run.message ?? "—"}
                   </p>
                 </div>

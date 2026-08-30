@@ -152,7 +152,7 @@ export function ScheduledJobsCard({
             </Button>
           </CardAction>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3">
+        <CardContent className="@container flex flex-col gap-3">
           {jobs.items.map((job) => {
             const expanded = expandedId === job.id;
             return (
@@ -175,7 +175,9 @@ export function ScheduledJobsCard({
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-medium">{job.title}</p>
+                        <p className="truncate text-sm font-medium">
+                          {job.title}
+                        </p>
                         {job.isCritical && (
                           <Badge variant="secondary">kritisch</Badge>
                         )}
@@ -184,7 +186,7 @@ export function ScheduledJobsCard({
                         {job.description}
                       </p>
                     </div>
-                    <div className="hidden shrink-0 flex-col sm:flex">
+                    <div className="hidden shrink-0 flex-col @sm:flex">
                       <span className="text-sm">
                         {rhythmLabelForCron(job.cronExpression)}
                       </span>
@@ -192,7 +194,7 @@ export function ScheduledJobsCard({
                         {job.cronExpression}
                       </span>
                     </div>
-                    <div className="hidden shrink-0 flex-col items-end md:flex">
+                    <div className="hidden shrink-0 flex-col items-end @md:flex">
                       <span className="text-xs text-muted-foreground">
                         {formatRelativePast(job.lastRunAt)}
                       </span>
