@@ -615,6 +615,22 @@ Listen-Aktionen:
 > nicht nur die Komponentendatei selbst anpassen – einzelne Call-Sites
 > überschreiben Varianten gerne lokal.
 
+> **Update 2026-08-30 (Sidebar-Breite vereinheitlicht):** Nutzervorgabe:
+> "überall, wo rechts im Inhalt eine Sidebar oder weitere Kacheln sind,
+> soll die Breite genauso behandelt werden wie bei Mein Konto" – dort
+> ein proportionales `grid grid-cols-1 items-start gap-4 lg:grid-cols-3`
+> mit `lg:col-span-2` fürs Hauptelement statt einer festen Pixel-Breite
+> (`lg:grid-cols-[1fr_320px]`/`[1fr_360px]` u.ä.). In einem Rutsch
+> angeglichen: Dashboard-Startseite (beide Kachel-Paare), Firma (beide
+> Reiter), Betroffenenanfragen, Modul-Detailseite, Benachrichtigungen,
+> Datenschutzvorfälle, sowie Datenschutz' Rechtstexte-/
+> Auftragsverarbeiter-/DSB-Reiter. Bewusst ausgenommen (Nutzervorgabe):
+> Seiten (`content-editor-form.tsx`) und Formular (`form-editor.tsx`) –
+> deren Editor-Panel-Aufteilung ist ein anderes Muster, kein
+> "Inhalt + Info-Sidebar". Gilt ab jetzt als Standard für jedes neue
+> Layout dieser Art, nicht nur für die in diesem Durchgang angepassten
+> Seiten.
+
 ## Offene Punkte
 
 - Dashboard-Startseite zeigt weiterhin nur die einfachen Statistik-

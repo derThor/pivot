@@ -1458,3 +1458,27 @@ bleibt davon unabhängig weiter speicherbar, alte Route lehnt
   also niemandem eine Fähigkeit, die er nicht schon hätte.
 - Gleiches Muster (Feature-Katalog + Guards) für Magicline, sobald dessen
   Inhalt drankommt.
+
+## Update 2026-08-30: Einstellungen → Master-Client neu gegliedert
+
+Nutzervorgabe: "bei Einstellung - Master Client will ich diese
+Installation über Mandanten ... stehen haben" – `MasterClientCard`
+zeigte "Diese Installation" bisher nur als erste Zeile INNERHALB der
+einen, "Mandanten" betitelten Karte, was beide Konzepte optisch
+vermischte. Auf einer Master-Installation jetzt zwei getrennte Karten:
+"Diese Installation" (eigene Überschrift) direkt darüber, "Mandanten"
+darunter mit eigener Überschrift. Auf einer Client/Slave-Installation
+bewusst unverändert gelassen (weiterhin eine Karte, "Diese
+Installation" bleibt dort die erste, rein informative Zeile) – dort
+gab es keine Beschwerde und keine Vorgabe dafür.
+
+Die gemeinsame `selfRow`-JSX wurde in eine lokale Variable extrahiert
+und in beiden Zweigen (Master-Karte oben / Slave-Karte) wiederverwendet,
+statt den Markup-Block zu duplizieren.
+
+**Gleichzeitig behoben:** allen `bg-muted`-Zeilen in dieser Karte (Diese
+Installation, Mandanten-/Website-Zeilen) sowie der Modul-Zeile auf der
+Mandant-Detailseite (`mandant-detail-view.tsx`) fehlte der graue Rahmen
+(`border border-border`), den `SwitchRow`/"Zugriff & Funktionen"
+bereits als Standard für graue Zeilen etabliert hatten – Nutzerhinweis
+mit Bildvorlage, seitdem einheitlich ergänzt.

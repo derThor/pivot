@@ -130,3 +130,37 @@ Punkt-Farben (aktuellstes Ereignis lime, ältere grau), Verbindungslinie
 (`bg-neutral-300`) und der Abstand unter "Rolle" wurden im selben
 Durchlauf visuell mitgeprüft. Alle Testdaten (Testnutzer, Testmedium,
 zugehörige `audit_logs`-Zeilen) danach wieder entfernt.
+
+## Nachtrag 2026-08-30: fehlende Aktionen zeigten den rohen Action-Code
+
+Nutzer-Bugreport: mehrere Einträge zeigten `settings.field_updated`
+unübersetzt statt eines deutschen Titels – `describeActivity()`s
+`switch` deckte nur die Aktionen ab, die beim ursprünglichen Bau
+(2b.14) existierten, jede seither neu hinzugekommene Audit-Log-Aktion
+fiel auf den `default`-Zweig (roher `entry.action`) zurück. Bei
+"alle korrigieren" wurde der komplette Aktions-Katalog gegengeprüft
+(`grep -rn "action: '" apps/api/src`), nicht nur der eine gemeldete
+Fall.
+
+**Ergänzt:** `deletion_request.completed`, `privacy_incident.reported`,
+`privacy_incident.subjects_notified`, `auth.all_sessions_revoked`,
+`auth.password_reset_forced_all`, und ein genereller Fallback für jede
+`settings.*`-Aktion (`field_updated`, `smtp_updated`,
+`license_api_key_updated`, `job_runs_deleted`).
+
+**Strukturell wichtig:** das Feld-Label-Wörterbuch für
+`settings.field_updated` existierte bereits – aber nur lokal in
+`settings-protocol-card.tsx` (Einstellungen → Protokoll), das dieselben
+Aktionen schon länger korrekt übersetzte. Jetzt ausgelagert nach
+`apps/web/src/lib/settings-change-labels.ts`
+(`SETTINGS_FIELD_LABELS`/`describeSettingsFieldChange`/
+`describeSettingsAction`), von beiden Stellen importiert – vermeidet,
+dass ein neues Einstellungsfeld nur an einer der beiden Stellen ein
+Label bekommt und an der anderen wieder roh auftaucht. Auch
+`licenseApiKey` (Einstellungen → Master-Client, API-Key ändern) fehlte
+im Wörterbuch und wurde ergänzt.
+
+**Lehre:** bei einem gemeldeten "roher Code statt Text"-Bug immer den
+ganzen Katalog gegenprüfen (`grep -rn "action: '"`), nicht nur den
+gemeldeten Einzelfall reparieren – hier gab es acht weitere, bisher
+unbemerkte Lücken.

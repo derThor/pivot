@@ -432,25 +432,60 @@ generische Text sei "blöd".
   Datenschutzhinweis-Feldern verifiziert: `placeholderLabels` liefert
   korrekt z.B. `feld_2: "Datum"`, `feld_9: "Mehrfachauswahl"`.
 
-## Konzept (noch NICHT umgesetzt, 2026-08-29): individuelle HTML-Mail-Vorlagen + E-Mail-Hüllen
+## Individuelle HTML-Mail-Vorlagen + E-Mail-Templates (Konzept 2026-08-29, umgesetzt 2026-08-30)
 
 Nutzervorgabe: unter Einstellungen → Mailing soll man komplett individuelle,
 frei anlegbare Mail-Vorlagen mit echtem HTML/CSS bauen können, nicht nur
 die 8 festen System-Mails/Formular-Mails im aktuellen Plaintext-Format
-bearbeiten. Reine Planungsrunde, noch keine Zeile Code – hier nur
-festgehalten, damit eine spätere Umsetzung nicht bei null anfängt.
+bearbeiten.
 
-**Ausgangslage (wichtig für die Einordnung):** `MailerService` verschickt
-aktuell ausschließlich Plaintext (`text:` an nodemailer, nirgends ein
-`html:`-Part). `MailTemplate` (siehe oben) ist reiner Text mit
-`{{platzhalter}}`, bearbeitet über eine Textarea. Der Rich-Text-Editor für
-Seiteninhalte (`rich-text-editor.tsx`, Tiptap) existiert bereits und ist
-der vorgesehene Baustein für die HTML-Bearbeitung unten – kein neuer
-Code-Editor, kein Datei-Upload (beide Alternativen mit dem Nutzer
-diskutiert und verworfen: Upload hat kein Live-Preview/keine
-Platzhalter-Chips, ein freier Code-Editor setzt Mail-HTML-Fachwissen
-voraus und ist riskanter als Tiptaps eingeschränktes, von Haus aus
-sicheres Schema).
+### Korrektur nach der ersten Umsetzung: Tiptap raus, rohes HTML/CSS rein
+
+Die ursprüngliche Planung unten sah vor, denselben Tiptap-Editor wie bei
+Seiteninhalten zu nutzen (Begründung damals: kein neuer Code-Editor
+nötig, Tiptaps eingeschränktes Schema sei "von Haus aus sicher"). Nach
+der ersten Umsetzung harte Nutzerkorrektur: "wenn ich von CI und
+Gestaltung spreche, kannst du doch nicht einfach nur einen Texteditor
+einsetzen ... ich hatte sogar extra nach einem HTML-Upload gefragt ...
+jeder Client hat ein vollständig eigenes Design. da können wir keine
+dummen vorgefertigten Bausteine einsetzen." Zu Recht: JEDER Editor mit
+eigenem Dokument-Schema – auch ein mächtiger wie Tiptap – kann beliebiges,
+von einer Agentur geliefertes Mail-HTML nicht verlustfrei rundreisen,
+und vorgefertigte Bausteine sind nur eine andere Art von Einschränkung,
+kein "vollständig eigenes Design".
+
+**Tatsächlich umgesetzt:** roher HTML/CSS-Code-Editor
+(`html-code-editor.tsx`, CodeMirror + `@codemirror/lang-html`,
+`EditorView.lineWrapping` gegen ausbrechende lange Zeilen) statt Tiptap,
+für Hülle UND Vorlagen-Inhalt gleichermaßen. Zusätzlich ein "HTML-Datei
+hochladen"-Knopf (liest eine lokale `.html`-Datei per `FileReader` direkt
+in denselben Editor – das ursprünglich verworfene Datei-Upload-Feature
+kam so am Ende doch, nur als Komfortfunktion oben auf dem Code-Editor
+statt als Ersatz dafür). Serverseitig läuft das fertige HTML (Hülle +
+Inhalt zusammengesetzt) einmal durch `juice`, das jedes `<style>`-
+Klassen-CSS in Inline-`style`-Attribute umwandelt, bevor versendet wird –
+notwendig, weil rohes Agentur-HTML oft klassenbasiertes CSS mitbringt,
+das Outlook & Co. sonst ignorieren würden. Live mit einem echten
+`<style>`-Block + Klassen-Design verifiziert: alle Klassen korrekt
+inline geschrieben, Inhalt exakt an `{{content}}` eingesetzt.
+
+**Ebenfalls korrigiert:** "E-Mail-Hüllen" heißt in der UI jetzt
+"E-Mail-Templates" (Nutzerkorrektur) – nur die Anzeige-Texte, intern
+bleibt es das `MailShell`-Modell/`mail-shells`-Route, um keine
+Namenskollision mit dem bereits bestehenden `MailTemplate`-Modell
+(Inhalte) zu erzeugen.
+
+Der Rest des ursprünglichen Konzepts unten (zwei Bearbeitungsebenen,
+mehrere Hüllen pro Installation, `{{content}}`-Platzhalter,
+Versand-Reihenfolge) blieb inhaltlich richtig und wurde 1:1 umgesetzt –
+nur WIE der HTML/CSS-Code eingegeben wird, hat sich geändert.
+
+### Ursprüngliches Konzept (2026-08-29)
+
+**Ausgangslage (wichtig für die Einordnung):** `MailerService` verschickte
+vorher ausschließlich Plaintext (`text:` an nodemailer, nirgends ein
+`html:`-Part). `MailTemplate` (siehe oben) war reiner Text mit
+`{{platzhalter}}`, bearbeitet über eine Textarea.
 
 **Zwei getrennte Bearbeitungsebenen:**
 
@@ -506,11 +541,11 @@ angelegte individuelle Vorlagen bekommen HTML+Hülle. Auslösung
 `sendDataProcessorContractRequest`) ebenfalls offen, Rendering-Funktion
 sollte aber von Anfang an beides zulassen.
 
-**Vor Umsetzungsbeginn zu klären:** ob/wie diese neuen individuellen
-Vorlagen ins Modul-Entitlement-System (siehe
-master-slave-licensing.md) einsortiert werden – eigenes Feature, Teil
-eines bestehenden Moduls, oder erstmal ungegatet wie der Rest von
-Mailing heute.
+**Entschieden bei der Umsetzung:** individuelle Vorlagen + E-Mail-
+Templates sind (noch) nicht ins Modul-Entitlement-System (siehe
+master-slave-licensing.md) einsortiert – laufen ungegatet wie der Rest
+von Mailing heute. Bleibt ein offener Punkt für später, falls das
+Feature mal Teil eines buchbaren Moduls werden soll.
 
 ## Offene Punkte / mögliche Folgearbeiten
 
@@ -523,3 +558,7 @@ Mailing heute.
 - Datenschutzhinweis-Verlinkung (`privacyPageSlug`) ist ein Snapshot,
   keine Live-Verknüpfung – wird die Zielseite umbenannt/verschoben, muss
   die Verlinkung im Formular-Editor manuell neu gesetzt werden.
+- Individuelle Mail-Vorlagen/E-Mail-Templates sind ungegatet (kein
+  Modul-Entitlement), nur manueller Testversand in der UI (keine
+  automatisierte Auslösung, obwohl `sendCustomTemplate()` dafür
+  vorbereitet ist).
