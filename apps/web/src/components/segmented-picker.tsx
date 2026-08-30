@@ -42,7 +42,7 @@ export function SegmentedPicker<T extends string | number>({
           {label}
         </span>
       )}
-      <div className="flex gap-1 rounded-lg border border-border bg-muted p-1">
+      <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-muted p-1">
         {options.map((option) => {
           // Zahl-Optionen ("30 Tage", "12 Monate") immer zweizeilig
           // darstellen (Zahl größer über dem Wort), statt sich auf
