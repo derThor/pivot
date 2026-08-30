@@ -395,6 +395,7 @@ export class MailerService {
         companyEmail: true,
         companyPhone: true,
         companyLogoUrl: true,
+        companyLogoUrlDark: true,
       },
     });
     const address = [
@@ -415,6 +416,17 @@ export class MailerService {
       // relative URL sich beziehen könnte.
       companyLogo: settings?.companyLogoUrl
         ? `${this.apiOrigin()}${settings.companyLogoUrl}`
+        : '',
+      // Automatisches Umschalten je nach Mail-Programm ist NICHT
+      // serverseitig entscheidbar (die Mail wird einmal gerendert, nicht
+      // pro Empfänger) – die Hülle muss dafür beide `<img>`s einbetten und
+      // per CSS `@media (prefers-color-scheme: dark)` zwischen ihnen
+      // umschalten (siehe knowledge-base/content/forms.md für ein
+      // Beispiel). Ohne Dark-Logo bleibt der Platzhalter leer, kein
+      // Fallback auf das Light-Logo (sonst zeigt die Hülle im Zweifel
+      // zwei identische Bilder übereinander).
+      companyLogoDark: settings?.companyLogoUrlDark
+        ? `${this.apiOrigin()}${settings.companyLogoUrlDark}`
         : '',
     };
   }

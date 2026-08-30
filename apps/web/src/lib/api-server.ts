@@ -727,6 +727,7 @@ export interface AppSettings {
   notifyCompanyIncomplete: boolean;
   notifyLegalDocuments: boolean;
   companyLogoUrl: string | null;
+  companyLogoUrlDark: string | null;
   companyName: string | null;
   companyStreet: string | null;
   companyPostalCode: string | null;

@@ -250,6 +250,7 @@ export class SettingsService {
       maintenancePageTitle: settings.maintenancePageTitle,
       maintenancePageMessage: settings.maintenancePageMessage,
       companyLogoUrl: settings.companyLogoUrl,
+      companyLogoUrlDark: settings.companyLogoUrlDark,
       companyName: settings.companyName,
       companyStreet: settings.companyStreet,
       companyPostalCode: settings.companyPostalCode,

@@ -252,6 +252,11 @@ model AppSettings {
   smtpSecure                         String    @default("starttls")
   smtpVerifiedAt                     DateTime?
   companyLogoUrl                     String?
+  // Zweite, optionale Logo-Variante für Dark-Mode-fähige Oberflächen/
+  // Mail-Clients (Nutzervorgabe, 2026-08-30: "setze bei Darstellung logo
+  // einmal ein logo für lightmodus und für darkmodus") – `companyLogoUrl`
+  // bleibt unverändert die Light-/Standard-Variante, kein Rename nötig.
+  companyLogoUrlDark                 String?
   companyName                        String?
   companyStreet                      String?
   companyPostalCode                  String?

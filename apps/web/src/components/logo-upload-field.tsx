@@ -7,6 +7,7 @@ import { ImageIcon, Trash2 } from "lucide-react";
 import { toastDeleted, toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { mediaUrl } from "@/lib/media";
+import { cn } from "@/lib/utils";
 import type { MediaListResponse } from "@/lib/api-server";
 
 export function LogoUploadField({
@@ -14,11 +15,15 @@ export function LogoUploadField({
   label,
   currentUrl,
   folderId,
+  previewClassName,
 }: {
-  field: "companyLogoUrl";
+  field: "companyLogoUrl" | "companyLogoUrlDark";
   label: string;
   currentUrl: string | null;
   folderId: string | null;
+  // Dark-Mode-Logos sind oft hell/weiß gezeichnet – auf der (immer
+  // hellen) Vorschau-Fläche sonst kaum zu erkennen.
+  previewClassName?: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -117,7 +122,12 @@ export function LogoUploadField({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <span className="flex h-8 w-full flex-1 items-center justify-start overflow-hidden rounded-md border bg-background px-2">
+        <span
+          className={cn(
+            "flex h-8 w-full flex-1 items-center justify-start overflow-hidden rounded-md border bg-background px-2",
+            previewClassName,
+          )}
+        >
           {currentUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img

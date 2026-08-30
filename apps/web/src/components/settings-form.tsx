@@ -936,13 +936,31 @@ export function SettingsForm({
                       <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                         Logo
                       </span>
-                      <div className="rounded-lg border border-border bg-muted p-4">
-                        <LogoUploadField
-                          field="companyLogoUrl"
-                          label="Firmenlogo"
-                          currentUrl={settings.companyLogoUrl}
-                          folderId={logoFolderId}
-                        />
+                      <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted p-4">
+                        <div className="flex flex-col gap-1.5">
+                          <p className="text-xs text-muted-foreground">
+                            Hellmodus
+                          </p>
+                          <LogoUploadField
+                            field="companyLogoUrl"
+                            label="Firmenlogo (Hellmodus)"
+                            currentUrl={settings.companyLogoUrl}
+                            folderId={logoFolderId}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1.5 border-t border-border pt-3">
+                          <p className="text-xs text-muted-foreground">
+                            Dunkelmodus (optional – ohne eigenes Logo wird
+                            nirgends automatisch das Hellmodus-Logo verwendet)
+                          </p>
+                          <LogoUploadField
+                            field="companyLogoUrlDark"
+                            label="Firmenlogo (Dunkelmodus)"
+                            currentUrl={settings.companyLogoUrlDark}
+                            folderId={logoFolderId}
+                            previewClassName="bg-neutral-900"
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -1241,6 +1259,7 @@ export function SettingsForm({
                   email: settings.companyEmail,
                   phone: settings.companyPhone,
                   logoUrl: settings.companyLogoUrl,
+                  logoUrlDark: settings.companyLogoUrlDark,
                 }}
               />
             )}

@@ -703,6 +703,37 @@ Zwei weitere Lücken direkt beim Testen der obigen Korrektur gefunden:
   (`<img src="https://IHRE-DOMAIN.de/pivot_badge.png">`) durch
   `<img src="{{companyLogo}}">` ersetzen.
 
+### Nachtrag: zweites Logo für Dark Mode + `{{companyLogoDark}}`
+
+Nutzervorgabe: "setze bei Darstellung logo einmal ein logo für lightmodus
+und für darkmodus. und berücksichtige das bei mailtemplate" + Nachfrage
+"ist das möglich, das es automatisch nur in einem bestimmten modus
+entsprechend das logo angezeigt wird bei der email".
+
+- **Schema**: `AppSettings.companyLogoUrlDark String?` (per `db push`,
+  keine Migration nötig) – `companyLogoUrl` bleibt unverändert die
+  Light-/Standard-Variante, kein Rename (hätte media.service.ts,
+  license-client.service.ts, describe-audit-action.ts, `/locked`-Seite
+  usw. betroffen). `MediaService`s verwaiste-Dateien-Prüfung um das neue
+  Feld ergänzt, sonst würde das Dark-Logo als "unbenutzt" markiert.
+- **Einstellungen → Darstellung → Marke**: zweites `LogoUploadField`
+  (`field="companyLogoUrlDark"`) unter dem bestehenden Logo-Feld, eigene
+  dunkle Vorschau-Fläche (`previewClassName="bg-neutral-900"`), da
+  Dark-Logos oft hell/weiß gezeichnet sind und auf der sonst immer hellen
+  Vorschau unsichtbar wären.
+- **`{{companyLogoDark}}`** als sechster `COMPANY_MAIL_PLACEHOLDER_KEYS`-
+  Eintrag, gleiche `apiOrigin()`-Auflösung wie `{{companyLogo}}`, leer
+  ohne eigenes Dark-Logo (kein Fallback aufs Light-Logo – sonst zeigt die
+  Hülle im Zweifel zwei identische Bilder).
+- **Automatisches Umschalten ist möglich, aber serverseitig nicht
+  entscheidbar** (eine Mail wird einmal gerendert, nicht pro Empfänger
+  neu) – die Hülle muss beide `<img>`-Tags einbetten und per CSS
+  `@media (prefers-color-scheme: dark)` zwischen ihnen umschalten
+  (`display:none`/`block`). Direkt als Hinweistext unter dem
+  HTML-Editor in `ShellDetail` dokumentiert, inkl. der Einschränkung,
+  dass das nicht in jedem Mail-Programm zuverlässig funktioniert (u. a.
+  nicht in der Gmail-App) – bewusst keine erfundene 100%-Garantie.
+
 ## Offene Punkte / mögliche Folgearbeiten
 
 - Datei-Upload-Feldtyp (Backend-Katalog vorhanden, kein Upload-Handling).

@@ -213,6 +213,8 @@ export class MediaService {
     }
     if (settings?.companyLogoUrl)
       referenced.add(normalizeUrl(settings.companyLogoUrl));
+    if (settings?.companyLogoUrlDark)
+      referenced.add(normalizeUrl(settings.companyLogoUrlDark));
 
     const unusedIds = allMediaMeta
       .filter((media) => !referenced.has(normalizeUrl(media.url)))

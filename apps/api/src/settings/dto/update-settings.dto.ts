@@ -277,6 +277,11 @@ export class UpdateSettingsDto {
   @IsString()
   companyLogoUrl?: string | null;
 
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @IsString()
+  companyLogoUrlDark?: string | null;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

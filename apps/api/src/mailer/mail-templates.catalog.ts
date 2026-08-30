@@ -115,6 +115,13 @@ export const COMPANY_MAIL_PLACEHOLDER_KEYS = [
   'companyEmail',
   'companyPhone',
   'companyLogo',
+  // Dark-Mode-Variante (Nutzervorgabe, 2026-08-30: "setze ... ein logo für
+  // lightmodus und für darkmodus. und berücksichtige das bei
+  // mailtemplate") – leer, wenn keine hinterlegt ist; automatisches
+  // Umschalten je nach Mail-Programm läuft über eine CSS
+  // `prefers-color-scheme`-Regel im Hüllen-HTML, siehe
+  // MailerService.companyVars()-Kommentar.
+  'companyLogoDark',
 ] as const;
 
 // E-Mail-Templates (Hüllen) – Kopf/Fuß/CI, in die der Klartext-Inhalt

@@ -63,6 +63,8 @@ const PLACEHOLDER_DESCRIPTIONS: Record<string, string> = {
   companyEmail: "Firmen-E-Mail-Adresse",
   companyPhone: "Firmen-Telefonnummer",
   companyLogo: "URL des Firmenlogos (für ein <img src=\"...\">)",
+  companyLogoDark:
+    "URL des Dunkelmodus-Firmenlogos, leer ohne eigenes Dark-Logo",
   link: "Bestätigungs- bzw. Zurücksetzen-Link",
   title: "Titel des Datenschutzvorfalls",
   severity: "Schweregrad des Vorfalls",
@@ -135,6 +137,7 @@ interface CompanyInfo {
   email: string | null;
   phone: string | null;
   logoUrl: string | null;
+  logoUrlDark: string | null;
 }
 
 // Backend-Pendant: MailerService.companyVars() – dieselben Firmen-
@@ -153,6 +156,9 @@ function companyPlaceholderVars(company: CompanyInfo): Record<string, string> {
     companyEmail: company.email ?? "",
     companyPhone: company.phone ?? "",
     companyLogo: company.logoUrl ? mediaUrl({ url: company.logoUrl }) : "",
+    companyLogoDark: company.logoUrlDark
+      ? mediaUrl({ url: company.logoUrlDark })
+      : "",
   };
 }
 
@@ -705,6 +711,15 @@ function ShellDetail({
           vorhanden sein. Betreff und Firmenangaben (siehe Legende unten)
           sind zusätzlich verfügbar und dürfen beliebig oft vorkommen.
         </p>
+        <p className="text-xs text-muted-foreground">
+          Automatisches Umschalten zwischen {"{{companyLogo}}"} und{" "}
+          {"{{companyLogoDark}}"} je nach Mail-Programm: beide{" "}
+          <code>{'<img>'}</code>-Tags einbetten und per CSS{" "}
+          <code>@media (prefers-color-scheme: dark)</code> zwischen ihnen
+          umschalten (Anzeige/Verstecken per <code>display</code>). Wird
+          nicht von jedem Mail-Programm unterstützt (u. a. nicht
+          zuverlässig in der Gmail-App).
+        </p>
         <HtmlCodeEditor
           value={content}
           onChange={setContent}
@@ -733,6 +748,11 @@ function ShellDetail({
             {
               token: "{{companyLogo}}",
               description: 'URL des Firmenlogos (für ein <img src="...">)',
+            },
+            {
+              token: "{{companyLogoDark}}",
+              description:
+                "URL des Dunkelmodus-Logos, leer ohne eigenes Dark-Logo",
             },
           ]}
         />
