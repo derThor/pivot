@@ -249,14 +249,24 @@ export class MailerService {
       return { ok: false, error: 'Kein SMTP-Server hinterlegt.' };
     }
     try {
-      await this.buildTransport(cfg).sendMail({
+      const info = (await this.buildTransport(cfg).sendMail({
         from: this.formatFrom(cfg),
         to,
         subject,
         text: fullText,
         html,
         attachments,
-      });
+      })) as { rejected?: unknown[] };
+      // `sendMail()` löst schon dann auf, wenn der Server die Nachricht
+      // angenommen hat – bei mehreren Empfängern (hier nie der Fall, aber
+      // zur Sicherheit) kann er einzelne trotzdem ablehnen, das steht dann
+      // in `info.rejected`, nicht in einer Exception.
+      if (info.rejected && info.rejected.length > 0) {
+        return {
+          ok: false,
+          error: `Vom Mailserver abgelehnt: ${info.rejected.join(', ')}`,
+        };
+      }
       return { ok: true };
     } catch (err) {
       const error = (err as Error).message;

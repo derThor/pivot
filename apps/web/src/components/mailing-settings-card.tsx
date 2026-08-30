@@ -388,7 +388,7 @@ function TemplateDetail({
                 setShellId(next === "__default" ? "" : (next ?? ""))
               }
             >
-              <SelectTrigger id="mail-shell">
+              <SelectTrigger id="mail-shell" className="!w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
