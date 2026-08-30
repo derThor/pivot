@@ -1482,3 +1482,20 @@ Mandant-Detailseite (`mandant-detail-view.tsx`) fehlte der graue Rahmen
 (`border border-border`), den `SwitchRow`/"Zugriff & Funktionen"
 bereits als Standard für graue Zeilen etabliert hatten – Nutzerhinweis
 mit Bildvorlage, seitdem einheitlich ergänzt.
+
+## Update 2026-08-30: Modul-Feature-Freischaltung erreicht auch Hintergrund-Jobs
+
+Bisher prüften nur Controller-Routen (`ModuleEntitlementGuard`/
+`ModuleFeatureGuard`) und `NotificationsService` die
+Datenschutz-Modul-/Feature-Freischaltung. Ergänzt: `JobsService`
+(siehe [scheduled-jobs-tab.md](../tooling/scheduled-jobs-tab.md)) prüft
+jetzt für die beiden Datenschutz-bezogenen geplanten Jobs
+(DSB-Monatsbericht → Feature `dsb`, Löschanfragen-Fristerinnerung →
+Feature `loeschanfragen`) über dieselbe
+`LicenseClientService.getEffectiveStatus().moduleFeatures`-Quelle, ob
+sie überhaupt erscheinen bzw. ausgeführt werden dürfen – dritter
+Konsument dieses einheitlichen Master-wie-Slave-Musters neben den
+Controllern und `NotificationsService`. Kein neuer Guard nötig, da
+`JobsService` kein HTTP-Controller ist (eigene `isEntitled()`-Prüfung
+direkt im Service, gleiche Denkweise wie `NotificationsService.
+hasModuleFeature()`).

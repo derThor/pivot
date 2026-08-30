@@ -264,3 +264,133 @@ DSB-Kontakt die eigene Adresse des Nutzers ist).
 - Sollten künftig weitere echte Cron-Jobs entstehen, müssen sie nur zum
   `definitions`-Array in `JobsService` ergänzt werden – Registrierung,
   UI und Historie sind vollständig generisch.
+
+## Update 2026-08-30: Job-Lauf-Historie aufräumen (Retention)
+
+Nutzerfrage ("wie sieht das mit der history aus, wenn dann hunderte
+einträge bei jobs ist?") deckte auf, dass `JobRun` unbegrenzt wächst –
+allein die Live-Überwachung gesperrter Websites (siehe
+[master-slave-licensing.md](../platform/master-slave-licensing.md))
+erzeugt 48 Zeilen/Tag. Vierter Job in `definitions`: `job-run-cleanup`
+(täglich 3:00), löscht `JobRun`-Zeilen älter als
+`AppSettings.jobRunRetentionDays` (nullable Int, Default 90, `null` =
+unbegrenzt, gleiches Muster wie `retentionFormSubmissionsDays`) – **über
+alle `jobId`s hinweg**, nicht nur die registrierten `definitions`, sonst
+blieben die größten Verursacher (Live-Überwachung, Lizenzprüfung)
+unberührt.
+
+Frontend-Karte `job-run-retention-card.tsx` (`SegmentedPicker`,
+Optionen 30/90 Tage, 1 Jahr, unbegrenzt) wurde zweimal umplatziert:
+zunächst Teil von `recent-job-runs-card.tsx`, dann per Nutzervorgabe
+("setze das am anfang der seite") eigene Karte ganz oben auf der Seite.
+Live-Verifiziert (nicht nur "kein Fehler", sondern eine synthetische
+10 Tage alte `JobRun`-Zeile per Skript eingefügt, Job manuell ausgelöst,
+tatsächliche Löschung bestätigt).
+
+## Update 2026-08-30: "Alle Jobs pausieren" wandert in dieselbe Karte
+
+Nutzervorgabe ("alle jobs pausieren ganz am anfang der seite in die
+kachel job lauf historie aufbewahren"): der bestehende
+`jobsGloballyPaused`-Schalter (bis dahin unten in
+`recent-job-runs-card.tsx`) wurde in `job-run-retention-card.tsx`
+verschoben – beide sind job-weite Einstellungen, keine Eigenschaft der
+Lauf-Historie-Liste selbst. `RecentJobRunsCard` verlor dadurch ihr
+`jobsGloballyPaused`-Prop komplett und enthält seither nur noch die
+Läufe-Liste, Pagination und "Alle löschen"/Refresh.
+
+## Update 2026-08-30: Jobs respektieren die Datenschutz-Modul-Freischaltung
+
+Nutzervorgabe: "dsb job-monatsbericht darf nur da sein, wenn
+datenschutzmodul aktiv ist. wenn nicht, darf der job weder erscheinen
+noch ausgeführt werden" (danach identisch für die
+Löschanfragen-Fristerinnerung: "genau so, nur mit aktiven
+Datenschutzmodul"). Baut auf der Datenschutz-als-Modul-Infrastruktur
+auf (siehe
+[master-slave-licensing.md](../platform/master-slave-licensing.md),
+Update 2026-08-28) – `JobDefinition` bekommt ein neues optionales Feld
+`requiresModuleFeature?: { moduleKey, featureKey }`:
+
+- `dpo-monthly-report` → `{ moduleKey: 'datenschutz', featureKey: 'dsb' }`
+- `dsr-deadline-reminder` → `{ moduleKey: 'datenschutz', featureKey: 'loeschanfragen' }`
+
+`JobsService.isEntitled(def)` prüft das über dieselbe
+Master-wie-Slave-einheitliche Quelle wie `ModuleFeatureGuard`/
+`NotificationsService.hasModuleFeature`
+(`LicenseClientService.getEffectiveStatus().moduleFeatures`). Wirkt an
+drei Stellen:
+
+- `findAll()` filtert unlizenzierte Jobs komplett aus der Liste heraus
+  (`getEntitledDefinitions()`) – "Geplante Aufgaben" zeigt sie gar nicht
+  erst an.
+- `getDefinition(id)` wirft `NotFoundException` für einen (aktuell)
+  nicht freigeschalteten Job – gleiche "existiert nicht"-Konvention wie
+  der Guard bei einer gesperrten Route. Trifft `update()`, `runNow()`
+  (Button "Jetzt ausführen") und `findRunsForJob()` gleichermaßen.
+- `execute()` prüft zusätzlich direkt vor jedem Lauf – fängt auch den
+  automatischen Cron-Tick ab, der `getDefinition()` nicht durchläuft
+  (die `CronJob`-Registrierung selbst bleibt für alle `definitions`
+  bestehen, unabhängig von der Freischaltung).
+
+Historische `JobRun`-Einträge (in "Letzte Läufe") bleiben unabhängig von
+der aktuellen Freischaltung mit korrektem Job-Titel sichtbar – die
+`titleById`-Zuordnung in `findRecentRuns()` nutzt bewusst das
+ungefilterte `definitions`-Array.
+
+Live gegen die laufende API verifiziert: Feature `dsb` deaktiviert →
+`dpo-monthly-report` verschwindet aus `GET /jobs`, `POST
+/jobs/dpo-monthly-report/run` und `GET
+/jobs/dpo-monthly-report/runs` liefern 404; gleiches für `loeschanfragen`
+→ `dsr-deadline-reminder`. Beide Features danach wieder aktiviert,
+beide Jobs wieder sichtbar.
+
+## Update 2026-08-30: Aktivitäten-Historie aufräumen (geteilter AuditLog)
+
+Nutzerfrage, ob es noch weitere Datenschutz-Jobs gibt, führte zur
+Anschlussfrage "bitte auch noch den aktivitäten history über sowas
+regeln" – der `AuditLog` (Grundlage für den "Aktivität"-Tab der
+Benutzer-Profilseite, das "Protokoll" unter Einstellungen UND das
+Datenschutz-"Zugriffsprotokoll", siehe
+[privacy-page.md](../auth/privacy-page.md) bzw. `privacy-view.tsx`)
+wuchs bis dahin komplett unbegrenzt.
+
+**Wichtige Rückfrage vorab:** Für das Zugriffsprotokoll gab es bereits
+eine bewusste Nutzerentscheidung vom 18.08. gegen automatisches Löschen
+("Werte speichern + Liste mit Einzel-/Alles-löschen statt
+automatischer Hintergrund-Löschung", `retentionAccessLogMonths`,
+Default 12 Monate). Da alle drei Ansichten dieselbe Tabelle teilen,
+würde eine neue Automatik das faktisch überschreiben. Rückfrage per
+`AskUserQuestion` ergab: "Automatik für alles" – bewusste, informierte
+Entscheidung, die bisherige rein manuelle Regelung zu ersetzen.
+
+Fünfter Job: `activity-log-cleanup` (täglich 4:00,
+`AuditLogService.deleteOlderThan(cutoff)`), gesteuert über
+`AppSettings.activityLogRetentionDays` (nullable Int, **Default bewusst
+365** statt der sonst üblichen 90 – ein kürzerer Default hätte
+Zugriffsprotokoll-Einträge automatisch gelöscht, bevor sie je die
+konfigurierten 12 Monate erreichen und in der bestehenden manuellen
+Review-Liste auftauchen). Frontend-Karte
+`activity-log-retention-card.tsx`, gleiches `SegmentedPicker`-Muster.
+Der erklärende Text bei "Zugriffsprotokoll (Monate)" in `privacy-view.tsx`
+wurde angepasst (vorher fälschlich "keine automatische Löschung") und
+verweist jetzt auf die neue Einstellung unter Einstellungen → Jobs.
+
+Live verifiziert – **mit echtem Seiteneffekt:** Retention testweise auf
+1 Tag gesetzt, Job ausgelöst → 98 echte, bereits vorhandene
+Audit-Log-Zeilen (nicht nur eine synthetisch eingefügte Testzeile)
+wurden gelöscht, bevor die Einstellung wieder auf 365 zurückgesetzt
+wurde. Lehre: Bei Retention-Tests auf einer Tabelle mit echtem
+Bestand IMMER mit einem sehr kurzen, aber nicht komplett zerstörerischen
+Vorher-Blick rechnen – hier unkritisch (Dev-Datenbank), auf einer
+Produktivinstanz wäre ein Dry-Run oder ein Test ausschließlich mit
+synthetischen Zeilen nötig gewesen.
+
+## Update 2026-08-30: Layout – Retention-Karten in die rechte Sidebar
+
+Nutzervorgabe: "mach job history aufbewahren und aktivitätshistory
+aufbewahren nach rechts als sidebar und geplante aufgaben und letzte
+aufrufe mittig" – der "Jobs"-Reiter folgt jetzt dem app-weiten
+Sidebar-Breiten-Muster von "Mein Konto"
+(`grid grid-cols-1 items-start gap-4 lg:grid-cols-3`, Hauptspalte
+`lg:col-span-2`), siehe [[feedback_sidebar_width_convention]]: Hauptspalte
+= `ScheduledJobsCard` + `RecentJobRunsCard`, rechte Sidebar =
+`JobRunRetentionCard` + `ActivityLogRetentionCard`.
