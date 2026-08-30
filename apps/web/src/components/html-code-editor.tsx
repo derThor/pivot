@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, type ReactNode } from "react";
+import { useTheme } from "next-themes";
 import CodeMirror, {
   EditorView,
   type ReactCodeMirrorRef,
@@ -49,6 +50,12 @@ export function HtmlCodeEditor({
 }) {
   const editorRef = useRef<ReactCodeMirrorRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Nutzervorgabe, 2026-08-30: "im dark modus ist das alles hell" – der
+  // CodeMirror-Editor hatte bisher keinen `theme`-Prop und blieb dadurch
+  // immer beim hellen Standard, unabhängig vom Dashboard-eigenen
+  // Hell/Dunkel-Modus (nicht zu verwechseln mit dem Dark-Mode-CSS im
+  // Mail-HTML selbst, das unabhängig davon ist).
+  const { resolvedTheme } = useTheme();
 
   function insertAtCursor(token: string) {
     const view = editorRef.current?.view;
@@ -128,6 +135,7 @@ export function HtmlCodeEditor({
         onChange={onChange}
         extensions={[html(), EditorView.lineWrapping]}
         minHeight={minHeight}
+        theme={resolvedTheme === "dark" ? "dark" : "light"}
         className="min-w-0 overflow-hidden rounded-b-lg text-sm"
       />
     </div>
