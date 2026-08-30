@@ -380,7 +380,7 @@ export function ContentVersionsExplorer({
             </div>
 
             <TabsContent value="preview">
-              <div className="sticky top-4 flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-xl border border-border bg-card">
+              <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card">
                 <div className="flex shrink-0 items-center gap-3 border-b border-border bg-muted px-4 py-2.5">
                   <div className="flex shrink-0 gap-1.5">
                     <span className="size-2.5 rounded-full bg-border" />
@@ -391,7 +391,7 @@ export function ContentVersionsExplorer({
                     /{content.slug} · Vorschau · Version {selectedRow.versionNumber}
                   </div>
                 </div>
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="p-6">
                   <ContentPreviewRender
                     content={{
                       title: content.title,
