@@ -443,16 +443,24 @@ ein Array serialisierter Modul-Instanzen ist – der `DiffBox`-Wort-Diff
 - `apps/api/src/content/content.service.ts` (`findVersions`, `rollback`)
 - `apps/api/src/content/content.controller.ts`,
   `dto/query-content-versions.dto.ts`
-- `apps/web/src/components/content-versions-list.tsx`
+- `apps/web/src/components/content-versions-explorer.tsx` (neu, ersetzt
+  das gelöschte `content-versions-list.tsx`)
+- `apps/web/src/lib/content-version-diff.ts` (neu:
+  `computeFieldChanges`/`summarizeFieldChanges`/`stringifyForDisplay`)
 - `apps/web/src/app/dashboard/content/[id]/versions/page.tsx`
 - `apps/web/src/app/dashboard/content/[id]/edit/page.tsx` (Link)
 - `apps/web/src/app/api/content/[id]/versions/[versionId]/rollback/route.ts`
 - `apps/web/src/components/confirm-delete-dialog.tsx`
   (`confirmLabel`/`confirmingLabel`/`variant`-Props, kontrolliertes
   `open`/Auto-Close)
-- `apps/web/src/lib/api-server.ts` (`ContentVersion`,
-  `getContentVersions`, `getContentType`)
-- `apps/api/test/content-versions.e2e-spec.ts`
+- `apps/web/src/lib/api-server.ts` (`ContentVersion` inkl.
+  `status`/`trigger`, `ContentVersionTrigger`, `getContentVersions`)
+- `packages/database/prisma/schema.prisma` (`ContentVersion.status`,
+  `ContentVersion.trigger`, `enum ContentVersionTrigger`)
+- `apps/api/test/content-versions.e2e-spec.ts` (Hinweis: e2e-Suite
+  aktuell insgesamt nicht lauffähig – Jest scheitert schon beim
+  Modul-Import an `juice`/ESM, siehe `mailer.service.ts`; vorbestehend,
+  nicht durch dieses Redesign verursacht)
 
 ## Offene Punkte
 
@@ -461,8 +469,116 @@ ein Array serialisierter Modul-Instanzen ist – der `DiffBox`-Wort-Diff
   Backend + Admin-Dashboard).
 - Rollback betrifft nur `Content.data`, nicht Titel/Status/SEO-Felder
   (Systemgrenze durch bestehendes `ContentVersion`-Schema).
-- Keine Diff-Ansicht zwischen zwei beliebigen historischen Versionen,
-  nur "Version vs. aktueller Stand".
+- ~~Keine Diff-Ansicht zwischen zwei beliebigen historischen Versionen,
+  nur "Version vs. aktueller Stand"~~ – seit dem Redesign unten
+  standardmäßig "Version vs. direkte Vorversion" statt "vs. aktuell"
+  (Ausnahme: die synthetische "Aktuell"-Zeile vergleicht weiterhin
+  gegen die neueste echte Version).
+
+## Redesign: Liste+Detail-Ansicht mit Vorschau-/Änderungen-Tabs (2026-08-30)
+
+Nutzervorgabe: "genauso wie auf dem Bild dargestellt … links in der
+sidebar die einzelnen versionen, rechts wird dann die vorschau in einem
+tab und die html änderungen im anderen tab gezeigt." Ersetzt die
+bisherige `content-versions-list.tsx` (flache Liste, jede Karte einzeln
+aufklappbar, Diff immer "Version vs. aktueller Stand") komplett durch
+`content-versions-explorer.tsx` – gleiches Liste+Detail-Prinzip wie die
+"Explorer"-Komponenten (`roles-explorer.tsx`), aber mit fester,
+schmaler linker Spalte (`lg:grid-cols-[320px_1fr]`, kein
+`grid-cols-3`-Sidebar-Muster – das gilt nur für rechte Info-Sidebars,
+nicht für linke Listennavigation, siehe
+[[feedback_sidebar_width_convention]]).
+
+**Zwei bewusste, mit dem Nutzer abgestimmte Abweichungen von der
+Bildvorlage** (per Rückfrage vorab geklärt, nicht stillschweigend
+entschieden):
+
+1. **Status-Badges (Veröffentlicht/Entwurf/Geplant/Archiviert):**
+   `ContentVersion` bekam dafür ein neues, nullable `status
+   ContentStatus?`-Feld (Statusabbild von `Content.status` zum
+   Sicherungszeitpunkt) – befüllt in `ContentService.update()` und
+   `rollback()`. **Nullable statt eines Defaults**: bereits bestehende
+   Versionen kennen ihren damaligen Status nicht rückwirkend und zeigen
+   deshalb ehrlich KEIN Badge, statt für jede Altzeile fälschlich
+   "Entwurf" anzunehmen. Farb-Zuordnung 1:1 aus `content-table.tsx`
+   übernommen (PUBLISHED=`badge--green`, DRAFT=`badge--slate`,
+   SCHEDULED=`badge--amber`, ARCHIVED=`badge--blue`), "Aktuell" (die
+   synthetische, nicht in der DB existierende oberste Zeile für den
+   Live-Stand) bekommt immer `badge--lime`.
+2. **"index.html"-Diff aus der Bildvorlage:** Pivot ist headless – es
+   gibt nirgends im Repo einen Schritt, der `Content.data` zu einem
+   echten HTML-Dokument serialisiert (weder für die öffentliche Seite,
+   die es gar nicht gibt, noch für die interne/Token-Vorschau, die nur
+   eine React-Komponentenbaum-Ausgabe ist, siehe
+   `content-preview-render.tsx`). Ein Label wie "index.html" wäre daher
+   erfunden. Die "Änderungen"-Ansicht zeigt stattdessen **einen
+   Diff-Block pro geändertem Feld**, benannt nach dem echten Feldnamen
+   (z.B. "cover_headline — Version 14 vs. vorherige") – exakt das
+   optische Diff-Format (Zeilennummern, rot/grün, `+N
+   hinzugefügt`/`-N entfernt`-Zähler) aber mit einer ehrlichen
+   Beschriftung.
+
+**"Automatisch"-Badge aus der Bildvorlage existiert ebenfalls nicht
+real** – das Autosave in `content-editor-form.tsx` schreibt
+ausschließlich lokal in `localStorage` (siehe
+[content-autosave.md](./content-autosave.md)), erzeugt NIE eine
+server-seitige `ContentVersion`-Zeile. Es gibt in dieser App also keinen
+echten "System"-Akteur, der Versionen anlegt. Stattdessen bekam
+`ContentVersion` ein zweites neues, nullable Feld `trigger
+ContentVersionTrigger?` (`EDIT` | `ROLLBACK_BACKUP`) – die einzige
+echte "systemartige" Versionsentstehung in dieser App ist die
+Sicherheits-Kopie, die `rollback()` unmittelbar vor dem Zurücksetzen
+anlegt. Diese Zeile bekommt statt eines erfundenen "Automatisch" ein
+ehrliches Badge "Sicherung" (`badge--slate`, dieselbe neutrale Farbe,
+die die Bildvorlage für "Automatisch" vorsah).
+
+**Echte, berechnete Änderungsbeschreibung statt Lorem-Ipsum-Text:** die
+einzeilige Kurzbeschreibung pro Sidebar-Karte (z.B. "Titel geändert,
+Bild-Baustein hinzugefügt") wird von einem neuen, reinen Hilfsmodul
+`apps/web/src/lib/content-version-diff.ts` aus einem echten
+Feld-für-Feld-Vergleich der beiden Datenstände erzeugt
+(`computeFieldChanges`/`summarizeFieldChanges`) – kein erfundener Text.
+Gleiches Modul liefert auch die zeilenbasierten Diff-Blöcke im
+"Änderungen"-Tab (`stringifyForDisplay` + `diffLines` aus dem bereits
+vorhandenen `diff`-Paket).
+
+**Versionsnummerierung:** rein positionsbasiert (`meta.total - globalIndex`
+für echte Versionen, `meta.total + 1` für "Aktuell"), keine eigene
+Spalte in der DB – entspricht exakt der Bildvorlage ("Version 14" ganz
+oben bei 13 gespeicherten Versionen). **Bekannte Grenze:** die
+"Vorherige Version"-Diff eines Eintrags ganz am Ende einer Seite kann
+nicht berechnet werden, wenn die nächstältere Version bereits auf der
+nächsten Pagination-Seite liegt (nicht geladen) – zeigt dann ehrlich
+"Kein Vergleichsstand in dieser Ansicht geladen." statt eines falschen
+Diffs. Live mit echten Daten ausgelöst und bestätigt (Seitengröße 10,
+11 vorhandene Versionen).
+
+**Vorschau-Tab:** rendert die volle Seite der ausgewählten Version über
+das bereits bestehende `ContentPreviewRender` (dieselbe Komponente wie
+die interne/Token-Vorschau) mit `data` der jeweiligen Version statt des
+Live-Stands – keine neue Rendering-Logik nötig. Dekorative
+"Browser-Leiste" (drei Punkte + Pfad-Zeile) ist rein optisch, zeigt aber
+den echten `content.slug` statt einer erfundenen Domain (Pivot hat als
+Headless-CMS keine eigene öffentliche Domain, die es hier korrekt
+anzeigen könnte). Panel ist `sticky top-4 max-h-[calc(100vh-2rem)]`
+(Nutzervorgabe, gleicher Tag: "höhe der vorschau soll volle höhe
+haben") – gleiches Muster wie die Bausteine-Einstellungen-Sidebar in
+`block-editor-field.tsx`.
+
+**"Wiederherstellen"** ist jetzt ein einzelner Button oben in der
+Kopfzeile (wirkt auf die in der Sidebar ausgewählte Version), nicht
+mehr pro Zeile – deaktiviert für die "Aktuell"-Zeile (nichts
+wiederherzustellen). Einzel-Löschen pro Version blieb als kleines
+Icon in jeder Sidebar-Zeile erhalten; die bisherige
+Mehrfachauswahl/Bulk-Löschen-Toolbar (`useSelection`/
+`SelectionToolbar`) entfiel, da sie in der neuen Liste+Detail-Ansicht
+nicht vorgesehen war und in der Bildvorlage nicht auftaucht.
+
+Live verifiziert: `status`/`trigger` korrekt befüllt bei echtem
+`PATCH`/`rollback` (nicht nur typgeprüft), Alt-Versionen zeigen
+`status: null, trigger: null`, Seite rendert serverseitig fehlerfrei
+mit echten Badges/Zusammenfassungen (per authentifiziertem Abruf
+geprüft, kein Headless-Browser verfügbar).
 - Diff arbeitet auf dem rohen HTML-String von `richtext`-Feldern (keine
   HTML-bewusste Diff-Darstellung) – für reine Textänderungen gut lesbar,
   bei reinen Formatierungsänderungen zeigt der Wortdiff auch die
