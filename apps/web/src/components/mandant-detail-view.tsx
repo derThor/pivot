@@ -692,7 +692,7 @@ export function MandantDetailView({
               return (
                 <div
                   key={entry.moduleKey}
-                  className="flex flex-col gap-3 rounded-lg bg-muted p-3"
+                  className="flex flex-col gap-3 rounded-lg border border-border bg-muted p-3"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <button
