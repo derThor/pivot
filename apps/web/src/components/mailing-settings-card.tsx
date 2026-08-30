@@ -689,7 +689,7 @@ export function MailingSettingsCard({
           </TabsList>
 
           <TabsContent value="templates" className="pt-4">
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr]">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
               <div className="flex flex-col gap-4">
                 {groups.map((group) => (
                   <div key={group.category} className="flex flex-col gap-1">
@@ -744,7 +744,7 @@ export function MailingSettingsCard({
                   </div>
                 ))}
               </div>
-              <div className="rounded-xl border border-border p-4">
+              <div className="min-w-0 rounded-xl border border-border p-4">
                 {selected && (
                   <TemplateDetail
                     key={selected.id}
@@ -758,7 +758,7 @@ export function MailingSettingsCard({
           </TabsContent>
 
           <TabsContent value="shells" className="pt-4">
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr]">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between gap-2 border-b border-border px-2 pb-1.5">
                   <p className="text-xs font-semibold tracking-wide text-accent-foreground uppercase">
@@ -799,7 +799,7 @@ export function MailingSettingsCard({
                   ))
                 )}
               </div>
-              <div className="rounded-xl border border-border p-4">
+              <div className="min-w-0 rounded-xl border border-border p-4">
                 {selectedShell ? (
                   <ShellDetail
                     key={selectedShell.id}

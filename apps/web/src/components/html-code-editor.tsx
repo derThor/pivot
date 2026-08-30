@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import CodeMirror, {
+  EditorView,
   type ReactCodeMirrorRef,
 } from "@uiw/react-codemirror";
 import { html } from "@codemirror/lang-html";
@@ -65,7 +66,7 @@ export function HtmlCodeEditor({
   }
 
   return (
-    <div className="flex flex-col gap-1.5 overflow-hidden rounded-lg border border-input">
+    <div className="flex min-w-0 flex-col gap-1.5 overflow-hidden rounded-lg border border-input">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-input bg-background p-2">
         <div className="flex flex-wrap gap-1.5">
           {placeholderChips?.map((chip) => (
@@ -107,9 +108,9 @@ export function HtmlCodeEditor({
         ref={editorRef}
         value={value}
         onChange={onChange}
-        extensions={[html()]}
+        extensions={[html(), EditorView.lineWrapping]}
         minHeight={minHeight}
-        className="text-sm"
+        className="min-w-0 text-sm"
       />
     </div>
   );
