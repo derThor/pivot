@@ -320,11 +320,71 @@ export class MailerService {
    * gewählte (oder Standard-)Hülle ein. `null` = Vorlage ist pausiert
    * ("Versand aktiv" aus) – der Aufrufer überspringt den Versand dann
    * kommentarlos, wie ein pausierter Job. */
-  /** Firmen-Platzhalter (Nutzervorgabe, 2026-08-30: "genauso wie die
-   * Firmenangaben ... damit die Vorlage komplett dynamisch ist") – echte
-   * Werte aus AppSettings, für jede Vorlage in Betreff UND Text
-   * verfügbar (siehe COMPANY_MAIL_PLACEHOLDER_KEYS). */
-  private async companyVars(): Promise<Record<string, string>> {
+  private async renderSystemTemplate(
+    key: string,
+    vars: Record<string, string>,
+    options?: { ignoreEnabled?: boolean },
+  ): Promise<RenderedMail | null> {
+    const fallback = SYSTEM_MAIL_TEMPLATES.find((t) => t.key === key);
+    if (!fallback) {
+      throw new Error(`Unbekannter Mail-Vorlagen-Schlüssel: ${key}`);
+    }
+    const override = await this.prisma.mailTemplate.findUnique({
+      where: { key },
+    });
+    if (override && !override.enabled && !options?.ignoreEnabled) return null;
+    const subject = this.renderPlaceholders(
+      override?.subject ?? fallback.subject,
+      vars,
+    );
+    const text = this.renderPlaceholders(override?.body ?? fallback.body, vars);
+    const html = await this.renderInShell(
+      text,
+      subject,
+      override?.shellId ?? null,
+    );
+    return { subject, text, html };
+  }
+
+  private async renderFormTemplate(
+    formId: string,
+    kind: FormMailKind,
+    vars: Record<string, string>,
+    options?: { ignoreEnabled?: boolean },
+  ): Promise<RenderedMail | null> {
+    const form = await this.prisma.form.findUnique({ where: { id: formId } });
+    if (!form) return null;
+    const fallback = defaultFormTemplate(form, kind);
+    const override = await this.prisma.mailTemplate.findUnique({
+      where: { formId_formKind: { formId, formKind: kind } },
+    });
+    if (override && !override.enabled && !options?.ignoreEnabled) return null;
+    const subject = this.renderPlaceholders(
+      override?.subject ?? fallback.subject,
+      vars,
+    );
+    const text = this.renderPlaceholders(override?.body ?? fallback.body, vars);
+    const html = await this.renderInShell(
+      text,
+      subject,
+      override?.shellId ?? null,
+    );
+    return { subject, text, html };
+  }
+
+  // Mitgelieferte, neutrale Standard-Hülle (Nutzervorgabe: eine neue,
+  // noch nicht konfigurierte Installation braucht trotzdem sofort
+  // brauchbare Mails) – greift, solange kein Client eine eigene Hülle
+  // gebaut hat.
+  private static readonly DEFAULT_SHELL_CONTENT = `<div style="max-width:600px;margin:0 auto;padding:32px 24px;font-family:sans-serif;color:#111827;">${MAIL_SHELL_CONTENT_PLACEHOLDER}</div>`;
+
+  /** Firmen-Platzhalter für die Hülle (Nutzerkorrektur, 2026-08-30: "die
+   * sind ja grundsätzlich und brauchen nicht bei den Vorlagen rein, da es
+   * Aufbau ist") – echte Werte aus AppSettings, ausschließlich im
+   * E-Mail-Template (Hülle) verfügbar, nicht in der einzelnen Vorlage. */
+  private async companyVars(): Promise<
+    Record<(typeof COMPANY_MAIL_PLACEHOLDER_KEYS)[number], string>
+  > {
     const settings = await this.prisma.appSettings.findUnique({
       where: { id: 1 },
       select: {
@@ -352,77 +412,23 @@ export class MailerService {
     };
   }
 
-  private async renderSystemTemplate(
-    key: string,
-    vars: Record<string, string>,
-    options?: { ignoreEnabled?: boolean },
-  ): Promise<RenderedMail | null> {
-    const fallback = SYSTEM_MAIL_TEMPLATES.find((t) => t.key === key);
-    if (!fallback) {
-      throw new Error(`Unbekannter Mail-Vorlagen-Schlüssel: ${key}`);
-    }
-    const override = await this.prisma.mailTemplate.findUnique({
-      where: { key },
-    });
-    if (override && !override.enabled && !options?.ignoreEnabled) return null;
-    const allVars = { ...(await this.companyVars()), ...vars };
-    const subject = this.renderPlaceholders(
-      override?.subject ?? fallback.subject,
-      allVars,
-    );
-    const text = this.renderPlaceholders(
-      override?.body ?? fallback.body,
-      allVars,
-    );
-    const html = await this.renderInShell(text, override?.shellId ?? null);
-    return { subject, text, html };
-  }
-
-  private async renderFormTemplate(
-    formId: string,
-    kind: FormMailKind,
-    vars: Record<string, string>,
-    options?: { ignoreEnabled?: boolean },
-  ): Promise<RenderedMail | null> {
-    const form = await this.prisma.form.findUnique({ where: { id: formId } });
-    if (!form) return null;
-    const fallback = defaultFormTemplate(form, kind);
-    const override = await this.prisma.mailTemplate.findUnique({
-      where: { formId_formKind: { formId, formKind: kind } },
-    });
-    if (override && !override.enabled && !options?.ignoreEnabled) return null;
-    const allVars = { ...(await this.companyVars()), ...vars };
-    const subject = this.renderPlaceholders(
-      override?.subject ?? fallback.subject,
-      allVars,
-    );
-    const text = this.renderPlaceholders(
-      override?.body ?? fallback.body,
-      allVars,
-    );
-    const html = await this.renderInShell(text, override?.shellId ?? null);
-    return { subject, text, html };
-  }
-
-  // Mitgelieferte, neutrale Standard-Hülle (Nutzervorgabe: eine neue,
-  // noch nicht konfigurierte Installation braucht trotzdem sofort
-  // brauchbare Mails) – greift, solange kein Client eine eigene Hülle
-  // gebaut hat.
-  private static readonly DEFAULT_SHELL_CONTENT = `<div style="max-width:600px;margin:0 auto;padding:32px 24px;font-family:sans-serif;color:#111827;">${MAIL_SHELL_CONTENT_PLACEHOLDER}</div>`;
-
-  /** Setzt den gerenderten Vorlagen-Inhalt an der `{{content}}`-Stelle der
-   * gewählten (oder Standard-)Hülle ein. `shellId` ohne Treffer fällt auf
-   * die Standard-Hülle der Installation zurück, keine Hülle konfiguriert
-   * fällt auf die mitgelieferte Standard-Hülle zurück (siehe oben). */
+  /** Setzt den gerenderten Vorlagen-Inhalt UND die Firmen-/Betreff-
+   * Platzhalter in die gewählte (oder Standard-)Hülle ein. `shellId` ohne
+   * Treffer fällt auf die Standard-Hülle der Installation zurück, keine
+   * Hülle konfiguriert fällt auf die mitgelieferte Standard-Hülle zurück
+   * (siehe oben). `{{subject}}` erlaubt der Hülle, den Betreff als eigene
+   * Überschrift im Layout anzuzeigen (Nutzervorgabe, 2026-08-30). */
   private async wrapInShell(
-    contentHtml: string,
+    content: string,
+    subject: string,
     shellId: string | null,
   ): Promise<string> {
     const shell = shellId
       ? await this.prisma.mailShell.findUnique({ where: { id: shellId } })
       : await this.prisma.mailShell.findFirst({ where: { isDefault: true } });
     const shellContent = shell?.content ?? MailerService.DEFAULT_SHELL_CONTENT;
-    return shellContent.replaceAll(MAIL_SHELL_CONTENT_PLACEHOLDER, contentHtml);
+    const vars = { ...(await this.companyVars()), subject, content };
+    return this.renderPlaceholders(shellContent, vars);
   }
 
   /** Klartext einer Vorlage → fertiges, CSS-inlined HTML in der gewählten
@@ -433,10 +439,12 @@ export class MailerService {
    * Inhalt zusammen). */
   private async renderInShell(
     text: string,
+    subject: string,
     shellId: string | null,
   ): Promise<string> {
     const combined = await this.wrapInShell(
       this.plainTextToHtml(text),
+      subject,
       shellId,
     );
     return juice(combined);
@@ -746,7 +754,7 @@ export class MailerService {
             ? (override?.recipientTo ?? null)
             : null,
           recipientEditable: def.recipientEditable,
-          placeholders: [...COMPANY_MAIL_PLACEHOLDER_KEYS, ...def.placeholders],
+          placeholders: def.placeholders,
           isCustomized: Boolean(override),
           formId: null,
           shellId: override?.shellId ?? null,
@@ -761,7 +769,6 @@ export class MailerService {
     });
     const formItems: MailTemplateListItem[] = forms.flatMap((form) => {
       const placeholders = [
-        ...COMPANY_MAIL_PLACEHOLDER_KEYS,
         ...formFieldPlaceholders(form.fields),
         'formName',
         'submittedAt',

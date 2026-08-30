@@ -105,10 +105,10 @@ export const SYSTEM_MAIL_TEMPLATES: SystemMailTemplateDefault[] = [
 ];
 
 // Firmen-Platzhalter (Nutzervorgabe, 2026-08-30: "genauso wie die
-// Firmenangaben ... damit die Vorlage komplett dynamisch ist") – für JEDE
-// Vorlage in Betreff UND Text verfügbar, echte Werte aus AppSettings
-// (siehe MailerService.companyVars()), nicht nur ein Beispielwert wie die
-// übrigen, vorlagenspezifischen Platzhalter.
+// Firmenangaben"; Korrektur im selben Zug: "die sind ja grundsätzlich und
+// brauchen nicht bei den Vorlagen rein, da es Aufbau ist") – gehören zum
+// Aufbau (E-Mail-Template/Hülle), nicht zur einzelnen Vorlage, echte Werte
+// aus AppSettings (siehe MailerService.companyVars()/wrapInShell()).
 export const COMPANY_MAIL_PLACEHOLDER_KEYS = [
   'companyName',
   'companyAddress',

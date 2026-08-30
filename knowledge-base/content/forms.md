@@ -651,6 +651,31 @@ selbst gebauten Hüllen-HTML, nirgends als echter `{{...}}`-Platzhalter.
 - Vorschau-Tab zeigt jetzt zusätzlich den gerenderten Betreff (mit
   Beispielwerten) oberhalb der Hülle-Vorschau.
 
+### Korrektur direkt im Anschluss: Firmen-Platzhalter gehören in die Hülle, nicht in die Vorlage
+
+Nutzerkorrektur, direkt nachdem Firmen-Platzhalter (siehe oben) in jeder
+Vorlage gelandet waren: "die sind ja grundsätzlich und brauchen nicht bei
+den Vorlagen rein, da es Aufbau ist." Firmendaten sind Teil des
+Aufbaus/CI (Hülle), nicht des einzelnen Vorlagen-Inhalts – zusätzlich
+sollte auch der Betreff/die Überschrift selbst als Platzhalter in der
+Hülle verfügbar sein (z.B. für eine feste Überschriften-Zeile im
+Hüllen-Layout, die je Vorlage variiert).
+
+- Firmen-Platzhalter aus `listMailTemplates()`'s `placeholders`-Array
+  wieder entfernt (nicht mehr in der Vorlagen-Legende sichtbar).
+- **`wrapInShell()` generalisiert**: statt nur `{{content}}` per
+  `replaceAll()` einzusetzen, läuft jetzt `renderPlaceholders()` mit
+  `{...companyVars(), subject, content}` über die komplette Hülle –
+  `{{content}}` ist damit einfach ein Platzhalter unter mehreren, kein
+  Sonderfall mehr. Neu: **`{{subject}}`**, damit die Hülle den Betreff
+  als eigene Überschrift im Layout zeigen kann.
+- `ShellDetail`s `HtmlCodeEditor`-Platzhalter-Chips um `{{subject}}` +
+  die vier Firmen-Platzhalter erweitert – vorher stand dort nur
+  `{{content}}`, weshalb der Nutzer "aktuell sehe ich da nichts" meldete.
+- `HtmlCodeEditor`s `minHeight` auf `70vh` erhöht (Nutzervorgabe: "html
+  editor auf maximale height stellen") – 20rem zeigte bei einem
+  vollständigen HTML-Dokument kaum mehr als den `<head>`-Block.
+
 ## Offene Punkte / mögliche Folgearbeiten
 
 - Datei-Upload-Feldtyp (Backend-Katalog vorhanden, kein Upload-Handling).

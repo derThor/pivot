@@ -28,7 +28,10 @@ export function HtmlCodeEditor({
   value,
   onChange,
   placeholderChips,
-  minHeight = "20rem",
+  // Nutzervorgabe, 2026-08-30: "bitte den html editor auf maximale height
+  // stellen" – komplette Mail-Hüllen sind lange Dokumente, 20rem zeigte
+  // kaum mehr als den `<head>`-Block.
+  minHeight = "70vh",
 }: {
   value: string;
   onChange: (html: string) => void;

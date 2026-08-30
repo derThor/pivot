@@ -651,7 +651,8 @@ function ShellDetail({
         <p className="text-xs text-muted-foreground">
           Der Platzhalter {SHELL_CONTENT_PLACEHOLDER} markiert die Stelle,
           an der der Vorlagen-Inhalt eingesetzt wird – muss genau einmal
-          vorhanden sein.
+          vorhanden sein. Betreff und Firmenangaben (siehe Legende unten)
+          sind zusätzlich verfügbar und dürfen beliebig oft vorkommen.
         </p>
         <HtmlCodeEditor
           value={content}
@@ -660,6 +661,23 @@ function ShellDetail({
             {
               token: SHELL_CONTENT_PLACEHOLDER,
               description: "Hier wird der Vorlagen-Inhalt eingesetzt",
+            },
+            {
+              token: "{{subject}}",
+              description: "Betreff/Überschrift der jeweiligen Vorlage",
+            },
+            { token: "{{companyName}}", description: "Firmenname" },
+            {
+              token: "{{companyAddress}}",
+              description: "Firmenadresse (Straße, PLZ, Ort)",
+            },
+            {
+              token: "{{companyEmail}}",
+              description: "Firmen-E-Mail-Adresse",
+            },
+            {
+              token: "{{companyPhone}}",
+              description: "Firmen-Telefonnummer",
             },
           ]}
         />
