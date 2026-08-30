@@ -734,6 +734,56 @@ entsprechend das logo angezeigt wird bei der email".
   dass das nicht in jedem Mail-Programm zuverlässig funktioniert (u. a.
   nicht in der Gmail-App) – bewusst keine erfundene 100%-Garantie.
 
+### Nachtrag: Badges + fixierte Kopfzeile im HTML-Editor, `overflow-hidden` bricht `position: sticky` gleich zweimal
+
+Nutzervorgabe: Platzhalter-Chips im `HtmlCodeEditor` als `Badge`
+darstellen, und die Kopfzeile (Hinweistext + Chips + Upload-Button) beim
+Scrollen durch ein langes HTML-Dokument sichtbar halten ("immer
+nutzbar").
+
+- **Chips als `Badge`**: `variant="secondary"` sah kaum anders aus als
+  der Kopfzeilen-Hintergrund (zu wenig Kontrast) – auf `variant="outline"`
+  gewechselt (echter Rahmen, dadurch unabhängig vom Theme immer klar als
+  Badge erkennbar).
+- **`note`-Prop ergänzt**: die beiden Hinweistexte über dem Editor
+  (Pflicht-Platzhalter, Dark-Mode-CSS-Technik) lebten bisher außerhalb
+  von `HtmlCodeEditor` in `ShellDetail` und scrollten separat weg. Jetzt
+  Teil derselben fixierten Kopfzeile wie die Chips.
+- **`position: sticky` griff trotzdem nicht – zweimal `overflow-hidden`
+  im Ancestor-Pfad, nicht nur einmal:**
+  1. `HtmlCodeEditor`s eigener äußerer Wrapper hatte `overflow-hidden`
+     (nur zum Beschneiden der abgerundeten Ecken um CodeMirror gedacht).
+  2. **Nachdem das behoben war, bestand das Problem weiter** – Ursache
+     war die gemeinsame `Card`-UI-Basiskomponente
+     (`apps/web/src/components/ui/card.tsx`), die `overflow-hidden` fest
+     in ihren Basis-Klassen trägt (für Bild-in-Karte-Eckenbeschneidung).
+     `MailingSettingsCard`s äußerstes `<Card>` sitzt zwischen der
+     Kopfzeile und dem tatsächlichen Scroll-Container der Seite – exakt
+     derselbe Fehlerklasse wie Punkt 1, nur eine Ebene höher.
+
+  **Warum das so tückisch ist:** `overflow: hidden` (oder `auto`/`scroll`)
+  auf einem Vorfahren macht diesen laut CSS-Spezifikation automatisch zum
+  Bezugs-"Scroll-Container" für `position: sticky`-Nachfahren – *auch
+  wenn dieser Vorfahre selbst nie scrollt* (seine Höhe wächst einfach mit
+  dem Inhalt mit, kein sichtbarer Scrollbalken). Die Klebrigkeit wird
+  dann gegen diesen nie scrollenden Container berechnet und hat keine
+  sichtbare Wirkung, obwohl die Klasse `sticky` korrekt gesetzt ist (im
+  DOM/DevTools sichtbar, aber wirkungslos) – daher zwei aufeinanderfolgende
+  Korrekturrunden nötig, bis der komplette Vorfahren-Pfad frei von
+  ungewolltem `overflow-hidden` war.
+
+  **Lehre:** bei einem "sticky funktioniert nicht"-Bug reicht es nicht,
+  nur die unmittelbare Elternkomponente zu prüfen – der GESAMTE
+  Vorfahren-Pfad bis zum echten Scroll-Container muss frei von
+  `overflow: hidden/auto/scroll` sein, einschließlich gemeinsam genutzter
+  UI-Basiskomponenten wie `Card`, deren Standard-Styling man nicht sofort
+  vor Augen hat. Fix: pro betroffener Stelle gezielt mit
+  `overflow-visible` überschreiben (nicht global an der Basiskomponente
+  ändern, da andere Cards `overflow-hidden` für Bild-Ecken brauchen);
+  Ecken-Beschneidung stattdessen pro Kindelement einzeln lösen
+  (`rounded-t-lg`/`rounded-b-lg` statt einem `overflow-hidden`-Elternteil
+  – gleiches Muster wie beim Rich-Text-Editor-Toolbar).
+
 ## Offene Punkte / mögliche Folgearbeiten
 
 - Datei-Upload-Feldtyp (Backend-Katalog vorhanden, kein Upload-Handling).
