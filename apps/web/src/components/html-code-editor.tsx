@@ -1,7 +1,6 @@
 "use client";
 
-import { useRef, type ReactNode } from "react";
-import { useTheme } from "next-themes";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import CodeMirror, {
   EditorView,
   type ReactCodeMirrorRef,
@@ -54,8 +53,25 @@ export function HtmlCodeEditor({
   // CodeMirror-Editor hatte bisher keinen `theme`-Prop und blieb dadurch
   // immer beim hellen Standard, unabhängig vom Dashboard-eigenen
   // Hell/Dunkel-Modus (nicht zu verwechseln mit dem Dark-Mode-CSS im
-  // Mail-HTML selbst, das unabhängig davon ist).
-  const { resolvedTheme } = useTheme();
+  // Mail-HTML selbst, das unabhängig davon ist). Pivot nutzt dafür KEIN
+  // next-themes (kein `<ThemeProvider>` im Projekt, `useTheme()` liefert
+  // dort nirgends den echten Zustand – erste Korrektur war deshalb
+  // wirkungslos), sondern ein eigenes `data-pivot-theme`-Attribut auf
+  // <html>, gesteuert über theme-toggle.tsx. Gleiches
+  // Erst-nach-dem-Mount-Muster wie dort (kein Hydration-Mismatch),
+  // zusätzlich ein MutationObserver, damit der Editor auch umschaltet,
+  // wenn der Schalter betätigt wird während er schon offen ist.
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const readTheme = () =>
+      setIsDark(root.getAttribute("data-pivot-theme") === "dark");
+    readTheme();
+    const observer = new MutationObserver(readTheme);
+    observer.observe(root, { attributes: true, attributeFilter: ["data-pivot-theme"] });
+    return () => observer.disconnect();
+  }, []);
 
   function insertAtCursor(token: string) {
     const view = editorRef.current?.view;
@@ -135,7 +151,7 @@ export function HtmlCodeEditor({
         onChange={onChange}
         extensions={[html(), EditorView.lineWrapping]}
         minHeight={minHeight}
-        theme={resolvedTheme === "dark" ? "dark" : "light"}
+        theme={isDark ? "dark" : "light"}
         className="min-w-0 overflow-hidden rounded-b-lg text-sm"
       />
     </div>
