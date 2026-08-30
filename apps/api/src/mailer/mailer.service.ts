@@ -16,9 +16,9 @@ import {
   formFieldPlaceholders,
   formFieldLabels,
   hasShellContentPlaceholder,
-  htmlToPlainText,
   MAIL_SHELL_CONTENT_PLACEHOLDER,
   type FormMailKind,
+  type MailTemplateCategory,
 } from './mail-templates.catalog';
 
 interface SmtpConfig {
@@ -40,12 +40,12 @@ interface MailAttachment {
 interface RenderedMail {
   subject: string;
   text: string;
-  html?: string;
+  html: string;
 }
 
 export interface MailTemplateListItem {
   id: string;
-  category: 'auth' | 'privacy' | 'forms' | 'custom';
+  category: MailTemplateCategory;
   label: string;
   subject: string;
   body: string;
@@ -58,24 +58,17 @@ export interface MailTemplateListItem {
   placeholderLabels?: Record<string, string>;
   isCustomized: boolean;
   formId: string | null;
-  // Ab hier nur für individuelle (kind: "custom") Vorlagen relevant.
-  format: 'text' | 'html';
-  bodyHtml: string | null;
+  // Welche Hülle beim Versand verwendet wird – `null` = Standard-Hülle
+  // der Installation (siehe MailerService.wrapInShell).
   shellId: string | null;
 }
 
 export interface UpdateMailTemplateInput {
   subject?: string;
   body?: string;
-  bodyHtml?: string;
-  name?: string;
   shellId?: string | null;
   enabled?: boolean;
   recipientTo?: string | null;
-}
-
-export interface CreateMailTemplateInput {
-  name: string;
 }
 
 export interface MailShellListItem {
@@ -272,10 +265,39 @@ export class MailerService {
     );
   }
 
+  // `unknown`-sichere HTML-Erzeugung aus dem (weiterhin per Textarea
+  // gepflegten) Klartext jeder System-/Formular-Vorlage (Nutzer-Korrektur,
+  // 2026-08-30: "meine System-E-Mails haben alle kein Style" – individuelle
+  // Vorlagen wurden entfernt, das Design der Hülle gilt jetzt stattdessen
+  // für JEDE Vorlage). Erst escapen (keine HTML-Injection über
+  // Platzhalterwerte wie einen Nutzernamen), dann `http(s)://`-Links
+  // klickbar machen, dann in Absätze umbrechen.
+  private static escapeHtml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  private static linkify(escaped: string): string {
+    return escaped.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>');
+  }
+
+  private plainTextToHtml(text: string): string {
+    return text
+      .split(/\n{2,}/)
+      .map(
+        (para) =>
+          `<p>${MailerService.linkify(MailerService.escapeHtml(para)).replace(/\n/g, '<br>')}</p>`,
+      )
+      .join('\n');
+  }
+
   /** Lädt die aktuell gültige System-Vorlage (DB-Override oder
-   * Standardtext) und ersetzt die Platzhalter. `null` = Vorlage ist
-   * pausiert ("Versand aktiv" aus) – der Aufrufer überspringt den Versand
-   * dann kommentarlos, wie ein pausierter Job. */
+   * Standardtext), ersetzt die Platzhalter und setzt das Ergebnis in die
+   * gewählte (oder Standard-)Hülle ein. `null` = Vorlage ist pausiert
+   * ("Versand aktiv" aus) – der Aufrufer überspringt den Versand dann
+   * kommentarlos, wie ein pausierter Job. */
   private async renderSystemTemplate(
     key: string,
     vars: Record<string, string>,
@@ -289,13 +311,13 @@ export class MailerService {
       where: { key },
     });
     if (override && !override.enabled && !options?.ignoreEnabled) return null;
-    return {
-      subject: this.renderPlaceholders(
-        override?.subject ?? fallback.subject,
-        vars,
-      ),
-      text: this.renderPlaceholders(override?.body ?? fallback.body, vars),
-    };
+    const subject = this.renderPlaceholders(
+      override?.subject ?? fallback.subject,
+      vars,
+    );
+    const text = this.renderPlaceholders(override?.body ?? fallback.body, vars);
+    const html = await this.renderInShell(text, override?.shellId ?? null);
+    return { subject, text, html };
   }
 
   private async renderFormTemplate(
@@ -311,13 +333,13 @@ export class MailerService {
       where: { formId_formKind: { formId, formKind: kind } },
     });
     if (override && !override.enabled && !options?.ignoreEnabled) return null;
-    return {
-      subject: this.renderPlaceholders(
-        override?.subject ?? fallback.subject,
-        vars,
-      ),
-      text: this.renderPlaceholders(override?.body ?? fallback.body, vars),
-    };
+    const subject = this.renderPlaceholders(
+      override?.subject ?? fallback.subject,
+      vars,
+    );
+    const text = this.renderPlaceholders(override?.body ?? fallback.body, vars);
+    const html = await this.renderInShell(text, override?.shellId ?? null);
+    return { subject, text, html };
   }
 
   // Mitgelieferte, neutrale Standard-Hülle (Nutzervorgabe: eine neue,
@@ -341,44 +363,27 @@ export class MailerService {
     return shellContent.replaceAll(MAIL_SHELL_CONTENT_PLACEHOLDER, contentHtml);
   }
 
-  /** Individuelle (kind: "custom") Vorlage – anders als System-/Formular-
-   * Vorlagen gibt es hier keinen Katalog-Fallback, die Zeile MUSS
-   * existieren. Liefert zusätzlich zu Betreff/Plaintext das fertige,
-   * in die Hülle eingesetzte HTML. */
-  private async renderCustomTemplate(
-    id: string,
-    vars: Record<string, string>,
-    options?: { ignoreEnabled?: boolean },
-  ): Promise<RenderedMail | null> {
-    const template = await this.prisma.mailTemplate.findUnique({
-      where: { id },
-    });
-    if (!template || template.kind !== 'custom') return null;
-    if (!template.enabled && !options?.ignoreEnabled) return null;
-    const subject = this.renderPlaceholders(template.subject, vars);
-    const contentHtml = this.renderPlaceholders(template.bodyHtml ?? '', vars);
-    const combined = await this.wrapInShell(contentHtml, template.shellId);
-    // Nutzervorgabe, 2026-08-30: Hülle UND Inhalt sind jetzt rohes,
-    // freies HTML/CSS (kein Editor-Schema dazwischen mehr) – fertig
-    // gestaltete, von einer Agentur exportierte Vorlagen bringen dabei
-    // oft <style>-Blöcke mit Klassen mit, die viele Mail-Programme
-    // (allen voran Outlook) ignorieren. `juice` schreibt die Styles
-    // direkt in jedes Element (`style="..."`), einmal auf das fertige
-    // Gesamt-HTML (Hülle+Inhalt zusammen), nicht getrennt für beide.
-    const html = juice(combined);
-    return { subject, html, text: htmlToPlainText(html) };
+  /** Klartext einer Vorlage → fertiges, CSS-inlined HTML in der gewählten
+   * Hülle. Fertig gestaltete, von einer Agentur exportierte Hüllen bringen
+   * oft `<style>`-Blöcke mit Klassen mit, die viele Mail-Programme (allen
+   * voran Outlook) ignorieren – `juice` schreibt die Styles direkt in
+   * jedes Element (`style="..."`), auf das fertige Gesamt-HTML (Hülle +
+   * Inhalt zusammen). */
+  private async renderInShell(
+    text: string,
+    shellId: string | null,
+  ): Promise<string> {
+    const combined = await this.wrapInShell(
+      this.plainTextToHtml(text),
+      shellId,
+    );
+    return juice(combined);
   }
 
-  /** Öffentlich, für künftige Auslöser (Nutzervorgabe, 2026-08-29-Konzept:
-   * "Auslösung ... soll aber programmatisch referenzierbar sein können") –
-   * bewusst schon jetzt gebaut, auch wenn die UI in der ersten
-   * Ausbaustufe nur den manuellen Testversand freischaltet. */
-  async sendCustomTemplate(
-    id: string,
-    to: string,
-    vars: Record<string, string>,
-  ): Promise<void> {
-    const rendered = await this.renderCustomTemplate(id, vars);
+  async sendVerificationEmail(to: string, link: string): Promise<void> {
+    const rendered = await this.renderSystemTemplate('auth.verify-email', {
+      link,
+    });
     if (!rendered) return;
     await this.deliver(
       to,
@@ -389,20 +394,18 @@ export class MailerService {
     );
   }
 
-  async sendVerificationEmail(to: string, link: string): Promise<void> {
-    const rendered = await this.renderSystemTemplate('auth.verify-email', {
-      link,
-    });
-    if (!rendered) return;
-    await this.deliver(to, rendered.subject, rendered.text);
-  }
-
   async sendPasswordResetEmail(to: string, link: string): Promise<void> {
     const rendered = await this.renderSystemTemplate('auth.password-reset', {
       link,
     });
     if (!rendered) return;
-    await this.deliver(to, rendered.subject, rendered.text);
+    await this.deliver(
+      to,
+      rendered.subject,
+      rendered.text,
+      undefined,
+      rendered.html,
+    );
   }
 
   /** Datenschutzbeauftragter-Tab, Schalter "Bei jedem Vorfall automatisch
@@ -416,7 +419,13 @@ export class MailerService {
       { title: incident.title, severity: incident.severity },
     );
     if (!rendered) return;
-    await this.deliver(to, rendered.subject, rendered.text);
+    await this.deliver(
+      to,
+      rendered.subject,
+      rendered.text,
+      undefined,
+      rendered.html,
+    );
   }
 
   /** Datenschutzbeauftragter-Tab, Schalter "Monatsbericht per E-Mail" –
@@ -428,13 +437,19 @@ export class MailerService {
       { rows: String(rows) },
     );
     if (!rendered) return;
-    await this.deliver(to, rendered.subject, rendered.text, [
-      {
-        filename: 'monatsbericht.csv',
-        content: csv,
-        contentType: 'text/csv; charset=utf-8',
-      },
-    ]);
+    await this.deliver(
+      to,
+      rendered.subject,
+      rendered.text,
+      [
+        {
+          filename: 'monatsbericht.csv',
+          content: csv,
+          contentType: 'text/csv; charset=utf-8',
+        },
+      ],
+      rendered.html,
+    );
   }
 
   /** "Auskunft senden" (Betroffenenrechte-Kachel, Art. 15 DSGVO) – nutzt
@@ -447,13 +462,19 @@ export class MailerService {
       { rows: String(rows) },
     );
     if (!rendered) return;
-    await this.deliver(to, rendered.subject, rendered.text, [
-      {
-        filename: 'auskunft.csv',
-        content: csv,
-        contentType: 'text/csv; charset=utf-8',
-      },
-    ]);
+    await this.deliver(
+      to,
+      rendered.subject,
+      rendered.text,
+      [
+        {
+          filename: 'auskunft.csv',
+          content: csv,
+          contentType: 'text/csv; charset=utf-8',
+        },
+      ],
+      rendered.html,
+    );
   }
 
   /** Betroffenenanfragen-Log, Schalter "Eingang automatisch bestätigen":
@@ -467,7 +488,13 @@ export class MailerService {
       { dsrId },
     );
     if (!rendered) return;
-    await this.deliver(to, rendered.subject, rendered.text);
+    await this.deliver(
+      to,
+      rendered.subject,
+      rendered.text,
+      undefined,
+      rendered.html,
+    );
   }
 
   /** Betroffenenanfragen-Log, Button "Rückfrage an Absender" – der Admin
@@ -493,7 +520,13 @@ export class MailerService {
       { dsrId, dueAt: dueAt.toLocaleDateString('de-DE') },
     );
     if (!rendered) return;
-    await this.deliver(to, rendered.subject, rendered.text);
+    await this.deliver(
+      to,
+      rendered.subject,
+      rendered.text,
+      undefined,
+      rendered.html,
+    );
   }
 
   /** Auftragsverarbeiter-Tab, Karte "Offene Punkte", Button "AV-Vertrag
@@ -507,7 +540,13 @@ export class MailerService {
       { processorName },
     );
     if (!rendered) return;
-    await this.deliver(to, rendered.subject, rendered.text);
+    await this.deliver(
+      to,
+      rendered.subject,
+      rendered.text,
+      undefined,
+      rendered.html,
+    );
   }
 
   /** Systembenachrichtigungen (Wartungsmodus, Speicherplatz, Webhooks
@@ -551,7 +590,13 @@ export class MailerService {
       },
     );
     if (!rendered) return;
-    await this.deliver(to, rendered.subject, rendered.text);
+    await this.deliver(
+      to,
+      rendered.subject,
+      rendered.text,
+      undefined,
+      rendered.html,
+    );
   }
 
   /** Formular-Baustein: Bestätigung an den Absender, nur wenn das
@@ -568,7 +613,13 @@ export class MailerService {
       submittedAt: new Date().toLocaleString('de-DE'),
     });
     if (!rendered) return;
-    await this.deliver(to, rendered.subject, rendered.text);
+    await this.deliver(
+      to,
+      rendered.subject,
+      rendered.text,
+      undefined,
+      rendered.html,
+    );
   }
 
   private frontendOrigin(): string {
@@ -576,14 +627,16 @@ export class MailerService {
   }
 
   // ---------- Mailing (Einstellungen → Mailing) ----------
-  // Vereinheitlichte Liste aus System-Mails, formulargebundenen UND
-  // individuellen (kind: "custom") Vorlagen (Nutzervorgabe: zusammen
-  // unter Mailing bearbeitbar). Die Id ist entweder der feste `key`
-  // (System-Mails, enthält kein ":"), `${formId}:${formKind}`
-  // (Formular-Vorlagen) oder die echte `MailTemplate.id` (individuelle
-  // Vorlagen, existieren nur als echte DB-Zeile, kein Katalog-Fallback) –
-  // daran wird in updateMailTemplate()/resetMailTemplate()/
-  // sendMailTemplateTest() unterschieden.
+  // Vereinheitlichte Liste aus System-Mails UND formulargebundenen
+  // Vorlagen (Nutzervorgabe: zusammen unter Mailing bearbeitbar). Die Id
+  // ist entweder der feste `key` (System-Mails, enthält kein ":") oder
+  // `${formId}:${formKind}` (Formular-Vorlagen) – daran wird in
+  // updateMailTemplate()/resetMailTemplate()/sendMailTemplateTest()
+  // unterschieden. Individuelle ("kind: custom") Vorlagen gab es
+  // zwischenzeitlich (2026-08-30), wurden aber wieder entfernt: es gab
+  // keinen einzigen echten Auslöser dafür, nur den manuellen
+  // Testversand – siehe knowledge-base/content/forms.md. Das Design der
+  // Hülle (`shellId`) gilt seitdem für JEDE Vorlage.
 
   private isFormTemplateId(id: string): boolean {
     return id.includes(':');
@@ -597,8 +650,13 @@ export class MailerService {
     return { formId, formKind: formKind as FormMailKind };
   }
 
-  private isSystemTemplateId(id: string): boolean {
-    return SYSTEM_MAIL_TEMPLATES.some((t) => t.key === id);
+  private async assertShellExists(shellId: string): Promise<void> {
+    const shell = await this.prisma.mailShell.findUnique({
+      where: { id: shellId },
+    });
+    if (!shell) {
+      throw new NotFoundException(`Unbekanntes E-Mail-Template: ${shellId}`);
+    }
   }
 
   async listMailTemplates(): Promise<MailTemplateListItem[]> {
@@ -629,9 +687,7 @@ export class MailerService {
           placeholders: def.placeholders,
           isCustomized: Boolean(override),
           formId: null,
-          format: 'text' as const,
-          bodyHtml: null,
-          shellId: null,
+          shellId: override?.shellId ?? null,
         };
       },
     );
@@ -676,39 +732,17 @@ export class MailerService {
           placeholderLabels,
           isCustomized: Boolean(override),
           formId: form.id,
-          format: 'text' as const,
-          bodyHtml: null,
-          shellId: null,
+          shellId: override?.shellId ?? null,
         };
       });
     });
 
-    const customRows = overrides.filter((o) => o.kind === 'custom');
-    const customItems: MailTemplateListItem[] = customRows.map((row) => ({
-      id: row.id,
-      category: 'custom' as const,
-      label: row.name ?? 'Unbenannte Vorlage',
-      subject: row.subject,
-      body: row.body,
-      enabled: row.enabled,
-      // Kein "Empfänger"-Tab: es gibt (noch) keinen automatischen Auslöser
-      // für individuelle Vorlagen, nur den manuellen Testversand unten.
-      recipientTo: null,
-      recipientEditable: false,
-      placeholders: [],
-      isCustomized: true,
-      formId: null,
-      format: 'html' as const,
-      bodyHtml: row.bodyHtml,
-      shellId: row.shellId,
-    }));
-
-    return [...systemItems, ...formItems, ...customItems];
+    return [...systemItems, ...formItems];
   }
 
   async updateMailTemplate(id: string, dto: UpdateMailTemplateInput) {
-    if (!this.isFormTemplateId(id) && !this.isSystemTemplateId(id)) {
-      return this.updateCustomMailTemplate(id, dto);
+    if (dto.shellId) {
+      await this.assertShellExists(dto.shellId);
     }
 
     if (this.isFormTemplateId(id)) {
@@ -729,12 +763,14 @@ export class MailerService {
           subject: dto.subject ?? fallback.subject,
           body: dto.body ?? fallback.body,
           enabled: dto.enabled ?? true,
+          shellId: dto.shellId ?? null,
           recipientTo: recipientEditable ? (dto.recipientTo ?? null) : null,
         },
         update: {
           subject: dto.subject,
           body: dto.body,
           enabled: dto.enabled,
+          shellId: dto.shellId === undefined ? undefined : dto.shellId,
           recipientTo: recipientEditable ? dto.recipientTo : undefined,
         },
       });
@@ -751,6 +787,7 @@ export class MailerService {
         subject: dto.subject ?? fallback.subject,
         body: dto.body ?? fallback.body,
         enabled: dto.enabled ?? true,
+        shellId: dto.shellId ?? null,
         recipientTo: fallback.recipientEditable
           ? (dto.recipientTo ?? null)
           : null,
@@ -759,60 +796,16 @@ export class MailerService {
         subject: dto.subject,
         body: dto.body,
         enabled: dto.enabled,
+        shellId: dto.shellId === undefined ? undefined : dto.shellId,
         recipientTo: fallback.recipientEditable ? dto.recipientTo : undefined,
       },
     });
   }
 
-  /** Individuelle (kind: "custom") Vorlage – existiert nur als echte
-   * DB-Zeile, kein Katalog-Fallback wie bei System-/Formular-Vorlagen.
-   * `body` (Plaintext-Fallback) wird bei jeder Änderung an `bodyHtml`
-   * automatisch neu abgeleitet, nicht separat vom Client übergeben. */
-  private async updateCustomMailTemplate(
-    id: string,
-    dto: UpdateMailTemplateInput,
-  ) {
-    const existing = await this.prisma.mailTemplate.findUnique({
-      where: { id },
-    });
-    if (!existing || existing.kind !== 'custom') {
-      throw new NotFoundException(`Unbekannte Mail-Vorlage: ${id}`);
-    }
-    if (dto.shellId) {
-      const shell = await this.prisma.mailShell.findUnique({
-        where: { id: dto.shellId },
-      });
-      if (!shell) {
-        throw new NotFoundException(`Unbekannte E-Mail-Hülle: ${dto.shellId}`);
-      }
-    }
-    return this.prisma.mailTemplate.update({
-      where: { id },
-      data: {
-        name: dto.name,
-        subject: dto.subject,
-        bodyHtml: dto.bodyHtml,
-        body:
-          dto.bodyHtml !== undefined
-            ? htmlToPlainText(dto.bodyHtml)
-            : undefined,
-        shellId: dto.shellId === undefined ? undefined : dto.shellId,
-        enabled: dto.enabled,
-      },
-    });
-  }
-
-  /** "Auf Standard zurücksetzen" (System-/Formular-Vorlagen) bzw.
-   * endgültiges Löschen (individuelle Vorlagen, kein Standard zum
-   * Zurückfallen vorhanden) – beides läuft über denselben
-   * DELETE-Endpunkt, da beides bedeutet "diese Zeile entfernen". */
+  /** "Auf Standard zurücksetzen" – System-/Formular-Vorlagen haben immer
+   * einen Katalog-Fallback, "zurücksetzen" heißt hier einfach die
+   * Override-Zeile (inkl. gewählter Hülle) zu löschen. */
   async resetMailTemplate(id: string): Promise<void> {
-    if (!this.isFormTemplateId(id) && !this.isSystemTemplateId(id)) {
-      await this.prisma.mailTemplate.deleteMany({
-        where: { id, kind: 'custom' },
-      });
-      return;
-    }
     if (this.isFormTemplateId(id)) {
       const { formId, formKind } = this.splitFormTemplateId(id);
       await this.prisma.mailTemplate.deleteMany({
@@ -823,45 +816,10 @@ export class MailerService {
     await this.prisma.mailTemplate.deleteMany({ where: { key: id } });
   }
 
-  /** "+ Neue Vorlage" – legt nur den Namen fest, Standardwerte sind leer/
-   * minimal, Betreff/Inhalt/Hülle werden danach im normalen
-   * Vorlagen-Editor gesetzt (updateMailTemplate()/updateCustomMailTemplate()). */
-  async createMailTemplate(dto: CreateMailTemplateInput) {
-    return this.prisma.mailTemplate.create({
-      data: {
-        kind: 'custom',
-        name: dto.name,
-        subject: dto.name,
-        body: '',
-        bodyHtml: '<p></p>',
-        format: 'html',
-      },
-    });
-  }
-
   /** Vorlagen-Editor, Button "Testmail senden" – rendert mit Beispielwerten
    * und verschickt unabhängig vom "Versand aktiv"-Schalter (der Nutzer
    * will die Vorlage sehen, nicht den Pausenzustand testen). */
   async sendMailTemplateTest(id: string, to: string): Promise<void> {
-    if (!this.isFormTemplateId(id) && !this.isSystemTemplateId(id)) {
-      const rendered = await this.renderCustomTemplate(
-        id,
-        {},
-        { ignoreEnabled: true },
-      );
-      if (!rendered) {
-        throw new NotFoundException(`Unbekannte Mail-Vorlage: ${id}`);
-      }
-      await this.deliver(
-        to,
-        `[Test] ${rendered.subject}`,
-        rendered.text,
-        undefined,
-        rendered.html,
-      );
-      return;
-    }
-
     if (this.isFormTemplateId(id)) {
       const { formId, formKind } = this.splitFormTemplateId(id);
       const form = await this.prisma.form.findUnique({
@@ -878,7 +836,13 @@ export class MailerService {
         ignoreEnabled: true,
       });
       if (rendered) {
-        await this.deliver(to, `[Test] ${rendered.subject}`, rendered.text);
+        await this.deliver(
+          to,
+          `[Test] ${rendered.subject}`,
+          rendered.text,
+          undefined,
+          rendered.html,
+        );
       }
       return;
     }
@@ -894,7 +858,13 @@ export class MailerService {
       ignoreEnabled: true,
     });
     if (rendered) {
-      await this.deliver(to, `[Test] ${rendered.subject}`, rendered.text);
+      await this.deliver(
+        to,
+        `[Test] ${rendered.subject}`,
+        rendered.text,
+        undefined,
+        rendered.html,
+      );
     }
   }
 

@@ -31,7 +31,6 @@ import { UpdateSmtpSettingsDto } from './dto/update-smtp-settings.dto';
 import { SendSmtpTestEmailDto } from './dto/send-smtp-test-email.dto';
 import { UpdateLicenseClientSettingsDto } from './dto/update-license-client-settings.dto';
 import { UpdateMailTemplateDto } from './dto/update-mail-template.dto';
-import { CreateMailTemplateDto } from './dto/create-mail-template.dto';
 import { CreateMailShellDto } from './dto/create-mail-shell.dto';
 import { UpdateMailShellDto } from './dto/update-mail-shell.dto';
 import { MailerService } from '../mailer/mailer.service';
@@ -338,15 +337,6 @@ export class SettingsController {
     @Body() dto: SendSmtpTestEmailDto,
   ) {
     return this.mailer.sendMailTemplateTest(id, dto.to);
-  }
-
-  // "+ Neue Vorlage" (Nutzervorgabe, 2026-08-30: individuelle HTML-
-  // Vorlagen). Legt nur den Namen fest, Rest über PATCH .../:id.
-  @ApiBearerAuth()
-  @RequirePermission('settings:update')
-  @Post('mail-templates')
-  createMailTemplate(@Body() dto: CreateMailTemplateDto) {
-    return this.mailer.createMailTemplate(dto);
   }
 
   // E-Mail-Hüllen (Nutzervorgabe, 2026-08-30: "mache mehrere Hüllen für

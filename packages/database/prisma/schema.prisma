@@ -1547,20 +1547,15 @@ model MailTemplate {
   formId      String?
   form        Form?      @relation(fields: [formId], references: [id], onDelete: Cascade)
   formKind    String? // "admin_notification" | "confirmation"
-  // Nutzervorgabe, 2026-08-30: frei anlegbare, individuelle HTML-Vorlagen
-  // (weder an einen System-`key` noch an ein Formular gebunden) – "custom"
-  // statt "override". `name` ist nur bei "custom" gesetzt (System-/
-  // Formular-Vorlagen leiten ihr Label aus dem Katalog/Formular ab, siehe
-  // MailerService.listMailTemplates()).
-  kind        String     @default("override") // "override" | "custom"
-  name        String?
   subject     String
   body        String
-  // Nur bei "custom" gesetzt (HTML-Quelle, Tiptap-Ausgabe) – `body` bleibt
-  // bei diesen Zeilen ein aus `bodyHtml` abgeleiteter Plaintext-Fallback
-  // fürs Multipart-Mailing, kein separat editierbares Feld.
-  bodyHtml    String?
-  format      String     @default("text") // "text" | "html"
+  // Welche Hülle beim Versand verwendet wird (Nutzervorgabe, 2026-08-30:
+  // "bei allen Vorlagen soll man das Template aussuchen können") – `null`
+  // fällt auf die Standard-Hülle der Installation zurück. Gilt für JEDE
+  // Vorlage (System, Formular), nicht mehr nur für individuelle – die
+  // individuellen ("kind: custom") Vorlagen selbst wurden entfernt
+  // (2026-08-30-Korrektur: kein echter Auslöser dafür vorhanden, siehe
+  // knowledge-base/content/forms.md).
   shellId     String?
   shell       MailShell? @relation(fields: [shellId], references: [id], onDelete: SetNull)
   // "Versand aktiv"-Schalter pro Vorlage – gleiches Prinzip wie

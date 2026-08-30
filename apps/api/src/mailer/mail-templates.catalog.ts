@@ -104,36 +104,14 @@ export const SYSTEM_MAIL_TEMPLATES: SystemMailTemplateDefault[] = [
   },
 ];
 
-// Individuelle HTML-Vorlagen + E-Mail-Hüllen (Nutzervorgabe, 2026-08-30).
-// Gleiches `{{...}}`-Platzhalter-Muster wie überall sonst im Mailing
-// (siehe MailerService.renderPlaceholders) statt eines eigenen,
-// gesperrten Editor-Bausteins – konsistent mit den bestehenden
-// Platzhalter-Chips, kein neuer Tiptap-Extension-Code nötig.
+// E-Mail-Templates (Hüllen) – Kopf/Fuß/CI, in die der Klartext-Inhalt
+// jeder Vorlage eingesetzt wird (siehe MailerService.wrapInShell/
+// plainTextToHtml). Gleiches `{{...}}`-Platzhalter-Muster wie überall
+// sonst im Mailing (siehe MailerService.renderPlaceholders).
 export const MAIL_SHELL_CONTENT_PLACEHOLDER = '{{content}}';
 
 export function hasShellContentPlaceholder(html: string): boolean {
   return html.includes(MAIL_SHELL_CONTENT_PLACEHOLDER);
-}
-
-// Reiner Fallback-Plaintext fürs Multipart-Mailing (Pflicht für
-// Spam-Filter/Barrierefreiheit) – keine echte HTML-Analyse nötig, nur
-// "gut genug" als Alternative zur HTML-Ansicht. Kein neues npm-Paket
-// dafür (z.B. `html-to-text`), da die Anforderung überschaubar ist.
-export function htmlToPlainText(html: string): string {
-  return html
-    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, '')
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, '\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/[ \t]+\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
 }
 
 export type FormMailKind = 'admin_notification' | 'confirmation';

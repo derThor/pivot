@@ -547,6 +547,54 @@ master-slave-licensing.md) einsortiert – laufen ungegatet wie der Rest
 von Mailing heute. Bleibt ein offener Punkt für später, falls das
 Feature mal Teil eines buchbaren Moduls werden soll.
 
+## Update 2026-08-30: Individuelle Vorlagen entfernt, System-/Formular-Mails bekommen jetzt Design
+
+Nutzer-Feedback nach dem ersten Live-Test: eigenes E-Mail-Template (Hülle)
+mit echtem Design angelegt, aber "wenn ich mir egal welche Testmail
+zusende, ist kein Design zu sehen". Grund: die Hülle wurde nur von
+individuellen ("kind: custom") Vorlagen verwendet – und davon existierte
+noch keine einzige, weil es dafür nie einen echten Auslöser gab. Auf
+Nachfrage "gibt es einen Fall, wo wir das jemals einsetzen?" ehrliche
+Antwort: nein, `sendCustomTemplate()` wurde von nirgends aufgerufen, nur
+der manuelle Testversand im Editor selbst. Nutzerentscheidung: **individuelle
+Vorlagen komplett entfernen**, stattdessen das Hüllen-Design auf die
+echten, tatsächlich versendeten Mails ausweiten.
+
+**Entfernt:** `MailTemplate.kind`/`.name`/`.bodyHtml`/`.format` (Spalten
+per `prisma db push` gelöscht, kein Migrationspfad nötig – keine echte
+Zeile existierte), `createMailTemplate()`, `renderCustomTemplate()`,
+`sendCustomTemplate()`, `updateCustomMailTemplate()`,
+`POST /settings/mail-templates`, der "Individuell"-Reiter samt
+"+ Neue Vorlage"-Dialog in `mailing-settings-card.tsx`. `htmlToPlainText()`
+aus `mail-templates.catalog.ts` ebenfalls entfernt (wurde nur für die
+Rückrichtung HTML→Text bei individuellen Vorlagen gebraucht).
+
+**Neu:** `shellId` gilt jetzt für JEDE Vorlage (System UND Formular), nicht
+mehr nur individuelle – Nutzervorgabe "bei allen Vorlagen soll man das
+Template aussuchen können". `renderSystemTemplate()`/`renderFormTemplate()`
+wandeln den weiterhin per Textarea gepflegten Klartext über eine neue
+`MailerService.plainTextToHtml()` (escapen, `http(s)://`-Links verlinken,
+`\n\n` → Absätze) in HTML um, setzen es über das bestehende `wrapInShell()`
+in die gewählte (oder Standard-)Hülle ein und inlinen einmal mit `juice` –
+dieselbe Pipeline, die vorher nur individuelle Vorlagen hatten. `deliver()`
+bekommt jetzt bei jeder der acht System-Mails und beiden Formular-Mail-
+Typen zusätzlich `html` mit. Frontend: `TemplateDetail` in
+`mailing-settings-card.tsx` zeigt die "E-Mail-Template"-Auswahl und die
+Hülle-in-Vorschau (statt reiner Text-Vorschau) jetzt für alle Vorlagen,
+nicht mehr nur individuelle.
+
+**Wichtiger Nebenfund beim Live-Test:** das vom Nutzer gebaute Shell-HTML
+hatte `{{content}}` direkt als Kind von `<tr>` stehen
+(`<tr>{{content}}</tr>` statt `<tr><td>{{content}}</td></tr>`) – ungültiges
+Tabellen-Markup. Browser/Mail-Clients "foster-parenten" so etwas aus der
+Tabelle heraus, der eingesetzte Inhalt landet dadurch unstyled oberhalb der
+eigentlichen Karte statt darin. Das war (zusätzlich zum eigentlichen
+Scope-Problem oben) mit hoher Wahrscheinlichkeit der konkrete Auslöser für
+"kein Design zu sehen" – kein Code-Bug, sondern ein Struktur-Fehler im
+selbst gebauten HTML. `hasShellContentPlaceholder()` prüft nur, dass der
+Platzhalter genau einmal vorkommt, nicht die umgebende HTML-Struktur (bei
+komplett freiem HTML/CSS bewusst keine tiefere Validierung).
+
 ## Offene Punkte / mögliche Folgearbeiten
 
 - Datei-Upload-Feldtyp (Backend-Katalog vorhanden, kein Upload-Handling).
@@ -558,7 +606,6 @@ Feature mal Teil eines buchbaren Moduls werden soll.
 - Datenschutzhinweis-Verlinkung (`privacyPageSlug`) ist ein Snapshot,
   keine Live-Verknüpfung – wird die Zielseite umbenannt/verschoben, muss
   die Verlinkung im Formular-Editor manuell neu gesetzt werden.
-- Individuelle Mail-Vorlagen/E-Mail-Templates sind ungegatet (kein
-  Modul-Entitlement), nur manueller Testversand in der UI (keine
-  automatisierte Auslösung, obwohl `sendCustomTemplate()` dafür
-  vorbereitet ist).
+- E-Mail-Templates (Hüllen) sind weiterhin ungegatet (kein
+  Modul-Entitlement) – gilt seit 2026-08-30 für alle Mails, nicht nur
+  individuelle.

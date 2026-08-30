@@ -1415,7 +1415,7 @@ export function getAllFormSubmissions(params?: {
   );
 }
 
-export type MailTemplateCategory = "auth" | "privacy" | "forms" | "custom";
+export type MailTemplateCategory = "auth" | "privacy" | "forms";
 
 export interface MailTemplateListItem {
   id: string;
@@ -1430,9 +1430,9 @@ export interface MailTemplateListItem {
   placeholderLabels?: Record<string, string>;
   isCustomized: boolean;
   formId: string | null;
-  // Individuelle HTML-Vorlagen + E-Mail-Hüllen (Nutzervorgabe, 2026-08-30).
-  format: "text" | "html";
-  bodyHtml: string | null;
+  // Welche E-Mail-Template-Hülle beim Versand verwendet wird (Nutzervorgabe,
+  // 2026-08-30: "bei allen Vorlagen soll man das Template aussuchen
+  // können") – `null` = Standard-Hülle der Installation.
   shellId: string | null;
 }
 

@@ -14,25 +14,9 @@ export class UpdateMailTemplateDto {
   @MinLength(1)
   body?: string;
 
-  // Nur bei individuellen (kind: "custom") Vorlagen wirksam – die HTML-
-  // Quelle aus dem Tiptap-Editor. `body` wird beim Speichern daraus
-  // automatisch als Plaintext-Fallback abgeleitet (siehe
-  // MailerService.updateMailTemplate), nicht separat übergeben.
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  bodyHtml?: string;
-
-  // Nur bei "custom"-Vorlagen umbenennbar (System-/Formular-Vorlagen
-  // leiten ihr Label aus dem Katalog/Formular ab).
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @MinLength(1)
-  name?: string;
-
-  // Nur bei "custom"-Vorlagen – welche Hülle beim Versand verwendet wird.
-  // `null` setzt bewusst auf "Standard-Hülle der Installation" zurück.
+  // Welche Hülle beim Versand verwendet wird (gilt für jede Vorlage,
+  // System wie Formular). `null` setzt bewusst auf die Standard-Hülle
+  // der Installation zurück.
   @ApiPropertyOptional({ nullable: true })
   @IsOptional()
   @IsString()

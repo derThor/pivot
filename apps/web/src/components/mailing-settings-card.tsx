@@ -45,7 +45,6 @@ const CATEGORY_LABELS: Record<MailTemplateCategory, string> = {
   auth: "Konto & Anmeldung",
   privacy: "Datenschutz",
   forms: "Formulare",
-  custom: "Individuell",
 };
 
 // Erklärung je Platzhalter für den Tooltip beim Hovern über einen Chip –
@@ -95,6 +94,30 @@ function renderPreview(text: string, placeholders: string[]): string {
     result = result.replaceAll(`{{${placeholder}}}`, sampleValue(placeholder));
   }
   return result;
+}
+
+// Backend-Pendant: MailerService.plainTextToHtml() – dieselbe einfache
+// Klartext-zu-HTML-Umwandlung, hier nur fürs Vorschau-Rendering im Browser
+// dupliziert (kein gemeinsames Paket zwischen apps/web und apps/api).
+function escapeHtmlPreview(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function linkifyPreview(escaped: string): string {
+  return escaped.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>');
+}
+
+function plainTextToHtmlPreview(text: string): string {
+  return text
+    .split(/\n{2,}/)
+    .map(
+      (para) =>
+        `<p>${linkifyPreview(escapeHtmlPreview(para)).replace(/\n/g, "<br>")}</p>`,
+    )
+    .join("\n");
 }
 
 /** "+ Neue Vorlage"/"+ Neue Hülle" (Nutzervorgabe, 2026-08-30) – beide
@@ -195,11 +218,8 @@ function TemplateDetail({
   shells: MailShellListItem[];
   onSaved: () => void;
 }) {
-  const isHtml = template.format === "html";
-  const [name, setName] = useState(template.label);
   const [subject, setSubject] = useState(template.subject);
   const [body, setBody] = useState(template.body);
-  const [bodyHtml, setBodyHtml] = useState(template.bodyHtml ?? "");
   const [shellId, setShellId] = useState(template.shellId ?? "");
   const [enabled, setEnabled] = useState(template.enabled);
   const [recipientTo, setRecipientTo] = useState(template.recipientTo ?? "");
@@ -233,24 +253,15 @@ function TemplateDetail({
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(
-            isHtml
-              ? {
-                  name,
-                  subject,
-                  bodyHtml,
-                  shellId: shellId || null,
-                  enabled,
-                }
-              : {
-                  subject,
-                  body,
-                  enabled,
-                  ...(template.recipientEditable
-                    ? { recipientTo: recipientTo || undefined }
-                    : {}),
-                },
-          ),
+          body: JSON.stringify({
+            subject,
+            body,
+            shellId: shellId || null,
+            enabled,
+            ...(template.recipientEditable
+              ? { recipientTo: recipientTo || undefined }
+              : {}),
+          }),
         },
       );
       if (res.ok) {
@@ -267,11 +278,7 @@ function TemplateDetail({
       `/api/settings/mail-templates/${encodeURIComponent(template.id)}`,
       { method: "DELETE" },
     );
-    toastDeleted(
-      isHtml
-        ? `„${name}“ wurde gelöscht.`
-        : "Vorlage wurde auf den Standard zurückgesetzt.",
-    );
+    toastDeleted("Vorlage wurde auf den Standard zurückgesetzt.");
     onSaved();
   }
 
@@ -304,7 +311,7 @@ function TemplateDetail({
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold">{template.label}</h3>
-            {!template.formId && !isHtml && (
+            {!template.formId && (
               <span className="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-xs text-secondary-foreground">
                 System
               </span>
@@ -314,7 +321,7 @@ function TemplateDetail({
             {CATEGORY_LABELS[template.category]}
           </p>
         </div>
-        {(template.isCustomized || isHtml) && (
+        {template.isCustomized && (
           <ConfirmDeleteDialog
             trigger={
               <Button
@@ -323,16 +330,12 @@ function TemplateDetail({
                 size="sm"
                 className="border-border"
               >
-                {isHtml ? <Trash2 className="size-4" /> : <RotateCcw className="size-4" />}
-                {isHtml ? "Vorlage löschen" : "Auf Standard zurücksetzen"}
+                <RotateCcw className="size-4" />
+                Auf Standard zurücksetzen
               </Button>
             }
-            title={isHtml ? `„${name}“ löschen?` : "Vorlage auf Standard zurücksetzen?"}
-            description={
-              isHtml
-                ? "Diese individuelle Vorlage wird endgültig gelöscht."
-                : "Eigene Anpassungen an Betreff und Text gehen verloren."
-            }
+            title="Vorlage auf Standard zurücksetzen?"
+            description="Eigene Anpassungen an Betreff und Text gehen verloren."
             onConfirm={handleDelete}
           />
         )}
@@ -355,16 +358,6 @@ function TemplateDetail({
         </TabsList>
 
         <TabsContent value="template" className="flex flex-col gap-4 pt-4">
-          {isHtml && (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mail-name">Name</Label>
-              <Input
-                id="mail-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-          )}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="mail-subject">Betreff</Label>
             <Input
@@ -374,50 +367,42 @@ function TemplateDetail({
             />
           </div>
 
-          {isHtml ? (
-            <>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="mail-shell">E-Mail-Template</Label>
-                <Select
-                  value={shellId || "__default"}
-                  onValueChange={(next) =>
-                    setShellId(next === "__default" ? "" : (next ?? ""))
-                  }
-                >
-                  <SelectTrigger id="mail-shell">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__default">
-                      Standard-Template{defaultShell ? ` (${defaultShell.name})` : ""}
-                    </SelectItem>
-                    {shells.map((shell) => (
-                      <SelectItem key={shell.id} value={shell.id}>
-                        {shell.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label>Inhalt (HTML/CSS)</Label>
-                <HtmlCodeEditor value={bodyHtml} onChange={setBodyHtml} />
-              </div>
-            </>
-          ) : (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mail-body">Text</Label>
-              <Textarea
-                id="mail-body"
-                ref={bodyRef}
-                rows={8}
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-              />
-            </div>
-          )}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="mail-shell">E-Mail-Template</Label>
+            <Select
+              value={shellId || "__default"}
+              onValueChange={(next) =>
+                setShellId(next === "__default" ? "" : (next ?? ""))
+              }
+            >
+              <SelectTrigger id="mail-shell">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__default">
+                  Standard-Template{defaultShell ? ` (${defaultShell.name})` : ""}
+                </SelectItem>
+                {shells.map((shell) => (
+                  <SelectItem key={shell.id} value={shell.id}>
+                    {shell.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          {!isHtml && template.placeholders.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="mail-body">Text</Label>
+            <Textarea
+              id="mail-body"
+              ref={bodyRef}
+              rows={8}
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+            />
+          </div>
+
+          {template.placeholders.length > 0 && (
             <div className="flex flex-col gap-1.5">
               <Label>Platzhalter</Label>
               <div className="flex flex-wrap gap-1.5">
@@ -489,28 +474,19 @@ function TemplateDetail({
         )}
 
         <TabsContent value="preview" className="flex flex-col gap-3 pt-4">
-          {isHtml ? (
-            <div className="overflow-hidden rounded-lg border border-border">
-              <div
-                className="max-h-[32rem] overflow-y-auto bg-white"
-                dangerouslySetInnerHTML={{
-                  __html: previewShellContent.replaceAll(
-                    SHELL_CONTENT_PLACEHOLDER,
-                    bodyHtml,
+          <div className="overflow-hidden rounded-lg border border-border">
+            <div
+              className="max-h-[32rem] overflow-y-auto bg-white"
+              dangerouslySetInnerHTML={{
+                __html: previewShellContent.replaceAll(
+                  SHELL_CONTENT_PLACEHOLDER,
+                  plainTextToHtmlPreview(
+                    renderPreview(body, template.placeholders),
                   ),
-                }}
-              />
-            </div>
-          ) : (
-            <div className="rounded-lg border border-border bg-muted p-4">
-              <p className="text-sm font-semibold">
-                {renderPreview(subject, template.placeholders)}
-              </p>
-              <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">
-                {renderPreview(body, template.placeholders)}
-              </p>
-            </div>
-          )}
+                ),
+              }}
+            />
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -669,12 +645,12 @@ export function MailingSettingsCard({
   const groups: {
     category: MailTemplateCategory;
     items: MailTemplateListItem[];
-  }[] = (["auth", "privacy", "forms", "custom"] as const)
+  }[] = (["auth", "privacy", "forms"] as const)
     .map((category) => ({
       category,
       items: templates.filter((t) => t.category === category),
     }))
-    .filter((group) => group.items.length > 0 || group.category === "custom");
+    .filter((group) => group.items.length > 0);
 
   return (
     <Card className="rounded-xl shadow-sm">
@@ -698,49 +674,33 @@ export function MailingSettingsCard({
                         <p className="text-xs font-semibold tracking-wide text-accent-foreground uppercase">
                           {CATEGORY_LABELS[group.category]}
                         </p>
-                        {group.category !== "forms" &&
-                          group.category !== "custom" && (
-                            <span className="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-xs text-secondary-foreground normal-case">
-                              System
-                            </span>
-                          )}
+                        {group.category !== "forms" && (
+                          <span className="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-xs text-secondary-foreground normal-case">
+                            System
+                          </span>
+                        )}
                       </div>
-                      {group.category === "custom" && (
-                        <CreateNamedItemDialog
-                          triggerLabel="Neu"
-                          dialogTitle="Neue Vorlage anlegen"
-                          nameLabel="Name"
-                          endpoint="/api/settings/mail-templates"
-                          onCreated={setSelectedId}
-                        />
-                      )}
                     </div>
-                    {group.items.length === 0 ? (
-                      <p className="px-2 py-2 text-sm text-muted-foreground">
-                        Noch keine individuellen Vorlagen.
-                      </p>
-                    ) : (
-                      group.items.map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => setSelectedId(item.id)}
-                          className={cn(
-                            "flex items-center justify-between gap-2 rounded-lg border-l-4 px-3 py-2 text-left text-sm transition-colors",
-                            item.id === selected?.id
-                              ? "border-l-primary bg-primary/15 font-semibold text-foreground"
-                              : "border-l-transparent text-foreground hover:bg-secondary",
-                          )}
-                        >
-                          <span className="truncate">{item.label}</span>
-                          {!item.enabled && (
-                            <span className="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-xs text-secondary-foreground">
-                              Pausiert
-                            </span>
-                          )}
-                        </button>
-                      ))
-                    )}
+                    {group.items.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setSelectedId(item.id)}
+                        className={cn(
+                          "flex items-center justify-between gap-2 rounded-lg border-l-4 px-3 py-2 text-left text-sm transition-colors",
+                          item.id === selected?.id
+                            ? "border-l-primary bg-primary/15 font-semibold text-foreground"
+                            : "border-l-transparent text-foreground hover:bg-secondary",
+                        )}
+                      >
+                        <span className="truncate">{item.label}</span>
+                        {!item.enabled && (
+                          <span className="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-xs text-secondary-foreground">
+                            Pausiert
+                          </span>
+                        )}
+                      </button>
+                    ))}
                   </div>
                 ))}
               </div>
