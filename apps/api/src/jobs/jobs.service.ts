@@ -18,7 +18,10 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 import { ContentService } from '../content/content.service';
 import { DeletionRequestReminderSchedulerService } from '../deletion-requests/deletion-request-reminder-scheduler.service';
 import { PrivacyReportSchedulerService } from '../privacy/privacy-report-scheduler.service';
-import { LICENSE_CHECK_JOB_ID } from '../license-client/license-client.service';
+import {
+  LICENSE_CHECK_JOB_ID,
+  LicenseClientService,
+} from '../license-client/license-client.service';
 import { WEBSITE_MONITOR_JOB_ID } from '../websites/website-monitor.service';
 import { DEVELOPMENT_MODE_AUTOLOCK_JOB_ID } from '../websites/websites.service';
 import { UpdateJobDto } from './dto/update-job.dto';
@@ -42,6 +45,13 @@ interface JobDefinition {
   description: string;
   defaultCronExpression: string;
   run: () => Promise<string>;
+  /** Datenschutz-als-Modul (Nutzervorgabe, 2026-08-30: "dsb job-
+   * monatsbericht darf nur da sein, wenn datenschutzmodul aktiv ist. wenn
+   * nicht, darf der job weder erscheinen noch ausgeführt werden") – gleiche
+   * Master-wie-Slave-einheitliche Quelle wie `ModuleFeatureGuard`/
+   * `NotificationsService.hasModuleFeature`. Fehlt dieses Feld, gilt der
+   * Job als immer freigeschaltet. */
+  requiresModuleFeature?: { moduleKey: string; featureKey: string };
 }
 
 /**
@@ -81,6 +91,10 @@ export class JobsService implements OnModuleInit {
         'Erinnert den Datenschutzbeauftragten 7 Tage vor Fristende offener Betroffenenanfragen.',
       defaultCronExpression: '0 6 * * *',
       run: () => this.dsrReminder.sendDeadlineReminders(),
+      requiresModuleFeature: {
+        moduleKey: 'datenschutz',
+        featureKey: 'loeschanfragen',
+      },
     },
     {
       id: 'dpo-monthly-report',
@@ -89,6 +103,7 @@ export class JobsService implements OnModuleInit {
         'Verschickt den Datenschutz-Monatsbericht per E-Mail an den Datenschutzbeauftragten.',
       defaultCronExpression: '0 0 1 * *',
       run: () => this.dpoReport.sendMonthlyReport(),
+      requiresModuleFeature: { moduleKey: 'datenschutz', featureKey: 'dsb' },
     },
     {
       id: 'job-run-cleanup',
@@ -109,7 +124,25 @@ export class JobsService implements OnModuleInit {
     private readonly dsrReminder: DeletionRequestReminderSchedulerService,
     private readonly dpoReport: PrivacyReportSchedulerService,
     private readonly auditLog: AuditLogService,
+    private readonly licenseClient: LicenseClientService,
   ) {}
+
+  /** Siehe `requiresModuleFeature` oben. */
+  private async isEntitled(def: JobDefinition): Promise<boolean> {
+    if (!def.requiresModuleFeature) return true;
+    const { moduleKey, featureKey } = def.requiresModuleFeature;
+    const effective = await this.licenseClient.getEffectiveStatus();
+    const moduleFeatures =
+      'moduleFeatures' in effective ? effective.moduleFeatures : {};
+    return (moduleFeatures[moduleKey] ?? []).includes(featureKey);
+  }
+
+  private async getEntitledDefinitions(): Promise<JobDefinition[]> {
+    const flags = await Promise.all(
+      this.definitions.map((def) => this.isEntitled(def)),
+    );
+    return this.definitions.filter((_, i) => flags[i]);
+  }
 
   async onModuleInit() {
     for (const def of this.definitions) {
@@ -148,6 +181,8 @@ export class JobsService implements OnModuleInit {
    * (pausiert) erzeugt bewusst KEINEN JobRun-Eintrag ("wird übersprungen,
    * nicht nachgeholt" laut Bildvorlage). */
   private async execute(def: JobDefinition, force: boolean) {
+    if (!(await this.isEntitled(def))) return;
+
     const row = await this.prisma.scheduledJob.findUniqueOrThrow({
       where: { id: def.id },
     });
@@ -247,15 +282,13 @@ export class JobsService implements OnModuleInit {
   }
 
   async findAll(page: number, pageSize: number) {
-    const [rows, settings] = await Promise.all([
+    const [rows, settings, entitledDefs] = await Promise.all([
       this.prisma.scheduledJob.findMany(),
       this.settings.get(),
+      this.getEntitledDefinitions(),
     ]);
-    const total = this.definitions.length;
-    const pageDefs = this.definitions.slice(
-      (page - 1) * pageSize,
-      page * pageSize,
-    );
+    const total = entitledDefs.length;
+    const pageDefs = entitledDefs.slice((page - 1) * pageSize, page * pageSize);
     const items = pageDefs.map((def) => {
       const row = rows.find((r) => r.id === def.id);
       if (!row)
@@ -273,14 +306,19 @@ export class JobsService implements OnModuleInit {
     };
   }
 
-  private getDefinition(id: string): JobDefinition {
+  /** 404 auch für einen (aktuell) nicht freigeschalteten Job – gleiche
+   * "existiert nicht"-Konvention wie `ModuleFeatureGuard` bei einer
+   * gesperrten Route, statt eines abweichenden Fehlerbilds für Jobs. */
+  private async getDefinition(id: string): Promise<JobDefinition> {
     const def = this.definitions.find((d) => d.id === id);
-    if (!def) throw new NotFoundException('Unbekannter Job.');
+    if (!def || !(await this.isEntitled(def))) {
+      throw new NotFoundException('Unbekannter Job.');
+    }
     return def;
   }
 
   async update(id: string, dto: UpdateJobDto) {
-    const def = this.getDefinition(id);
+    const def = await this.getDefinition(id);
     const current = await this.prisma.scheduledJob.findUniqueOrThrow({
       where: { id },
     });
@@ -319,7 +357,7 @@ export class JobsService implements OnModuleInit {
   }
 
   async runNow(id: string) {
-    const def = this.getDefinition(id);
+    const def = await this.getDefinition(id);
     await this.execute(def, true);
     const [row, settings] = await Promise.all([
       this.prisma.scheduledJob.findUniqueOrThrow({ where: { id } }),
@@ -419,7 +457,7 @@ export class JobsService implements OnModuleInit {
 
   /** "Letztes Protokoll"-Dialog – auf einen Job gefiltert. */
   async findRunsForJob(id: string, page: number, pageSize: number) {
-    this.getDefinition(id);
+    await this.getDefinition(id);
     const [items, total] = await Promise.all([
       this.prisma.jobRun.findMany({
         where: { jobId: id },
