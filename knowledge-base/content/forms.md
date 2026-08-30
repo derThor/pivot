@@ -621,6 +621,36 @@ behoben:
   `<tr>`-Fostering-Effekt oben – jetzt aber sichtbar statt spurlos
   verschwunden).
 
+### Nachtrag: Firmen-Platzhalter für Betreff UND Text (selbe Sitzung)
+
+Nutzervorgabe: "haben wir für den Betreff ... auch einen Platzhalter,
+damit ich die Überschrift individualisieren kann, genauso wie die
+Firmenangaben? ... kannst du dafür eine Legende machen?" – bisher standen
+Firmendaten (Name/Adresse/Kontakt) nur fest im automatischen
+Text-Footer (`appendFooter()`, nur bei Mails ohne `html`) bzw. manuell im
+selbst gebauten Hüllen-HTML, nirgends als echter `{{...}}`-Platzhalter.
+
+- **`COMPANY_MAIL_PLACEHOLDER_KEYS`** (`mail-templates.catalog.ts`):
+  `companyName`, `companyAddress`, `companyEmail`, `companyPhone` – für
+  JEDE Vorlage verfügbar (System UND Formular), in Betreff UND Text.
+  `MailerService.companyVars()` liest die echten Werte aus `AppSettings`
+  und wird in `renderSystemTemplate()`/`renderFormTemplate()` vor jeder
+  Platzhalter-Ersetzung mit den vorlagenspezifischen `vars` gemerged –
+  anders als die übrigen Platzhalter bekommen diese beim Testversand
+  **echte** Werte statt "Beispielwert (...)", weil sie tatsächlich bekannt
+  sind.
+- **Betreff jetzt auch mit Platzhaltern editierbar**: `TemplateDetail`
+  bekam ein `activeField`-State ("subject" | "body", per `onFocus` auf
+  Input/Textarea gesetzt) – `insertPlaceholder()` fügt jetzt an der
+  Cursor-Position im zuletzt fokussierten Feld ein, nicht mehr nur im
+  Text.
+- **Echte Legende statt Hover-Tooltip**: die bisherigen Chips zeigten die
+  Beschreibung nur beim Hovern (`Tooltip`). Nutzerwunsch nach einer
+  "Legende" umgesetzt als sichtbare Liste `{{token}}` + Beschreibung
+  (weiterhin klickbar zum Einfügen), `Tooltip`-Import entfernt.
+- Vorschau-Tab zeigt jetzt zusätzlich den gerenderten Betreff (mit
+  Beispielwerten) oberhalb der Hülle-Vorschau.
+
 ## Offene Punkte / mögliche Folgearbeiten
 
 - Datei-Upload-Feldtyp (Backend-Katalog vorhanden, kein Upload-Handling).

@@ -104,6 +104,18 @@ export const SYSTEM_MAIL_TEMPLATES: SystemMailTemplateDefault[] = [
   },
 ];
 
+// Firmen-Platzhalter (Nutzervorgabe, 2026-08-30: "genauso wie die
+// Firmenangaben ... damit die Vorlage komplett dynamisch ist") – für JEDE
+// Vorlage in Betreff UND Text verfügbar, echte Werte aus AppSettings
+// (siehe MailerService.companyVars()), nicht nur ein Beispielwert wie die
+// übrigen, vorlagenspezifischen Platzhalter.
+export const COMPANY_MAIL_PLACEHOLDER_KEYS = [
+  'companyName',
+  'companyAddress',
+  'companyEmail',
+  'companyPhone',
+] as const;
+
 // E-Mail-Templates (Hüllen) – Kopf/Fuß/CI, in die der Klartext-Inhalt
 // jeder Vorlage eingesetzt wird (siehe MailerService.wrapInShell/
 // plainTextToHtml). Gleiches `{{...}}`-Platzhalter-Muster wie überall

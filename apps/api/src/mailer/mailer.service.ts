@@ -17,6 +17,7 @@ import {
   formFieldLabels,
   hasShellContentPlaceholder,
   MAIL_SHELL_CONTENT_PLACEHOLDER,
+  COMPANY_MAIL_PLACEHOLDER_KEYS,
   type FormMailKind,
   type MailTemplateCategory,
 } from './mail-templates.catalog';
@@ -319,6 +320,38 @@ export class MailerService {
    * gewählte (oder Standard-)Hülle ein. `null` = Vorlage ist pausiert
    * ("Versand aktiv" aus) – der Aufrufer überspringt den Versand dann
    * kommentarlos, wie ein pausierter Job. */
+  /** Firmen-Platzhalter (Nutzervorgabe, 2026-08-30: "genauso wie die
+   * Firmenangaben ... damit die Vorlage komplett dynamisch ist") – echte
+   * Werte aus AppSettings, für jede Vorlage in Betreff UND Text
+   * verfügbar (siehe COMPANY_MAIL_PLACEHOLDER_KEYS). */
+  private async companyVars(): Promise<Record<string, string>> {
+    const settings = await this.prisma.appSettings.findUnique({
+      where: { id: 1 },
+      select: {
+        companyName: true,
+        companyStreet: true,
+        companyPostalCode: true,
+        companyCity: true,
+        companyEmail: true,
+        companyPhone: true,
+      },
+    });
+    const address = [
+      settings?.companyStreet,
+      [settings?.companyPostalCode, settings?.companyCity]
+        .filter(Boolean)
+        .join(' '),
+    ]
+      .filter(Boolean)
+      .join(', ');
+    return {
+      companyName: settings?.companyName ?? '',
+      companyAddress: address,
+      companyEmail: settings?.companyEmail ?? '',
+      companyPhone: settings?.companyPhone ?? '',
+    };
+  }
+
   private async renderSystemTemplate(
     key: string,
     vars: Record<string, string>,
@@ -332,11 +365,15 @@ export class MailerService {
       where: { key },
     });
     if (override && !override.enabled && !options?.ignoreEnabled) return null;
+    const allVars = { ...(await this.companyVars()), ...vars };
     const subject = this.renderPlaceholders(
       override?.subject ?? fallback.subject,
-      vars,
+      allVars,
     );
-    const text = this.renderPlaceholders(override?.body ?? fallback.body, vars);
+    const text = this.renderPlaceholders(
+      override?.body ?? fallback.body,
+      allVars,
+    );
     const html = await this.renderInShell(text, override?.shellId ?? null);
     return { subject, text, html };
   }
@@ -354,11 +391,15 @@ export class MailerService {
       where: { formId_formKind: { formId, formKind: kind } },
     });
     if (override && !override.enabled && !options?.ignoreEnabled) return null;
+    const allVars = { ...(await this.companyVars()), ...vars };
     const subject = this.renderPlaceholders(
       override?.subject ?? fallback.subject,
-      vars,
+      allVars,
     );
-    const text = this.renderPlaceholders(override?.body ?? fallback.body, vars);
+    const text = this.renderPlaceholders(
+      override?.body ?? fallback.body,
+      allVars,
+    );
     const html = await this.renderInShell(text, override?.shellId ?? null);
     return { subject, text, html };
   }
@@ -705,7 +746,7 @@ export class MailerService {
             ? (override?.recipientTo ?? null)
             : null,
           recipientEditable: def.recipientEditable,
-          placeholders: def.placeholders,
+          placeholders: [...COMPANY_MAIL_PLACEHOLDER_KEYS, ...def.placeholders],
           isCustomized: Boolean(override),
           formId: null,
           shellId: override?.shellId ?? null,
@@ -720,6 +761,7 @@ export class MailerService {
     });
     const formItems: MailTemplateListItem[] = forms.flatMap((form) => {
       const placeholders = [
+        ...COMPANY_MAIL_PLACEHOLDER_KEYS,
         ...formFieldPlaceholders(form.fields),
         'formName',
         'submittedAt',

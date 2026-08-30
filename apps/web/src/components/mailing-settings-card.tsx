@@ -35,11 +35,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { HtmlCodeEditor } from "@/components/html-code-editor";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type {
   MailShellListItem,
@@ -53,15 +48,19 @@ const CATEGORY_LABELS: Record<MailTemplateCategory, string> = {
   forms: "Formulare",
 };
 
-// Erklärung je Platzhalter für den Tooltip beim Hovern über einen Chip –
-// deckt den festen Katalog der System-Mails ab (siehe
-// mail-templates.catalog.ts) sowie die beiden bei jeder Formular-Vorlage
-// immer vorhandenen Platzhalter. Dynamische Formularfeld-Ids (siehe
-// formFieldPlaceholders()) werden stattdessen über
-// `template.placeholderLabels` mit dem echten Feld-Titel aus dem
-// Formular-Builder aufgelöst (Nutzervorgabe: generischer Text war
+// Erklärung je Platzhalter für die Legende unter Betreff/Text – deckt die
+// Firmen-Platzhalter (siehe COMPANY_MAIL_PLACEHOLDER_KEYS) und den festen
+// Katalog der System-Mails ab (siehe mail-templates.catalog.ts) sowie die
+// beiden bei jeder Formular-Vorlage immer vorhandenen Platzhalter.
+// Dynamische Formularfeld-Ids (siehe formFieldPlaceholders()) werden
+// stattdessen über `template.placeholderLabels` mit dem echten Feld-Titel
+// aus dem Formular-Builder aufgelöst (Nutzervorgabe: generischer Text war
 // "blöd", hier muss der echte Name stehen).
 const PLACEHOLDER_DESCRIPTIONS: Record<string, string> = {
+  companyName: "Firmenname",
+  companyAddress: "Firmenadresse (Straße, PLZ, Ort)",
+  companyEmail: "Firmen-E-Mail-Adresse",
+  companyPhone: "Firmen-Telefonnummer",
   link: "Bestätigungs- bzw. Zurücksetzen-Link",
   title: "Titel des Datenschutzvorfalls",
   severity: "Schweregrad des Vorfalls",
@@ -232,11 +231,33 @@ function TemplateDetail({
   const [testEmail, setTestEmail] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isSendingTest, setIsSendingTest] = useState(false);
+  const subjectRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
+  // Zuletzt fokussiertes Feld – ein Klick auf einen Platzhalter in der
+  // Legende (siehe unten) fügt dort ein, egal ob Betreff oder Text
+  // (Nutzervorgabe, 2026-08-30: "haben wir für den Betreff ... auch einen
+  // Platzhalter ... genauso wie die Firmenangaben?").
+  const [activeField, setActiveField] = useState<"subject" | "body">("body");
 
   function insertPlaceholder(placeholder: string) {
-    const textarea = bodyRef.current;
     const token = `{{${placeholder}}}`;
+    if (activeField === "subject") {
+      const input = subjectRef.current;
+      if (!input) {
+        setSubject((prev) => `${prev}${token}`);
+        return;
+      }
+      const start = input.selectionStart ?? subject.length;
+      const end = input.selectionEnd ?? subject.length;
+      const next = `${subject.slice(0, start)}${token}${subject.slice(end)}`;
+      setSubject(next);
+      requestAnimationFrame(() => {
+        input.focus();
+        input.selectionStart = input.selectionEnd = start + token.length;
+      });
+      return;
+    }
+    const textarea = bodyRef.current;
     if (!textarea) {
       setBody((prev) => `${prev}${token}`);
       return;
@@ -376,8 +397,10 @@ function TemplateDetail({
             <Label htmlFor="mail-subject">Betreff</Label>
             <Input
               id="mail-subject"
+              ref={subjectRef}
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
+              onFocus={() => setActiveField("subject")}
             />
           </div>
 
@@ -413,33 +436,35 @@ function TemplateDetail({
               rows={8}
               value={body}
               onChange={(e) => setBody(e.target.value)}
+              onFocus={() => setActiveField("body")}
             />
           </div>
 
           {template.placeholders.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <Label>Platzhalter</Label>
-              <div className="flex flex-wrap gap-1.5">
+              <Label>Platzhalter-Legende</Label>
+              <p className="text-xs text-muted-foreground">
+                Klick fügt den Platzhalter im zuletzt ausgewählten Feld
+                (Betreff oder Text) an der Cursor-Position ein.
+              </p>
+              <div className="flex flex-col gap-0.5 rounded-lg border border-border p-1.5">
                 {template.placeholders.map((placeholder) => (
-                  <Tooltip key={placeholder}>
-                    <TooltipTrigger
-                      render={
-                        <button
-                          type="button"
-                          onClick={() => insertPlaceholder(placeholder)}
-                          className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-                        />
-                      }
-                    >
+                  <button
+                    key={placeholder}
+                    type="button"
+                    onClick={() => insertPlaceholder(placeholder)}
+                    className="flex items-center gap-3 rounded-md px-2 py-1 text-left transition-colors hover:bg-secondary"
+                  >
+                    <code className="shrink-0 rounded bg-secondary px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
                       {`{{${placeholder}}}`}
-                    </TooltipTrigger>
-                    <TooltipContent>
+                    </code>
+                    <span className="text-xs text-muted-foreground">
                       {placeholderDescription(
                         placeholder,
                         template.placeholderLabels,
                       )}
-                    </TooltipContent>
-                  </Tooltip>
+                    </span>
+                  </button>
                 ))}
               </div>
             </div>
@@ -488,6 +513,12 @@ function TemplateDetail({
         )}
 
         <TabsContent value="preview" className="flex flex-col gap-3 pt-4">
+          <div className="flex flex-col gap-1.5">
+            <Label>Betreff</Label>
+            <p className="rounded-lg border border-border bg-muted px-3.5 py-2 text-sm">
+              {renderPreview(subject, template.placeholders)}
+            </p>
+          </div>
           <div className="overflow-hidden rounded-lg border border-border">
             {/* Die Hülle ist ein vollständiges HTML-Dokument (eigenes
                <html>/<head>/<style>) – als `dangerouslySetInnerHTML` auf
