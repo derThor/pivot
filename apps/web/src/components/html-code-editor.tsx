@@ -8,6 +8,7 @@ import CodeMirror, {
 import { html } from "@codemirror/lang-html";
 import { Upload } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -70,16 +71,21 @@ export function HtmlCodeEditor({
 
   return (
     <div className="flex min-w-0 flex-col gap-1.5 overflow-hidden rounded-lg border border-input">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-input bg-background p-2">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 border-b border-input bg-background p-2">
         <div className="flex flex-wrap gap-1.5">
           {placeholderChips?.map((chip) => (
             <Tooltip key={chip.token}>
               <TooltipTrigger
                 render={
-                  <button
-                    type="button"
-                    onClick={() => insertAtCursor(chip.token)}
-                    className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                  <Badge
+                    variant="secondary"
+                    render={
+                      <button
+                        type="button"
+                        onClick={() => insertAtCursor(chip.token)}
+                        className="cursor-pointer transition-colors hover:bg-primary/10 hover:text-primary"
+                      />
+                    }
                   />
                 }
               >
