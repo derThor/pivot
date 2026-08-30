@@ -28,7 +28,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { RichTextEditor } from "@/components/rich-text-editor";
+import { HtmlCodeEditor } from "@/components/html-code-editor";
 import {
   Tooltip,
   TooltipContent,
@@ -400,8 +400,8 @@ function TemplateDetail({
                 </Select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label>Inhalt</Label>
-                <RichTextEditor value={bodyHtml} onChange={setBodyHtml} />
+                <Label>Inhalt (HTML/CSS)</Label>
+                <HtmlCodeEditor value={bodyHtml} onChange={setBodyHtml} />
               </div>
             </>
           ) : (
@@ -618,13 +618,13 @@ function ShellDetail({
       />
 
       <div className="flex flex-col gap-1.5">
-        <Label>Inhalt</Label>
+        <Label>Inhalt (HTML/CSS)</Label>
         <p className="text-xs text-muted-foreground">
           Der Platzhalter {SHELL_CONTENT_PLACEHOLDER} markiert die Stelle,
           an der der Vorlagen-Inhalt eingesetzt wird – muss genau einmal
           vorhanden sein.
         </p>
-        <RichTextEditor
+        <HtmlCodeEditor
           value={content}
           onChange={setContent}
           placeholderChips={[

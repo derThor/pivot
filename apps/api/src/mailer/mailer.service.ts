@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
+import juice from 'juice';
 import { PrismaService } from '../prisma/prisma.service';
 import { decryptSecret } from '../common/utils/secret-encryption';
 import {
@@ -356,7 +357,15 @@ export class MailerService {
     if (!template.enabled && !options?.ignoreEnabled) return null;
     const subject = this.renderPlaceholders(template.subject, vars);
     const contentHtml = this.renderPlaceholders(template.bodyHtml ?? '', vars);
-    const html = await this.wrapInShell(contentHtml, template.shellId);
+    const combined = await this.wrapInShell(contentHtml, template.shellId);
+    // Nutzervorgabe, 2026-08-30: Hülle UND Inhalt sind jetzt rohes,
+    // freies HTML/CSS (kein Editor-Schema dazwischen mehr) – fertig
+    // gestaltete, von einer Agentur exportierte Vorlagen bringen dabei
+    // oft <style>-Blöcke mit Klassen mit, die viele Mail-Programme
+    // (allen voran Outlook) ignorieren. `juice` schreibt die Styles
+    // direkt in jedes Element (`style="..."`), einmal auf das fertige
+    // Gesamt-HTML (Hülle+Inhalt zusammen), nicht getrennt für beide.
+    const html = juice(combined);
     return { subject, html, text: htmlToPlainText(html) };
   }
 

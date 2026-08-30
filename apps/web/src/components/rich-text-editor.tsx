@@ -35,11 +35,6 @@ import {
 import { ImagePickerDialog } from "@/components/image-picker-dialog";
 import { FilePickerDialog } from "@/components/file-picker-dialog";
 import { ResizableImageNodeView } from "@/components/resizable-image-node-view";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { mediaUrl } from "@/lib/media";
 import { cn } from "@/lib/utils";
 
@@ -132,7 +127,6 @@ export function RichTextEditor({
   id,
   editable = true,
   maxHeight,
-  placeholderChips,
 }: {
   value: string;
   onChange?: (html: string) => void;
@@ -147,12 +141,6 @@ export function RichTextEditor({
    * viel Text ein einzelner Eintrag hat. Ohne Angabe wächst der Editor wie
    * bisher unbegrenzt mit dem Inhalt. */
   maxHeight?: string;
-  /** Optionale Zeile klickbarer Platzhalter-Chips unter der Toolbar
-   * (Nutzervorgabe, 2026-08-30: individuelle Mail-Vorlagen + E-Mail-
-   * Hüllen) – fügt den Token an der Cursor-Position ein, gleiches
-   * `{{...}}`-Muster wie bei den Textarea-basierten Vorlagen in
-   * mailing-settings-card.tsx. */
-  placeholderChips?: { token: string; description: string }[];
 }) {
   const [sourceMode, setSourceMode] = useState(false);
   const [sourceValue, setSourceValue] = useState("");
@@ -389,30 +377,6 @@ export function RichTextEditor({
           </ToolbarButton>
         </div>
       </div>
-
-      {placeholderChips && placeholderChips.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 border-b border-input p-2">
-          {placeholderChips.map((chip) => (
-            <Tooltip key={chip.token}>
-              <TooltipTrigger
-                render={
-                  <button
-                    type="button"
-                    disabled={sourceMode}
-                    onClick={() =>
-                      editor.chain().focus().insertContent(chip.token).run()
-                    }
-                    className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary disabled:pointer-events-none disabled:opacity-50"
-                  />
-                }
-              >
-                {chip.token}
-              </TooltipTrigger>
-              <TooltipContent>{chip.description}</TooltipContent>
-            </Tooltip>
-          ))}
-        </div>
-      )}
 
       {sourceMode ? (
         <Textarea
