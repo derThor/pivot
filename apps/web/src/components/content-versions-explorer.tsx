@@ -285,74 +285,82 @@ export function ContentVersionsExplorer({
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[320px_1fr] lg:items-start">
         <div className="flex flex-col gap-3">
-          {rows.map((row) => {
-            const active = row.id === selectedId;
-            return (
-              <div
-                key={row.id}
-                className={cn(
-                  "flex w-full items-start gap-3 rounded-xl p-4 text-left transition-colors",
-                  active
-                    ? "border-2 border-primary bg-primary/10"
-                    : "border border-border bg-card hover:bg-muted/50",
-                )}
-              >
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(row.id)}
-                  className="flex min-w-0 flex-1 items-start gap-3 text-left"
-                >
-                  <span
+          <div className="overflow-hidden rounded-xl bg-card shadow-sm">
+            <div className="flex flex-col divide-y divide-border">
+              {rows.map((row) => {
+                const active = row.id === selectedId;
+                return (
+                  <div
+                    key={row.id}
                     className={cn(
-                      "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+                      "flex items-start gap-3 border-l-4 px-4 py-4 transition-colors",
                       active
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground",
+                        ? "border-l-primary bg-primary/15"
+                        : "border-l-transparent hover:bg-muted/50",
                     )}
                   >
-                    {row.versionNumber}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate text-sm font-medium">
-                        Version {row.versionNumber}
-                      </p>
-                      {row.statusBadge && (
-                        <Badge variant="secondary" className={row.statusBadge.className}>
-                          {row.statusBadge.label}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="truncate text-sm text-muted-foreground">
-                      {row.summary}
-                    </p>
-                    <p className="mt-1 truncate text-xs text-muted-foreground">
-                      {row.createdBy ? formatName(row.createdBy) : "—"}
-                      {row.createdAt && ` · ${formatRelativeTime(row.createdAt)}`}
-                    </p>
-                  </div>
-                </button>
-                {!row.isCurrent && (
-                  <ConfirmDeleteDialog
-                    trigger={
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        className="shrink-0"
-                        aria-label="Version löschen"
+                    <button
+                      type="button"
+                      onClick={() => setSelectedId(row.id)}
+                      className="flex min-w-0 flex-1 items-start gap-3 text-left"
+                    >
+                      <span
+                        className={cn(
+                          "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+                          active
+                            ? "bg-primary/25 text-foreground"
+                            : "bg-secondary text-muted-foreground",
+                        )}
                       >
-                        <Trash2 />
-                      </Button>
-                    }
-                    title="Diese Version löschen?"
-                    description="Diese Aktion kann nicht rückgängig gemacht werden. Der aktuelle Inhalt ist davon nicht betroffen, nur dieser historische Stand verschwindet aus der Versionshistorie."
-                    onConfirm={() => handleDelete(row.id)}
-                  />
-                )}
-              </div>
-            );
-          })}
+                        {row.versionNumber}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="truncate text-sm font-medium">
+                            Version {row.versionNumber}
+                          </p>
+                          {row.statusBadge && (
+                            <Badge
+                              variant="secondary"
+                              className={row.statusBadge.className}
+                            >
+                              {row.statusBadge.label}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="truncate text-sm text-muted-foreground">
+                          {row.summary}
+                        </p>
+                        <p className="mt-1 truncate text-xs text-muted-foreground">
+                          {row.createdBy ? formatName(row.createdBy) : "—"}
+                          {row.createdAt &&
+                            ` · ${formatRelativeTime(row.createdAt)}`}
+                        </p>
+                      </div>
+                    </button>
+                    {!row.isCurrent && (
+                      <ConfirmDeleteDialog
+                        trigger={
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="shrink-0"
+                            aria-label="Version löschen"
+                          >
+                            <Trash2 />
+                          </Button>
+                        }
+                        title="Diese Version löschen?"
+                        description="Diese Aktion kann nicht rückgängig gemacht werden. Der aktuelle Inhalt ist davon nicht betroffen, nur dieser historische Stand verschwindet aus der Versionshistorie."
+                        onConfirm={() => handleDelete(row.id)}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
           {meta.pageCount > 1 && (
             <PaginationControls
               page={meta.page}
