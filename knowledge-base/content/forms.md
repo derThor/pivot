@@ -595,6 +595,32 @@ selbst gebauten HTML. `hasShellContentPlaceholder()` prüft nur, dass der
 Platzhalter genau einmal vorkommt, nicht die umgebende HTML-Struktur (bei
 komplett freiem HTML/CSS bewusst keine tiefere Validierung).
 
+### Nachtrag: "keine Testmails" + "Vorschau zeigt keine Daten" (selbe Sitzung)
+
+Zwei weitere, echte Bugs beim Testen desselben Features gefunden und
+behoben:
+
+- **`deliver()` schluckte Fehler stillschweigend** (`catch` loggte nur,
+  gab nie etwas zurück) – der "Testmail senden"-Button zeigte deshalb
+  IMMER "gesendet", egal ob der SMTP-Versand tatsächlich klappte. Jetzt
+  gibt `deliver()`/`sendMailTemplateTest()` `{ok, error}` zurück (gleiches
+  Muster wie `sendTestEmail()`/die "Verbindung testen"-Karte), die UI
+  zeigt bei `ok: false` eine echte Fehlermeldung statt eines
+  Fehl-Erfolgs-Toasts. Ein danach live gesendeter Test kam serverseitig
+  tatsächlich mit `{ok: true}` durch (SMTP hat akzeptiert) – falls eine
+  Testmail trotzdem nicht ankommt, ist das ab jetzt kein Blindflug mehr,
+  sondern zuerst im Spam-Ordner bzw. beim SMTP-Anbieter zu suchen.
+- **Vorschau zeigte Design, aber nicht die eingesetzten Beispieldaten**:
+  die Hülle ist ein vollständiges HTML-Dokument (eigenes
+  `<html>`/`<head>`/`<style>`) und wurde per `dangerouslySetInnerHTML` in
+  ein normales `<div>` gesetzt – der Browser zerlegt beim
+  Fragment-Parsing genau diese Dokument-Tags, Styles/Struktur greifen
+  dadurch nicht zuverlässig. Ersetzt durch `<iframe srcDoc="...">` in
+  `TemplateDetail`, das der Hülle einen echten, isolierten
+  Dokumentkontext gibt (identisch zur echten Mail-Darstellung, inkl. dem
+  `<tr>`-Fostering-Effekt oben – jetzt aber sichtbar statt spurlos
+  verschwunden).
+
 ## Offene Punkte / mögliche Folgearbeiten
 
 - Datei-Upload-Feldtyp (Backend-Katalog vorhanden, kein Upload-Handling).

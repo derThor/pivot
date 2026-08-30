@@ -4,7 +4,12 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Send, RotateCcw, Trash2 } from "lucide-react";
 
-import { toastCreated, toastDeleted, toastEdited } from "@/components/app-toast";
+import {
+  toastCreated,
+  toastDeleted,
+  toastEdited,
+  toastWarning,
+} from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -294,7 +299,15 @@ function TemplateDetail({
           body: JSON.stringify({ to: testEmail }),
         },
       );
-      if (res.ok) toastEdited(`Testmail an ${testEmail} gesendet.`);
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.ok) {
+        toastEdited(`Testmail an ${testEmail} gesendet.`);
+      } else {
+        toastWarning(
+          "Testmail konnte nicht gesendet werden.",
+          data?.error ?? data?.message ?? "Unbekannter Fehler.",
+        );
+      }
     } finally {
       setIsSendingTest(false);
     }
@@ -475,16 +488,24 @@ function TemplateDetail({
 
         <TabsContent value="preview" className="flex flex-col gap-3 pt-4">
           <div className="overflow-hidden rounded-lg border border-border">
-            <div
-              className="max-h-[32rem] overflow-y-auto bg-white"
-              dangerouslySetInnerHTML={{
-                __html: previewShellContent.replaceAll(
-                  SHELL_CONTENT_PLACEHOLDER,
-                  plainTextToHtmlPreview(
-                    renderPreview(body, template.placeholders),
-                  ),
+            {/* Die Hülle ist ein vollständiges HTML-Dokument (eigenes
+               <html>/<head>/<style>) – als `dangerouslySetInnerHTML` auf
+               ein <div> gesetzt, zerlegt der Browser diese Tags beim
+               Fragment-Parsing und die Styles greifen nicht zuverlässig
+               (Nutzer-Bugreport, 2026-08-30: "sehe nur das Design, nicht
+               die Daten"). Ein <iframe srcDoc> gibt der Hülle einen
+               echten, isolierten Dokumentkontext, in dem sie exakt so
+               rendert wie im tatsächlichen Mail-Programm. */}
+            <iframe
+              title="Vorschau"
+              sandbox=""
+              className="h-[32rem] w-full bg-white"
+              srcDoc={previewShellContent.replaceAll(
+                SHELL_CONTENT_PLACEHOLDER,
+                plainTextToHtmlPreview(
+                  renderPreview(body, template.placeholders),
                 ),
-              }}
+              )}
             />
           </div>
         </TabsContent>

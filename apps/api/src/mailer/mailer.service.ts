@@ -224,21 +224,29 @@ export class MailerService {
     return `${text}\n\n---\n${footer}`;
   }
 
+  // Gibt bewusst `{ok, error}` statt zu werfen zurück (gleiches Muster wie
+  // `sendTestEmail()`) – ein fehlgeschlagener automatischer Versand (z.B.
+  // Passwort-Reset) darf den auslösenden Request nicht zum Absturz
+  // bringen, wird aber trotzdem geloggt. `sendMailTemplateTest()` gibt das
+  // Ergebnis zusätzlich an die UI weiter, damit ein fehlgeschlagener
+  // Testversand nicht als stiller Erfolg erscheint (Nutzer-Bugreport,
+  // 2026-08-30: "ich bekomme keine Testmails" – bis dahin gab es dafür
+  // keinerlei Rückmeldung).
   private async deliver(
     to: string,
     subject: string,
     text: string,
     attachments?: MailAttachment[],
-    // Nur für individuelle (kind: "custom") Vorlagen gesetzt – die Hülle
-    // trägt dort bereits Kopf/Fuß/CI, der automatische Firmen-Footer aus
-    // `appendFooter()` würde sich damit überschneiden/wiederholen.
+    // Nur gesetzt, wenn die Vorlage eine Hülle hat – die trägt dann bereits
+    // Kopf/Fuß/CI, der automatische Firmen-Footer aus `appendFooter()`
+    // würde sich damit überschneiden/wiederholen.
     html?: string,
-  ): Promise<void> {
+  ): Promise<{ ok: boolean; error?: string }> {
     const fullText = html ? text : await this.appendFooter(text);
     const cfg = await this.loadConfig();
     if (!cfg) {
       this.logger.log(`[Dev-Stub] "${subject}" an ${to}: ${fullText}`);
-      return;
+      return { ok: false, error: 'Kein SMTP-Server hinterlegt.' };
     }
     try {
       await this.buildTransport(cfg).sendMail({
@@ -249,10 +257,13 @@ export class MailerService {
         html,
         attachments,
       });
+      return { ok: true };
     } catch (err) {
+      const error = (err as Error).message;
       this.logger.error(
-        `Mailversand an ${to} fehlgeschlagen ("${subject}"): ${(err as Error).message}`,
+        `Mailversand an ${to} fehlgeschlagen ("${subject}"): ${error}`,
       );
+      return { ok: false, error };
     }
   }
 
@@ -819,7 +830,10 @@ export class MailerService {
   /** Vorlagen-Editor, Button "Testmail senden" – rendert mit Beispielwerten
    * und verschickt unabhängig vom "Versand aktiv"-Schalter (der Nutzer
    * will die Vorlage sehen, nicht den Pausenzustand testen). */
-  async sendMailTemplateTest(id: string, to: string): Promise<void> {
+  async sendMailTemplateTest(
+    id: string,
+    to: string,
+  ): Promise<{ ok: boolean; error?: string }> {
     if (this.isFormTemplateId(id)) {
       const { formId, formKind } = this.splitFormTemplateId(id);
       const form = await this.prisma.form.findUnique({
@@ -835,16 +849,16 @@ export class MailerService {
       const rendered = await this.renderFormTemplate(formId, formKind, vars, {
         ignoreEnabled: true,
       });
-      if (rendered) {
-        await this.deliver(
-          to,
-          `[Test] ${rendered.subject}`,
-          rendered.text,
-          undefined,
-          rendered.html,
-        );
+      if (!rendered) {
+        return { ok: false, error: 'Vorlage ist pausiert.' };
       }
-      return;
+      return this.deliver(
+        to,
+        `[Test] ${rendered.subject}`,
+        rendered.text,
+        undefined,
+        rendered.html,
+      );
     }
 
     const def = SYSTEM_MAIL_TEMPLATES.find((t) => t.key === id);
@@ -857,15 +871,16 @@ export class MailerService {
     const rendered = await this.renderSystemTemplate(id, vars, {
       ignoreEnabled: true,
     });
-    if (rendered) {
-      await this.deliver(
-        to,
-        `[Test] ${rendered.subject}`,
-        rendered.text,
-        undefined,
-        rendered.html,
-      );
+    if (!rendered) {
+      return { ok: false, error: 'Vorlage ist pausiert.' };
     }
+    return this.deliver(
+      to,
+      `[Test] ${rendered.subject}`,
+      rendered.text,
+      undefined,
+      rendered.html,
+    );
   }
 
   // ---------- E-Mail-Hüllen (Einstellungen → Mailing) ----------
