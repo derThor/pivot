@@ -729,32 +729,43 @@ function ShellDetail({
             {
               token: SHELL_CONTENT_PLACEHOLDER,
               description: "Hier wird der Vorlagen-Inhalt eingesetzt",
+              variant: "ink",
             },
             {
               token: "{{subject}}",
               description: "Betreff/Überschrift der jeweiligen Vorlage",
+              variant: "ink",
             },
-            { token: "{{companyName}}", description: "Firmenname" },
+            {
+              token: "{{companyName}}",
+              description: "Firmenname",
+              variant: "slate",
+            },
             {
               token: "{{companyAddress}}",
               description: "Firmenadresse (Straße, PLZ, Ort)",
+              variant: "slate",
             },
             {
               token: "{{companyEmail}}",
               description: "Firmen-E-Mail-Adresse",
+              variant: "slate",
             },
             {
               token: "{{companyPhone}}",
               description: "Firmen-Telefonnummer",
+              variant: "slate",
             },
             {
               token: "{{companyLogo}}",
               description: 'URL des Firmenlogos (für ein <img src="...">)',
+              variant: "blue",
             },
             {
               token: "{{companyLogoDark}}",
               description:
                 "URL des Dunkelmodus-Logos, leer ohne eigenes Dark-Logo",
+              variant: "blue",
             },
           ]}
         />

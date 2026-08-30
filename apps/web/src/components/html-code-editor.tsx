@@ -8,7 +8,8 @@ import CodeMirror, {
 import { html } from "@codemirror/lang-html";
 import { Upload } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import { Badge, type badgeVariants } from "@/components/ui/badge";
+import type { VariantProps } from "class-variance-authority";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -39,7 +40,14 @@ export function HtmlCodeEditor({
   onChange: (html: string) => void;
   /** Klickbare `{{token}}`-Chips, fügen an der aktuellen Cursor-Position
    * ein (gleiches Muster wie bei den Textarea-basierten Vorlagen). */
-  placeholderChips?: { token: string; description: string }[];
+  placeholderChips?: {
+    token: string;
+    description: string;
+    /** Gruppiert verwandte Platzhalter farblich (Nutzervorgabe, 2026-08-30:
+     * "die Platzhalter Badges farblich unterscheiden") – Standard
+     * "outline" für nicht gruppierte Chips. */
+    variant?: VariantProps<typeof badgeVariants>["variant"];
+  }[];
   /** Erklärungstext(e) über den Chips, Teil derselben fixierten
    * Kopfzeile (Nutzervorgabe, 2026-08-30: "diesen Bereich mitscrollen
    * lassen" – die Hinweise zu den Platzhaltern sollen beim Scrollen durch
@@ -102,30 +110,7 @@ export function HtmlCodeEditor({
     <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-input">
       <div className="sticky top-0 z-10 flex flex-col gap-2 rounded-t-lg border-b border-input bg-background p-2">
         {note && <p className="text-xs text-muted-foreground">{note}</p>}
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap gap-1.5">
-            {placeholderChips?.map((chip) => (
-              <Tooltip key={chip.token}>
-                <TooltipTrigger
-                  render={
-                    <Badge
-                      variant="outline"
-                      render={
-                        <button
-                          type="button"
-                          onClick={() => insertAtCursor(chip.token)}
-                          className="cursor-pointer transition-colors hover:bg-primary/10 hover:text-primary"
-                        />
-                      }
-                    />
-                  }
-                >
-                  {chip.token}
-                </TooltipTrigger>
-                <TooltipContent>{chip.description}</TooltipContent>
-              </Tooltip>
-            ))}
-          </div>
+        <div className="flex justify-end">
           <Button
             type="button"
             variant="outline"
@@ -136,6 +121,29 @@ export function HtmlCodeEditor({
             <Upload className="size-4" />
             HTML-Datei hochladen
           </Button>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {placeholderChips?.map((chip) => (
+            <Tooltip key={chip.token}>
+              <TooltipTrigger
+                render={
+                  <Badge
+                    variant={chip.variant ?? "outline"}
+                    render={
+                      <button
+                        type="button"
+                        onClick={() => insertAtCursor(chip.token)}
+                        className="cursor-pointer transition-colors hover:bg-primary/10 hover:text-primary"
+                      />
+                    }
+                  />
+                }
+              >
+                {chip.token}
+              </TooltipTrigger>
+              <TooltipContent>{chip.description}</TooltipContent>
+            </Tooltip>
+          ))}
         </div>
         <input
           ref={fileInputRef}
