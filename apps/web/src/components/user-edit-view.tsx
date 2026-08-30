@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Monitor, ShieldCheck, ShieldOff } from "lucide-react";
+import { Download, Monitor, ShieldCheck, ShieldOff } from "lucide-react";
 
 import { toastEdited, toastDeleted } from "@/components/app-toast";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
@@ -117,6 +117,7 @@ export function UserEditView({
   const [isDisablingTwoFactor, setIsDisablingTwoFactor] = useState(false);
   const [isImpersonating, setIsImpersonating] = useState(false);
   const [isTogglingActive, setIsTogglingActive] = useState(false);
+  const [isExportingActivity, setIsExportingActivity] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionsState, setSessionsState] = useState(sessions);
   const [sessionsPage, setSessionsPage] = useState(1);
@@ -269,6 +270,26 @@ export function UserEditView({
   // `UsersService.delete()` serverseitig direkt (siehe `datenschutzActive`
   // oben) – dieser Aufruf bleibt derselbe, nur das Backend-Verhalten und
   // der Bestätigungstext unten unterscheiden sich.
+  async function handleExportActivity() {
+    setIsExportingActivity(true);
+    try {
+      const res = await fetch(`/api/users/${user.id}/activity/export`);
+      if (!res.ok) return;
+      // `res.blob()` statt `res.text()`: `text()` entfernt laut WHATWG-Spec
+      // ein führendes UTF-8-BOM beim Dekodieren, Excel zeigt Umlaute dann
+      // als Mojibake (gleiches Muster wie SettingsExportCard).
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `aktivitaet-${name.toLowerCase().replace(/\s+/g, "-")}-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsExportingActivity(false);
+    }
+  }
+
   async function handleDelete() {
     await fetch(`/api/users/${user.id}/delete`, { method: "POST" });
     toastDeleted(`„${name}“ wurde gelöscht.`);
@@ -853,7 +874,20 @@ export function UserEditView({
 
           <TabsContent value="aktivitaet">
             <div className="rounded-xl bg-card shadow-sm p-6">
-              <h2 className="mb-4 font-semibold">Verlauf</h2>
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <h2 className="font-semibold">Verlauf</h2>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="border-border"
+                  onClick={handleExportActivity}
+                  disabled={activity.meta.total === 0 || isExportingActivity}
+                >
+                  <Download className="size-4" />
+                  {isExportingActivity ? "Exportiert…" : "Export"}
+                </Button>
+              </div>
               <UserActivityTimeline userId={user.id} initialData={activity} />
             </div>
           </TabsContent>

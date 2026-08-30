@@ -57,6 +57,20 @@ export class AuditLogService {
     };
   }
 
+  /** Unpaginiert, gleiche OR-Bedingung wie `findForUser()` – für den
+   * CSV-Export des "Aktivität"-Tabs (UsersService.exportActivityCsv()),
+   * bewusst kein Limit, ein Export soll die komplette Historie enthalten
+   * (gleiches Prinzip wie `findAllForEntity()`). */
+  async findAllForUser(userId: string) {
+    return this.prisma.auditLog.findMany({
+      where: { OR: [{ userId }, { entityType: 'User', entityId: userId }] },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+  }
+
   /** Neueste N Einträge zu einer bestimmten Entität, unabhängig vom
    * Akteur – z.B. "Letzte Änderungen" der Firma-Stammdaten
    * (SettingsService.update()). */

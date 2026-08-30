@@ -4,6 +4,7 @@ import {
   Delete,
   forwardRef,
   Get,
+  Header,
   Headers,
   HttpCode,
   HttpStatus,
@@ -71,6 +72,17 @@ export class UsersController {
   @Get(':id/activity')
   getActivity(@Param('id') id: string, @Query() query: QueryActivityDto) {
     return this.usersService.getActivity(id, query.page, query.pageSize);
+  }
+
+  // CSV-Export des Aktivitätsverlaufs (Nutzervorgabe, 2026-08-30: "bei
+  // benutzer aktivitäten als export ermöglichen") – gleiches Muster wie
+  // SettingsController.exportSettingsChanges().
+  @RequirePermission('users:read')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="aktivitaet.csv"')
+  @Get(':id/activity/export')
+  exportActivity(@Param('id') id: string) {
+    return this.usersService.exportActivityCsv(id);
   }
 
   // Kein admin-vergebenes Passwort mehr (Nutzervorgabe, 2026-08-17):
@@ -155,10 +167,7 @@ export class UsersController {
   @RequirePermission('users:update')
   @HttpCode(HttpStatus.OK)
   @Post(':id/disable-2fa')
-  disableTwoFactor(
-    @Param('id') id: string,
-    @CurrentUser() user: JwtPayload,
-  ) {
+  disableTwoFactor(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.usersService.disableTwoFactor(id, user.sub);
   }
 

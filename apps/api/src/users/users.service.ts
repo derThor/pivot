@@ -12,12 +12,23 @@ import { SettingsService } from '../settings/settings.service';
 import { CacheService } from '../cache/cache.service';
 import { MediaService } from '../media/media.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { describeAuditAction } from '../audit-log/describe-audit-action';
 import { LicenseClientService } from '../license-client/license-client.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
+
+function csvEscape(v: unknown): string {
+  return `"${String(v).replace(/"/g, '""')}"`;
+}
+
+// Ohne BOM interpretieren Excel/Windows-Editoren die UTF-8-Datei als
+// Windows-1252 und zeigen Umlaute als Mojibake – gleiches Muster wie
+// SettingsService.CSV_BOM (dort ausführlicher kommentiert), hier separat
+// dupliziert statt geteilt.
+const CSV_BOM = '﻿';
 
 const publicSelect = {
   id: true,
@@ -515,6 +526,29 @@ export class UsersService {
   // ersetzt (Admin-angelegt vs. Selbstregistrierung).
   async getActivity(id: string, page: number, pageSize: number) {
     return this.auditLog.findForUser(id, page, pageSize);
+  }
+
+  // CSV-Export des kompletten Aktivitätsverlaufs (Nutzervorgabe,
+  // 2026-08-30: "bei benutzer aktivitäten als export ermöglichen") –
+  // gleiches BOM-/Escaping-Muster wie SettingsService.
+  // exportSettingsChangesCsv(), über AuditLogService.findAllForUser()
+  // (unpaginierte Variante von findForUser() oben).
+  async exportActivityCsv(id: string): Promise<string> {
+    const rows = await this.auditLog.findAllForUser(id);
+    const header = ['Datum', 'Aktion', 'Akteur'].join(',');
+    const lines = rows.map((row) => {
+      const actor = row.user
+        ? `${row.user.firstName ?? ''} ${row.user.lastName}`.trim()
+        : '';
+      return [
+        row.createdAt.toISOString(),
+        describeAuditAction(row.action, row.metadata),
+        actor,
+      ]
+        .map(csvEscape)
+        .join(',');
+    });
+    return CSV_BOM + [header, ...lines].join('\n');
   }
 
   // "Diese Woche"-Kachel auf "Mein Konto" – anders als getStats() oben
