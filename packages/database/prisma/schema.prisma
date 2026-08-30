@@ -981,12 +981,32 @@ model ContentVersion {
   contentId String
   content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
   data      Json
+  // Statusabbild von Content.status zum Zeitpunkt der Sicherung – für den
+  // Status-Badge auf der neuen Versionen-Seite (Nutzervorgabe, 2026-08-30,
+  // 1:1 nach Bildvorlage). Nullable statt eines Defaults: bereits
+  // bestehende Versionen kennen ihren damaligen Status nicht rückwirkend
+  // und sollen deshalb ehrlich keinen Badge zeigen statt eines erfundenen
+  // "Entwurf" für jede Altzeile.
+  status ContentStatus?
+  // Unterscheidet eine normale Bearbeitung von der automatischen
+  // Sicherung, die rollback() unmittelbar vor dem Zurücksetzen anlegt
+  // (siehe ContentService.rollback()) – es gibt in dieser App KEINEN
+  // echten serverseitigen Autosave-Vorgang (das "Autosave" im Editor
+  // schreibt nur lokal in localStorage, siehe content-editor-form.tsx),
+  // ein "Automatisch"-Badge dafür wäre also erfunden. Gleiches
+  // Nullable-Prinzip wie bei status.
+  trigger ContentVersionTrigger?
   createdAt DateTime @default(now())
 
   createdById String
   createdBy   User   @relation(fields: [createdById], references: [id])
 
   @@map("content_versions")
+}
+
+enum ContentVersionTrigger {
+  EDIT
+  ROLLBACK_BACKUP
 }
 
 model Category {

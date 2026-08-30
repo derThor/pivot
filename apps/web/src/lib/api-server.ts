@@ -142,6 +142,7 @@ export async function getMySessions() {
 }
 
 export type ContentStatus = "DRAFT" | "SCHEDULED" | "PUBLISHED" | "ARCHIVED";
+export type ContentVersionTrigger = "EDIT" | "ROLLBACK_BACKUP";
 
 export interface AuthorRef {
   id: string;
@@ -465,6 +466,10 @@ export function getContentByPreviewToken(token: string) {
 export interface ContentVersion {
   id: string;
   data: Record<string, unknown>;
+  /** Statusabbild zum Sicherungszeitpunkt – `null` bei Alt-Versionen, die
+   * das noch nicht mitgespeichert haben (siehe Schema-Kommentar). */
+  status: ContentStatus | null;
+  trigger: ContentVersionTrigger | null;
   createdAt: string;
   createdBy: AuthorRef;
 }

@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
-import { ContentStatus, Prisma } from '@pivot/database';
+import { ContentStatus, ContentVersionTrigger, Prisma } from '@pivot/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
@@ -304,6 +304,8 @@ export class ContentService {
       data: {
         contentId: id,
         data: existing.data as Prisma.InputJsonValue,
+        status: existing.status,
+        trigger: ContentVersionTrigger.EDIT,
         createdById: editorId,
       },
     });
@@ -745,11 +747,15 @@ export class ContentService {
     const current = await this.findOne(contentId);
 
     // Aktuellen Stand vor dem Zurücksetzen sichern (macht den Rollback
-    // selbst wieder rückgängig machbar), gleiches Muster wie update().
+    // selbst wieder rückgängig machbar), gleiches Muster wie update() –
+    // eigener trigger-Wert, damit die Versionen-Seite diese Sicherung von
+    // einer normalen Bearbeitung unterscheiden kann.
     await this.prisma.contentVersion.create({
       data: {
         contentId,
         data: current.data as Prisma.InputJsonValue,
+        status: current.status,
+        trigger: ContentVersionTrigger.ROLLBACK_BACKUP,
         createdById: editorId,
       },
     });
