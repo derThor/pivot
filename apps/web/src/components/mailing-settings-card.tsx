@@ -389,7 +389,7 @@ function TemplateDetail({
                 setShellId(next === "__default" ? "" : (next ?? ""))
               }
             >
-              <SelectTrigger id="mail-shell">
+              <SelectTrigger id="mail-shell" className="min-w-56 max-w-80">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
