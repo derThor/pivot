@@ -59,7 +59,7 @@ export default async function EditContentPage({
           <PreviewLinksDialog contentId={id} />
           <Button
             variant="outline"
-            size="sm"
+            className="bg-card"
             render={<Link href={`/dashboard/content/${id}/versions`} />}
           >
             <History />

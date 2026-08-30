@@ -131,7 +131,7 @@ export function PreviewLinksDialog({ contentId }: { contentId: string }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>
+      <DialogTrigger render={<Button variant="outline" className="bg-card" />}>
         <Link2 />
         Vorschau-Link
       </DialogTrigger>
