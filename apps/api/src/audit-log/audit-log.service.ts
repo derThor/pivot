@@ -159,4 +159,15 @@ export class AuditLogService {
   async deleteMany(ids: string[]) {
     await this.prisma.auditLog.deleteMany({ where: { id: { in: ids } } });
   }
+
+  /** "Aktivitäten-Historie aufräumen" (Nutzervorgabe, 2026-08-30, siehe
+   * JobsService) – löscht über den kompletten, geteilten AuditLog hinweg
+   * (Aktivität-Tab, Einstellungen-Protokoll, Datenschutz-Zugriffsprotokoll
+   * sind dieselbe Tabelle), Einträge älter als `cutoff`. */
+  async deleteOlderThan(cutoff: Date): Promise<number> {
+    const { count } = await this.prisma.auditLog.deleteMany({
+      where: { createdAt: { lt: cutoff } },
+    });
+    return count;
+  }
 }

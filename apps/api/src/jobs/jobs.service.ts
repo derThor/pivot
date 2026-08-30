@@ -113,6 +113,14 @@ export class JobsService implements OnModuleInit {
       defaultCronExpression: '0 3 * * *',
       run: () => this.cleanupOldJobRuns(),
     },
+    {
+      id: 'activity-log-cleanup',
+      title: 'Aktivitäten-Historie aufräumen',
+      description:
+        'Löscht Audit-Log-Einträge (Aktivität, Protokoll, Zugriffsprotokoll), die älter sind als die eingestellte Aufbewahrungsfrist.',
+      defaultCronExpression: '0 4 * * *',
+      run: () => this.cleanupOldAuditLog(),
+    },
   ];
 
   constructor(
@@ -453,6 +461,27 @@ export class JobsService implements OnModuleInit {
     return count > 0
       ? `${count} Job-Lauf/Läufe älter als ${settings.jobRunRetentionDays} Tage gelöscht.`
       : 'Keine fälligen Job-Läufe.';
+  }
+
+  /** "Aktivitäten-Historie aufräumen" (Nutzervorgabe, 2026-08-30: "bitte
+   * auch noch den aktivitäten history über sowas regeln") – räumt den
+   * kompletten, geteilten `AuditLog` auf (Aktivität-Tab, Einstellungen-
+   * Protokoll UND Datenschutz-Zugriffsprotokoll sind dieselbe Tabelle,
+   * siehe AuditLogService/privacy-view.tsx). Ersetzt bewusst (nach
+   * Rückfrage im Chat) die bisherige rein manuelle Zugriffsprotokoll-
+   * Löschliste durch eine harte automatische Obergrenze.
+   * `activityLogRetentionDays: null` = unbegrenzt aufbewahren. */
+  private async cleanupOldAuditLog(): Promise<string> {
+    const settings = await this.settings.get();
+    if (settings.activityLogRetentionDays == null) {
+      return 'Unbegrenzte Aufbewahrung eingestellt, nichts zu löschen.';
+    }
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - settings.activityLogRetentionDays);
+    const count = await this.auditLog.deleteOlderThan(cutoff);
+    return count > 0
+      ? `${count} Audit-Log-Eintrag/Einträge älter als ${settings.activityLogRetentionDays} Tage gelöscht.`
+      : 'Keine fälligen Audit-Log-Einträge.';
   }
 
   /** "Letztes Protokoll"-Dialog – auf einen Job gefiltert. */

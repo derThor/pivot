@@ -46,6 +46,7 @@ import { ModuleSettingsCard } from "@/components/module-settings-card";
 import { ScheduledJobsCard } from "@/components/scheduled-jobs-card";
 import { RecentJobRunsCard } from "@/components/recent-job-runs-card";
 import { JobRunRetentionCard } from "@/components/job-run-retention-card";
+import { ActivityLogRetentionCard } from "@/components/activity-log-retention-card";
 import { MailingSettingsCard } from "@/components/mailing-settings-card";
 import { PaginationControls } from "@/components/pagination-controls";
 import { cn } from "@/lib/utils";
@@ -1243,6 +1244,9 @@ export function SettingsForm({
                 <JobRunRetentionCard
                   jobRunRetentionDays={settings.jobRunRetentionDays}
                   jobsGloballyPaused={settings.jobsGloballyPaused}
+                />
+                <ActivityLogRetentionCard
+                  activityLogRetentionDays={settings.activityLogRetentionDays}
                 />
                 <ScheduledJobsCard jobs={jobs} />
                 <RecentJobRunsCard runs={jobRuns} />

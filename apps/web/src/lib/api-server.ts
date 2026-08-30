@@ -766,6 +766,7 @@ export interface AppSettings {
   notificationRecipientEmail: string | null;
   jobsGloballyPaused: boolean;
   jobRunRetentionDays: number | null;
+  activityLogRetentionDays: number | null;
   sccTemplateMediaId: string | null;
   /** Nur bei `getPublicSettings()` (GET /settings/public) vorhanden, nicht bei `getSettings()`. */
   sccTemplateMedia?: { id: string; filename: string; url: string } | null;

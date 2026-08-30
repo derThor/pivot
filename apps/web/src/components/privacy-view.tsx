@@ -922,8 +922,11 @@ export function PrivacyView({
                     ]}
                   />
                   <p className="-mt-2 text-xs text-muted-foreground">
-                    Nach Ablauf wird der Eintrag gesperrt und kann nicht mehr
-                    wiederhergestellt werden – keine automatische Löschung.
+                    Nach Ablauf erscheint der Eintrag unten zur manuellen
+                    Löschung. Zusätzlich räumt die Aufbewahrungsfrist unter
+                    Einstellungen → Jobs den kompletten Aktivitäten-Verlauf
+                    automatisch auf – bei kürzerer Frist dort verschwindet
+                    ein Eintrag ggf. schon vorher.
                   </p>
                   <RetentionDueList
                     title="Fällig zur Löschung"

@@ -233,6 +233,20 @@ model AppSettings {
   // aufbewahren (kein automatisches Löschen), gleiches Nullable-Muster
   // wie retentionFormSubmissionsDays.
   jobRunRetentionDays                 Int?      @default(90)
+  // "Aktivitäten-Historie aufräumen" (Nutzervorgabe, 2026-08-30: "bitte
+  // auch noch den aktivitäten history über sowas regeln") – räumt den
+  // kompletten, geteilten `AuditLog` auf (Aktivität-Tab, Einstellungen-
+  // Protokoll UND Datenschutz-Zugriffsprotokoll sind dieselbe Tabelle,
+  // siehe AuditLogService). Ersetzt bewusst die bisherige rein manuelle
+  // Zugriffsprotokoll-Löschliste durch eine harte automatische
+  // Obergrenze (Nutzerentscheidung nach Rückfrage) – `null` = unbegrenzt,
+  // gleiches Nullable-Muster wie jobRunRetentionDays. Default bewusst
+  // 365 Tage (nicht 90 wie jobRunRetentionDays): retentionAccessLogMonths
+  // (Default 12 Monate) ist bereits eine real konfigurierte
+  // Datenschutz-Frist – ein kürzerer automatischer Default würde
+  // Zugriffsprotokoll-Einträge löschen, bevor sie dort je zur manuellen
+  // Review anstehen.
+  activityLogRetentionDays            Int?      @default(365)
   // Auftragsverarbeiter-Tab, Karte "Drittlandtransfer" (Nutzervorgabe,
   // 2026-08-20): admin-hochgeladene SCC-Vorlage (Standardvertragsklauseln)
   // zum Download – kein erfundenes Rechtsmuster im Repo, echte Datei nötig.
