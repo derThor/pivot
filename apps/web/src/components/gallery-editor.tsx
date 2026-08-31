@@ -344,7 +344,7 @@ export function GalleryEditor({
               type="button"
               onClick={() => setPickerOpen(true)}
               aria-label="Bild hinzufügen"
-              className="flex aspect-square items-center justify-center rounded-xl border border-dashed border-border text-muted-foreground transition-colors hover:border-primary hover:text-pivot-navy"
+              className="flex aspect-square items-center justify-center rounded-xl border border-dashed border-button-border text-muted-foreground transition-colors hover:border-primary hover:text-pivot-navy"
             >
               <Plus className="size-5" />
             </button>
@@ -510,7 +510,7 @@ export function GalleryEditor({
             <Button
               type="button"
               variant="outline"
-              className="border-border"
+              className="border-button-border"
               onClick={() => setCaptionTarget(null)}
             >
               Abbrechen

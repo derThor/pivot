@@ -387,7 +387,7 @@ export function RolesExplorer({
                   <Button
                     type="button"
                     variant="outline"
-                    className="border-border py-1.5"
+                    className="border-button-border py-1.5"
                     disabled={!isDirty || isAdministrator}
                     onClick={resetForm}
                   >
@@ -698,7 +698,7 @@ export function RolesExplorerExportButton({ roles }: { roles: Role[] }) {
     <Button
       type="button"
       variant="outline"
-      className="border-border"
+      className="border-button-border"
       onClick={handleExport}
     >
       <Download />

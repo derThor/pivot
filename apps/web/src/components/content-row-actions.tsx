@@ -40,7 +40,7 @@ export function ContentRowActions({
             type="button"
             variant="outline"
             size="icon"
-            className="rounded-lg border-border"
+            className="rounded-lg border-button-border"
             render={
               <Link href={`/dashboard/content/${id}/preview`} target="_blank" />
             }

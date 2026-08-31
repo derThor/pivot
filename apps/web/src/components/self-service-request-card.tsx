@@ -222,7 +222,7 @@ export function SelfServiceRequestCard({
               <Button
                 type="button"
                 variant="outline"
-                className="border-border"
+                className="border-button-border"
                 onClick={() => setOpen(false)}
               >
                 Abbrechen
@@ -282,7 +282,7 @@ export function SelfServiceRequestCard({
             <Button
               type="button"
               variant="outline"
-              className="border-border"
+              className="border-button-border"
               onClick={() => setDetailTarget(null)}
             >
               Schließen
@@ -293,7 +293,7 @@ export function SelfServiceRequestCard({
                 <Button
                   type="button"
                   variant="outline"
-                  className="border-border text-destructive hover:bg-destructive/5"
+                  className="border-button-border text-destructive hover:bg-destructive/5"
                   disabled={isWithdrawing}
                   onClick={handleWithdraw}
                 >

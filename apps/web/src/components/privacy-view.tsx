@@ -156,7 +156,7 @@ function RetentionDueList({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="border-border"
+                className="border-button-border"
               >
                 Alles löschen
               </Button>
@@ -584,7 +584,7 @@ export function PrivacyView({
           <Button
             type="button"
             variant="outline"
-            className="border-border"
+            className="border-button-border"
             onClick={handleExportReport}
             disabled={isExporting}
           >
@@ -778,7 +778,7 @@ export function PrivacyView({
                             type="button"
                             variant="outline"
                             size="icon-sm"
-                            className="border-border"
+                            className="border-button-border"
                             aria-label={`„${doc.title}“-Seite öffnen`}
                             render={
                               <Link
@@ -793,7 +793,7 @@ export function PrivacyView({
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="border-border"
+                          className="border-button-border"
                           disabled={regeneratingKey === doc.key}
                           onClick={() => handleRegenerate(doc.key)}
                         >
@@ -836,7 +836,7 @@ export function PrivacyView({
                     <Button
                       type="button"
                       variant="outline"
-                      className="border-border"
+                      className="border-button-border"
                       onClick={() => setSubjectAccessRequestOpen(true)}
                     >
                       Auskunft erstellen
@@ -1216,7 +1216,7 @@ export function PrivacyView({
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="border-border"
+                      className="border-button-border"
                       render={
                         <a href={bff("/api/data-processors/contracts.zip")} />
                       }
@@ -1293,7 +1293,7 @@ export function PrivacyView({
                       <Button
                         type="button"
                         variant="outline"
-                        className="border-border"
+                        className="border-button-border"
                         render={
                           <a href={mediaUrl(sccTemplateMedia)} download />
                         }
@@ -1563,7 +1563,7 @@ export function PrivacyView({
                   <Button
                     type="button"
                     variant="outline"
-                    className="border-border"
+                    className="border-button-border"
                     disabled
                   >
                     Meldeformular öffnen
@@ -1618,7 +1618,7 @@ export function PrivacyView({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="border-border"
+                  className="border-button-border"
                   onClick={async () => {
                     await Promise.all(
                       deactivatedAccountsDue.map((u) =>
@@ -1697,7 +1697,7 @@ export function PrivacyView({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="border-border text-destructive"
+                        className="border-button-border text-destructive"
                         onClick={() => setAnonymizeTarget(u)}
                       >
                         Anonymisieren

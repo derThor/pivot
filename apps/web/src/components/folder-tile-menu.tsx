@@ -39,7 +39,7 @@ export function FolderTileMenu({ folder }: { folder: MediaFolder }) {
               variant="ghost"
               size="icon-sm"
               aria-label={`Aktionen für ${folder.name}`}
-              className="size-6 rounded-full border border-border bg-background/90 shadow-sm hover:bg-background"
+              className="size-6 rounded-full border border-button-border bg-background/90 shadow-sm hover:bg-background"
             />
           }
         >

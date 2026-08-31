@@ -68,7 +68,7 @@ export function MandantenView({
           <Button
             type="button"
             variant="outline"
-            className="border-border"
+            className="border-button-border"
             render={<Link href="/dashboard/websites" />}
           >
             <Globe />

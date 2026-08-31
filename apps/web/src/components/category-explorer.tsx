@@ -508,7 +508,7 @@ export function CategoryExplorer({
                                           render={
                                             <button
                                               type="button"
-                                              className="rounded-full border border-dashed border-border px-2 py-0.5 text-xs text-muted-foreground hover:border-foreground/40 hover:text-foreground"
+                                              className="rounded-full border border-dashed border-button-border px-2 py-0.5 text-xs text-muted-foreground hover:border-foreground/40 hover:text-foreground"
                                             />
                                           }
                                         >
@@ -553,7 +553,7 @@ export function CategoryExplorer({
                                       variant="outline"
                                       size="icon-sm"
                                       className={cn(
-                                        "border-border",
+                                        "border-button-border",
                                         post.isFeatured &&
                                           "border-primary bg-primary/10 text-primary",
                                       )}
@@ -578,7 +578,7 @@ export function CategoryExplorer({
                                       type="button"
                                       variant="outline"
                                       size="icon-sm"
-                                      className="border-border"
+                                      className="border-button-border"
                                       aria-label="Bearbeiten"
                                       render={
                                         <Link
@@ -594,7 +594,7 @@ export function CategoryExplorer({
                                           type="button"
                                           variant="outline"
                                           size="icon-sm"
-                                          className="border-border"
+                                          className="border-button-border"
                                           aria-label="Löschen"
                                         >
                                           <Trash2 />

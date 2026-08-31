@@ -491,7 +491,7 @@ export function SettingsForm({
             <Button
               type="button"
               variant="outline"
-              className="border-border"
+              className="border-button-border"
               onClick={handleDiscard}
               disabled={isSubmitting}
             >
@@ -763,7 +763,7 @@ export function SettingsForm({
                     <Button
                       type="button"
                       variant="outline"
-                      className="border-border"
+                      className="border-button-border"
                       disabled={isClearingCache}
                       onClick={handleClearCache}
                     >
@@ -1008,7 +1008,7 @@ export function SettingsForm({
                           <Button
                             type="button"
                             variant="outline"
-                            className="border-border"
+                            className="border-button-border"
                             disabled={isRevokingAllSessions}
                           >
                             {isRevokingAllSessions
@@ -1028,7 +1028,7 @@ export function SettingsForm({
                           <Button
                             type="button"
                             variant="outline"
-                            className="border-border text-destructive hover:text-destructive"
+                            className="border-button-border text-destructive hover:text-destructive"
                             disabled={isForcingPasswordResetAll}
                           >
                             {isForcingPasswordResetAll

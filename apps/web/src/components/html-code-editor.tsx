@@ -77,7 +77,10 @@ export function HtmlCodeEditor({
       setIsDark(root.getAttribute("data-pivot-theme") === "dark");
     readTheme();
     const observer = new MutationObserver(readTheme);
-    observer.observe(root, { attributes: true, attributeFilter: ["data-pivot-theme"] });
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ["data-pivot-theme"],
+    });
     return () => observer.disconnect();
   }, []);
 
@@ -115,7 +118,7 @@ export function HtmlCodeEditor({
             type="button"
             variant="outline"
             size="sm"
-            className="border-border"
+            className="border-button-border"
             onClick={() => fileInputRef.current?.click()}
           >
             <Upload className="size-4" />

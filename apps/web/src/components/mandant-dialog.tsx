@@ -137,7 +137,7 @@ export function MandantDialog({
             <Button
               type="button"
               variant="outline"
-              className="border-border"
+              className="border-button-border"
               onClick={() => handleOpenChange(false)}
             >
               Abbrechen

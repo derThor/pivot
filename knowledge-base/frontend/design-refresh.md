@@ -14,7 +14,7 @@ alle Row-Action-Komponenten der Listen-Ansichten)
 > das erste Unterpunkt-Element direkt am aktiven/gehoverten Eltern-
 > Hintergrund klebte (kein sichtbarer Zwischenraum). Fix: `py-0` → `py-1`
 > in der `SidebarMenuSub`-Instanz (Zeile mit `mx-0 border-l-0 px-0
-> py-1`) – per CDP-Screenshot mit simuliertem Hover auf den ersten
+py-1`) – per CDP-Screenshot mit simuliertem Hover auf den ersten
 > Unterpunkt verifiziert (z.B. "Medien" aktiv + Hover auf "Tags"
 > darunter zeigt jetzt einen klaren Zwischenraum zwischen beiden
 > Hintergründen).
@@ -31,6 +31,7 @@ alle Row-Action-Komponenten der Listen-Ansichten)
 > **Update 2026-08-15 (Feste Logos statt konfigurierbar, Auth-Shell
 > responsive + Marketing-Overlay, globaler `destructive`-Button-Stil,
 > Breadcrumb-Farben):**
+>
 > - **Logos wieder fest hinterlegt**: Sidebar-Logo (aus-/eingeklappt) und
 >   das Bild rechts auf Anmelden/Registrieren sind auf Nutzerwunsch nicht
 >   mehr über die Einstellungen änderbar (Rückbau des in diesem Dokument
@@ -48,11 +49,11 @@ alle Row-Action-Komponenten der Listen-Ansichten)
 >   Berechnung (hypothetical size aspect-ratio fallback) die Höhe der
 >   Flex-Zeile mit unbestimmter Höhe aufblähen und erzeugte ungewollten
 >   Seiten-Scroll auf kurzen Viewports – Fix: `<img>` auf `absolute
->   inset-0 size-full object-cover` umgestellt statt normaler
+inset-0 size-full object-cover` umgestellt statt normaler
 >   Flow-Kind-Positionierung.
 > - **`ui/button.tsx`s `variant="destructive"` global umgestellt**: von
 >   gefüllter Fläche (`bg-destructive/10`) auf Outline-Stil (`bg-
->   transparent`, `border-destructive/30`, `text-destructive`,
+transparent`, `border-destructive/30`, `text-destructive`,
 >   `hover:bg-destructive/10`) – 1:1 nach Referenzbild (weißer
 >   "Löschen"-Button mit hellrotem Rahmen neben grünem "Erstellen" und
 >   weißem "Bearbeiten"). Wirkt automatisch auf **jede**
@@ -72,6 +73,7 @@ alle Row-Action-Komponenten der Listen-Ansichten)
 > `ui/button.tsx` (`buttonVariants`), wirken dadurch **automatisch auf
 > jede** `<Button>`-Verwendung im gesamten Projekt (kein Component nutzt
 > mehr eine lokale Farbe für Primär-/Sekundär-Buttons):
+>
 > - **`variant="outline"`** (Sekundär-Aktionen wie "Zurücksetzen",
 >   "Abbrechen"): `bg-background` entfernt → `bg-transparent`. Vorher
 >   sah der Button durch die helle Flächenfarbe wie eine gefüllte Pille
@@ -100,6 +102,7 @@ alle Row-Action-Komponenten der Listen-Ansichten)
 
 > **Update 2026-08-06 (Eingeklapptes Logo: größer, zentriert,
 > Initialen-Fallback; Mobile Burger-Icon; Logo-Upload-Breite):**
+>
 > - Eingeklapptes Sidebar-Logo `size-8` → `size-12`; zusätzlich
 >   `group-data-[collapsible=icon]:gap-0` (statt `gap-2`) auf dem
 >   Header-Container – der ungenutzte Flex-`gap` zum (jetzt `w-0`)
@@ -122,6 +125,7 @@ alle Row-Action-Komponenten der Listen-Ansichten)
 
 > **Update 2026-08-06 (Größeres Logo, Navigation wieder gruppiert,
 > Mobile-Navigation-Fix):**
+>
 > - **Ausgeklapptes Logo vergrößert**: `h-6` → `h-11` (24px → 44px) in
 >   `app-sidebar.tsx`, Header-Zeile `py-1.5` → `py-2` für mehr Luft.
 > - **Navigation wieder in Gruppen** ("Übersicht", "Inhalte",
@@ -211,7 +215,7 @@ alle Row-Action-Komponenten der Listen-Ansichten)
 > Drei weitere Korrekturen: (1) mehr horizontaler Innenabstand für
 > Icon+Text (`px-4 py-2` statt `p-2`), der Hover-/Aktiv-Hintergrund
 > bleibt trotzdem randlos über die volle Breite (`-mx-2
-> w-[calc(100%+1rem)]` unverändert) – nur der Inhalt rückt weiter nach
+w-[calc(100%+1rem)]` unverändert) – nur der Inhalt rückt weiter nach
 > innen, nicht die farbige Fläche. (2) `rounded-lg` auf dem Hover-/
 > Aktiv-Hintergrund durch `rounded-none` ersetzt – eckige, randlose
 > Balken statt abgerundeter Pillen (Kurskorrektur zur vorherigen
@@ -289,7 +293,7 @@ alle Row-Action-Komponenten der Listen-Ansichten)
 > `--spacing(4)`/`--spacing(3)` (16px/12px) auf `--spacing(6)`/
 > `--spacing(4)` (24px/16px) erhöht (wirkt auf alle Dashboard-Kacheln).
 > Medien-Kachel-Beschriftung (`figcaption`) von `px-2 pb-2` auf `px-4
-> pb-4`, Ordner-Kacheln von `p-2` auf `p-4`. Bewusst nur auf
+pb-4`, Ordner-Kacheln von `p-2` auf `p-4`. Bewusst nur auf
 > Kachel-/Karten-Elemente angewendet, nicht auf die Tabellen-Zellen der
 > Listen-Ansichten (Inhalte/Benutzer/Rollen/Kategorien/Tags) – die
 > haben ihr eigenes, unverändertes Zell-Padding über `TableCell`/
@@ -309,8 +313,9 @@ alle Row-Action-Komponenten der Listen-Ansichten)
 > **Update 2026-08-05 (einheitliches Kopfzeilen-Layout, mehr Abstand
 > zur Liste):** Referenz war die Benutzer-Seite (Titel+Beschreibung
 > links, "Neu"-Button rechts, **eine** Zeile, `flex items-center
-> justify-between`) – Inhalte/Rollen/Benutzer hatten dieses Muster
+justify-between`) – Inhalte/Rollen/Benutzer hatten dieses Muster
 > bereits, Kategorien/Tags/Medien nicht:
+>
 > - Kategorien/Tags: Der "Neue Kategorie"/"Neuer Tag"-Button steckte
 >   bisher **in** `TaxonomyManager`, als eigene rechtsbündige Zeile
 >   **unterhalb** von Titel/Beschreibung. Aus der Komponente entfernt
@@ -356,6 +361,7 @@ alle Row-Action-Komponenten der Listen-Ansichten)
 
 > **Update 2026-08-05 (Sidebar: mehr Abstand, ruhigere Animation, volle
 > Breite auch eingeklappt, dauerhafter Ein-/Ausklapp-Zustand):**
+>
 > - `SIDEBAR_WIDTH_ICON` (`ui/sidebar.tsx`) von `3rem` auf `4.5rem`
 >   erhöht – mehr Luft um die Icons im eingeklappten Zustand
 >   (Referenz-Screenshot des Nutzers).
@@ -473,7 +479,7 @@ Listen-Aktionen:
 - **Theme-Farben** (`globals.css`): `--primary` (und abgeleitete Werte
   wie `--ring`, `--sidebar-primary`, `--chart-*`) von neutralem
   Schwarz/Weiß auf eine warme Koralle/Orange-Palette (`oklch(0.68 0.19
-  40)`) umgestellt – wirkt global, da praktisch jede Komponente
+40)`) umgestellt – wirkt global, da praktisch jede Komponente
   (Buttons, Badges, Pagination-Hervorhebung, Fokus-Ringe) über
   Farb-Tokens statt Hardcoded-Werten läuft. `--radius` von `0.625rem`
   auf `0.85rem` erhöht (weichere Ecken überall, da alle `rounded-lg`/
@@ -516,7 +522,7 @@ Listen-Aktionen:
   praktisch die gesamte UI bereits auf semantische CSS-Variablen
   (`--primary`, `--ring`, …) statt harter Farbwerte aufbaut, reicht eine
   zentrale Änderung in `globals.css`, um Buttons, Badges (`variant=
-  "default"`), Fokus-Ringe, aktive Pagination-Seite usw. konsistent
+"default"`), Fokus-Ringe, aktive Pagination-Seite usw. konsistent
   umzufärben, statt jede Komponente einzeln anzufassen.
 - **Kein neues Dashboard-Chart-Widget-Set**: Die Referenz zeigt
   e-commerce-spezifische Karten (Sales/Earnings/Top Products/Countries/
@@ -583,7 +589,7 @@ Listen-Aktionen:
 > widersprüchlichen Constraints ignoriert – der Button dockt oben an
 > statt zentriert zu sein (sichtbar bei hohen Inputs, z.B. im
 > "Zwei-Faktor-Authentifizierung deaktivieren"-Dialog). Fix: `top-1/2
-> -translate-y-1/2` statt `inset-y-0` – die Standard-Pattern für ein
+-translate-y-1/2` statt `inset-y-0` – die Standard-Pattern für ein
 > absolut positioniertes, vertikal zentriertes Element, bereits korrekt
 > so verwendet beim Such-Icon in `block-editor-field.tsx` (Zeile mit
 > `top-1/2 left-2.5 ... -translate-y-1/2`). Per Playwright-Bounding-Box
@@ -606,7 +612,7 @@ Listen-Aktionen:
 >
 > **Stolperstein:** drei Stellen (`privacy-view.tsx`, `company-view.tsx`,
 > `mailing-settings-card.tsx`) übergeben `<TabsList className="... bg-
-> secondary ...">` und überschreiben damit die Komponenten-Variante direkt
+secondary ...">` und überschreiben damit die Komponenten-Variante direkt
 > im Aufruf – die erste Fassung des Fixes blieb dadurch dort unsichtbar
 > ("wo??? du hast nichts angezeigt?"). Notwendiger zweiter Schritt:
 > `bg-secondary` aus allen drei `className`-Strings entfernt, damit der
@@ -642,3 +648,29 @@ Listen-Aktionen:
   nicht auf das Kebab-Menü umgestellt (dort gibt es ohnehin nur eine
   einzelne Löschen-Aktion pro Version, kein Bearbeiten – ein Menü für
   eine einzelne Aktion hätte keinen Mehrwert).
+
+## Update 2026-08-31: eigener Rahmen-Token für Buttons
+
+Nutzervorgabe: "alle Buttons mit weissem Hintergrund und Border ein ganz
+wenig dunkler". Umgesetzt über einen **eigenen semantischen Token** statt
+über eine Änderung an `--border`: `--color-button-border` (im
+`@theme inline`-Block von `globals.css`) zeigt auf die bereits vorhandene
+zweite Linienfarbe `--pivot-line2` (hell `#d8dee6` statt `#e6e6e6`, dunkel
+`#3a4453` statt `#2d3542`) – es wurde also **keine neue Farbe erfunden**,
+und Karten, Trenner und Eingabefelder behalten unverändert `--border`.
+
+Angewendet auf:
+
+- die `outline`-Variante in `ui/button.tsx` (der Regelfall),
+- **145 handgeschriebene `<Button>`/`<button>`-Tags in 78 Dateien**, die
+  `border-border` explizit mitgeben (Codemod über die öffnenden Tags),
+- fünf Filter-Chips (`media-filters.tsx`, Suchseite) sowie die
+  gestrichelten "Hinzufügen"-Flächen in `faq-groups-manager.tsx` und
+  `gallery-editor.tsx`, deren Klassen in `cn()`-Ausdrücken stehen und
+  vom Codemod nicht erfasst wurden.
+
+**Bewusst nicht angefasst:** `border-t border-border` als Trennlinie
+_innerhalb_ eines breiten Buttons (Datenschutz-/Vorfall-Panels) und
+Info-Kästen mit `bg-muted` – beides sind keine weißen Button-Rahmen.
+Im Dark Mode bleibt es bei `dark:border-input`, dort gibt es keine weißen
+Flächen.

@@ -146,7 +146,7 @@ export function PreviewLinksTable({
                             type="button"
                             variant="outline"
                             size="icon"
-                            className="rounded-lg border-border"
+                            className="rounded-lg border-button-border"
                             onClick={() => handleCopy(link)}
                             aria-label={`Link für „${link.content.title}“ kopieren`}
                           >

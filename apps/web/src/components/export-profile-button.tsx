@@ -44,7 +44,7 @@ export function ExportProfileButton({ user }: { user: CurrentUser }) {
     <Button
       type="button"
       variant="outline"
-      className="border-border"
+      className="border-button-border"
       onClick={handleExport}
     >
       <Download />

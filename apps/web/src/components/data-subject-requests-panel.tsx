@@ -304,7 +304,7 @@ export function DataSubjectRequestsPanel({
             type="button"
             size="sm"
             variant="outline"
-            className="border-border"
+            className="border-button-border"
             onClick={() => setDialogTarget("new")}
           >
             <Plus className="size-4" />
@@ -458,7 +458,7 @@ export function DataSubjectRequestsPanel({
               <Button
                 type="button"
                 variant="outline"
-                className="w-full border-border text-destructive hover:bg-destructive/5"
+                className="w-full border-button-border text-destructive hover:bg-destructive/5"
                 disabled={
                   selected.status === "completed" ||
                   selected.status === "rejected"
@@ -473,7 +473,7 @@ export function DataSubjectRequestsPanel({
               <Button
                 type="button"
                 variant="outline"
-                className="w-full border-border"
+                className="w-full border-button-border"
                 onClick={() => setFollowUpTarget(selected)}
               >
                 Rückfrage an Absender
@@ -579,7 +579,7 @@ export function DataSubjectRequestsPanel({
             <Button
               type="button"
               variant="outline"
-              className="border-border"
+              className="border-button-border"
               onClick={() => {
                 setFollowUpTarget(null);
                 setFollowUpMessage("");
@@ -662,7 +662,7 @@ export function DataSubjectRequestsPanel({
             <Button
               type="button"
               variant="outline"
-              className="border-border"
+              className="border-button-border"
               onClick={() => setInfoPopupTarget(null)}
             >
               Schließen

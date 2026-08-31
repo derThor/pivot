@@ -117,7 +117,7 @@ export function LicenseApiKeyDialog({
           <Button
             type="button"
             variant="outline"
-            className="border-border"
+            className="border-button-border"
             onClick={() => onOpenChange(false)}
           >
             Abbrechen

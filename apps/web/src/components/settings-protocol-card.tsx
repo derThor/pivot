@@ -80,7 +80,7 @@ export function SettingsProtocolCard({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="border-border"
+                className="border-button-border"
                 disabled={items.length === 0}
               >
                 Alle löschen
@@ -131,7 +131,7 @@ export function SettingsProtocolCard({
                       type="button"
                       variant="outline"
                       size="icon-sm"
-                      className="rounded-lg border-border text-destructive hover:bg-destructive/5"
+                      className="rounded-lg border-button-border text-destructive hover:bg-destructive/5"
                       aria-label="Eintrag löschen"
                       onClick={() => setDeleteTarget(change)}
                     >

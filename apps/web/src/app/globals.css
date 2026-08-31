@@ -66,6 +66,12 @@
   --color-pivot-navy: var(--pivot-navy);
   --color-pivot-sub3: var(--pivot-sub3);
   --color-pivot-line2: var(--pivot-line2);
+  /* Rahmen von Buttons mit hellem/transparentem Hintergrund - bewusst eine
+     Spur kraeftiger als --border (Nutzervorgabe, 2026-08-31: "alle Buttons
+     mit weissem Hintergrund und Border ein ganz wenig dunkler"). Nutzt die
+     bereits vorhandene zweite Linienfarbe, damit keine neue Farbe erfunden
+     wird; sie ist in Hell UND Dunkel definiert. */
+  --color-button-border: var(--pivot-line2);
   --color-pivot-g-strong: var(--pivot-g-strong);
   --color-pivot-g-body: var(--pivot-g-body);
   --color-pivot-g-faint: var(--pivot-g-faint);

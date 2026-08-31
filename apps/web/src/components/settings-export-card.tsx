@@ -30,7 +30,7 @@ function ExportRow({
         type="button"
         variant="outline"
         size="sm"
-        className="border-border"
+        className="border-button-border"
         onClick={onExport}
         disabled={disabled || isExporting}
       >

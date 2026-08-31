@@ -28,7 +28,7 @@ export function UserNotificationBanners({
               <Button
                 size="sm"
                 variant="outline"
-                className="border-border"
+                className="border-button-border"
                 render={<Link href="/dashboard/users?status=inactive" />}
               >
                 Nutzer ansehen
@@ -44,7 +44,7 @@ export function UserNotificationBanners({
             <Button
               size="sm"
               variant="outline"
-              className="border-border"
+              className="border-button-border"
               render={<Link href="/dashboard/users" />}
             >
               Nutzer ansehen
@@ -61,7 +61,7 @@ export function UserNotificationBanners({
               <Button
                 size="sm"
                 variant="outline"
-                className="border-border"
+                className="border-button-border"
                 render={<Link href="/dashboard/users" />}
               >
                 Nutzer ansehen

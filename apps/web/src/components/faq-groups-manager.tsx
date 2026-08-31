@@ -398,7 +398,7 @@ export function FaqGroupsManager({
                     <button
                       type="button"
                       onClick={() => setQuestionDialogTarget({ group })}
-                      className="mt-3 flex w-fit items-center gap-2 rounded-xl border border-dashed border-border px-4 py-2.5 text-[12.5px] font-medium text-pivot-g-body transition hover:border-primary hover:text-pivot-navy"
+                      className="mt-3 flex w-fit items-center gap-2 rounded-xl border border-dashed border-button-border px-4 py-2.5 text-[12.5px] font-medium text-pivot-g-body transition hover:border-primary hover:text-pivot-navy"
                     >
                       <Plus className="size-4" />
                       Frage hinzufügen

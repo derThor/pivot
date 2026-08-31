@@ -320,7 +320,7 @@ export function MandantDetailView({
           <Button
             type="button"
             variant="outline"
-            className="border-border"
+            className="border-button-border"
             render={<Link href="/dashboard/websites" />}
           >
             Webseite öffnen
@@ -561,7 +561,7 @@ export function MandantDetailView({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="border-border"
+                    className="border-button-border"
                     render={
                       <a
                         href={`https://${website.domain}/login`}
@@ -625,7 +625,7 @@ export function MandantDetailView({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="border-border"
+                    className="border-button-border"
                     disabled={availableModules.length === 0}
                   />
                 }

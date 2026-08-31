@@ -231,7 +231,7 @@ export function NotificationsView({
           <Button
             type="button"
             variant="outline"
-            className="border-border"
+            className="border-button-border"
             disabled={unread.length === 0}
             onClick={handleMarkAllRead}
           >
@@ -291,7 +291,7 @@ export function NotificationsView({
             type="button"
             variant={onlyUrgent ? "default" : "outline"}
             size="sm"
-            className={onlyUrgent ? undefined : "border-border"}
+            className={onlyUrgent ? undefined : "border-button-border"}
             onClick={() => setOnlyUrgent((v) => !v)}
           >
             {onlyUrgent ? "Alle zeigen" : "Nur diese zeigen"}
@@ -384,7 +384,7 @@ export function NotificationsView({
                               type="button"
                               variant="outline"
                               size="sm"
-                              className="border-border"
+                              className="border-button-border"
                               onClick={() => handleActionClick(n.id)}
                               render={<Link href={n.actionUrl} />}
                             >
@@ -398,7 +398,7 @@ export function NotificationsView({
                                   type="button"
                                   variant="outline"
                                   size="icon-sm"
-                                  className="border-border"
+                                  className="border-button-border"
                                   aria-label={
                                     n.isRead
                                       ? "Als ungelesen markieren"
@@ -424,7 +424,7 @@ export function NotificationsView({
                             type="button"
                             variant="outline"
                             size="icon-sm"
-                            className="rounded-lg border-border text-destructive hover:bg-destructive/5"
+                            className="rounded-lg border-button-border text-destructive hover:bg-destructive/5"
                             aria-label={`„${n.title}“ löschen`}
                             onClick={() => setDeleteTarget(n)}
                           >

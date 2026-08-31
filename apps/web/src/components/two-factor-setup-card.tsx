@@ -219,7 +219,7 @@ export function TwoFactorSetupCard({
               )}
               <button
                 type="button"
-                className="self-start rounded-xl border border-border bg-transparent px-3 py-2 text-[12.5px] font-medium text-destructive transition-colors duration-150 hover:bg-destructive/5"
+                className="self-start rounded-xl border border-button-border bg-transparent px-3 py-2 text-[12.5px] font-medium text-destructive transition-colors duration-150 hover:bg-destructive/5"
                 onClick={() => setDisableOpen(true)}
               >
                 Zwei-Faktor-Authentifizierung deaktivieren
@@ -277,7 +277,7 @@ export function TwoFactorSetupCard({
                   <Button
                     type="button"
                     variant="outline"
-                    className="border-border"
+                    className="border-button-border"
                     onClick={() => setSetupOpen(false)}
                   >
                     Abbrechen
@@ -354,7 +354,7 @@ export function TwoFactorSetupCard({
               <Button
                 type="button"
                 variant="outline"
-                className="border-border"
+                className="border-button-border"
                 onClick={() => setDisableOpen(false)}
               >
                 Abbrechen

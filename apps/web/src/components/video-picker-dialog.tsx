@@ -192,7 +192,7 @@ export function VideoPickerDialog({
                 <Button
                   type="button"
                   variant="outline"
-                  className="border-border"
+                  className="border-button-border"
                   onClick={() => onOpenChange(false)}
                 >
                   Abbrechen
@@ -229,7 +229,7 @@ export function VideoPickerDialog({
                 <Button
                   type="button"
                   variant="outline"
-                  className="border-border"
+                  className="border-button-border"
                   onClick={() => onOpenChange(false)}
                 >
                   Abbrechen

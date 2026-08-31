@@ -543,7 +543,7 @@ function FieldPalette({
             key={entry.type}
             type="button"
             onClick={() => onAdd(entry)}
-            className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-left text-sm transition-colors hover:border-border hover:bg-secondary"
+            className="flex items-center justify-between gap-2 rounded-lg border border-button-border px-3 py-2 text-left text-sm transition-colors hover:border-button-border hover:bg-secondary"
           >
             <span className="flex items-center gap-2">
               <entry.icon className="size-4 text-muted-foreground" />
@@ -893,7 +893,7 @@ function FieldPropertiesPanel({
           <Button
             type="button"
             variant="outline"
-            className="w-full border-border text-destructive hover:bg-destructive/5"
+            className="w-full border-button-border text-destructive hover:bg-destructive/5"
             onClick={() => onRemove(selected.id)}
           >
             <Trash2 className="size-4" />
@@ -1119,7 +1119,7 @@ export function FormEditor({
           <Button
             type="button"
             variant="outline"
-            className="border-border"
+            className="border-button-border"
             render={<Link href="/dashboard/forms" />}
           >
             <ChevronLeft className="size-4" />
@@ -1128,7 +1128,7 @@ export function FormEditor({
           <Button
             type="button"
             variant="outline"
-            className="border-border"
+            className="border-button-border"
             onClick={() => setPreviewOpen(true)}
           >
             <Eye className="size-4" />

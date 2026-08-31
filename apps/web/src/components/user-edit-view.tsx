@@ -329,7 +329,7 @@ export function UserEditView({
           <Button
             type="button"
             variant="outline"
-            className="border-border"
+            className="border-button-border"
             onClick={() => router.push("/dashboard/users")}
           >
             ‹ Zurück
@@ -338,7 +338,7 @@ export function UserEditView({
           <Button
             type="button"
             variant="outline"
-            className="border-border"
+            className="border-button-border"
             disabled={isResetting}
             onClick={handleResetPassword}
           >
@@ -408,7 +408,7 @@ export function UserEditView({
             <Button
               type="button"
               variant="outline"
-              className="border-border"
+              className="border-button-border"
               disabled={isImpersonating}
               onClick={handleImpersonate}
             >
@@ -423,7 +423,7 @@ export function UserEditView({
                   <Button
                     type="button"
                     variant="outline"
-                    className="border-border text-destructive"
+                    className="border-button-border text-destructive"
                   >
                     Sperren
                   </Button>
@@ -438,7 +438,7 @@ export function UserEditView({
               <Button
                 type="button"
                 variant="outline"
-                className="border-border"
+                className="border-button-border"
                 disabled={isTogglingActive}
                 onClick={handleUnlock}
               >
@@ -694,7 +694,7 @@ export function UserEditView({
                         trigger={
                           <Button
                             variant="outline"
-                            className="w-full border-border text-destructive"
+                            className="w-full border-button-border text-destructive"
                           >
                             Benutzer löschen
                           </Button>
@@ -740,7 +740,7 @@ export function UserEditView({
                               <Button
                                 type="button"
                                 variant="outline"
-                                className="border-border"
+                                className="border-button-border"
                                 disabled={isDisablingTwoFactor}
                               >
                                 Deaktivieren
@@ -811,7 +811,7 @@ export function UserEditView({
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                className="border-border bg-card"
+                                className="border-button-border bg-card"
                                 onClick={() => handleRevokeSession(session.id)}
                               >
                                 Abmelden
@@ -829,7 +829,7 @@ export function UserEditView({
                     {sessionsState.some((s) => !s.isCurrent) && (
                       <button
                         type="button"
-                        className="self-start rounded-xl border border-border bg-transparent px-3 py-2 text-[12.5px] font-medium text-destructive transition-colors duration-150 hover:bg-destructive/5"
+                        className="self-start rounded-xl border border-button-border bg-transparent px-3 py-2 text-[12.5px] font-medium text-destructive transition-colors duration-150 hover:bg-destructive/5"
                         onClick={handleRevokeOthers}
                       >
                         Alle anderen Sitzungen beenden
@@ -884,7 +884,7 @@ export function UserEditView({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="border-border"
+                    className="border-button-border"
                     onClick={handleExportActivity}
                     disabled={activity.meta.total === 0 || isExportingActivity}
                   >

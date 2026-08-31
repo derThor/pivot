@@ -219,7 +219,7 @@ export function ModuleDetailView({
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="w-fit border-border"
+                      className="w-fit border-button-border"
                       render={<Link href="/dashboard/roles" />}
                     >
                       In Rollen & Rechte öffnen
@@ -233,7 +233,7 @@ export function ModuleDetailView({
           <Button
             type="button"
             variant="outline"
-            className="w-fit border-border"
+            className="w-fit border-button-border"
             render={<Link href="/dashboard/mandanten" />}
           >
             Zu den Mandanten

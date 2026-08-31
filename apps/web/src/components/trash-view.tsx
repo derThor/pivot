@@ -177,7 +177,7 @@ export function TrashView({
           <Button
             type="button"
             variant="outline"
-            className="border-border"
+            className="border-button-border"
             render={<Link href="/dashboard/privacy" />}
           >
             <Settings2 className="size-4" />
@@ -425,7 +425,7 @@ export function TrashView({
                           <Button
                             type="button"
                             variant="outline"
-                            className="h-8 gap-1.5 rounded-lg border-border px-3 py-0"
+                            className="h-8 gap-1.5 rounded-lg border-button-border px-3 py-0"
                             disabled={item.expired}
                             title={
                               item.expired

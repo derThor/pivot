@@ -205,7 +205,7 @@ export function MyAccountView({
           <Button
             type="button"
             variant="outline"
-            className="border-border"
+            className="border-button-border"
             onClick={() => fileInputRef.current?.click()}
           >
             Foto ändern
@@ -346,7 +346,7 @@ export function MyAccountView({
               {sessionsState.some((s) => !s.isCurrent) && (
                 <button
                   type="button"
-                  className="mt-2 self-start rounded-xl border border-border bg-transparent px-3 py-2 text-[12.5px] font-medium text-destructive transition-colors duration-150 hover:bg-destructive/5"
+                  className="mt-2 self-start rounded-xl border border-button-border bg-transparent px-3 py-2 text-[12.5px] font-medium text-destructive transition-colors duration-150 hover:bg-destructive/5"
                   onClick={handleRevokeOtherSessions}
                 >
                   Alle anderen Sitzungen beenden

@@ -158,7 +158,7 @@ export function MandantLogoField({
             aria-label="Logo entfernen"
             disabled={isRemoving}
             onClick={handleRemove}
-            className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full border border-border bg-card text-muted-foreground opacity-0 shadow-sm transition-opacity group-hover:opacity-100 hover:text-destructive disabled:opacity-100"
+            className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full border border-button-border bg-card text-muted-foreground opacity-0 shadow-sm transition-opacity group-hover:opacity-100 hover:text-destructive disabled:opacity-100"
           >
             <Trash2 className="size-3" />
           </button>

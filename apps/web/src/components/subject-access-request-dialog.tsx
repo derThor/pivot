@@ -134,7 +134,7 @@ export function SubjectAccessRequestDialog({
           <Button
             type="button"
             variant="outline"
-            className="border-border"
+            className="border-button-border"
             onClick={() => onOpenChange(false)}
           >
             Abbrechen
@@ -142,7 +142,7 @@ export function SubjectAccessRequestDialog({
           <Button
             type="button"
             variant="outline"
-            className="border-border"
+            className="border-button-border"
             disabled={!userId || isSending}
             onClick={handleSend}
           >

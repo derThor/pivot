@@ -227,7 +227,7 @@ function CreateNamedItemDialog({
             type="button"
             variant="outline"
             size="sm"
-            className="border-border"
+            className="border-button-border"
           />
         }
       >
@@ -255,7 +255,7 @@ function CreateNamedItemDialog({
             <Button
               type="button"
               variant="outline"
-              className="border-border"
+              className="border-button-border"
               onClick={() => setOpen(false)}
             >
               Abbrechen
@@ -425,7 +425,7 @@ function TemplateDetail({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="border-border"
+                className="border-button-border"
               >
                 <RotateCcw className="size-4" />
                 Auf Standard zurücksetzen
@@ -546,7 +546,7 @@ function TemplateDetail({
             <Button
               type="button"
               variant="outline"
-              className="border-border"
+              className="border-button-border"
               disabled={!testEmail || isSendingTest}
               onClick={handleTestSend}
             >
@@ -691,7 +691,7 @@ function ShellDetail({
               type="button"
               variant="outline"
               size="sm"
-              className="border-border"
+              className="border-button-border"
               disabled={shell.isDefault || shell.usedByCount > 0}
             >
               <Trash2 className="size-4" />

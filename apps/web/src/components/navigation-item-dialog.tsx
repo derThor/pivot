@@ -372,7 +372,7 @@ export function NavigationItemDialog({
             <Button
               type="button"
               variant="outline"
-              className="border-border"
+              className="border-button-border"
               onClick={() => setOpen(false)}
             >
               Abbrechen

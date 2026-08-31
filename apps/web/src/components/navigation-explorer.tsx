@@ -309,7 +309,7 @@ export function NavigationExplorer({
                           variant="outline"
                           size="icon-sm"
                           className={cn(
-                            "rounded-lg border-border",
+                            "rounded-lg border-button-border",
                             node.isHomepage && "bg-primary/15",
                           )}
                           onClick={() => void handleToggleHomepage(node)}
@@ -341,7 +341,7 @@ export function NavigationExplorer({
                         type="button"
                         variant="outline"
                         size="icon-sm"
-                        className="rounded-lg border-border"
+                        className="rounded-lg border-button-border"
                         onClick={() => setAddChildTarget(node)}
                         aria-label={`Untereintrag zu „${node.label}“ hinzufügen`}
                       />
@@ -361,7 +361,7 @@ export function NavigationExplorer({
                   type="button"
                   variant="outline"
                   size="icon-sm"
-                  className="rounded-lg border-border sm:hidden"
+                  className="rounded-lg border-button-border sm:hidden"
                   aria-label={`Aktionen für „${node.label}“`}
                 />
               }
@@ -523,7 +523,7 @@ export function NavigationExplorer({
               trigger={
                 <button
                   type="button"
-                  className="flex w-fit items-center gap-2 rounded-xl border border-dashed border-border px-4 py-2.5 text-[12.5px] font-medium text-pivot-g-body transition hover:border-primary hover:text-foreground"
+                  className="flex w-fit items-center gap-2 rounded-xl border border-dashed border-button-border px-4 py-2.5 text-[12.5px] font-medium text-pivot-g-body transition hover:border-primary hover:text-foreground"
                 >
                   <Plus className="size-4" />
                   Eintrag hinzufügen

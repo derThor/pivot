@@ -86,7 +86,7 @@ export function RecentJobRunsCard({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="border-border"
+                  className="border-button-border"
                   disabled={runs.items.length === 0}
                 >
                   Alle löschen
@@ -100,7 +100,7 @@ export function RecentJobRunsCard({
               type="button"
               variant="outline"
               size="icon-sm"
-              className="rounded-lg border-border"
+              className="rounded-lg border-button-border"
               aria-label="Aktualisieren"
               disabled={isRefreshing}
               onClick={handleRefresh}

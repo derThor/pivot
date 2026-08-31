@@ -179,7 +179,7 @@ export function SubmissionsTable({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="border-border"
+                        className="border-button-border"
                         onClick={() => toggleRead(submission)}
                       >
                         {submission.isRead ? "Ungelesen" : "Gelesen"}

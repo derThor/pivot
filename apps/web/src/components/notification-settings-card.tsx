@@ -173,7 +173,7 @@ export function NotificationSettingsCard({
             <Button
               type="button"
               variant="outline"
-              className="shrink-0 border-border"
+              className="shrink-0 border-button-border"
               disabled={
                 isSavingRecipient || recipientEmail === savedRecipientEmail
               }

@@ -410,7 +410,7 @@ function SpacingBoxEditor({
           "flex size-7 shrink-0 items-center justify-center rounded-md border bg-card transition-colors",
           active
             ? "border-primary bg-primary/25 text-pivot-navy"
-            : "border-border text-muted-foreground hover:text-foreground",
+            : "border-button-border text-muted-foreground hover:text-foreground",
         )}
       >
         <Link2 className="size-3.5" />

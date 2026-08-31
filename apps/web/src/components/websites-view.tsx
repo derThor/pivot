@@ -149,7 +149,7 @@ export function WebsitesView({
           <Button
             type="button"
             variant="outline"
-            className="border-border"
+            className="border-button-border"
             disabled={isChecking}
             onClick={handleCheckNow}
           >
@@ -263,7 +263,7 @@ export function WebsitesView({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-9 flex-1 rounded-md border-border"
+                  className="h-9 flex-1 rounded-md border-button-border"
                   render={
                     <a
                       href={getOpenUrl(website)}
@@ -279,7 +279,7 @@ export function WebsitesView({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-9 flex-1 rounded-md border-border"
+                  className="h-9 flex-1 rounded-md border-button-border"
                   disabled={wakingId === website.id}
                   onClick={() => handleWakeup(website)}
                 >

@@ -96,7 +96,7 @@ export function JobLogDialog({
               type="button"
               variant="outline"
               size="sm"
-              className="border-border"
+              className="border-button-border"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
@@ -109,7 +109,7 @@ export function JobLogDialog({
               type="button"
               variant="outline"
               size="sm"
-              className="border-border"
+              className="border-button-border"
               disabled={page >= data.meta.pageCount}
               onClick={() => setPage((p) => p + 1)}
             >

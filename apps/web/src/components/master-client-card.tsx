@@ -266,7 +266,7 @@ export function MasterClientCard({
         <Button
           type="button"
           variant="outline"
-          className="border-border"
+          className="border-button-border"
           disabled={isRechecking}
           onClick={handleRecheck}
         >

@@ -319,7 +319,7 @@ export function PrivacyIncidentsPanel({
                     <Button
                       type="button"
                       variant="outline"
-                      className="w-full border-border"
+                      className="w-full border-button-border"
                       render={
                         <a
                           href={bff(
@@ -334,7 +334,7 @@ export function PrivacyIncidentsPanel({
                     <Button
                       type="button"
                       variant="outline"
-                      className="w-full border-border"
+                      className="w-full border-button-border"
                       onClick={() => setReportTarget(selected)}
                     >
                       Behörde melden

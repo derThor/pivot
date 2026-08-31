@@ -300,7 +300,7 @@ export function SmtpSettingsDialog({
                 <Button
                   type="button"
                   variant="outline"
-                  className="shrink-0 border-border"
+                  className="shrink-0 border-button-border"
                   disabled={isSendingTestMail}
                   onClick={handleSendTestEmail}
                 >
@@ -329,7 +329,7 @@ export function SmtpSettingsDialog({
             <Button
               type="button"
               variant="outline"
-              className="border-border"
+              className="border-button-border"
               onClick={() => onOpenChange(false)}
             >
               Abbrechen

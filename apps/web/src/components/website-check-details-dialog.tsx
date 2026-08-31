@@ -203,7 +203,7 @@ export function WebsiteCheckDetailsDialog({
                 <Button
                   type="button"
                   variant="outline"
-                  className="flex-1 border-border sm:flex-none"
+                  className="flex-1 border-button-border sm:flex-none"
                   disabled={isRechecking}
                   onClick={() => onRecheck(target)}
                 >

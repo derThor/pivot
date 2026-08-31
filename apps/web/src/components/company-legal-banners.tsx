@@ -28,7 +28,7 @@ export function CompanyIncompleteBanner({
         <Button
           size="sm"
           variant="outline"
-          className="border-border"
+          className="border-button-border"
           render={<Link href="/dashboard/company" />}
         >
           Zur Firma-Seite
@@ -64,7 +64,7 @@ export function LegalDocumentsBanner({
         <Button
           size="sm"
           variant="outline"
-          className="border-border"
+          className="border-button-border"
           render={<Link href="/dashboard/privacy" />}
         >
           Zu den Rechtstexten

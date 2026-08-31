@@ -144,7 +144,7 @@ export function ScheduledJobsCard({
               type="button"
               variant="outline"
               size="icon-sm"
-              className="rounded-lg border-border"
+              className="rounded-lg border-button-border"
               aria-label="Aktualisieren"
               disabled={isRefreshing}
               onClick={handleRefresh}
@@ -306,7 +306,7 @@ export function ScheduledJobsCard({
                         <Button
                           type="button"
                           variant="outline"
-                          className="border-border"
+                          className="border-button-border"
                           onClick={() => setLogDialogJob(job)}
                         >
                           Letztes Protokoll

@@ -48,7 +48,7 @@ export function SettingsServicesCard({ smtp }: { smtp: SmtpSettings }) {
               type="button"
               variant="outline"
               size="sm"
-              className="border-border"
+              className="border-button-border"
               onClick={() => setDialogOpen(true)}
             >
               Einrichten

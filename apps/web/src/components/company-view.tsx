@@ -152,7 +152,7 @@ export function CompanyView({
           <Button
             type="button"
             variant="outline"
-            className="border-border"
+            className="border-button-border"
             onClick={handleDiscard}
             disabled={isSubmitting}
           >
@@ -448,7 +448,7 @@ export function CompanyView({
                 <Button
                   type="button"
                   variant="outline"
-                  className="border-border"
+                  className="border-button-border"
                   onClick={() => setDialogTarget("new")}
                 >
                   <Plus className="size-4" />
