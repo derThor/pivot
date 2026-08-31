@@ -148,6 +148,39 @@ kunde.de {
 }
 ```
 
+## Lokaler Proxy zum Testen (`pnpm dev:proxy`)
+
+Damit die Pfad-Aufteilung nicht nur auf dem Zielserver das erste Mal läuft,
+gibt es `scripts/dev-proxy.mjs` – ein abhängigkeitsfreier Node-Proxy, der
+lokal exakt dasselbe Layout abbildet:
+
+```
+http://localhost:8080/        → 127.0.0.1:3002  apps/site
+http://localhost:8080/admin/… → 127.0.0.1:3000  apps/web
+http://localhost:8080/api/…   → 127.0.0.1:3001  apps/api  (Präfix entfernt)
+```
+
+Starten mit `pnpm dev:proxy` (Port über `DEV_PROXY_PORT` änderbar),
+während die drei Apps normal laufen. Er setzt dieselben
+`X-Forwarded-*`-Header wie nginx und reicht WebSocket-Upgrades durch,
+damit der Hot Reload im Dev-Modus weiter funktioniert. **Nur ein
+Entwicklungswerkzeug** – kein TLS, keine Zugriffskontrolle; produktiv
+machen das nginx oder Caddy (Konfiguration unten).
+
+Am 2026-08-31 damit durchgespielt: `/` liefert die Website, `/robots.txt`
+die Sperrliste, `/admin` leitet auf `/admin/dashboard`, `/admin/login`
+lädt, `/api/v1/public/site` liefert JSON, `/api/uploads/<datei>` liefert
+das Bild (Präfix-Strip greift), und ein WebSocket-Upgrade auf
+`/admin/_next/webpack-hmr` beantwortet die API mit `101 Switching
+Protocols`.
+
+**Hinweis für den vollständigen Durchlauf:** Medien-URLs im Browser kommen
+aus `NEXT_PUBLIC_API_ORIGIN`. Lokal steht dort `http://localhost:3001`,
+die Bilder gehen also am Proxy vorbei. Wer den Produktionspfad komplett
+testen will, setzt in `apps/site/.env.local` und `apps/web/.env.local`
+`NEXT_PUBLIC_API_ORIGIN=http://localhost:8080/api` – dann müssen die Apps
+aber immer über den Proxy aufgerufen werden.
+
 ## Prozesse starten
 
 Kein Watch-Modus, keine Dev-Server. Erst bauen, dann als Dienst laufen
