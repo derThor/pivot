@@ -410,3 +410,24 @@ Löschen hätte die Information also komplett aus der Oberfläche entfernt
 Zustand lautet deshalb jetzt: "N Läufe · N Fehler · letzter: <Zeitpunkt>
 (<Dauer>) · nächster: <Zeitpunkt>". Die Dauer wird nur angehängt, wenn es
 überhaupt einen Lauf gab – sonst stünde dort "letzter: Noch nie (–)".
+
+## Update 2026-08-31 (Folgekorrektur): eingeklappte Zeile auf das Nötigste
+
+Direkt danach die nächste Nutzervorgabe: "nur den Titel und den
+Schieberegler anzeigen lassen", kurz darauf ergänzt um "Status noch mit
+rein. also ob aktiv ist". Die eingeklappte Zeile enthält jetzt genau drei
+Dinge: **Titel, Status-Badge (aktiv/pausiert), Schalter**.
+
+Entfallen sind dort das Uhr-Icon, die Beschreibung und die Rhythmus-Spalte
+mit Cron-Ausdruck. Damit nichts verlorengeht:
+
+- Die **Beschreibung** steht jetzt als erste Zeile im aufgeklappten
+  Bereich – vorher war sie ausschließlich in der eingeklappten Zeile zu
+  sehen.
+- **Rhythmus und Cron-Ausdruck** waren im aufgeklappten Bereich ohnehin
+  schon vorhanden (als Auswahlfeld und Eingabefeld), dort geht also
+  nichts verloren.
+- Das **"kritisch"-Badge** bleibt bewusst in der eingeklappten Zeile: es
+  erklärt, warum der Schalter bei diesen Jobs nicht bedienbar ist.
+- Die Imports `Clock` und `rhythmLabelForCron` wurden dadurch unbenutzt
+  und sind entfernt.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,6 @@ import {
   formatDuration,
   formatRelativeFuture,
   formatRelativePast,
-  rhythmLabelForCron,
 } from "@/lib/jobs-format";
 import type { ScheduledJob, ScheduledJobsResponse } from "@/lib/api-server";
 import { bff } from "@/lib/bff";
@@ -168,35 +167,22 @@ export function ScheduledJobsCard({
                 }
               >
                 <div className="flex items-center gap-4">
+                  {/* Eingeklappt bewusst nur Titel, Status und Schalter
+                      (Nutzervorgabe, 2026-08-31) – Beschreibung, Rhythmus
+                      und Zeitpunkte stehen im aufgeklappten Bereich. Das
+                      "kritisch"-Badge bleibt: es erklärt, warum der
+                      Schalter bei diesen Jobs nicht bedienbar ist. */}
                   <button
                     type="button"
                     onClick={() => handleExpand(job)}
-                    className="flex min-w-0 flex-1 items-center gap-6 text-left"
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
                   >
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                      <Clock className="size-4" />
+                    <span className="truncate text-sm font-medium">
+                      {job.title}
                     </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate text-sm font-medium">
-                          {job.title}
-                        </p>
-                        {job.isCritical && (
-                          <Badge variant="secondary">kritisch</Badge>
-                        )}
-                      </div>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {job.description}
-                      </p>
-                    </div>
-                    <div className="hidden shrink-0 flex-col @sm:flex">
-                      <span className="text-sm">
-                        {rhythmLabelForCron(job.cronExpression)}
-                      </span>
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {job.cronExpression}
-                      </span>
-                    </div>
+                    {job.isCritical && (
+                      <Badge variant="secondary">kritisch</Badge>
+                    )}
                   </button>
                   <Badge
                     className={
@@ -218,6 +204,9 @@ export function ScheduledJobsCard({
 
                 {expanded && (
                   <div className="mt-3 flex flex-col gap-3">
+                    <p className="text-xs text-muted-foreground">
+                      {job.description}
+                    </p>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div className="flex flex-col gap-1">
                         <Label className="text-xs text-muted-foreground uppercase">
