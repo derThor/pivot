@@ -1,52 +1,66 @@
-import { TaxonomyManager } from "@/components/taxonomy-manager";
-import { TaxonomyItemDialog } from "@/components/taxonomy-item-dialog";
-import { PageContent } from "@/components/page-content";
-import { PageHeader } from "@/components/page-header";
-import { PaginationControls } from "@/components/pagination-controls";
-import { getCategories, getPublicSettings } from "@/lib/api-server";
+import { notFound } from "next/navigation";
+
+import { CategoryExplorer } from "@/components/category-explorer";
+import {
+  getAllTags,
+  getCategories,
+  getCategory,
+  getCategoryTags,
+  getContentList,
+  getPublicSettings,
+} from "@/lib/api-server";
+import type { ContentStatus } from "@/lib/api-server";
 
 export default async function CategoriesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{
+    category?: string;
+    status?: string;
+    search?: string;
+    postsPage?: string;
+  }>;
 }) {
-  const { page: pageParam } = await searchParams;
-  const page = Number(pageParam) || 1;
-  const settings = await getPublicSettings();
-  const categories = await getCategories({
-    page,
-    pageSize: settings?.defaultPageSize ?? 10,
-  });
+  const { category: categoryParam, status, search, postsPage } =
+    await searchParams;
+
+  const [categories, settings, allTags] = await Promise.all([
+    getCategories({ page: 1, pageSize: 100 }),
+    getPublicSettings(),
+    getAllTags(),
+  ]);
+
+  const categoryList = categories?.items ?? [];
+  const selectedId = categoryParam ?? categoryList[0]?.id ?? null;
+
+  if (categoryParam && !categoryList.some((c) => c.id === categoryParam)) {
+    notFound();
+  }
+
+  const [selectedCategory, categoryTags, posts] = selectedId
+    ? await Promise.all([
+        getCategory(selectedId),
+        getCategoryTags(selectedId),
+        getContentList({
+          categoryId: selectedId,
+          status: status as ContentStatus | undefined,
+          search,
+          page: Number(postsPage) || 1,
+          pageSize: settings?.defaultPageSize ?? 10,
+        }),
+      ])
+    : [null, null, null];
 
   return (
-    <div className="flex flex-col gap-10">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <PageHeader title="Kategorien" />
-        <TaxonomyItemDialog
-          apiPath="categories"
-          withDescription
-          newLabel="Neue Kategorie"
-          entitySingular="Kategorie"
-        />
-      </div>
-      <PageContent>
-        <TaxonomyManager
-          apiPath="categories"
-          items={categories?.items ?? []}
-          withDescription
-          newLabel="Neue Kategorie"
-          entitySingular="Kategorie"
-          entityLabelPlural="Kategorien"
-        />
-
-        {categories && (
-          <PaginationControls
-            page={categories.meta.page}
-            pageCount={categories.meta.pageCount}
-            buildHref={(p) => `?page=${p}`}
-          />
-        )}
-      </PageContent>
-    </div>
+    <CategoryExplorer
+      categories={categoryList}
+      selectedId={selectedId}
+      selectedCategory={selectedCategory}
+      categoryTags={categoryTags ?? []}
+      posts={posts}
+      allTags={allTags ?? []}
+      currentStatus={status}
+      currentSearch={search ?? ""}
+    />
   );
 }

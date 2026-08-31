@@ -14,6 +14,16 @@ export class QueryContentDto {
   @IsString()
   contentTypeId?: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  search?: string;
+
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()
   @Type(() => Number)

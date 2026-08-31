@@ -49,6 +49,43 @@ export class TagsService {
     }));
   }
 
+  /** Kategorien-Seite, Kachel "Tags in dieser Rubrik" (Nutzervorgabe,
+   * 2026-08-31, 1:1 nach Bildvorlage) – nur Tags, die tatsächlich an
+   * einem (nicht gelöschten) Beitrag dieser Rubrik hängen, mit der
+   * echten Anzahl innerhalb dieser Rubrik (nicht der globalen
+   * Medien-Zählung wie in `findAll()`). */
+  async findByCategory(categoryId: string) {
+    const tags = await this.prisma.tag.findMany({
+      where: {
+        deletedAt: null,
+        contents: {
+          some: {
+            content: { deletedAt: null, categories: { some: { categoryId } } },
+          },
+        },
+      },
+      orderBy: { name: 'asc' },
+      include: {
+        _count: {
+          select: {
+            contents: {
+              where: {
+                content: {
+                  deletedAt: null,
+                  categories: { some: { categoryId } },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    return tags.map(({ _count, ...tag }) => ({
+      ...tag,
+      contentCount: _count.contents,
+    }));
+  }
+
   /** Ermittelt, auf welcher Seite (bei gegebener pageSize) ein Eintrag liegt. */
   async findPage(id: string, pageSize: number) {
     const target = await this.prisma.tag.findUniqueOrThrow({ where: { id } });
@@ -102,7 +139,9 @@ export class TagsService {
   async restore(id: string) {
     const tag = await this.prisma.tag.findUnique({ where: { id } });
     if (!tag || !tag.deletedAt) {
-      throw new NotFoundException(`Tag ${id} befindet sich nicht im Papierkorb.`);
+      throw new NotFoundException(
+        `Tag ${id} befindet sich nicht im Papierkorb.`,
+      );
     }
     return this.prisma.tag.update({
       where: { id },
@@ -113,7 +152,9 @@ export class TagsService {
   async permanentDelete(id: string) {
     const tag = await this.prisma.tag.findUnique({ where: { id } });
     if (!tag || !tag.deletedAt) {
-      throw new NotFoundException(`Tag ${id} befindet sich nicht im Papierkorb.`);
+      throw new NotFoundException(
+        `Tag ${id} befindet sich nicht im Papierkorb.`,
+      );
     }
     await this.prisma.tag.delete({ where: { id } });
   }

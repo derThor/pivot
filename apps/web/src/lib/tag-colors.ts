@@ -21,3 +21,10 @@ export function tagDotColor(id: string): string {
   }
   return TAG_DOT_COLORS[hash % TAG_DOT_COLORS.length];
 }
+
+/** Gleiches Prinzip wie `tagDotColor`, für den farbigen Balken/Punkt einer
+ * Kategorie (Kategorien-Seite, Nutzervorgabe 2026-08-31, 1:1 nach
+ * Bildvorlage) – Category hat ebenfalls kein eigenes `color`-Feld. Eigener
+ * Name statt Wiederverwendung von `tagDotColor`, damit an der Aufrufstelle
+ * klar bleibt, dass es sich um eine Kategorie handelt. */
+export const categoryColor = tagDotColor;

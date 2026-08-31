@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ContentStatus } from '@pivot/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -21,13 +22,41 @@ export class CategoriesService {
         orderBy: { name: 'asc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
+        include: { _count: { select: { contents: true } } },
       }),
       this.prisma.category.count({ where }),
     ]);
     return {
-      items,
+      items: items.map(({ _count, ...category }) => ({
+        ...category,
+        contentCount: _count.contents,
+      })),
       meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
     };
+  }
+
+  /** Kategorien-Seite, Kopfkachel der ausgewählten Rubrik (Nutzervorgabe,
+   * 2026-08-31, 1:1 nach Bildvorlage) – "BEITRÄGE"/"LIVE" sind echte
+   * Zählungen, keine erfundenen Kennzahlen (Aufrufe wurden bewusst
+   * weggelassen, siehe knowledge-base). */
+  async findOne(id: string) {
+    const category = await this.prisma.category.findUnique({ where: { id } });
+    if (!category || category.deletedAt) {
+      throw new NotFoundException(`Kategorie ${id} nicht gefunden.`);
+    }
+    const [contentCount, liveCount] = await Promise.all([
+      this.prisma.content.count({
+        where: { deletedAt: null, categories: { some: { categoryId: id } } },
+      }),
+      this.prisma.content.count({
+        where: {
+          deletedAt: null,
+          status: ContentStatus.PUBLISHED,
+          categories: { some: { categoryId: id } },
+        },
+      }),
+    ]);
+    return { ...category, contentCount, liveCount };
   }
 
   /** Ermittelt, auf welcher Seite (bei gegebener pageSize) ein Eintrag liegt. */

@@ -920,6 +920,11 @@ model Content {
   twitterCard    String?
   robotsIndex    Boolean       @default(true)
   robotsFollow   Boolean       @default(true)
+  // Kategorien-Seite, Spalte "Aufmacher" (Nutzervorgabe, 2026-08-31, 1:1
+  // nach Bildvorlage) – per Stern-Symbol umschaltbar, siehe
+  // ContentService.toggleFeatured(). Rein redaktionelles Hervorheben
+  // innerhalb einer Rubrik, keine Verbindung zu Status/Veröffentlichung.
+  isFeatured     Boolean       @default(false)
   scheduledFor   DateTime?
   publishedAt    DateTime?
   // Papierkorb (Nutzervorgabe, 2026-08-18, "überall da wo man löschen

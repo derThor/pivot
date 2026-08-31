@@ -24,16 +24,32 @@ export interface CategoryRef {
   slug: string;
 }
 
+export interface TagRef {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 /** Sperren älter als das hier gelten als abgelaufen (verwaiste Sperre nach Tab-Crash o.ä.). */
 const CONTENT_LOCK_TTL_MS = 2 * 60 * 1000;
 
-/** Flacht die Join-Tabellen-Form (`ContentCategory[]` mit verschachteltem `category`) zu einem einfachen `CategoryRef[]` ab. */
-function mapContentCategories<
-  T extends { categories: { category: CategoryRef }[] },
->(content: T): Omit<T, 'categories'> & { categories: CategoryRef[] } {
+/** Flacht die Join-Tabellen-Form (`ContentCategory[]` mit verschachteltem `category`,
+ * `ContentTag[]` mit verschachteltem `tag`) zu einfachen `CategoryRef[]`/`TagRef[]` ab. */
+function mapContentRelations<
+  T extends {
+    categories: { category: CategoryRef }[];
+    tags: { tag: TagRef }[];
+  },
+>(
+  content: T,
+): Omit<T, 'categories' | 'tags'> & {
+  categories: CategoryRef[];
+  tags: TagRef[];
+} {
   return {
     ...content,
     categories: content.categories.map((c) => c.category),
+    tags: content.tags.map((t) => t.tag),
   };
 }
 
@@ -67,11 +83,15 @@ export class ContentService {
   ) {}
 
   async findAll(query: QueryContentDto) {
-    const { page, pageSize, status, contentTypeId } = query;
+    const { page, pageSize, status, contentTypeId, categoryId, search } = query;
     const where = {
       deletedAt: null,
       ...(status && { status }),
       ...(contentTypeId && { contentTypeId }),
+      ...(categoryId && { categories: { some: { categoryId } } }),
+      ...(search && {
+        title: { contains: search, mode: 'insensitive' as const },
+      }),
     };
 
     const [items, total] = await Promise.all([
@@ -88,6 +108,9 @@ export class ContentService {
               category: { select: { id: true, name: true, slug: true } },
             },
           },
+          tags: {
+            include: { tag: { select: { id: true, name: true, slug: true } } },
+          },
         },
       }),
       this.prisma.content.count({ where }),
@@ -95,7 +118,7 @@ export class ContentService {
 
     return {
       items: items.map((c) => ({
-        ...mapContentCategories(c),
+        ...mapContentRelations(c),
         sectionsCount: countSections(c.data),
       })),
       meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
@@ -201,6 +224,9 @@ export class ContentService {
             category: { select: { id: true, name: true, slug: true } },
           },
         },
+        tags: {
+          include: { tag: { select: { id: true, name: true, slug: true } } },
+        },
         versions: {
           orderBy: { createdAt: 'desc' },
           take: 10,
@@ -216,12 +242,15 @@ export class ContentService {
     if (!content || content.deletedAt) {
       throw new NotFoundException(`Inhalt ${id} nicht gefunden.`);
     }
-    return mapContentCategories(content);
+    return mapContentRelations(content);
   }
 
   async create(dto: CreateContentDto, authorId: string) {
     if (dto.categoryIds) {
       await this.assertCategoriesExist(dto.categoryIds);
+    }
+    if (dto.tagIds) {
+      await this.assertTagsExist(dto.tagIds);
     }
     if (dto.status === ContentStatus.SCHEDULED && !dto.scheduledFor) {
       throw new BadRequestException(
@@ -254,12 +283,18 @@ export class ContentService {
             create: dto.categoryIds.map((categoryId) => ({ categoryId })),
           },
         }),
+        ...(dto.tagIds && {
+          tags: { create: dto.tagIds.map((tagId) => ({ tagId })) },
+        }),
       },
       include: {
         categories: {
           include: {
             category: { select: { id: true, name: true, slug: true } },
           },
+        },
+        tags: {
+          include: { tag: { select: { id: true, name: true, slug: true } } },
         },
       },
     });
@@ -279,15 +314,18 @@ export class ContentService {
       });
     }
 
-    return mapContentCategories(content);
+    return mapContentRelations(content);
   }
 
   async update(id: string, dto: UpdateContentDto, editorId: string) {
     const existing = await this.findOne(id);
-    const { categoryIds, scheduledFor, ...rest } = dto;
+    const { categoryIds, tagIds, scheduledFor, ...rest } = dto;
 
     if (categoryIds) {
       await this.assertCategoriesExist(categoryIds);
+    }
+    if (tagIds) {
+      await this.assertTagsExist(tagIds);
     }
 
     const effectiveStatus = dto.status ?? existing.status;
@@ -329,12 +367,21 @@ export class ContentService {
             create: categoryIds.map((categoryId) => ({ categoryId })),
           },
         }),
+        ...(tagIds && {
+          tags: {
+            deleteMany: {},
+            create: tagIds.map((tagId) => ({ tagId })),
+          },
+        }),
       },
       include: {
         categories: {
           include: {
             category: { select: { id: true, name: true, slug: true } },
           },
+        },
+        tags: {
+          include: { tag: { select: { id: true, name: true, slug: true } } },
         },
       },
     });
@@ -360,7 +407,7 @@ export class ContentService {
       });
     }
 
-    return mapContentCategories(content);
+    return mapContentRelations(content);
   }
 
   /**
@@ -405,6 +452,30 @@ export class ContentService {
     if (count !== categoryIds.length) {
       throw new BadRequestException('Mindestens eine Kategorie ist unbekannt.');
     }
+  }
+
+  private async assertTagsExist(tagIds: string[]) {
+    const count = await this.prisma.tag.count({
+      where: { id: { in: tagIds } },
+    });
+    if (count !== tagIds.length) {
+      throw new BadRequestException('Mindestens ein Tag ist unbekannt.');
+    }
+  }
+
+  /** Kategorien-Seite, Stern-Symbol in der Beitragstabelle (Nutzervorgabe,
+   * 2026-08-31, 1:1 nach Bildvorlage) – reiner Umschalter, kein
+   * eigenständiges Update-DTO nötig, gleiches Muster wie lock()/unlock(). */
+  async toggleFeatured(id: string) {
+    const existing = await this.prisma.content.findUniqueOrThrow({
+      where: { id },
+      select: { isFeatured: true },
+    });
+    return this.prisma.content.update({
+      where: { id },
+      data: { isFeatured: !existing.isFeatured },
+      select: { id: true, isFeatured: true },
+    });
   }
 
   /** Papierkorb: Soft-Delete statt Hard-Delete (Nutzervorgabe, 2026-08-18,
@@ -474,13 +545,16 @@ export class ContentService {
               category: { select: { id: true, name: true, slug: true } },
             },
           },
+          tags: {
+            include: { tag: { select: { id: true, name: true, slug: true } } },
+          },
         },
       }),
       this.prisma.content.count({ where }),
     ]);
 
     return {
-      items: items.map(mapContentCategories),
+      items: items.map(mapContentRelations),
       meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
     };
   }

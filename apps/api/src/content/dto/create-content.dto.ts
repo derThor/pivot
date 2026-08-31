@@ -107,4 +107,10 @@ export class CreateContentDto {
   @IsArray()
   @IsString({ each: true })
   categoryIds?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tagIds?: string[];
 }

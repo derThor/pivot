@@ -177,6 +177,12 @@ export class ContentController {
     );
   }
 
+  @RequirePermission('content:update')
+  @Post(':id/featured')
+  toggleFeatured(@Param('id') id: string) {
+    return this.contentService.toggleFeatured(id);
+  }
+
   @RequirePermission('preview-links:read')
   @Get(':id/preview-links')
   findPreviewLinks(@Param('id') id: string) {

@@ -42,6 +42,12 @@ export class CategoriesController {
     return this.categoriesService.findTrashed(query);
   }
 
+  @RequirePermission('categories:read')
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.categoriesService.findOne(id);
+  }
+
   @RequirePermission('categories:create')
   @Post()
   create(@Body() dto: CreateCategoryDto) {

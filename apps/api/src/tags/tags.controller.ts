@@ -36,6 +36,12 @@ export class TagsController {
     return this.tagsService.findAllUnpaginated();
   }
 
+  @RequirePermission('categories:read')
+  @Get('by-category/:categoryId')
+  findByCategory(@Param('categoryId') categoryId: string) {
+    return this.tagsService.findByCategory(categoryId);
+  }
+
   @RequirePermission('tags:delete')
   @Get('trash')
   findTrashed(@Query() query: QueryTagDto) {

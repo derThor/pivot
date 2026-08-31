@@ -156,6 +156,12 @@ export interface CategoryRef {
   slug: string;
 }
 
+export interface TagRef {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export interface ContentListItem {
   id: string;
   title: string;
@@ -165,6 +171,8 @@ export interface ContentListItem {
   contentType: { id: string; name: string; slug: string };
   author: AuthorRef;
   categories: CategoryRef[];
+  tags: TagRef[];
+  isFeatured: boolean;
   sectionsCount: number;
 }
 
@@ -250,11 +258,15 @@ export function getNavigation(id: string) {
 
 export function getContentList(params?: {
   status?: ContentStatus;
+  categoryId?: string;
+  search?: string;
   page?: number;
   pageSize?: number;
 }) {
   const search = new URLSearchParams();
   if (params?.status) search.set("status", params.status);
+  if (params?.categoryId) search.set("categoryId", params.categoryId);
+  if (params?.search) search.set("search", params.search);
   if (params?.page) search.set("page", String(params.page));
   if (params?.pageSize) search.set("pageSize", String(params.pageSize));
   const query = search.toString();
@@ -596,8 +608,38 @@ function taxonomyQuery(params?: { page?: number; pageSize?: number }) {
   return query ? `?${query}` : "";
 }
 
+export interface CategoryListItem extends TaxonomyItem {
+  contentCount: number;
+}
+
+export interface CategoryListResponse {
+  items: CategoryListItem[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
 export function getCategories(params?: { page?: number; pageSize?: number }) {
-  return apiFetch<TaxonomyListResponse>(`/categories${taxonomyQuery(params)}`);
+  return apiFetch<CategoryListResponse>(
+    `/categories${taxonomyQuery(params)}`,
+  );
+}
+
+export interface CategoryDetail extends TaxonomyItem {
+  contentCount: number;
+  liveCount: number;
+}
+
+export function getCategory(id: string) {
+  return apiFetch<CategoryDetail>(`/categories/${id}`);
+}
+
+export interface TagWithCategoryCount extends TaxonomyItem {
+  contentCount: number;
+}
+
+/** Kategorien-Seite, Kachel "Tags in dieser Rubrik" – nur Tags, die
+ * tatsächlich an einem Beitrag dieser Rubrik hängen. */
+export function getCategoryTags(categoryId: string) {
+  return apiFetch<TagWithCategoryCount[]>(`/tags/by-category/${categoryId}`);
 }
 
 export interface Tag extends TaxonomyItem {
