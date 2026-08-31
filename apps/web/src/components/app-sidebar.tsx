@@ -109,12 +109,9 @@ export const navGroups = [
         url: "/dashboard/mandanten",
         icon: Building2,
         permission: "settings:read",
-      },
-      {
-        title: "Webseite",
-        url: "/dashboard/websites",
-        icon: Globe,
-        permission: "settings:read",
+        children: [
+          { title: "Webseiten", url: "/dashboard/websites", icon: Globe },
+        ],
       },
       {
         title: "Module",
