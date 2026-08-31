@@ -680,6 +680,20 @@ danach für die identischen Chips der Suchergebnis-Seite
 (`app/dashboard/search/page.tsx`) – damit gibt es app-weit keinen
 transparenten Chip dieser Bauart mehr.
 
+**Nachtrag 2: weißer Hintergrund statt transparent.** Nutzervorgabe am
+selben Tag, am Beispiel des "Verwerfen"-Buttons der Einstellungen ("bei
+Einstellung weisser Hintergrund bei dem ohne bg links"): die
+`outline`-Variante in `ui/button.tsx` steht jetzt auf `bg-card` statt
+`bg-transparent`. Auf weißen Karten ändert sich dadurch nichts, auf
+grauen Flächen (Seitenhintergrund, `bg-muted`-Kästen) heben sich die
+Buttons jetzt als weiße Flächen ab. `bg-card` statt `bg-white`, damit der
+Dark Mode weiter stimmt.
+
+Nicht mit umgestellt: die drei handgeschriebenen "Löschen"-Buttons in
+`my-account-view.tsx`, `two-factor-setup-card.tsx` und
+`user-edit-view.tsx` sowie die Variante `destructiveOutline` – sie stehen
+auf weißen Karten, dort ist transparent optisch identisch.
+
 **Bewusst nicht angefasst:** `border-t border-border` als Trennlinie
 _innerhalb_ eines breiten Buttons (Datenschutz-/Vorfall-Panels) und
 Info-Kästen mit `bg-muted` – beides sind keine weißen Button-Rahmen.
