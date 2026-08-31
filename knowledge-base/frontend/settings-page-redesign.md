@@ -338,7 +338,7 @@ Die bis dahin flache Liste von 13 Bereichen in der Sidebar war zu lang
 geworden und wurde in eine **zweistufige Navigation** umgebaut (Vorgabe
 per Bildvorlage):
 
-- **Ebene 1 (links, `lg:w-64`)** – fünf Themengruppen (`GROUPS` in
+- **Ebene 1 (links, `xl:w-60`)** – fünf Themengruppen (`GROUPS` in
   `settings-form.tsx`): Allgemein, Sicherheit, Verbindungen, Betrieb,
   Labor sowie die nur auf dem Master sichtbare Gruppe (`masterOnly`,
   gefiltert über `settings.deploymentMode === "master"`). Ein Klick auf
@@ -381,7 +381,7 @@ nicht nebeneinander, die Inhaltskarte wurde dort zusammengequetscht
 E-Mail-Feld). Zwischen `lg` und `xl` liegt die Navigationskarte deshalb
 als eigener, zweispaltiger Block **über** dem Inhalt und nimmt dort auf
 Nutzervorgabe die **volle Breite mit 50/50 geteilten Ebenen** ein
-(`lg:w-1/2` je Ebene, erst ab `xl` wieder feste Breiten: Ebene 1 `xl:w-64`, Ebene 2 minimal breiter mit `xl:w-68`). Zusätzlich:
+(`lg:w-1/2` je Ebene, erst ab `xl` wieder feste Breiten: Ebene 1 `xl:w-60`, Ebene 2 etwas breiter mit `xl:w-68`). Zusätzlich:
 `break-words` auf den Textspalten beider Ebenen (das lange Wort
 "Systembenachrichtigungen" lief sonst unter den Chevron), und die
 Empfänger-Zeile in `notification-settings-card.tsx` ist
