@@ -8,6 +8,8 @@ import { z } from "zod";
 import {
   Bell,
   Blocks,
+  ChevronRight,
+  Clock,
   Construction,
   Contrast,
   Globe,
@@ -133,11 +135,6 @@ const SECTIONS: {
   title: string;
   subtitle: string;
   icon: LucideIcon;
-  // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28: "das soll unter
-  // Einstellungen sein") – nur auf einer Master-Installation sinnvoll
-  // (Slave hat kein eigenes `ModuleSettings`, Backend gated zusätzlich
-  // hart über `MasterOnlyGuard`).
-  masterOnly?: boolean;
 }[] = [
   {
     id: "master-client",
@@ -150,7 +147,6 @@ const SECTIONS: {
     title: "Module",
     subtitle: "Freischaltung & Reiter",
     icon: Blocks,
-    masterOnly: true,
   },
   {
     id: "access",
@@ -220,6 +216,65 @@ const SECTIONS: {
   },
 ];
 
+const SECTIONS_BY_ID = new Map(SECTIONS.map((s) => [s.id, s]));
+
+// Zweistufige Einstellungen-Navigation (Nutzervorgabe, 2026-08-31, 1:1
+// nach Bildvorlage): 1. Ebene = Themengruppen, 2. Ebene = die bisherigen
+// `SECTIONS`-Einträge, gruppiert. "Master-Client" bleibt bewusst bei
+// "Verbindungen" statt bei "Administration" – im Gegensatz zu "Module"
+// ist dieser Bereich NICHT `masterOnly` (zeigt auf einer Slave-
+// Installation den Lizenz-/API-Key-Status statt der Mandantenliste,
+// bleibt also für beide Modi sichtbar).
+const GROUPS: {
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: LucideIcon;
+  sections: SectionId[];
+  // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28: "das soll unter
+  // Einstellungen sein") – nur auf einer Master-Installation sinnvoll
+  // (Slave hat kein eigenes `ModuleSettings`, Backend gated zusätzlich
+  // hart über `MasterOnlyGuard`).
+  masterOnly?: boolean;
+}[] = [
+  {
+    id: "general",
+    title: "Allgemein",
+    subtitle: "Module & Darstellung",
+    icon: Menu,
+    sections: ["access", "display", "frontend"],
+  },
+  {
+    id: "security",
+    title: "Sicherheit",
+    subtitle: "Zugang & Vorgaben",
+    icon: Shield,
+    sections: ["security"],
+  },
+  {
+    id: "connections",
+    title: "Verbindungen",
+    subtitle: "Dienste & Automatisierung",
+    icon: Plug,
+    sections: ["integrations", "mailing", "webhooks", "master-client"],
+  },
+  {
+    id: "operations",
+    title: "Betrieb",
+    subtitle: "Jobs, Wartung, Protokoll",
+    icon: Clock,
+    sections: ["jobs", "maintenance-page", "notifications", "protocol"],
+  },
+  {
+    id: "administration",
+    title: "Administration",
+    subtitle: "Module freischalten",
+    icon: ShieldCheck,
+    sections: ["module"],
+    masterOnly: true,
+  },
+];
+
 /** Einheitliche Platzhalter-Karte für Bereiche ohne echte Funktion dahinter
  * (gleiche Konvention wie die Darstellung-/Benachrichtigungen-Tabs auf
  * "Mein Konto") – kein erfundener Inhalt, nur ein ehrlicher Hinweis. */
@@ -263,6 +318,8 @@ export function SettingsForm({
 }) {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<SectionId>("access");
+  const activeGroup =
+    GROUPS.find((group) => group.sections.includes(activeSection)) ?? GROUPS[0];
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -448,13 +505,60 @@ export function SettingsForm({
         {error && <p className="text-sm text-destructive">{error}</p>}
 
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-          <div className="overflow-hidden rounded-xl bg-card shadow-sm lg:w-80 lg:shrink-0">
+          <div className="overflow-hidden rounded-xl bg-card shadow-sm lg:w-64 lg:shrink-0">
             <div className="flex flex-col divide-y divide-border">
-              {SECTIONS.filter(
-                (section) =>
-                  !section.masterOnly || settings.deploymentMode === "master",
-              ).map((section) => {
-                const isActive = section.id === activeSection;
+              {GROUPS.filter(
+                (group) =>
+                  !group.masterOnly || settings.deploymentMode === "master",
+              ).map((group) => {
+                const isActive = group.id === activeGroup.id;
+                const Icon = group.icon;
+                return (
+                  <button
+                    key={group.id}
+                    type="button"
+                    onClick={() => setActiveSection(group.sections[0])}
+                    className={cn(
+                      "flex items-start gap-3 border-l-4 px-4 py-4 text-left transition-colors",
+                      isActive
+                        ? "border-l-primary bg-primary/15"
+                        : "border-l-transparent hover:bg-muted/50",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "flex size-9 shrink-0 items-center justify-center rounded-lg",
+                        isActive
+                          ? "bg-primary/25 text-foreground"
+                          : "bg-secondary text-muted-foreground",
+                      )}
+                    >
+                      <Icon className="size-4" />
+                    </span>
+                    <span className="flex flex-col gap-0.5">
+                      <span className="text-sm font-semibold">
+                        {group.title}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {group.subtitle}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-xl bg-card shadow-sm lg:w-72 lg:shrink-0">
+            <div className="px-4 py-3">
+              <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                {activeGroup.title}
+              </span>
+            </div>
+            <div className="flex flex-col divide-y divide-border">
+              {activeGroup.sections.map((sectionId) => {
+                const section = SECTIONS_BY_ID.get(sectionId)!;
+                const isActive = sectionId === activeSection;
                 const Icon = section.icon;
                 return (
                   <button
@@ -478,7 +582,7 @@ export function SettingsForm({
                     >
                       <Icon className="size-4" />
                     </span>
-                    <span className="flex flex-col gap-0.5">
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <span className="text-sm font-semibold">
                         {section.title}
                       </span>
@@ -486,6 +590,9 @@ export function SettingsForm({
                         {section.subtitle}
                       </span>
                     </span>
+                    {isActive && (
+                      <ChevronRight className="mt-1 size-4 shrink-0 text-muted-foreground" />
+                    )}
                   </button>
                 );
               })}
