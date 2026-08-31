@@ -315,9 +315,19 @@ export function CategoryExplorer({
                       }
                     />
                     <div>
-                      <h2 className="text-xl font-semibold">
-                        {selectedCategory.name}
-                      </h2>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-xl font-semibold">
+                          {selectedCategory.name}
+                        </h2>
+                        {selectedCategory.rssEnabled && (
+                          <Badge
+                            variant="secondary"
+                            className="badge--lime border-0"
+                          >
+                            RSS aktiv
+                          </Badge>
+                        )}
+                      </div>
                       {selectedCategory.description && (
                         <p className="mt-1 max-w-xl text-sm text-muted-foreground">
                           {selectedCategory.description}
@@ -380,8 +390,8 @@ export function CategoryExplorer({
                 />
               ) : (
                 <>
-                  <div className="flex flex-col gap-3 rounded-xl bg-card p-4 shadow-sm sm:flex-row sm:items-center">
-                    <div className="relative flex-1">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="relative w-full sm:max-w-xs">
                       <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         value={searchValue}
