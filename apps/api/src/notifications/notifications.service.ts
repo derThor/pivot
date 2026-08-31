@@ -25,6 +25,17 @@ type Candidate = {
   isUrgent: boolean;
   actionLabel: string;
   actionUrl: string;
+  // Berechtigung, die ein Nutzer braucht, damit für IHN eine Zeile/Mail
+  // entsteht (siehe `sync()`) – NICHT Teil der Tatsachen-Berechnung oben
+  // (z.B. "gibt es veraltete Rechtstexte" hängt nicht davon ab, wer
+  // fragt). Sonst löst ein Sync-Aufruf mit einem Token ohne diese
+  // Berechtigung (z.B. ein kurzzeitig fehlendes `privacy:read` durch
+  // JWT-Veraltung nach einer Rollenänderung) fälschlich "erledigt" aus,
+  // löscht dabei den globalen `NotificationEmailLog`-Eintrag, und der
+  // nächste Sync mit ausreichender Berechtigung verschickt dieselbe Mail
+  // erneut – Dauerspam alle paar Minuten (Nutzer-Bugreport, 2026-08-31:
+  // "warum werde ich permanent mit emails vollgeballert").
+  requiredPermission?: string;
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -98,8 +109,6 @@ export class NotificationsService {
 
   private async buildCandidates(user: JwtPayload): Promise<Candidate[]> {
     const permissions = user.permissions ?? [];
-    const canViewUsers = permissions.includes('users:read');
-    const canViewPrivacy = permissions.includes('privacy:read');
     const readableTrashTypes = TRASH_TYPES.filter((t: TrashType) =>
       permissions.includes(`${t}:read`),
     );
@@ -208,7 +217,6 @@ export class NotificationsService {
     }
 
     if (
-      canViewPrivacy &&
       settings.notifyLegalDocuments &&
       (await this.hasModuleFeature('datenschutz', 'rechtstexte'))
     ) {
@@ -223,12 +231,12 @@ export class NotificationsService {
           isUrgent: false,
           actionLabel: 'Rechtstexte öffnen',
           actionUrl: '/dashboard/privacy',
+          requiredPermission: 'privacy:read',
         });
       }
     }
 
     if (
-      canViewPrivacy &&
       settings.notifyDeletionRequests &&
       (await this.hasModuleFeature('datenschutz', 'loeschanfragen'))
     ) {
@@ -248,15 +256,15 @@ export class NotificationsService {
           isUrgent: true,
           actionLabel: 'Anfrage bearbeiten',
           actionUrl: '/dashboard/privacy?tab=loeschanfragen',
+          requiredPermission: 'privacy:read',
         });
       }
     }
 
     if (
-      canViewUsers &&
-      (settings.notifyPendingActivations ||
-        settings.notifyFailedLogins ||
-        settings.notifyPendingPasswordChanges)
+      settings.notifyPendingActivations ||
+      settings.notifyFailedLogins ||
+      settings.notifyPendingPasswordChanges
     ) {
       const counts = await this.users.getNotificationCounts();
       if (settings.notifyPendingActivations && counts.pendingActivation > 0) {
@@ -272,6 +280,7 @@ export class NotificationsService {
           isUrgent: false,
           actionLabel: 'Benutzer öffnen',
           actionUrl: '/dashboard/users?status=inactive',
+          requiredPermission: 'users:read',
         });
       }
       if (settings.notifyFailedLogins && counts.failedLogins > 0) {
@@ -287,6 +296,7 @@ export class NotificationsService {
           isUrgent: true,
           actionLabel: 'Benutzer öffnen',
           actionUrl: '/dashboard/users',
+          requiredPermission: 'users:read',
         });
       }
       if (
@@ -304,6 +314,7 @@ export class NotificationsService {
           isUrgent: false,
           actionLabel: 'Benutzer öffnen',
           actionUrl: '/dashboard/users',
+          requiredPermission: 'users:read',
         });
       }
     }
@@ -330,7 +341,20 @@ export class NotificationsService {
       this.buildCandidates(user),
       this.settings.get(),
     ]);
+    // `candidates` ist bewusst UNABHÄNGIG von den Berechtigungen des
+    // aktuellen Tokens (siehe `requiredPermission`-Kommentar am
+    // `Candidate`-Typ) – für die Erledigt/Wiederbeleben-Entscheidung unten
+    // zählt der echte Zustand, nicht was dieses eine Token gerade sehen
+    // darf. Nur für NEU anzulegende Zeilen (`toCreate`) wird auf das
+    // aktuelle Token gefiltert, sonst bekäme ein Nutzer ohne die nötige
+    // Berechtigung eine Zeile in seinem eigenen Postfach, die er gar nicht
+    // sehen dürfte.
+    const permissions = user.permissions ?? [];
     const candidateKeys = new Set(candidates.map((c) => c.dedupeKey));
+    const visibleCandidates = candidates.filter(
+      (c) =>
+        !c.requiredPermission || permissions.includes(c.requiredPermission),
+    );
 
     // Alle Zeilen des Nutzers, nicht nur unerledigte: der Unique-Constraint
     // `[userId, dedupeKey]` gilt unabhängig vom Erledigt-Status, eine
@@ -377,10 +401,21 @@ export class NotificationsService {
     }
 
     const existingKeys = new Set(existing.map((e) => e.dedupeKey));
-    const toCreate = candidates.filter((c) => !existingKeys.has(c.dedupeKey));
+    const toCreate = visibleCandidates.filter(
+      (c) => !existingKeys.has(c.dedupeKey),
+    );
     if (toCreate.length > 0) {
       await this.prisma.notification.createMany({
-        data: toCreate.map((c) => ({ ...c, userId: user.sub })),
+        data: toCreate.map((c) => ({
+          category: c.category,
+          dedupeKey: c.dedupeKey,
+          title: c.title,
+          description: c.description,
+          isUrgent: c.isUrgent,
+          actionLabel: c.actionLabel,
+          actionUrl: c.actionUrl,
+          userId: user.sub,
+        })),
       });
     }
 
@@ -406,7 +441,12 @@ export class NotificationsService {
       await this.prisma.notification.update({
         where: { id: row.id },
         data: {
-          ...candidate,
+          category: candidate.category,
+          title: candidate.title,
+          description: candidate.description,
+          isUrgent: candidate.isUrgent,
+          actionLabel: candidate.actionLabel,
+          actionUrl: candidate.actionUrl,
           isResolved: false,
           resolvedAt: null,
           isRead: false,
