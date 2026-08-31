@@ -259,18 +259,24 @@ begonnener Auftrag; dieses Update deckt nur den "bauen"-Teil ab.
   öffentliche Website selbst existiert noch nicht) – es wurde
   **keine erfundene Domain** eingesetzt, `<guid isPermaLink="false">`
   bleibt als stabiler Bezug immer vorhanden.
-- **Sortierung/Beiträge pro Seite wirken auf die Beiträge-Tabelle im
-  Backend (Nutzerentscheidung, "Ja, für die Beiträge-Tabelle
-  übernehmen"):** `QueryContentDto.sortOrder` steuert
-  `ContentService.findAll()`s `orderBy` (`OLDEST` → `asc`, sonst
-  `desc`). **Bekannte, dokumentierte Lücke:** `MANUAL` hat noch kein
-  echtes Datenfeld für eine manuelle Reihenfolge (`ContentCategory`
-  hat kein Sortierfeld) und fällt deshalb im Code wie in der UI
-  (Hinweistext unter dem Sortierung-Picker) explizit auf `NEWEST`
-  zurück, statt eine nicht funktionierende Sortierung stillschweigend
-  vorzugaukeln. `apps/web/src/app/dashboard/categories/page.tsx`
-  reicht `selectedCategory.sortOrder`/`.postsPerPage` in
-  `getContentList()` durch.
+- **Sortierung wirkt auf die Beiträge-Tabelle im Backend
+  (Nutzerentscheidung, "Ja, für die Beiträge-Tabelle übernehmen"):**
+  `QueryContentDto.sortOrder` steuert `ContentService.findAll()`s
+  `orderBy` (`OLDEST` → `asc`, sonst `desc`). **Bekannte, dokumentierte
+  Lücke:** `MANUAL` hat noch kein echtes Datenfeld für eine manuelle
+  Reihenfolge (`ContentCategory` hat kein Sortierfeld) und fällt
+  deshalb im Code wie in der UI (Hinweistext unter dem
+  Sortierung-Picker) explizit auf `NEWEST` zurück, statt eine nicht
+  funktionierende Sortierung stillschweigend vorzugaukeln.
+  `apps/web/src/app/dashboard/categories/page.tsx` reicht
+  `selectedCategory.sortOrder` in `getContentList()` durch.
+  ~~"Beiträge pro Seite" (`postsPerPage`) steuerte anfangs ebenfalls
+  diese Tabelle~~ – seit dem Update vom 2026-08-31 (Folgetag, siehe
+  unten) korrigiert: die Admin-Tabelle folgt IMMER der globalen
+  Seitengröße aus Einstellungen → Darstellung wie jede andere
+  Listenseite; `postsPerPage` bleibt ein echtes, gespeichertes Feld,
+  ist aber ausschließlich für die künftige öffentliche Archivseite
+  gedacht (noch ohne Konsumenten).
 - **Feed-Adresse in der UI:** zeigt bei aktiviertem RSS-Schalter ein
   Read-only-Feld mit der echten, tatsächlich erreichbaren API-Route
   (`getCategoryFeedUrl()` in `api-server.ts`, baut aus dem
@@ -293,3 +299,55 @@ Query-Parameter akzeptiert; neue Felder erscheinen korrekt in
 `GET /categories`/`GET /categories/:id`. Nach dem Test wieder in den
 ursprünglichen Zustand zurückversetzt (Testkategorie war zuvor
 gelöscht, `rssEnabled` wieder auf `false`).
+
+## Update 2026-08-31 (Folgetag): UI-Feinschliff Kategorien-Seite
+
+Mehrere kleine, gezielte Korrekturen auf `category-explorer.tsx` nach direktem
+Nutzer-Feedback am laufenden Screenshot:
+
+- **Tabs statt SegmentedPicker/hand-rolled Buttons:** Sowohl die Status-Filter-Leiste
+  ("Alle/Live/Entwurf/Geplant") als auch der "Beiträge/Kategorie-Einstellungen"-
+  Umschalter nutzen jetzt `ui/tabs.tsx` (`Tabs`/`TabsList`/`TabsTrigger`) statt
+  hand-gebauter `<button>`-Reihen bzw. `SegmentedPicker`. `SegmentedPicker` bleibt für
+  echte Werte-Presets (Sortierung, Beiträge pro Seite) korrekt, ist aber NICHT der
+  Standard für Tabs/Filter-Leisten, die zwischen Ansichten umschalten – siehe
+  [[feedback_use_existing_standard_components]] für die jetzt geschärfte Abgrenzung
+  zwischen beiden Komponenten (ausgelöst durch eine deutliche Nutzerkorrektur, da ich
+  zunächst die falsche Tab-Leiste geändert hatte).
+- **Sidebar-Pagination:** Die Kategorien-Liste lud vorher bis zu 100 Einträge ohne
+  Blätter-Möglichkeit (`getCategories({ page: 1, pageSize: 100 })`). Jetzt echt
+  paginiert (`categoryPage`-URL-Parameter, globale `defaultPageSize`), `PaginationControls`
+  unterhalb der Kategorien-Kachel als Sibling (nicht in die Kachel gepolstert, siehe
+  [[feedback_pagination_outside_card]]), "Kategorien · N" zeigt die echte
+  Gesamtzahl (`categoriesMeta.total`) statt nur der aktuell geladenen Seite. Die
+  404-Prüfung bei einer per Link ausgewählten Kategorie läuft jetzt über
+  `getCategory()` selbst statt über die Mitgliedschaft in der (jetzt paginierten)
+  Sidebar-Liste.
+- **Beiträge-Tabelle folgt der globalen Seitengröße:** siehe Korrektur oben bei
+  "Sortierung wirkt auf die Beiträge-Tabelle" – `postsPerPage` steuert diese Tabelle
+  NICHT mehr.
+- **Such-Feld-Muster korrigiert:** die "Beitrag suchen"-Box nutzte eine selbst gebaute
+  Icon-über-Input-Variante (`Input` mit eigenem `border`/`rounded-lg`, Icon absolut
+  positioniert). Auf Nutzerhinweis durch das tatsächliche App-Standardmuster ersetzt
+  (`forms-view.tsx`: äußerer `rounded-xl border border-border bg-card`-Wrapper, Icon
+  als Sibling, `Input` selbst randlos/`bg-transparent` innen) – dieses Wrapper-Muster
+  ist der Standard für Listen-Suchfelder, nicht `SearchIcon` absolut über einem vollen
+  `Input`.
+- **Speichern-Button der Kategorie-Einstellungen:** wandert bei aktivem
+  "Kategorie-Einstellungen"-Tab neben die Tabs (rechts daneben, Höhe exakt `h-10`
+  passend zur `TabsList`, sonst springt die Zeilenhöhe). Technisch über das
+  Standard-HTML-`form="category-settings-form"`-Attribut auf einem Button AUSSERHALB
+  des `<form>`-Elements gelöst, Submit-Status (`isSubmitting`) dafür per
+  `onSubmittingChange`-Callback von `CategorySettingsForm` zum Elternteil
+  `CategoryExplorer` hochgereicht.
+- **"RSS aktiv"-Badge-Farbe:** von `badge--lime` (das ist für "Aufmacher" reserviert)
+  auf `badge--green` (dieselbe Farbe wie der "Live"-Status) korrigiert – "aktiv/an"
+  bekommt app-weit dasselbe Grün, nicht die Akzent-Lime-Farbe.
+
+Nebenbei, gleicher Tag: ein durch eigenes Testen verursachter Produktionsvorfall
+(wiederholte Spam-Mails "Rechtstext veraltet"/"Passwort muss geändert werden") wurde
+gefunden und behoben – siehe [[feedback_no_narrow_tokens_for_real_user]] für die
+Ursache (Berechtigungs-abhängige Fakten-Prüfung in `NotificationsService.sync()`) und
+den Fix in `apps/api/src/notifications/notifications.service.ts`. Kein
+Kategorien-Feature im engeren Sinne, aber während dieser Arbeit an derselben Seite
+entdeckt.
