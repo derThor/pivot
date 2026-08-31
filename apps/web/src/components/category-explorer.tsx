@@ -22,6 +22,7 @@ import { PaginationControls } from "@/components/pagination-controls";
 import { SegmentedPicker } from "@/components/segmented-picker";
 import { SwitchRow } from "@/components/switch-row";
 import { TaxonomyItemDialog } from "@/components/taxonomy-item-dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -244,14 +245,6 @@ export function CategoryExplorer({
                 );
               })}
             </div>
-            <div className="p-3">
-              <TaxonomyItemDialog
-                apiPath="categories"
-                withDescription
-                newLabel="Kategorie anlegen"
-                entitySingular="Kategorie"
-              />
-            </div>
           </div>
 
           {selectedId && (
@@ -354,32 +347,18 @@ export function CategoryExplorer({
                     </div>
                   </div>
                 </div>
-                <div className="mt-4 flex gap-1 rounded-lg bg-muted p-1 w-fit">
-                  <button
-                    type="button"
-                    onClick={() => setTab("posts")}
-                    className={cn(
-                      "rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
-                      tab === "posts"
-                        ? "bg-card text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    Beiträge
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTab("settings")}
-                    className={cn(
-                      "rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
-                      tab === "settings"
-                        ? "bg-card text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    Kategorie-Einstellungen
-                  </button>
-                </div>
+                <Tabs
+                  className="mt-4 w-fit"
+                  value={tab}
+                  onValueChange={(v) => setTab(v as "posts" | "settings")}
+                >
+                  <TabsList>
+                    <TabsTrigger value="posts">Beiträge</TabsTrigger>
+                    <TabsTrigger value="settings">
+                      Kategorie-Einstellungen
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
 
               {tab === "settings" ? (
@@ -400,20 +379,28 @@ export function CategoryExplorer({
                         className="bg-card pl-9"
                       />
                     </div>
-                    <SegmentedPicker
-                      options={STATUS_PILLS}
+                    <Tabs
+                      className="min-w-0"
                       value={
                         (currentStatus as ContentStatus | undefined) ?? "ALL"
                       }
-                      onChange={(value) =>
+                      onValueChange={(v) =>
                         router.push(
                           buildUrl({
-                            status: value === "ALL" ? undefined : value,
+                            status: v === "ALL" ? undefined : (v as string),
                             postsPage: undefined,
                           }),
                         )
                       }
-                    />
+                    >
+                      <TabsList>
+                        {STATUS_PILLS.map((pill) => (
+                          <TabsTrigger key={pill.value} value={pill.value}>
+                            {pill.label}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                    </Tabs>
                   </div>
 
                   <div className="overflow-hidden rounded-xl bg-card shadow-sm">
