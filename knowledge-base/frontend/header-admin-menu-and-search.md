@@ -61,6 +61,7 @@ umgebaut:
 > `dashboard/layout.tsx` (Server Component) mitgezählt werden. Auf
 > Nutzerwunsch trotzdem eingebaut, mit explizitem Hinweistext, dass es
 > sich um einen rein lokalen, nutzerspezifischen Zustand handelt:
+>
 > - Neues Modul `lib/local-drafts.ts`: `DRAFT_STORAGE_PREFIX` (aus
 >   `content-editor-form.tsx` hierher verschoben, damit Header/
 >   Systemnachrichten-Seite nicht die große Editor-Komponente importieren
@@ -101,7 +102,7 @@ umgebaut:
 - **`navGroups` bleibt einzige Quelle** statt einer zweiten Liste nur für
   den Header: Breadcrumbs, Befehlspalette und jetzt `AdminMenu` sollen
   nicht auseinanderlaufen können, sobald sich mal ein Eintrag ändert.
-  Sidebar filtert nur, was sie *rendert* – die Daten (inkl. `permission`-
+  Sidebar filtert nur, was sie _rendert_ – die Daten (inkl. `permission`-
   Feld je Item) bleiben vollständig.
 - **Kontrollierter `open`-State statt zwei unabhängiger Modals**: Ein
   zweites, eigenständiges Ergebnis-Popup nur für die Kbd-Badge-Aktion hätte
@@ -219,4 +220,11 @@ Panel ausgebaut:
 
 Per Playwright verifiziert: Panel-Layout, Mehrfach-Rollen-Badges, und der
 `?tab=security`-Deep-Link (Ziel-Tab tatsächlich aktiv nach Klick).
-  bzw. ursprünglich `app-sidebar.tsx`).
+bzw. ursprünglich `app-sidebar.tsx`).
+
+## Update 2026-08-31: Header-Hintergrund auf 50 %
+
+Nutzervorgabe: "header bg auf 50% setzen". Der klebende Dashboard-Header
+lag auf `bg-background/70` und steht jetzt auf `bg-background/50` – der
+`backdrop-blur-md` bleibt, darunter durchscrollende Inhalte sind dadurch
+etwas deutlicher sichtbar.

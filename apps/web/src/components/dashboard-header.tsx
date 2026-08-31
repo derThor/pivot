@@ -78,7 +78,7 @@ export function DashboardHeader({
   const canViewSettings = permissions.includes("settings:read");
 
   return (
-    <header className="sticky top-0 z-40 flex h-20 min-w-0 shrink-0 items-center gap-3 bg-background/70 px-4 py-4 backdrop-blur-md">
+    <header className="sticky top-0 z-40 flex h-20 min-w-0 shrink-0 items-center gap-3 bg-background/50 px-4 py-4 backdrop-blur-md">
       {!mobileSearchOpen && (
         <>
           <SidebarTrigger />
