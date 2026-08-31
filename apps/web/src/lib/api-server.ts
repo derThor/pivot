@@ -223,6 +223,9 @@ export interface NavigationItemNode {
   label: string;
   externalUrl: string | null;
   openInNewTab: boolean;
+  /** Genau ein Menüpunkt app-weit ist die Startseite der öffentlichen
+   * Website (siehe NavigationItem.isHomepage). */
+  isHomepage: boolean;
   contentId: string | null;
   content: {
     id: string;

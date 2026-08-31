@@ -134,6 +134,7 @@ export class PublicContentService {
             externalUrl: true,
             openInNewTab: true,
             parentId: true,
+            isHomepage: true,
             content: { select: { slug: true, status: true } },
           },
         },
@@ -159,7 +160,12 @@ export class PublicContentService {
         label: item.label,
         externalUrl: item.externalUrl,
         openInNewTab: item.openInNewTab,
-        href: item.content ? `/${item.content.slug}` : item.externalUrl,
+        // Der Startseiten-Punkt verlinkt auf `/`, nicht auf seinen Slug.
+        href: item.isHomepage
+          ? '/'
+          : item.content
+            ? `/${item.content.slug}`
+            : item.externalUrl,
         children: build(item.id),
       }));
 
@@ -169,6 +175,44 @@ export class PublicContentService {
       slug: navigation.slug,
       items: build(null),
     };
+  }
+
+  /** Der als Startseite markierte Menüpunkt (Nutzervorgabe, 2026-08-31:
+   * die Startseite wird am Menüpunkt gesetzt, nicht in den Einstellungen).
+   * App-weit gibt es höchstens einen – die Exklusivität stellt
+   * NavigationService.updateItem() sicher. */
+  private async findHomepageContentId(): Promise<string | null> {
+    const item = await this.prisma.navigationItem.findFirst({
+      where: { isHomepage: true, contentId: { not: null } },
+      select: { contentId: true },
+    });
+    return item?.contentId ?? null;
+  }
+
+  /** Inhalt der Startseite für `/` – 404, solange kein Menüpunkt als
+   * Startseite markiert ist oder dessen Inhalt nicht (mehr)
+   * veröffentlicht ist. Bewusst kein Fallback auf irgendeine andere
+   * Seite: eine zufällig gewählte Startseite wäre schlimmer als eine
+   * ehrliche 404. */
+  async getHome() {
+    const contentId = await this.findHomepageContentId();
+    if (!contentId) {
+      throw new NotFoundException('Es ist keine Startseite festgelegt.');
+    }
+    const content = await this.prisma.content.findFirst({
+      where: {
+        id: contentId,
+        status: ContentStatus.PUBLISHED,
+        deletedAt: null,
+      },
+      select: contentFullSelect,
+    });
+    if (!content) {
+      throw new NotFoundException(
+        'Die als Startseite festgelegte Seite ist nicht veröffentlicht.',
+      );
+    }
+    return { ...mapRelations(content), path: '/' };
   }
 
   /** Freie Seite (Content ohne Kategorie) – URL-Schema
@@ -187,7 +231,15 @@ export class PublicContentService {
     if (!content) {
       throw new NotFoundException(`Seite "${slug}" nicht gefunden.`);
     }
-    return mapRelations(content);
+    // Ist diese Seite die Startseite, ist `/` ihr kanonischer Pfad – sonst
+    // wäre derselbe Inhalt unter `/` und `/{slug}` mit zwei
+    // unterschiedlichen Canonicals erreichbar (Duplicate Content).
+    const homepageContentId = await this.findHomepageContentId();
+    const mapped = mapRelations(content);
+    return {
+      ...mapped,
+      path: homepageContentId === content.id ? '/' : buildContentPath(mapped),
+    };
   }
 
   /** Kategorie-Metadaten + paginierte veröffentlichte Beiträge – 404 wenn
@@ -286,7 +338,8 @@ export class PublicContentService {
     if (!content) {
       throw new NotFoundException(`Beitrag "${contentSlug}" nicht gefunden.`);
     }
-    return mapRelations(content);
+    const mapped = mapRelations(content);
+    return { ...mapped, path: buildContentPath(mapped) };
   }
 
   /** Sitemap über alle veröffentlichten Seiten/Beiträge, `robotsIndex`
@@ -300,6 +353,7 @@ export class PublicContentService {
     });
     if (!settings?.publicBaseUrl) return [];
 
+    const homepageContentId = await this.findHomepageContentId();
     const items = await this.prisma.content.findMany({
       where: {
         status: ContentStatus.PUBLISHED,
@@ -307,6 +361,7 @@ export class PublicContentService {
         robotsIndex: true,
       },
       select: {
+        id: true,
         slug: true,
         updatedAt: true,
         categories: {
@@ -317,10 +372,13 @@ export class PublicContentService {
       },
     });
     return items.map((item) => ({
-      path: buildContentPath({
-        slug: item.slug,
-        categories: item.categories.map((c) => c.category),
-      }),
+      path:
+        item.id === homepageContentId
+          ? '/'
+          : buildContentPath({
+              slug: item.slug,
+              categories: item.categories.map((c) => c.category),
+            }),
       updatedAt: item.updatedAt,
     }));
   }

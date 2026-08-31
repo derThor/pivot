@@ -1151,6 +1151,14 @@ model NavigationItem {
   // auch ein interner Inhalt in einem neuen Tab geöffnet werden können
   // soll.
   openInNewTab Boolean  @default(false)
+  // Genau EIN Navigationspunkt app-weit darf die Startseite sein
+  // (Nutzervorgabe, 2026-08-31: "nur einmal vergeben werden dürfen" –
+  // beim Setzen wird der bisherige automatisch abgewählt, siehe
+  // NavigationService.updateItem()). Bewusst keine DB-Unique-Regel:
+  // "höchstens ein true" ist als partieller Index in Prisma nicht
+  // ausdrückbar, die Exklusivität setzt der Service in einer Transaktion
+  // durch.
+  isHomepage   Boolean  @default(false)
   sortOrder    Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

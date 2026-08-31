@@ -12,6 +12,7 @@ navigation-item-dialog}.tsx`, `src/app/dashboard/navigation/`)
 > `/dashboard/navigation/[id]` (`navigation-items-editor.tsx`) für die
 > Einträge. Beide Komponenten und die `[id]`-Route entfernt, ersetzt
 > durch eine einzige Seite mit neuer `navigation-explorer.tsx`:
+>
 > - **Links ein Menü-Umschalter** (Karten mit Name + Eintragsanzahl,
 >   aktiv = Lime-Hintergrund), URL-getrieben per `?menu=<id>` – exakt
 >   dasselbe Muster wie `?folder=` bei der Medien-Bibliothek. Server
@@ -51,6 +52,7 @@ navigation-item-dialog}.tsx`, `src/app/dashboard/navigation/`)
 >
 > **Nachbesserung 2026-08-16 (Drag & Drop funktionierte nicht, Baum-Linie
 > zu hell):**
+>
 > - **"drag and drop funktioniert aktuell nicht bei menü"**: Ursache war
 >   nicht (nur) ein Bug, sondern vor allem die Semantik – ein Drop AUF
 >   einen anderen Punkt verschachtelte den gezogenen Punkt darunter statt
@@ -58,7 +60,7 @@ navigation-item-dialog}.tsx`, `src/app/dashboard/navigation/`)
 >   `navigation-items-editor.tsx`, aber ohne die frühere Auf/Ab-Button-
 >   Alternative fiel das jetzt als "geht nicht" auf). Fix:
 >   `handleDropOnto` (nisten) durch `handleDropOnSibling(target, "before"
->   | "after")` ersetzt – beim `onDragOver` wird per `clientY` relativ zur
+| "after")` ersetzt – beim `onDragOver` wird per `clientY` relativ zur
 >   Zielzeile ermittelt, ob über der oberen oder unteren Hälfte
 >   losgelassen wird, der gezogene Punkt landet danach als **Geschwister**
 >   vor/nach dem Ziel (inkl. Wechsel der Verschachtelungs-Ebene, falls
@@ -160,6 +162,7 @@ navigation-item-dialog}.tsx`, `src/app/dashboard/navigation/`)
 >
 > **Nachbesserung 2026-08-16, Teil 4 (separate Root-Drop-Zone entfernt,
 > Baum-Linie darf nicht über den letzten Punkt hinauslaufen):**
+>
 > - "das mit der obersten ebene anders regeln. einfach zwischen den
 >   äußersten menüs ziehen und dann ist es auf erster ebene und
 >   gleichzeitig sortiert" – die separate "Hierher ziehen, um auf die
@@ -340,7 +343,7 @@ schließen sich damit nicht mehr aus.
 **Nachbesserung, gleicher Tag ("das ist nicht gut", Screenshot eines
 aufgeblähten Dialogs mit innerem Scrollbalken, Buttons aus dem
 sichtbaren Bereich geschoben)**: das Dropdown war ein selbstgebautes
-`absolute`-Div *innerhalb* des Dialog-Inhalts – da der Dialog eine
+`absolute`-Div _innerhalb_ des Dialog-Inhalts – da der Dialog eine
 begrenzte Höhe mit eigenem Scroll hat, wuchs der Dialog-Inhalt beim
 Öffnen des Dropdowns mit, statt frei darüber zu schweben. Alle anderen
 Dropdowns/Selects der App sind dafür portaliert (rendern in
@@ -386,3 +389,79 @@ Pille, Einträge per `divide-y` getrennt, aktive Auswahl über linken
 zweizeilig untereinander statt nebeneinander. Kartenbreite von `lg:w-80`
 auf `lg:w-72` angepasst (Rollen-Wert). Rein optische Änderung, keine
 Verhaltensänderung.
+
+## Update 2026-08-31: Startseite wird am Menüpunkt gesetzt
+
+Die öffentliche Website (`apps/site`, siehe
+[public-website.md](../frontend/public-website.md)) hatte bisher keine
+Wurzel-URL: das URL-Schema kennt nur `/{slug}` (freie Seite) und
+`/{kategorie}/{slug}` (Beitrag), nichts davon beantwortet, was unter `/`
+liegt. Angeboten waren vier Orte für diese Entscheidung (Einstellungen →
+Frontend, Menüpunkt, Seiten-Editor, magischer Slug); **Nutzerentscheidung
+2026-08-31: am Menüpunkt** – "unter Menü dann auf einem Menüpunkt setzen.
+das soll mit Badge geflaggt werden und nur einmal vergeben werden dürfen.
+wenn man einen anderen Menüpunkt setzt, wird automatisch die aktuell
+ausgewählte Seite abgewählt und die neue gewählt."
+
+**Datenmodell:** `NavigationItem.isHomepage` (Boolean, Default `false`).
+Bewusst **keine** DB-Unique-Regel: "höchstens ein `true` in der ganzen
+Tabelle" ist als partieller Index in Prisma nicht ausdrückbar. Die
+Exklusivität setzt `NavigationService.updateItem()` in einer Transaktion
+durch – erst `updateMany({ isHomepage: true, id: { not: itemId } })` auf
+`false`, dann den neuen Punkt setzen. Dadurch gibt es nie zwei
+Startseiten, auch nicht kurzzeitig.
+
+**Regeln:**
+
+- Nur Menüpunkte mit **Inhalts-Ziel** können Startseite sein; bei einem
+  externen Link antwortet die API mit 400. Ein Startseiten-Punkt, dessen
+  Ziel nachträglich auf eine externe URL umgestellt wird, verliert die
+  Markierung automatisch mit – sonst zeigte `/` ins Leere.
+- Menü-übergreifend: es gibt genau eine Startseite pro Installation, egal
+  in welchem Menü der Punkt liegt.
+- Die Startseite darf auch ein Beitrag (Inhalt **mit** Kategorie) sein –
+  das URL-Schema bleibt davon unberührt, `/` ist dann nur ein zweiter,
+  kanonischer Zugang zu diesem Inhalt.
+
+**UI (`navigation-explorer.tsx`):** Haus-Icon-Button in der Zeilen-
+Aktionsleiste (nur bei Inhalts-Zielen sichtbar, `bg-primary/15` wenn
+aktiv) plus derselbe Eintrag im mobilen "…"-Menü; der markierte Punkt
+trägt ein `badge--lime`-Badge "Startseite" (gleiche Optik wie
+"Aktuell"/"Aufmacher" an anderer Stelle). Ein Klick auf einen anderen
+Punkt genügt – der Server wählt den bisherigen ab, `router.refresh()`
+zeigt das Badge danach nur noch an der neuen Stelle.
+
+**API-Auswirkungen:**
+
+- `PATCH /navigations/:id/items/:itemId` akzeptiert `isHomepage`.
+- `GET /public/home` (neu) liefert den Inhalt der Startseite; 404, solange
+  keiner markiert ist oder dessen Seite nicht veröffentlicht ist –
+  bewusst **kein** Fallback auf irgendeine andere Seite.
+- `GET /public/pages/:slug` und `/public/categories/:slug/:contentSlug`
+  liefern zusätzlich `path`: der kanonische Pfad, für die Startseite `/`
+  statt `/{slug}`. Sonst wäre derselbe Inhalt unter zwei URLs mit zwei
+  verschiedenen Canonicals erreichbar (Duplicate Content).
+- `GET /public/navigation/:slug` verlinkt den Startseiten-Punkt auf `/`.
+- `GET /public/sitemap.xml` führt die Startseite als `/`.
+
+**Aktivitäten-Protokoll:** `navigation.homepage_set` /
+`navigation.homepage_unset` (`describe-audit-action.ts`) – die erste
+protokollierte Aktion dieses Moduls überhaupt; die übrigen
+Menü-Änderungen bleiben bewusst unprotokolliert, das wäre eine eigene,
+größere Änderung. Für Einstellungen/Benachrichtigungen/Datenschutz ist
+nichts zu tun: die Entscheidung wurde bewusst **aus** den Einstellungen
+herausgehalten, sie erzeugt keine Benachrichtigung und verarbeitet keine
+personenbezogenen Daten.
+
+**Stolperstein bei der Verifikation:** `GET /public/navigation/:slug`
+filtert Menüpunkte mit unveröffentlichtem Ziel-Inhalt heraus – Kinder
+eines herausgefilterten Punktes verschwinden dabei mit, auch wenn ihr
+eigener Inhalt veröffentlicht ist. Das ist bestehendes Verhalten (nicht
+neu), fiel hier aber auf, weil der zuerst getestete Startseiten-Punkt
+unter einem Entwurf hing und deshalb gar nicht im öffentlichen Menü
+auftauchte.
+
+**Offen:** `AppSettings.mainNavigationId` ("Hauptmenü") liegt seit dem
+Frontend-Schritt 1 in der Datenbank, hat aber weiterhin **kein
+Eingabefeld** in den Einstellungen – nötig für den Header von `apps/site`
+(Schritt 5 des Frontend-Plans).

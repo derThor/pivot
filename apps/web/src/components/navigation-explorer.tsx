@@ -3,9 +3,21 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { GripVertical, MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  GripVertical,
+  House,
+  MoreVertical,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 
-import { toastDeleted } from "@/components/app-toast";
+import {
+  toastDeleted,
+  toastEdited,
+  toastWarning,
+} from "@/components/app-toast";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import {
@@ -158,6 +170,37 @@ export function NavigationExplorer({
     setDraggedId(null);
   }
 
+  /** Startseite der öffentlichen Website setzen/aufheben (Nutzervorgabe,
+   * 2026-08-31: "unter Menü auf einem Menüpunkt setzen … nur einmal
+   * vergeben"). Die Exklusivität macht der Server – beim Setzen wird der
+   * bisherige Punkt automatisch abgewählt, das Neuladen zeigt das Badge
+   * danach nur noch an der neuen Stelle. */
+  async function handleToggleHomepage(node: NavigationItemNode) {
+    if (!navigation) return;
+    const next = !node.isHomepage;
+    const res = await fetch(
+      `/api/navigations/${navigation.id}/items/${node.id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isHomepage: next }),
+      },
+    );
+    if (!res.ok) {
+      toastWarning(
+        "Startseite konnte nicht gesetzt werden.",
+        "Nur ein Menüpunkt mit Inhalts-Ziel kann die Startseite sein.",
+      );
+      return;
+    }
+    toastEdited(
+      next
+        ? `„${node.label}“ ist jetzt die Startseite.`
+        : `„${node.label}“ ist nicht mehr die Startseite.`,
+    );
+    router.refresh();
+  }
+
   async function handleDeleteItem() {
     if (!deleteItem || !navigation) return;
     await fetch(`/api/navigations/${navigation.id}/items/${deleteItem.id}`, {
@@ -222,6 +265,15 @@ export function NavigationExplorer({
           <p className="min-w-0 flex-1 truncate text-sm font-semibold">
             {node.label}
           </p>
+          {node.isHomepage && (
+            <Badge
+              variant="secondary"
+              className="badge--lime border-0"
+              title="Startseite der öffentlichen Website"
+            >
+              Startseite
+            </Badge>
+          )}
           <span className="hidden min-w-0 shrink truncate text-xs text-muted-foreground sm:inline">
             {entryPath(node)}
           </span>
@@ -237,22 +289,48 @@ export function NavigationExplorer({
             editLabel={`„${node.label}“ bearbeiten`}
             deleteLabel={`„${node.label}“ löschen`}
             extra={
-              <NavigationItemDialog
-                navigationId={navigation.id}
-                contentItems={contentItems}
-                parentId={node.id}
-                trigger={
+              <>
+                {node.content && (
                   <Button
                     type="button"
                     variant="outline"
                     size="icon-sm"
-                    className="rounded-lg border-border"
-                    aria-label={`Untereintrag zu „${node.label}“ hinzufügen`}
+                    className={cn(
+                      "rounded-lg border-border",
+                      node.isHomepage && "bg-primary/15",
+                    )}
+                    onClick={() => void handleToggleHomepage(node)}
+                    aria-label={
+                      node.isHomepage
+                        ? `„${node.label}“ ist die Startseite – Markierung entfernen`
+                        : `„${node.label}“ als Startseite festlegen`
+                    }
+                    title={
+                      node.isHomepage
+                        ? "Ist die Startseite – klicken zum Aufheben"
+                        : "Als Startseite festlegen"
+                    }
                   >
-                    <Plus />
+                    <House />
                   </Button>
-                }
-              />
+                )}
+                <NavigationItemDialog
+                  navigationId={navigation.id}
+                  contentItems={contentItems}
+                  parentId={node.id}
+                  trigger={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-sm"
+                      className="rounded-lg border-border"
+                      aria-label={`Untereintrag zu „${node.label}“ hinzufügen`}
+                    >
+                      <Plus />
+                    </Button>
+                  }
+                />
+              </>
             }
           />
           <DropdownMenu>
@@ -278,6 +356,16 @@ export function NavigationExplorer({
                 <Pencil />
                 Bearbeiten
               </DropdownMenuItem>
+              {node.content && (
+                <DropdownMenuItem
+                  onClick={() => void handleToggleHomepage(node)}
+                >
+                  <House />
+                  {node.isHomepage
+                    ? "Startseite aufheben"
+                    : "Als Startseite festlegen"}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem
                 variant="destructive"
                 onClick={() => setDeleteItem(node)}

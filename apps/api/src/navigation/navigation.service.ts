@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import { CreateNavigationDto } from './dto/create-navigation.dto';
 import { UpdateNavigationDto } from './dto/update-navigation.dto';
 import { CreateNavigationItemDto } from './dto/create-navigation-item.dto';
@@ -17,6 +18,7 @@ const itemSelect = {
   label: true,
   externalUrl: true,
   openInNewTab: true,
+  isHomepage: true,
   sortOrder: true,
   parentId: true,
   contentId: true,
@@ -25,7 +27,10 @@ const itemSelect = {
 
 @Injectable()
 export class NavigationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLog: AuditLogService,
+  ) {}
 
   async findAll(query: QueryNavigationDto) {
     const { page, pageSize } = query;
@@ -152,10 +157,15 @@ export class NavigationService {
     });
   }
 
+  /** `userId` wird nur für den Aktivitäts-Eintrag der Startseiten-
+   * Umschaltung gebraucht (siehe unten) – alle übrigen Feldänderungen an
+   * Menüpunkten werden bewusst nicht protokolliert, das wäre für dieses
+   * Modul neu und ist nicht Teil dieser Änderung. */
   async updateItem(
     navigationId: string,
     itemId: string,
     dto: UpdateNavigationItemDto,
+    userId?: string,
   ) {
     const existing = await this.assertItemInNavigation(navigationId, itemId);
     const effectiveContentId =
@@ -173,28 +183,71 @@ export class NavigationService {
       await this.assertItemInNavigation(navigationId, dto.parentId);
       await this.assertNoItemCycle(itemId, dto.parentId);
     }
-    return this.prisma.navigationItem.update({
-      where: { id: itemId },
-      data: {
-        ...(dto.label !== undefined && { label: dto.label }),
-        // contentId/externalUrl bewusst als Paar behandelt: sobald eines
-        // explizit gesetzt wird, muss das jeweils andere geleert werden,
-        // sonst blieben beide gleichzeitig gesetzt.
-        ...(dto.contentId !== undefined && {
-          contentId: dto.contentId,
-          externalUrl: null,
-        }),
-        ...(dto.externalUrl !== undefined && {
-          externalUrl: dto.externalUrl,
-          contentId: null,
-        }),
-        ...(dto.parentId !== undefined && { parentId: dto.parentId }),
-        ...(dto.openInNewTab !== undefined && {
-          openInNewTab: dto.openInNewTab,
-        }),
-      },
-      select: itemSelect,
+    // Startseite: genau ein Menüpunkt app-weit (Nutzervorgabe,
+    // 2026-08-31). Ein externer Link kann keine Startseite sein – die
+    // Startseite muss einen echten Inhalt rendern.
+    if (dto.isHomepage === true && !effectiveContentId) {
+      throw new BadRequestException(
+        'Nur ein Menüpunkt mit Inhalts-Ziel kann die Startseite sein, kein externer Link.',
+      );
+    }
+    // Wird das Ziel eines Startseiten-Punktes auf einen externen Link
+    // umgestellt, verliert er die Markierung automatisch mit – sonst
+    // zeigte die Startseite ins Leere.
+    const losesHomepageByTarget =
+      existing.isHomepage && dto.isHomepage !== true && !effectiveContentId;
+
+    const item = await this.prisma.$transaction(async (tx) => {
+      if (dto.isHomepage === true) {
+        // Exklusivität: erst alle anderen abwählen, dann diesen setzen –
+        // in einer Transaktion, damit es nie zwei Startseiten gibt.
+        await tx.navigationItem.updateMany({
+          where: { isHomepage: true, id: { not: itemId } },
+          data: { isHomepage: false },
+        });
+      }
+      return tx.navigationItem.update({
+        where: { id: itemId },
+        data: {
+          ...(dto.isHomepage !== undefined && { isHomepage: dto.isHomepage }),
+          ...(losesHomepageByTarget && { isHomepage: false }),
+          ...(dto.label !== undefined && { label: dto.label }),
+          // contentId/externalUrl bewusst als Paar behandelt: sobald eines
+          // explizit gesetzt wird, muss das jeweils andere geleert werden,
+          // sonst blieben beide gleichzeitig gesetzt.
+          ...(dto.contentId !== undefined && {
+            contentId: dto.contentId,
+            externalUrl: null,
+          }),
+          ...(dto.externalUrl !== undefined && {
+            externalUrl: dto.externalUrl,
+            contentId: null,
+          }),
+          ...(dto.parentId !== undefined && { parentId: dto.parentId }),
+          ...(dto.openInNewTab !== undefined && {
+            openInNewTab: dto.openInNewTab,
+          }),
+        },
+        select: itemSelect,
+      });
     });
+
+    // Die Startseite ist eine site-weite, für Besucher sofort sichtbare
+    // Entscheidung – die gehört in die Aktivitäten-Zeitleiste (siehe
+    // knowledge-base/auth/user-activity-log.md).
+    if (dto.isHomepage !== undefined && userId) {
+      await this.auditLog.record({
+        action: dto.isHomepage
+          ? 'navigation.homepage_set'
+          : 'navigation.homepage_unset',
+        entityType: 'NavigationItem',
+        entityId: itemId,
+        userId,
+        metadata: { label: item.label, slug: item.content?.slug ?? null },
+      });
+    }
+
+    return item;
   }
 
   async removeItem(navigationId: string, itemId: string) {

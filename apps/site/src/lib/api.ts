@@ -59,6 +59,10 @@ export interface PublicContent {
   twitterCard: string | null;
   robotsIndex: boolean;
   robotsFollow: boolean;
+  /** Kanonischer Pfad, serverseitig berechnet (Kategorie-Präfix bzw.
+   * flach – und `/` für die als Startseite markierte Seite, siehe
+   * PublicContentService). */
+  path: string;
   contentType: { slug: string; schema: { fields: ContentTypeField[] } };
 }
 
@@ -100,6 +104,13 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   );
 }
 
+/** Inhalt der Startseite – der Menüpunkt, der im Backend als Startseite
+ * markiert ist (Navigation → Menüpunkt, Nutzervorgabe 2026-08-31).
+ * `null`, solange keiner markiert ist: dann bleibt `/` eine 404. */
+export function getHome() {
+  return getJson<PublicContent>("/public/home");
+}
+
 export function getPage(slug: string) {
   return getJson<PublicContent>(`/public/pages/${encodeURIComponent(slug)}`);
 }
@@ -116,18 +127,6 @@ export async function getBlockContext() {
     moduleTypes: moduleTypes ?? [],
     globalModules: globalModules ?? [],
   };
-}
-
-/** Kanonischer Pfad nach dem URL-Schema des Frontends: Beiträge (Content
- * mit ≥1 Kategorie) unter `/{kategorie-slug}/{content-slug}`, freie Seiten
- * flach unter `/{content-slug}` – identisch zu `buildContentPath()` in
- * PublicContentService (dort für die Sitemap). */
-export function contentPath(content: {
-  slug: string;
-  categories: CategoryRef[];
-}) {
-  const category = content.categories[0];
-  return category ? `/${category.slug}/${content.slug}` : `/${content.slug}`;
 }
 
 /** Absolute URL für canonical/OG – ohne gepflegte `publicBaseUrl` gibt es

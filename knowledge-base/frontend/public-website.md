@@ -45,6 +45,8 @@ liegt jetzt im Workspace-Paket `packages/blocks` (`@pivot/blocks`);
   (`seoTitle`/`seoDescription`/`ogTitle`/`ogDescription`/`ogImageUrl`/
   `twitterCard`/`robotsIndex`/`robotsFollow`) und berechnetem
   `canonical`-Fallback.
+- `src/app/page.tsx` – die Startseite (`GET /public/home`), gerendert mit
+  derselben `ContentArticle`-Komponente wie freie Seiten.
 - `src/app/sitemap.xml/route.ts` – reicht `GET /public/sitemap.xml` durch.
 - `src/components/content-blocks.tsx` – rendert `Content.data` über
   `@pivot/blocks`, also mit exakt derselben Logik wie die Redakteurs-
@@ -113,10 +115,12 @@ blocks` enthält nur `moduleTypeId` + Werte; ohne `GET /module-types` und
 
 ## Offene Punkte
 
-- **Startseite (`/`) fehlt bewusst:** es gibt kein Datenmodell-Feld, das
-  festlegt, welcher Inhalt die Startseite ist (`mainNavigationId` ist das
-  Vorbild für so ein Feld). Solange das nicht entschieden ist, wird kein
-  magischer Slug wie `startseite` erfunden – `/` liefert derzeit 404.
+- ~~Startseite (`/`)~~ **gelöst am 2026-08-31**: die Startseite wird am
+  Menüpunkt markiert (`NavigationItem.isHomepage`, Badge in der
+  Menü-Verwaltung, app-weit nur einer). `apps/site`s `app/page.tsx`
+  rendert dafür `GET /public/home`; ohne Markierung bleibt `/` eine
+  ehrliche 404. Details:
+  [navigation-management.md](../content/navigation-management.md#update-2026-08-31-startseite-wird-am-menüpunkt-gesetzt).
 - Schritt 4 des Plans: Kategorie-Archiv `/[category]` (Aufmacher-Kachel,
   Pagination) und Beitragsseite `/[category]/[slug]`.
 - Schritt 5 des Plans: Hauptmenü im Header (`mainNavigationId` →
@@ -128,7 +132,9 @@ blocks` enthält nur `moduleTypeId` + Werte; ohne `GET /module-types` und
 - Visuelle Gestaltung: das aktuelle Layout ist bewusst minimal
   (Titel/Tagline, zentrierte Inhaltsspalte) – die eigentliche Design-Runde
   fürs Frontend steht noch aus.
-- Ende-zu-Ende nur teilweise verifiziert: `/sitemap.xml` (leer mangels
-  `publicBaseUrl`) und das 404-Verhalten laufen gegen die echte API, eine
-  gerenderte freie Seite konnte nicht geprüft werden, weil in der Dev-DB
-  aktuell **kein** veröffentlichter Inhalt ohne Kategorie existiert.
+- Ende-zu-Ende teilweise verifiziert: `/sitemap.xml`, das 404-Verhalten und
+  – seit der Startseiten-Änderung – eine echt gerenderte Inhaltsseite
+  inklusive Block-Ausgabe über `@pivot/blocks` (`/` mit testweise
+  markierter Startseite, danach wieder zurückgesetzt). Eine **freie** Seite
+  (`/{slug}`) konnte weiterhin nicht geprüft werden: in der Dev-DB gibt es
+  keinen veröffentlichten Inhalt ohne Kategorie.

@@ -20,6 +20,16 @@ export class PublicContentController {
     return this.publicContentService.getSite();
   }
 
+  // Startseite: der Inhalt des Menüpunkts, der im Backend als Startseite
+  // markiert ist (NavigationItem.isHomepage) – eigene Route statt eines
+  // Redirects auf den Slug, damit die Startseite tatsächlich unter `/`
+  // liegt und nicht unter `/{slug}`.
+  @Public()
+  @Get('home')
+  getHome() {
+    return this.publicContentService.getHome();
+  }
+
   @Public()
   @Get('navigation/:slug')
   getNavigation(@Param('slug') slug: string) {

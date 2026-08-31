@@ -17,6 +17,8 @@ import { UpdateNavigationItemDto } from './dto/update-navigation-item.dto';
 import { ReorderNavigationItemsDto } from './dto/reorder-navigation-items.dto';
 import { QueryNavigationDto } from './dto/query-navigation.dto';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 // Navigationen sind site-weite Struktur-Konfiguration (analog zu
 // Webhooks), keine editorielle Content-Ressource. Eigenes `navigation`-
@@ -82,8 +84,14 @@ export class NavigationController {
     @Param('id') navigationId: string,
     @Param('itemId') itemId: string,
     @Body() dto: UpdateNavigationItemDto,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.navigationService.updateItem(navigationId, itemId, dto);
+    return this.navigationService.updateItem(
+      navigationId,
+      itemId,
+      dto,
+      user.sub,
+    );
   }
 
   @RequirePermission('navigation:update')

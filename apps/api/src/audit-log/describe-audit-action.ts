@@ -180,6 +180,18 @@ export function describeAuditAction(action: string, metadata: unknown): string {
       return `Vorfall „${metaStr(meta.title)}“ der Aufsichtsbehörde gemeldet`;
     case 'privacy_incident.subjects_notified':
       return `Betroffene zu „${metaStr(meta.title)}“ informiert`;
+    case 'navigation.homepage_set': {
+      const label = metaStr(meta.label);
+      return label
+        ? `„${label}“ als Startseite festgelegt`
+        : 'Startseite festgelegt';
+    }
+    case 'navigation.homepage_unset': {
+      const label = metaStr(meta.label);
+      return label
+        ? `„${label}“ ist nicht mehr die Startseite`
+        : 'Startseite aufgehoben';
+    }
     case 'auth.all_sessions_revoked':
       return `Alle Sitzungen beendet (${metaStr(meta.count) || '0'})`;
     case 'auth.password_reset_forced_all':
