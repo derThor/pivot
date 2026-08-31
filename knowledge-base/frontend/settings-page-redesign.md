@@ -429,6 +429,15 @@ length > 1`. Gruppen mit nur einem Bereich rendern **keine zweite
   nicht ausdrücklich angefragt – bei Bedarf lässt es sich über ein Flag
   auf Mailing beschränken.
 
+**Direkt danach dasselbe für Jobs** ("gleiche bei Jobs"): `Jobs` ist jetzt
+ebenfalls eine eigene Gruppe mit einem einzigen Bereich und damit ohne
+zweite Sidebar-Spalte. "Betrieb" führt nur noch Wartungsseite,
+Benachrichtigungen und Protokoll – der Untertitel der Gruppe wurde von
+"Jobs, Wartung, Protokoll" auf "Wartung & Protokoll" korrigiert, sonst
+hätte er auf einen Bereich verwiesen, der dort nicht mehr liegt.
+Reihenfolge in Ebene 1: Allgemein, Sicherheit, Verbindungen, Mailing,
+Betrieb, Jobs, Administration.
+
 **Perspektive:** der SMTP-Versand liegt weiterhin unter Integrationen →
 Dienste. Fachlich gehört er in diese Gruppe; das Verschieben wäre ein
 eigener Schritt, weil die Dienste-Karte mehrere Dienste bündelt.

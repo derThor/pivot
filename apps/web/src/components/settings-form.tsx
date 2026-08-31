@@ -273,9 +273,19 @@ const GROUPS: {
   {
     id: "operations",
     title: "Betrieb",
-    subtitle: "Jobs, Wartung, Protokoll",
+    subtitle: "Wartung & Protokoll",
     icon: Clock,
-    sections: ["jobs", "maintenance-page", "notifications", "protocol"],
+    sections: ["maintenance-page", "notifications", "protocol"],
+  },
+  {
+    // Wie Mailing eine eigene Gruppe mit nur einem Bereich
+    // (Nutzervorgabe, 2026-08-31) – dadurch ohne zweite Sidebar-Ebene,
+    // siehe showSectionColumn.
+    id: "jobs",
+    title: "Jobs",
+    subtitle: "Geplante Aufgaben",
+    icon: Timer,
+    sections: ["jobs"],
   },
   {
     id: "administration",
