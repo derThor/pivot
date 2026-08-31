@@ -103,10 +103,14 @@
   Kategorien-Seite selbst zugeordnet (nicht im Content-Editor).
 - ~~Kein Umbenennen bestehender Kategorien/Tags (nur Anlegen/Löschen)~~ –
   seit 2026-08-04 erledigt (`PATCH`-Endpoints + Edit-Dialog).
-- Tags haben weiterhin kein Editor-UI zur Zuordnung – nur der "+Tag"-
-  Schnellzuweiser auf der Kategorien-Seite (siehe Update unten). Ein
-  Tag lässt sich dort nicht wieder entfernen (kein "x" auf dem Chip,
-  1:1 nach Bildvorlage) – falls das gebraucht wird, noch offen.
+- ~~Tags haben weiterhin kein Editor-UI zur Zuordnung – nur der
+  "+Tag"-Schnellzuweiser auf der Kategorien-Seite~~ – seit dem
+  Update vom 2026-08-31 (Folgetag) hat der Content-Editor einen
+  vollständigen Tags-Mehrfachauswahl-Picker (mit Chip-Entfernen). Der
+  "+Tag"-Schnellzuweiser auf der Kategorien-Seite bleibt zusätzlich
+  bestehen und erlaubt dort weiterhin kein Entfernen (kein "x" auf
+  dem Chip, 1:1 nach Bildvorlage) – falls das gebraucht wird, noch
+  offen.
 
 ## Update 2026-08-31: Kategorien-Seite als Liste+Detail-Explorer, Tags landen in Content
 
@@ -176,3 +180,116 @@ Beiträge/Live-Kennzahlen und die Tabellenzeile (Status-Badge,
 Aufmacher-Badge, Tag-Chip) aktualisieren sich korrekt; Status-Filter
 und Suche liefern über echte URL-Parameter die richtigen Treffer;
 Testzuordnungen danach wieder entfernt.
+
+## Update 2026-08-31 (Folgetag): Rubrik→Kategorie-Umbenennung, Bugfix, Tags im Editor, echte Farbe
+
+Nutzervorgabe (Bildvorlage "Rubrik-Einstellungen"): "nenne Rubrik
+Einstellungen in Kategorie Einstellungen umbenennen und stelle es wie
+auf dem Bild dar. alles was Rubrik ist, auf Kategorie umbenenne. Wenn
+ich die Kategorie ändere, wird die Einstellung nicht korrekt
+angezeigt. Tags in dieser Kategorie sind Tags, die in enthaltenen
+Seiten gesetzt wurden. Das ist aktuell noch nicht möglich, Seiten mit
+Tags zu versehen. Das nachholen."
+
+- Sämtliche "Rubrik"-Bezeichner in `category-explorer.tsx` und
+  Backend-Kommentaren auf "Kategorie" umbenannt (nur Wortwahl, keine
+  Funktionsänderung).
+- **Bugfix, stale Einstellungen-Tab beim Kategoriewechsel:**
+  `CategorySettingsForm`s `useState(category.name)` etc. wurde nur
+  beim Mount initialisiert; beim Wechsel der Kategorie im aktiven
+  "Kategorie-Einstellungen"-Tab blieb dieselbe Komponenteninstanz
+  bestehen und zeigte weiter die alten Werte. Fix: `key={selectedCategory.id}`
+  am `CategorySettingsForm`-Aufruf erzwingt einen Remount bei
+  Kategoriewechsel (gleiches Muster wie schon vorher bei
+  `content-versions-explorer.tsx`s `key={page}`).
+- **Tags im Content-Editor:** `content-editor-form.tsx` bekam einen
+  vollständigen Tags-Mehrfachauswahl-Picker, 1:1 nach dem Muster des
+  bestehenden Kategorien-Pickers (Chip-Entfernen, Autosave-Draft-
+  Unterstützung inklusive). Vorher konnten Tags nur nachträglich über
+  den "+Tag"-Schnellzuweiser auf der Kategorien-Seite selbst gesetzt
+  werden (siehe Update oben) – jetzt auch direkt beim Bearbeiten eines
+  Beitrags.
+- **Echte Kategorie-Farbe:** `Category.color` (neues, echtes,
+  optionales Hex-Feld) ersetzt für Kategorien, die eine Farbe gewählt
+  haben, die bisherige rein dekorative Hash-Farbe aus `tag-colors.ts`
+  (die bleibt als Fallback für Kategorien ohne gewählte Farbe).
+  Farbwähler in den Kategorie-Einstellungen ist 1:1 das gleiche Muster
+  wie `ACCENT_PRESETS` in `settings-form.tsx` (Einstellungen →
+  Darstellung): feste Presets + `<input type="color">`-Overlay auf
+  einem Paletten-Icon. Eigene Preset-Palette `CATEGORY_COLOR_PRESETS`
+  (Blau/Lila/Orange/Grün/Rot/Grau), da es eine andere Farbwahl als die
+  App-Akzentfarbe ist.
+
+## Update 2026-08-31 (2. Folgetag): RSS-Feed, Archiv-Einstellungen und die Frontend/Backend-Begriffsklärung
+
+**Wichtige Begriffsklärung durch den Nutzer, gilt ab jetzt für die
+gesamte App:** "Es gibt immer eine Webseite. Für Master und für
+Clients. Ich nenne das Frontend. Nicht zu verwechseln mit dem
+Frontend, das du für die UI hast. Ich unterscheide zwischen Frontend
+(Webseite öffentlich) und Backend (UI Administration, was du aktuell
+Frontend nennst)." Ab sofort: **"Frontend"** = die für jede
+Master-/Mandanten-Installation geplante, aber noch **nicht gebaute**
+öffentliche Website. **"Backend"** = das bestehende Next.js-Admin-UI
+(`apps/web`, was in dieser Knowledge-Base bisher als "Frontend" im
+React/Next.js-Sinne bezeichnet wurde – weiterhin technisch korrekt,
+aber im Nutzer-Sprachgebrauch jetzt "Backend"). Die Bildvorlage
+"Rubrik-Einstellungen" (Archiv & Feed: RSS-Feed, Archivseite,
+Aufmacher groß, Sortierung, Beiträge pro Seite) impliziert genau
+diese künftige öffentliche Website. Nutzervorgabe: "setze Feed um und
+plane Frontend wie beschrieben" / "baue Feed und Aufmacher usw" – die
+Planung der öffentlichen Website selbst ist ein separater, noch nicht
+begonnener Auftrag; dieses Update deckt nur den "bauen"-Teil ab.
+
+**Echt gebaut, auch ohne aktuellen Konsumenten (bewusste Ausnahme von
+"keine spekulativen Features", per expliziter Nutzervorgabe, da die
+öffentliche Website real geplant ist):**
+- `Category`: `rssEnabled`, `archivePublished`, `showFeaturedLarge`
+  (alle `Boolean @default(false)`), `sortOrder` (neues Enum
+  `CategorySortOrder`: `NEWEST`/`OLDEST`/`MANUAL`), `postsPerPage`
+  (`Int?`).
+- **RSS-Feed, wirklich real:** `CategoriesService.generateFeed(id)`
+  baut echtes RSS-2.0-XML aus den tatsächlich veröffentlichten
+  Beiträgen der Kategorie (`status: PUBLISHED`, `publishedAt desc`,
+  gedeckelt auf 20 Einträge), `null` bei unbekannter/gelöschter
+  Kategorie oder deaktiviertem `rssEnabled` → Controller antwortet
+  dann 404. Öffentlich erreichbar unter `@Public() GET
+  /categories/:id/feed.xml`. **Bekannte, bewusste Lücke:** `<link>`
+  fehlt bei Beiträgen ohne `canonicalUrl`, da es noch keine echte
+  Basis-URL für eine öffentlich ausgelieferte Seite gibt (die
+  öffentliche Website selbst existiert noch nicht) – es wurde
+  **keine erfundene Domain** eingesetzt, `<guid isPermaLink="false">`
+  bleibt als stabiler Bezug immer vorhanden.
+- **Sortierung/Beiträge pro Seite wirken auf die Beiträge-Tabelle im
+  Backend (Nutzerentscheidung, "Ja, für die Beiträge-Tabelle
+  übernehmen"):** `QueryContentDto.sortOrder` steuert
+  `ContentService.findAll()`s `orderBy` (`OLDEST` → `asc`, sonst
+  `desc`). **Bekannte, dokumentierte Lücke:** `MANUAL` hat noch kein
+  echtes Datenfeld für eine manuelle Reihenfolge (`ContentCategory`
+  hat kein Sortierfeld) und fällt deshalb im Code wie in der UI
+  (Hinweistext unter dem Sortierung-Picker) explizit auf `NEWEST`
+  zurück, statt eine nicht funktionierende Sortierung stillschweigend
+  vorzugaukeln. `apps/web/src/app/dashboard/categories/page.tsx`
+  reicht `selectedCategory.sortOrder`/`.postsPerPage` in
+  `getContentList()` durch.
+- **Feed-Adresse in der UI:** zeigt bei aktiviertem RSS-Schalter ein
+  Read-only-Feld mit der echten, tatsächlich erreichbaren API-Route
+  (`getCategoryFeedUrl()` in `api-server.ts`, baut aus dem
+  server-seitigen `API_URL` die volle Feed-URL) – keine erfundene
+  Domain, gleiches Prinzip wie beim `<link>`-Feld oben.
+- UI-Komponenten wiederverwendet statt neu gebaut: `SwitchRow` (drei
+  Schalter) und `SegmentedPicker` (Sortierung, Beiträge-pro-Seite:
+  6/8/10/12/20) aus den bestehenden, dafür extrahierten
+  Komponenten – keine neuen Ad-hoc-Toggle-/Auswahl-Implementierungen.
+- "Kategorie-Einstellungen"-Formular ist jetzt zweispaltig
+  (`grid lg:grid-cols-2`, `items-start`): links die bestehende
+  "Kategorie"-Karte (Name/Pfad/Beschreibung/Farbe), rechts neu
+  "Archiv & Feed" – 1:1 nach der zweispaltigen Bildvorlage.
+
+Live gegen die laufende API verifiziert: RSS-Feed liefert bei
+deaktiviertem `rssEnabled` 404, bei aktivierter Kategorie mit
+mindestens einem echten veröffentlichten Beitrag valides RSS-2.0-XML
+mit echtem Titel/GUID/pubDate; `sortOrder=OLDEST`/`MANUAL` als
+Query-Parameter akzeptiert; neue Felder erscheinen korrekt in
+`GET /categories`/`GET /categories/:id`. Nach dem Test wieder in den
+ursprünglichen Zustand zurückversetzt (Testkategorie war zuvor
+gelöscht, `rssEnabled` wieder auf `false`).
