@@ -132,11 +132,6 @@ Details: [rich-text-and-versioning.md](../knowledge-base/content/rich-text-and-v
 
 ### 2b.5 – Redaktionskomfort
 
-- [ ] Globale Filter auf allen Listen (Status, Autor, Kategorie, Tags, Datum)
-- [ ] Gespeicherte Filter ("Meine Entwürfe", "Geplante Beiträge")
-- [ ] Frei konfigurierbare Tabellenansichten (Spalten ein-/ausblenden)
-- [ ] Mehrfachbearbeitung (Status, Kategorien, Autor, Tags ändern)
-- [ ] Favoriten / angeheftete Inhalte
 - [ ] Zuletzt bearbeitete Inhalte
 - [x] Autosave während der Bearbeitung – lokal im Browser
       (`localStorage`), debounced 1.5s nach Änderung, admin-abschaltbar
@@ -283,13 +278,8 @@ tatsächlich). Details siehe
 
 ### 2b.9 – Workflow
 
-- [ ] Review-Workflow - simpel halten
-- [ ] Freigabeprozesse - simpel halten
 - [ ] Kommentare direkt am Inhalt
-- [ ] Aufgaben zuweisen
-- [ ] Änderungsanfragen
 - [ ] Veröffentlichungs-Historie
-- [ ] Benachrichtigungen
 - [x] Sperren während Bearbeitung (Content Locking) – weiche Sperre
       (`Content.lockedById`/`lockedAt`), 2-Minuten-TTL mit
       Heartbeat-Verlängerung, Banner + schreibgeschütztes Formular bei
@@ -327,8 +317,6 @@ tatsächlich). Details siehe
 - [ ] Persönliche Startseite
 - [ ] Favorisierte Menüpunkte
 - [ ] Dashboard-Kacheln per Drag & Drop
-- [ ] Individuelle Sprache pro Benutzer
-- [ ] Individuelle Zeitzone
 
 ### 2b.13 – Rollen & Rechte: granulare Rechte + visuelles Redesign
 
@@ -777,8 +765,6 @@ für Details. Zwei Folgevorhaben dabei zunächst vom Nutzer als
 ### 4.1 – Entwicklerfreundlichkeit
 
 - [ ] Eigene Feldtypen registrieren
-- [ ] Eigene Editor-Komponenten
-- [ ] Plugin-Marktplatz
 - [ ] Hook-System
 - [ ] Event-System
 - [ ] CLI zum Erzeugen neuer Module
@@ -789,12 +775,8 @@ für Details. Zwei Folgevorhaben dabei zunächst vom Nutzer als
 
 - [ ] Mandantenfähigkeit (Multi-Tenant)
 - [ ] Content-Staging
-- [ ] Veröffentlichungs-Pipelines
-- [ ] Mehrstufige Freigaben
 - [ ] LDAP/Active Directory
 - [ ] SAML
-- [ ] Azure AD Login
-- [ ] Organisationsverwaltung
 - [ ] Datenexport (DSGVO)
 - [x] Aufbewahrungsrichtlinien (Datenschutz-Seite, 2026-08-18: Fristen als
       Richtwerte + manuelle Review-Listen statt automatischer Löschung,
