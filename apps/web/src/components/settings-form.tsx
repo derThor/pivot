@@ -128,7 +128,8 @@ type SectionId =
   | "module"
   | "maintenance-page"
   | "jobs"
-  | "mailing"
+  | "mail-templates"
+  | "mail-shells"
   | "protocol";
 
 const SECTIONS: {
@@ -186,10 +187,16 @@ const SECTIONS: {
     icon: Plug,
   },
   {
-    id: "mailing",
-    title: "Mailing",
-    subtitle: "Mailvorlagen & Versand",
+    id: "mail-templates",
+    title: "Vorlagen",
+    subtitle: "System- & Formularmails",
     icon: Mail,
+  },
+  {
+    id: "mail-shells",
+    title: "E-Mail-Templates",
+    subtitle: "Layout & Branding",
+    icon: Palette,
   },
   {
     id: "webhooks",
@@ -257,7 +264,18 @@ const GROUPS: {
     title: "Verbindungen",
     subtitle: "Dienste & Automatisierung",
     icon: Plug,
-    sections: ["integrations", "mailing", "webhooks", "master-client"],
+    sections: ["integrations", "webhooks", "master-client"],
+  },
+  {
+    // Eigene Gruppe statt eines Bereichs unter "Verbindungen"
+    // (Nutzerentscheidung, 2026-08-31): das Mail-Thema hat zwei
+    // gleichwertige Teilbereiche, die vorher als dritte Navigationsebene
+    // (Reiterleiste in der Karte) umgesetzt waren.
+    id: "mailing",
+    title: "Mailing",
+    subtitle: "Vorlagen & Templates",
+    icon: Mail,
+    sections: ["mail-templates", "mail-shells"],
   },
   {
     id: "operations",
@@ -1508,8 +1526,12 @@ export function SettingsForm({
               </div>
             )}
 
-            {activeSection === "mailing" && (
+            {(activeSection === "mail-templates" ||
+              activeSection === "mail-shells") && (
               <MailingSettingsCard
+                view={
+                  activeSection === "mail-templates" ? "templates" : "shells"
+                }
                 templates={mailTemplates}
                 shells={mailShells}
                 company={{

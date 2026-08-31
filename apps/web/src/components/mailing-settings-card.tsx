@@ -804,10 +804,17 @@ export function MailingSettingsCard({
   templates,
   shells,
   company,
+  view,
 }: {
   templates: MailTemplateListItem[];
   shells: MailShellListItem[];
   company: CompanyInfo;
+  /** Welcher der beiden Bereiche gerendert wird. Früher lagen beide in
+   * einer Karte hinter einer eigenen Reiterleiste; seit dem Umbau der
+   * Einstellungen-Navigation (Nutzerentscheidung, 2026-08-31) ist Mailing
+   * eine eigene Gruppe in Ebene 1 und die beiden Reiter sind zwei
+   * Bereiche in Ebene 2 – eine dritte Navigationsebene entfällt damit. */
+  view: "templates" | "shells";
 }) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState(templates[0]?.id ?? null);
@@ -829,16 +836,13 @@ export function MailingSettingsCard({
   return (
     <Card className="rounded-xl shadow-sm overflow-visible">
       <CardHeader>
-        <CardTitle>Mailing</CardTitle>
+        <CardTitle>
+          {view === "templates" ? "Vorlagen" : "E-Mail-Templates"}
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="templates">
-          <TabsList className="!h-auto w-fit justify-start gap-1 !overflow-visible p-1">
-            <TabsTrigger value="templates">Vorlagen</TabsTrigger>
-            <TabsTrigger value="shells">E-Mail-Templates</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="templates" className="pt-4">
+        {view === "templates" && (
+          <div>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
               <div className="flex flex-col gap-4">
                 {groups.map((group) => (
@@ -890,9 +894,11 @@ export function MailingSettingsCard({
                 )}
               </div>
             </div>
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="shells" className="pt-4">
+        {view === "shells" && (
+          <div>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between gap-2 border-b border-border px-2 pb-1.5">
@@ -948,8 +954,8 @@ export function MailingSettingsCard({
                 )}
               </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
