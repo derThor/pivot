@@ -113,6 +113,46 @@ blocks` enthält nur `moduleTypeId` + Werte; ohne `GET /module-types` und
 - `apps/api/src/public-content/public-content.{controller,service}.ts`
 - `packages/blocks/src/` (gemeinsames Rendering)
 
+## Update 2026-08-31: Inhalts-Endpunkte antworten nullable statt mit 404
+
+**Fund beim Testen der Startseite:** wurde die Startseite entfernt oder ihre
+Seite auf Entwurf zurückgesetzt, lieferte `apps/site` unter `/` **weiterhin
+die alte Seite aus** – nicht 60 Sekunden lang, sondern unbegrenzt. Reproduziert
+und eingegrenzt:
+
+- Es ist **nicht** der Full Route Cache: auch mit
+  `export const dynamic = "force-dynamic"` blieb die alte Seite stehen.
+- Es ist der **Data Cache** von `fetch()`: Next.js schreibt fehlgeschlagene
+  Antworten (hier HTTP 404) nicht in den Cache und liefert stattdessen den
+  zuletzt erfolgreichen Treffer weiter aus. Der abgelaufene Eintrag wird also
+  nie ersetzt, solange die API 404 antwortet.
+
+**Lösung:** die Inhalts-Endpunkte der Content-Delivery-API antworten immer mit
+HTTP 200 und einem nullable Feld:
+
+```json
+{ "content": null }
+```
+
+Betrifft `GET /public/home`, `GET /public/pages/:slug` und
+`GET /public/categories/:slug/:contentSlug`. `apps/site` ruft weiterhin
+`notFound()` auf, wenn `content === null` – die 404 entsteht also im
+Frontend, nicht mehr in der API. Die 404-Behandlung im API-Client bleibt als
+Sicherheitsnetz für Routen, die es wirklich nicht gibt.
+
+**Verifiziert** (jeweils mit echtem Umschalten in der Datenbank und 65 s
+Wartezeit): Startseite auf eine veröffentlichte Seite → `/` wird nach einem
+Revalidierungszyklus 200; Startseite zurück auf einen Entwurf → `/` wird nach
+einem Zyklus wieder 404. Vor der Änderung blieb dieser zweite Fall dauerhaft
+auf 200. Das erwartete Stale-While-Revalidate-Verhalten bleibt erhalten: die
+erste Anfrage nach Ablauf liefert noch den alten Stand und stößt die
+Aktualisierung an, ab der zweiten ist es der neue.
+
+**Noch nicht umgestellt:** `GET /public/categories/:slug` (Kategorie-Archiv)
+wirft weiterhin 404, wenn die Kategorie fehlt oder `archivePublished` aus ist –
+derselbe Effekt wäre dort zu erwarten. Wird mit Schritt 4 des Frontend-Plans
+mit umgestellt, sobald es diese Seite im Frontend überhaupt gibt.
+
 ## Offene Punkte
 
 - ~~Startseite (`/`)~~ **gelöst am 2026-08-31**: die Startseite wird am

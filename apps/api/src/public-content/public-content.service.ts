@@ -189,16 +189,20 @@ export class PublicContentService {
     return item?.contentId ?? null;
   }
 
-  /** Inhalt der Startseite für `/` – 404, solange kein Menüpunkt als
-   * Startseite markiert ist oder dessen Inhalt nicht (mehr)
-   * veröffentlicht ist. Bewusst kein Fallback auf irgendeine andere
-   * Seite: eine zufällig gewählte Startseite wäre schlimmer als eine
-   * ehrliche 404. */
+  /** Inhalt der Startseite für `/` – `{ content: null }`, solange kein
+   * Menüpunkt als Startseite markiert ist oder dessen Inhalt nicht (mehr)
+   * veröffentlicht ist. Bewusst kein Fallback auf irgendeine andere Seite.
+   *
+   * Warum 200 mit `content: null` statt HTTP 404 (Fund vom 2026-08-31):
+   * Next.js schreibt **fehlgeschlagene** Antworten nicht in seinen Data
+   * Cache und liefert bei einer 404 weiter den zuletzt erfolgreichen
+   * Treffer aus – eine entfernte oder auf Entwurf gesetzte Startseite
+   * blieb dadurch praktisch unbegrenzt öffentlich sichtbar. Eine immer
+   * erfolgreiche, nullable Antwort ist cachebar und ersetzt den alten
+   * Eintrag zuverlässig. */
   async getHome() {
     const contentId = await this.findHomepageContentId();
-    if (!contentId) {
-      throw new NotFoundException('Es ist keine Startseite festgelegt.');
-    }
+    if (!contentId) return { content: null };
     const content = await this.prisma.content.findFirst({
       where: {
         id: contentId,
@@ -207,12 +211,8 @@ export class PublicContentService {
       },
       select: contentFullSelect,
     });
-    if (!content) {
-      throw new NotFoundException(
-        'Die als Startseite festgelegte Seite ist nicht veröffentlicht.',
-      );
-    }
-    return { ...mapRelations(content), path: '/' };
+    if (!content) return { content: null };
+    return { content: { ...mapRelations(content), path: '/' } };
   }
 
   /** Freie Seite (Content ohne Kategorie) – URL-Schema
@@ -228,17 +228,20 @@ export class PublicContentService {
       },
       select: contentFullSelect,
     });
-    if (!content) {
-      throw new NotFoundException(`Seite "${slug}" nicht gefunden.`);
-    }
+    // Nullable statt 404 – gleicher Grund wie bei getHome(): eine
+    // zurückgezogene Seite blieb sonst über den Data Cache des Frontends
+    // weiter sichtbar.
+    if (!content) return { content: null };
     // Ist diese Seite die Startseite, ist `/` ihr kanonischer Pfad – sonst
     // wäre derselbe Inhalt unter `/` und `/{slug}` mit zwei
     // unterschiedlichen Canonicals erreichbar (Duplicate Content).
     const homepageContentId = await this.findHomepageContentId();
     const mapped = mapRelations(content);
     return {
-      ...mapped,
-      path: homepageContentId === content.id ? '/' : buildContentPath(mapped),
+      content: {
+        ...mapped,
+        path: homepageContentId === content.id ? '/' : buildContentPath(mapped),
+      },
     };
   }
 
@@ -320,11 +323,7 @@ export class PublicContentService {
       where: { slug: categorySlug, deletedAt: null },
       select: { id: true },
     });
-    if (!category) {
-      throw new NotFoundException(
-        `Kategorie "${categorySlug}" nicht gefunden.`,
-      );
-    }
+    if (!category) return { content: null };
     const content = await this.prisma.content.findFirst({
       where: {
         slug: contentSlug,
@@ -335,11 +334,9 @@ export class PublicContentService {
       },
       select: contentFullSelect,
     });
-    if (!content) {
-      throw new NotFoundException(`Beitrag "${contentSlug}" nicht gefunden.`);
-    }
+    if (!content) return { content: null };
     const mapped = mapRelations(content);
-    return { ...mapped, path: buildContentPath(mapped) };
+    return { content: { ...mapped, path: buildContentPath(mapped) } };
   }
 
   /** Sitemap über alle veröffentlichten Seiten/Beiträge, `robotsIndex`

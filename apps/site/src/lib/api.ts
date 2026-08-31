@@ -74,6 +74,14 @@ export interface ModuleType {
   schema: { fields: ContentTypeField[] };
 }
 
+/** Die Inhalts-Endpunkte antworten bewusst immer mit 200 und einem
+ * nullable `content` statt mit 404: Next.js schreibt fehlgeschlagene
+ * Antworten nicht in seinen Data Cache und liefert stattdessen weiter den
+ * letzten erfolgreichen Treffer aus – eine zurückgezogene Seite bliebe
+ * dadurch praktisch unbegrenzt öffentlich sichtbar (nachgewiesen am
+ * 2026-08-31, siehe knowledge-base/frontend/public-website.md). Die
+ * 404-Behandlung hier bleibt als Sicherheitsnetz für Routen, die es
+ * wirklich nicht gibt. */
 async function getJson<T>(path: string): Promise<T | null> {
   const res = await fetch(`${API_URL}${path}`, {
     next: { revalidate: REVALIDATE_SECONDS },
@@ -107,12 +115,16 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 /** Inhalt der Startseite – der Menüpunkt, der im Backend als Startseite
  * markiert ist (Navigation → Menüpunkt, Nutzervorgabe 2026-08-31).
  * `null`, solange keiner markiert ist: dann bleibt `/` eine 404. */
-export function getHome() {
-  return getJson<PublicContent>("/public/home");
+export async function getHome() {
+  const res = await getJson<{ content: PublicContent | null }>("/public/home");
+  return res?.content ?? null;
 }
 
-export function getPage(slug: string) {
-  return getJson<PublicContent>(`/public/pages/${encodeURIComponent(slug)}`);
+export async function getPage(slug: string) {
+  const res = await getJson<{ content: PublicContent | null }>(
+    `/public/pages/${encodeURIComponent(slug)}`,
+  );
+  return res?.content ?? null;
 }
 
 /** Modul-Typen und globale Module sind zum Auflösen von
