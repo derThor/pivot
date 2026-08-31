@@ -505,97 +505,97 @@ export function SettingsForm({
         {error && <p className="text-sm text-destructive">{error}</p>}
 
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-          <div className="overflow-hidden rounded-xl bg-card shadow-sm lg:w-64 lg:shrink-0">
-            <div className="flex flex-col divide-y divide-border">
-              {GROUPS.filter(
-                (group) =>
-                  !group.masterOnly || settings.deploymentMode === "master",
-              ).map((group) => {
-                const isActive = group.id === activeGroup.id;
-                const Icon = group.icon;
-                return (
-                  <button
-                    key={group.id}
-                    type="button"
-                    onClick={() => setActiveSection(group.sections[0])}
-                    className={cn(
-                      "flex items-start gap-3 border-l-4 px-4 py-4 text-left transition-colors",
-                      isActive
-                        ? "border-l-primary bg-primary/15"
-                        : "border-l-transparent hover:bg-muted/50",
-                    )}
-                  >
-                    <span
+          <div className="overflow-hidden rounded-xl bg-card shadow-sm lg:flex lg:shrink-0">
+            <div className="relative z-10 flex flex-col lg:w-64 lg:shrink-0 lg:border-r lg:border-border lg:shadow-[5px_0_14px_-9px_rgba(0,0,0,0.10)]">
+              <div className="flex flex-col divide-y divide-border">
+                {GROUPS.filter(
+                  (group) =>
+                    !group.masterOnly || settings.deploymentMode === "master",
+                ).map((group) => {
+                  const isActive = group.id === activeGroup.id;
+                  const Icon = group.icon;
+                  return (
+                    <button
+                      key={group.id}
+                      type="button"
+                      onClick={() => setActiveSection(group.sections[0])}
                       className={cn(
-                        "flex size-9 shrink-0 items-center justify-center rounded-lg",
+                        "flex items-start gap-3 border-l-4 px-4 py-4 text-left transition-colors",
                         isActive
-                          ? "bg-primary/25 text-foreground"
-                          : "bg-secondary text-muted-foreground",
+                          ? "border-l-primary bg-primary/15"
+                          : "border-l-transparent hover:bg-muted/50",
                       )}
                     >
-                      <Icon className="size-4" />
-                    </span>
-                    <span className="flex flex-col gap-0.5">
-                      <span className="text-sm font-semibold">
-                        {group.title}
+                      <span
+                        className={cn(
+                          "flex size-9 shrink-0 items-center justify-center rounded-lg",
+                          isActive
+                            ? "bg-primary/25 text-foreground"
+                            : "bg-secondary text-muted-foreground",
+                        )}
+                      >
+                        <Icon className="size-4" />
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        {group.subtitle}
+                      <span className="flex flex-col gap-0.5">
+                        <span className="text-sm font-semibold">
+                          {group.title}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {group.subtitle}
+                        </span>
                       </span>
-                    </span>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
 
-          <div className="overflow-hidden rounded-xl bg-card shadow-sm lg:w-72 lg:shrink-0">
-            <div className="px-4 py-3">
-              <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                {activeGroup.title}
-              </span>
-            </div>
-            <div className="flex flex-col divide-y divide-border">
-              {activeGroup.sections.map((sectionId) => {
-                const section = SECTIONS_BY_ID.get(sectionId)!;
-                const isActive = sectionId === activeSection;
-                const Icon = section.icon;
-                return (
-                  <button
-                    key={section.id}
-                    type="button"
-                    onClick={() => setActiveSection(section.id)}
-                    className={cn(
-                      "flex items-start gap-3 border-l-4 px-4 py-4 text-left transition-colors",
-                      isActive
-                        ? "border-l-primary bg-primary/15"
-                        : "border-l-transparent hover:bg-muted/50",
-                    )}
-                  >
-                    <span
+            <div className="flex flex-col border-t border-border lg:w-64 lg:shrink-0 lg:border-t-0">
+              <div className="px-4 py-3">
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  {activeGroup.title}
+                </span>
+              </div>
+              <div className="flex flex-col divide-y divide-border">
+                {activeGroup.sections.map((sectionId) => {
+                  const section = SECTIONS_BY_ID.get(sectionId)!;
+                  const isActive = sectionId === activeSection;
+                  const Icon = section.icon;
+                  return (
+                    <button
+                      key={section.id}
+                      type="button"
+                      onClick={() => setActiveSection(section.id)}
                       className={cn(
-                        "flex size-9 shrink-0 items-center justify-center rounded-lg",
-                        isActive
-                          ? "bg-primary/25 text-foreground"
-                          : "bg-secondary text-muted-foreground",
+                        "flex items-start gap-3 px-4 py-4 text-left transition-colors",
+                        isActive ? "bg-primary/15" : "hover:bg-muted/50",
                       )}
                     >
-                      <Icon className="size-4" />
-                    </span>
-                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="text-sm font-semibold">
-                        {section.title}
+                      <span
+                        className={cn(
+                          "flex size-9 shrink-0 items-center justify-center rounded-lg",
+                          isActive
+                            ? "bg-primary/25 text-foreground"
+                            : "bg-secondary text-muted-foreground",
+                        )}
+                      >
+                        <Icon className="size-4" />
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        {section.subtitle}
+                      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <span className="text-sm font-semibold">
+                          {section.title}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {section.subtitle}
+                        </span>
                       </span>
-                    </span>
-                    {isActive && (
-                      <ChevronRight className="mt-1 size-4 shrink-0 text-muted-foreground" />
-                    )}
-                  </button>
-                );
-              })}
+                      {isActive && (
+                        <ChevronRight className="size-4 shrink-0 self-center text-muted-foreground" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 

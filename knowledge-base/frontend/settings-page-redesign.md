@@ -332,6 +332,46 @@ Deep-Link auf "direkt zum Mailing-Reiter dieses Formulars" (aus dem
 Formular-Editor, Tab "Benachrichtigung") ist dadurch nicht möglich – der
 Link dort führt nur auf die allgemeine Einstellungen-Seite.
 
+## Update 2026-08-31: zweistufige Gruppen-Navigation
+
+Die bis dahin flache Liste von 13 Bereichen in der Sidebar war zu lang
+geworden und wurde in eine **zweistufige Navigation** umgebaut (Vorgabe
+per Bildvorlage):
+
+- **Ebene 1 (links, `lg:w-64`)** – fünf Themengruppen (`GROUPS` in
+  `settings-form.tsx`): Allgemein, Sicherheit, Verbindungen, Betrieb,
+  Labor sowie die nur auf dem Master sichtbare Gruppe (`masterOnly`,
+  gefiltert über `settings.deploymentMode === "master"`). Ein Klick auf
+  eine Gruppe setzt `activeSection` auf deren **ersten** Bereich.
+- **Ebene 2 (rechts, `lg:w-64`, gleich breit wie Ebene 1)** – die Bereiche der aktiven Gruppe,
+  darüber der Gruppenname als kleine Uppercase-Überschrift. Der aktive
+  Bereich bekommt zusätzlich ein `ChevronRight`-Icon (per `self-center`
+  mittig zum Text, nicht an der ersten Zeile ausgerichtet).
+- **Master-Client bleibt bewusst unter "Verbindungen"** statt in der
+  master-only Gruppe: der Bereich ist auf Slave-Installationen ebenfalls
+  relevant (zeigt dort Lizenz-/API-Key-Status statt der Mandantenliste).
+
+**Optik (Nutzervorgabe 2026-08-31, mehrfach nachgeschärft):**
+
+- Beide Ebenen liegen in **einer** Karte
+  (`overflow-hidden rounded-xl bg-card shadow-sm lg:flex`), nicht in zwei
+  eigenen Karten mit Abstand. Dadurch sind die Ecken **nur außen**
+  abgerundet und beide Ebenen haben durch das Flex-Stretch **immer
+  dieselbe Höhe**, unabhängig davon, wie viele Einträge die aktive
+  Gruppe hat.
+- Ebene 1 liegt visuell **über** Ebene 2: `relative z-10` plus ein
+  gerichteter Schatten nach rechts
+  (`lg:shadow-[5px_0_14px_-9px_rgba(0,0,0,0.10)]`) – eine normale
+  `shadow-*`-Utility wäre hier falsch, die wirft nach unten und würde
+  vom `overflow-hidden` der Außenkarte weggeschnitten. Der Trenner
+  bleibt zusätzlich als `lg:border-r`.
+- Nur Ebene 1 hat den grünen Aktiv-Balken links (`border-l-4
+  border-l-primary`); **Ebene 2 hat bewusst keinen** – dort markiert nur
+  die `bg-primary/15`-Fläche plus Chevron den aktiven Bereich.
+- Auf Mobil (`< lg`) stapeln sich beide Ebenen innerhalb derselben Karte,
+  getrennt durch `border-t`; Breiten und Seitenschatten sind
+  `lg:`-gebunden.
+
 ## Offene Punkte
 
 - Datenschutz-Feldänderungen (DPO-Kontakt, Aufbewahrungsfristen) haben
