@@ -381,7 +381,7 @@ nicht nebeneinander, die Inhaltskarte wurde dort zusammengequetscht
 E-Mail-Feld). Zwischen `lg` und `xl` liegt die Navigationskarte deshalb
 als eigener, zweispaltiger Block **über** dem Inhalt und nimmt dort auf
 Nutzervorgabe die **volle Breite mit 50/50 geteilten Ebenen** ein
-(`lg:w-1/2` je Ebene, erst ab `xl` wieder die festen `xl:w-64`). Zusätzlich:
+(`lg:w-1/2` je Ebene, erst ab `xl` wieder feste Breiten: Ebene 1 `xl:w-64`, Ebene 2 minimal breiter mit `xl:w-68`). Zusätzlich:
 `break-words` auf den Textspalten beider Ebenen (das lange Wort
 "Systembenachrichtigungen" lief sonst unter den Chevron), und die
 Empfänger-Zeile in `notification-settings-card.tsx` ist

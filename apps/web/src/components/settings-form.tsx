@@ -551,7 +551,7 @@ export function SettingsForm({
               </div>
             </div>
 
-            <div className="flex flex-col border-t border-border lg:w-1/2 lg:shrink-0 lg:border-t-0 xl:w-64">
+            <div className="flex flex-col border-t border-border lg:w-1/2 lg:shrink-0 lg:border-t-0 xl:w-68">
               <div className="px-4 py-3">
                 <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                   {activeGroup.title}
