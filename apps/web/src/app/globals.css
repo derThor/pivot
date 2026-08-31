@@ -681,6 +681,23 @@
    `:hover` auf dem Container statt auf dem Balken selbst – sonst müsste
    man erst exakt auf den unsichtbaren Balken treffen, um ihn überhaupt
    sichtbar zu machen. */
+/* Eingeklappte Sidebar (nur Icons): gar kein Balken, auch nicht der
+   schmale (Nutzervorgabe, 2026-08-31: "sidebar eingeklappt kein
+   Scrollbalken"). Bewusst als einfache Regel auf dem Zustands-Attribut
+   statt als Tailwind-Variante an der Komponente – sie greift damit fuer
+   JEDES scrollende Element innerhalb der eingeklappten Sidebar. Gescrollt
+   werden kann weiterhin, nur die Anzeige entfaellt; nebenbei entfaellt
+   damit auch der sonst reservierte 3px-Streifen, wodurch die Icons wieder
+   exakt mittig in der Spalte sitzen. */
+[data-collapsible="icon"] * {
+  scrollbar-width: none;
+}
+[data-collapsible="icon"] *::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 .themed-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;

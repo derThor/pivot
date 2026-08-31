@@ -141,12 +141,34 @@ Avatar auf Mobile schon eng).
 Nutzervorgabe: "sidebar eingeklappt kein Scrollbalken und Icons etwas
 größer".
 
-- `SidebarContent` (`ui/sidebar.tsx`) blendet den Balken im eingeklappten
-  Zustand aus: `group-data-[collapsible=icon]:[scrollbar-width:none]` plus
-  `group-data-[collapsible=icon]:[&::-webkit-scrollbar]:hidden`. Bewusst
-  nur die **Anzeige** – `overflow-y-auto` bleibt, sonst wären bei vielen
+- Der Balken wird im eingeklappten Zustand komplett ausgeblendet. Erster
+  Versuch war eine Tailwind-Variante an `SidebarContent`
+  (`group-data-[collapsible=icon]:[scrollbar-width:none]`) – der Balken
+  blieb sichtbar. Endstand ist deshalb eine schlichte Regel bei den
+  übrigen Scrollbalken-Regeln in `globals.css`:
+
+  ```css
+  [data-collapsible="icon"] * {
+    scrollbar-width: none;
+  }
+  [data-collapsible="icon"] *::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+  ```
+
+  Sie hängt am Zustands-Attribut der Sidebar und greift damit für **jedes**
+  scrollende Element darin, egal welche Komponente es rendert. Bewusst nur
+  die **Anzeige** – `overflow-y-auto` bleibt, sonst wären bei vielen
   Modulen die unteren Einträge auf kleinen Bildschirmen nicht mehr
   erreichbar.
+
+- **Nebeneffekt, der einen zweiten Nutzerpunkt löst** ("Icons sind nicht
+  mittig"): der sonst dauerhaft reservierte 3px-Streifen des schmalen
+  Balkens (siehe Kommentar bei `.themed-scrollbar`) entfällt im
+  eingeklappten Zustand, wodurch die Icon-Buttons wieder exakt mittig in
+  der 5,5rem-Spalte sitzen.
 - `navIconChipClass` (`app-sidebar.tsx`): eingeklappt `[&_svg]:size-5`
   statt `size-4` – dort sind die Icons das einzige Erkennungsmerkmal.
   Ausgeklappt bleibt es bei `size-4`, damit Icon und Label ausgerichtet
