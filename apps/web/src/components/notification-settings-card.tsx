@@ -161,7 +161,7 @@ export function NotificationSettingsCard({
           <Label htmlFor="notification-recipient">
             Benachrichtigungsempfänger
           </Label>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <Input
               id="notification-recipient"
               type="email"

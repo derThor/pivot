@@ -372,6 +372,20 @@ per Bildvorlage):
   getrennt durch `border-t`; Breiten und Seitenschatten sind
   `lg:`-gebunden.
 
+**Responsive-Korrektur (Nutzervorgabe 2026-08-31, "mobil optimierung
+durchführen und immer überall beachten"):** Navigationskarte und
+Inhaltsspalte stehen erst ab `xl` nebeneinander, nicht schon ab `lg` –
+zwei feste 256px-Spalten plus Inhalt passen zwischen 1024px und ~1400px
+nicht nebeneinander, die Inhaltskarte wurde dort zusammengequetscht
+(abgeschnittene Überschriften, ein auf drei Zeichen geschrumpftes
+E-Mail-Feld). Zwischen `lg` und `xl` liegt die Navigationskarte deshalb
+als eigener, zweispaltiger Block **über** dem Inhalt
+(`w-full self-start … lg:flex lg:w-auto xl:shrink-0`). Zusätzlich:
+`break-words` auf den Textspalten beider Ebenen (das lange Wort
+"Systembenachrichtigungen" lief sonst unter den Chevron), und die
+Empfänger-Zeile in `notification-settings-card.tsx` ist
+`flex-col sm:flex-row` statt einer festen Zeile.
+
 ## Offene Punkte
 
 - Datenschutz-Feldänderungen (DPO-Kontakt, Aufbewahrungsfristen) haben

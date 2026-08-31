@@ -504,8 +504,8 @@ export function SettingsForm({
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-          <div className="overflow-hidden rounded-xl bg-card shadow-sm lg:flex lg:shrink-0">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
+          <div className="w-full self-start overflow-hidden rounded-xl bg-card shadow-sm lg:flex lg:w-auto xl:shrink-0">
             <div className="relative z-10 flex flex-col lg:w-64 lg:shrink-0 lg:border-r lg:border-border lg:shadow-[5px_0_14px_-9px_rgba(0,0,0,0.10)]">
               <div className="flex flex-col divide-y divide-border">
                 {GROUPS.filter(
@@ -536,7 +536,7 @@ export function SettingsForm({
                       >
                         <Icon className="size-4" />
                       </span>
-                      <span className="flex flex-col gap-0.5">
+                      <span className="flex min-w-0 flex-col gap-0.5 break-words">
                         <span className="text-sm font-semibold">
                           {group.title}
                         </span>
@@ -581,7 +581,7 @@ export function SettingsForm({
                       >
                         <Icon className="size-4" />
                       </span>
-                      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="flex min-w-0 flex-1 flex-col gap-0.5 break-words">
                         <span className="text-sm font-semibold">
                           {section.title}
                         </span>
