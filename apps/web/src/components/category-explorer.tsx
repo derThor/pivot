@@ -94,6 +94,7 @@ function formatDate(iso: string | null) {
 
 export function CategoryExplorer({
   categories,
+  categoriesMeta,
   selectedId,
   selectedCategory,
   categoryTags,
@@ -104,6 +105,7 @@ export function CategoryExplorer({
   feedUrl,
 }: {
   categories: CategoryListItem[];
+  categoriesMeta: { page: number; pageCount: number; total: number } | null;
   selectedId: string | null;
   selectedCategory: CategoryDetail | null;
   categoryTags: { id: string; name: string; contentCount: number }[];
@@ -193,7 +195,7 @@ export function CategoryExplorer({
           <div className="overflow-hidden rounded-xl bg-card shadow-sm">
             <div className="flex items-center justify-between px-4 py-3">
               <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                Kategorien · {categories.length}
+                Kategorien · {categoriesMeta?.total ?? categories.length}
               </span>
             </div>
             <div className="flex flex-col divide-y divide-border">
@@ -202,7 +204,12 @@ export function CategoryExplorer({
                 return (
                   <Link
                     key={category.id}
-                    href={`?category=${category.id}`}
+                    href={buildUrl({
+                      category: category.id,
+                      status: undefined,
+                      search: undefined,
+                      postsPage: undefined,
+                    })}
                     className={cn(
                       "flex items-start gap-3 border-l-4 px-4 py-4 transition-colors",
                       active
@@ -246,6 +253,13 @@ export function CategoryExplorer({
               })}
             </div>
           </div>
+          {categoriesMeta && categoriesMeta.pageCount > 1 && (
+            <PaginationControls
+              page={categoriesMeta.page}
+              pageCount={categoriesMeta.pageCount}
+              buildHref={(p) => buildUrl({ categoryPage: String(p) })}
+            />
+          )}
 
           {selectedId && (
             <div className="overflow-hidden rounded-xl bg-card shadow-sm">

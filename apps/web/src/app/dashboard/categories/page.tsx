@@ -20,6 +20,7 @@ export default async function CategoriesPage({
     status?: string;
     search?: string;
     postsPage?: string;
+    categoryPage?: string;
   }>;
 }) {
   const {
@@ -27,22 +28,30 @@ export default async function CategoriesPage({
     status,
     search,
     postsPage,
+    categoryPage,
   } = await searchParams;
 
-  const [categories, settings, allTags] = await Promise.all([
-    getCategories({ page: 1, pageSize: 100 }),
-    getPublicSettings(),
+  const settings = await getPublicSettings();
+  const [categories, allTags] = await Promise.all([
+    getCategories({
+      page: Number(categoryPage) || 1,
+      pageSize: settings?.defaultPageSize ?? 10,
+    }),
     getAllTags(),
   ]);
 
   const categoryList = categories?.items ?? [];
   const selectedId = categoryParam ?? categoryList[0]?.id ?? null;
 
-  if (categoryParam && !categoryList.some((c) => c.id === categoryParam)) {
+  // `categoryList` ist jetzt nur die aktuell angezeigte Seite der Sidebar-
+  // Liste (Pagination, Nutzervorgabe 2026-08-31) – ein per Link/Lesezeichen
+  // ausgewählter Eintrag kann also auf einer ANDEREN Seite liegen. 404 gilt
+  // deshalb nur, wenn `getCategory()` selbst die Kategorie nicht findet,
+  // nicht mehr anhand der Mitgliedschaft in `categoryList`.
+  const selectedCategory = selectedId ? await getCategory(selectedId) : null;
+  if (categoryParam && !selectedCategory) {
     notFound();
   }
-
-  const selectedCategory = selectedId ? await getCategory(selectedId) : null;
 
   const [categoryTags, posts] = selectedId
     ? await Promise.all([
@@ -62,6 +71,7 @@ export default async function CategoriesPage({
   return (
     <CategoryExplorer
       categories={categoryList}
+      categoriesMeta={categories?.meta ?? null}
       selectedId={selectedId}
       selectedCategory={selectedCategory}
       categoryTags={categoryTags ?? []}
