@@ -32,6 +32,7 @@ import {
 import { categoryColor, tagDotColor } from "@/lib/tag-colors";
 import { cn, formatName, slugify } from "@/lib/utils";
 import { bff } from "@/lib/bff";
+import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
 import type {
   CategoryDetail,
   CategoryListItem,
@@ -171,9 +172,10 @@ export function CategoryExplorer({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Kategorien</h1>
+          <DashboardBreadcrumbs />
         </div>
         <div className="flex flex-wrap gap-2">
           <Button

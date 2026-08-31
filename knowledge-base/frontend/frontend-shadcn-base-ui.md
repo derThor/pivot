@@ -196,3 +196,18 @@ Spalte bestehen.
 
 **Merke:** Dev-CSS wird aggressiv gecacht – nach solchen Änderungen ein
 hartes Neuladen (Strg+F5), sonst sieht man weiter den alten Stand.
+
+## Update 2026-08-31: fehlende Breadcrumbs nachgezogen
+
+Auf `/dashboard/categories` fehlte die Breadcrumb-Zeile unter der
+Überschrift (Nutzermeldung). Nachgeholt in `category-explorer.tsx` nach
+dem üblichen Muster (`<h1>` plus `<DashboardBreadcrumbs />` im selben
+`<div>`, Kopfzeile auf `sm:items-start` statt `sm:items-center`, sonst
+sitzen Titel und Aktions-Buttons nach dem Hinzufügen der zweiten Zeile
+nicht mehr auf einer Höhe).
+
+Bei der Gelegenheit alle Seitenköpfe durchgesehen: es fehlte zusätzlich
+auf `/dashboard/system-messages` (`notifications-view.tsx`), ebenfalls
+ergänzt. Die drei weiteren Treffer (`company`, `privacy`, `settings`)
+sind reine "keine Berechtigung"-Zustände in der jeweiligen `page.tsx` –
+die echten Ansichten dieser Seiten haben ihre Breadcrumbs.

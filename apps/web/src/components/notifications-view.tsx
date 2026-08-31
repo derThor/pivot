@@ -29,6 +29,7 @@ import {
 import { cn, formatRelativeTime, truncateMiddle } from "@/lib/utils";
 import type { AppNotification, NotificationCategory } from "@/lib/api-server";
 import { bff } from "@/lib/bff";
+import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
 
 const CATEGORY_LABELS: Record<NotificationCategory, string> = {
   system: "System",
@@ -221,11 +222,12 @@ export function NotificationsView({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
             Benachrichtigungen
           </h1>
+          <DashboardBreadcrumbs />
         </div>
         <div className="flex items-center gap-2">
           <Button
