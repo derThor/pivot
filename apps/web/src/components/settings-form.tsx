@@ -505,8 +505,8 @@ export function SettingsForm({
         {error && <p className="text-sm text-destructive">{error}</p>}
 
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
-          <div className="w-full self-start overflow-hidden rounded-xl bg-card shadow-sm lg:flex lg:w-auto xl:shrink-0">
-            <div className="relative z-10 flex flex-col lg:w-64 lg:shrink-0 lg:border-r lg:border-border lg:shadow-[5px_0_14px_-9px_rgba(0,0,0,0.10)]">
+          <div className="w-full self-start overflow-hidden rounded-xl bg-card shadow-sm lg:flex xl:w-auto xl:shrink-0">
+            <div className="relative z-10 flex flex-col lg:w-1/2 lg:shrink-0 lg:border-r lg:border-border lg:shadow-[5px_0_14px_-9px_rgba(0,0,0,0.10)] xl:w-64">
               <div className="flex flex-col divide-y divide-border">
                 {GROUPS.filter(
                   (group) =>
@@ -550,7 +550,7 @@ export function SettingsForm({
               </div>
             </div>
 
-            <div className="flex flex-col border-t border-border lg:w-64 lg:shrink-0 lg:border-t-0">
+            <div className="flex flex-col border-t border-border lg:w-1/2 lg:shrink-0 lg:border-t-0 xl:w-64">
               <div className="px-4 py-3">
                 <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                   {activeGroup.title}
