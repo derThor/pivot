@@ -201,6 +201,9 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.5.7
         version: 5.5.7(@sinclair/typebox@0.34.52)(@standard-schema/spec@1.1.0)(ajv-formats@2.1.1(ajv@8.20.0))(ajv@8.20.0)(class-transformer@0.5.1)(class-validator@0.15.1)(effect@3.21.0)(react-hook-form@7.83.0(react@19.2.4))(zod@4.4.3)
+      '@pivot/blocks':
+        specifier: workspace:*
+        version: link:../../packages/blocks
       '@tiptap/extension-bubble-menu':
         specifier: ^3.29.2
         version: 3.29.2(@tiptap/core@3.29.2(@tiptap/pm@3.29.2))(@tiptap/pm@3.29.2)
@@ -295,6 +298,34 @@ importers:
       tailwindcss:
         specifier: ^4
         version: 4.3.3
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
+  packages/blocks:
+    dependencies:
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      lucide-react:
+        specifier: ^1.28.0
+        version: 1.28.0(react@19.2.4)
+      react:
+        specifier: ^19
+        version: 19.2.4
+      swiper:
+        specifier: ^14.1.0
+        version: 14.1.0
+      tailwind-merge:
+        specifier: ^3.6.0
+        version: 3.6.0
+    devDependencies:
+      '@types/node':
+        specifier: ^20
+        version: 20.19.43
+      '@types/react':
+        specifier: ^19
+        version: 19.2.18
       typescript:
         specifier: ^5
         version: 5.9.3

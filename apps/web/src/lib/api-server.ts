@@ -2,6 +2,11 @@ import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "./auth";
 import type { SearchResult } from "./search";
 import type { CompanyFieldKey } from "./company-fields";
+import type {
+  ContentTypeField,
+  GlobalModule,
+  MediaVariant,
+} from "@pivot/blocks";
 
 const API_URL = process.env.API_URL ?? "http://localhost:3001/v1";
 
@@ -306,30 +311,10 @@ export function getUsers(params?: {
   return apiFetch<UserListResponse>(`/users${query ? `?${query}` : ""}`);
 }
 
-export interface ContentTypeField {
-  name: string;
-  type: string;
-  required?: boolean;
-  // Nur für Modul-Felder relevant: Feld ist eine Einstellung (z.B. Alt-Text,
-  // Link-Ziel) statt echter, sichtbarer Inhalt – wird im Block-Editor daher
-  // nicht inline auf der Fläche gerendert, sondern im Optionen-Popup.
-  option?: boolean;
-  // Nur für Modul-Felder relevant: reine CSS-Darstellungs-Hinweise für die
-  // Inline-Vorschau im Block-Editor (kein echtes Rendering der späteren
-  // Frontend-Optik, dafür ist pivot als Headless-CMS zu themenunabhängig).
-  // "cover" gilt nur für `type: "image"`-Felder: markiert das Bild eines
-  // Cover-Bausteins als Vollflächen-Hintergrund statt normaler
-  // Fließ-/Ausrichtungs-Logik (siehe isCoverModuleType).
-  variant?: "button" | "quote" | "caption" | "cover";
-  // Nur für Modul-Felder relevant: Beispielwert, mit dem eine neu
-  // eingefügte Modul-Instanz vorbefüllt wird, damit man beim Einfügen
-  // sofort sieht, wie der Baustein aussieht, statt eine leere Fläche.
-  // `unknown` statt `string`, weil Repeater-Beispieldaten Arrays sind.
-  example?: unknown;
-  // Nur für `type: "repeater"`: Schema der Unterfelder pro Listen-Eintrag
-  // (z.B. Frage/Antwort bei FAQ, Bild/Bildunterschrift bei einer Galerie).
-  fields?: ContentTypeField[];
-}
+// Kanonisch jetzt in packages/blocks (Schritt 2 des Frontend-
+// Architekturplans) – hier nur re-exportiert, damit bestehende
+// `from "@/lib/api-server"`-Importe dieser drei Typen unverändert bleiben.
+export type { ContentTypeField, GlobalModule, MediaVariant };
 
 export interface ContentType {
   id: string;
@@ -360,19 +345,6 @@ export interface ModuleType {
 // kann, um `Content.data.blocks` zu rendern.
 export function getModuleTypes() {
   return publicApiFetch<ModuleType[]>("/module-types");
-}
-
-export interface GlobalModule {
-  id: string;
-  name: string;
-  values: Record<string, unknown>;
-  // Anzeige-Einstellungen der Instanz (z.B. Swiper-Konfiguration bei
-  // Galerien) – siehe gallery-settings.ts für Parsing/Defaults.
-  settings?: Record<string, unknown> | null;
-  moduleTypeId: string;
-  moduleType: { id: string; name: string; icon: string | null };
-  createdAt: string;
-  updatedAt: string;
 }
 
 // Öffentlicher Endpoint (siehe GlobalModulesController) – aus demselben
@@ -504,14 +476,6 @@ export function getContentVersions(
   return apiFetch<ContentVersionsResponse>(
     `/content/${id}/versions${qs ? `?${qs}` : ""}`,
   );
-}
-
-export interface MediaVariant {
-  id: string;
-  width: number;
-  format: string;
-  url: string;
-  size: number;
 }
 
 export interface MediaTagRef {

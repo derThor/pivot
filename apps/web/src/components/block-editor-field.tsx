@@ -74,6 +74,7 @@ import {
   type ResponsiveSpacing,
   type SpacingSide,
 } from "@/components/block-field-output";
+import { FormBlockRender } from "@/components/form-block-render";
 import { ImagePickerDialog } from "@/components/image-picker-dialog";
 import { VideoPickerDialog } from "@/components/video-picker-dialog";
 import { InsertSharedBlockDialog } from "@/components/insert-shared-block-dialog";
@@ -1375,6 +1376,9 @@ export function BlockEditorField({
                                   field={field}
                                   value={instance.values[field.name]}
                                   showPlaceholders
+                                  renderForm={(id) => (
+                                    <FormBlockRender formId={id} />
+                                  )}
                                 />
                               );
                             }
@@ -1441,6 +1445,7 @@ export function BlockEditorField({
                               resolved.settings,
                             )}
                             swiperAllowTouchMove={false}
+                            renderForm={(id) => <FormBlockRender formId={id} />}
                           />
                         ))}
                       </div>

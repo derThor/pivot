@@ -14,6 +14,7 @@ import {
   type BlockLayoutValue,
 } from "@/components/block-field-output";
 import { RichTextDisplay } from "@/components/rich-text-display";
+import { FormBlockRender } from "@/components/form-block-render";
 import { toGallerySettings } from "@/lib/gallery-settings";
 import { cn } from "@/lib/utils";
 import type { ContentStatus, GlobalModule, ModuleType } from "@/lib/api-server";
@@ -144,6 +145,9 @@ export function ContentPreviewRender({
                                 interactive
                                 gallerySettings={toGallerySettings(
                                   resolved.settings,
+                                )}
+                                renderForm={(id) => (
+                                  <FormBlockRender formId={id} />
                                 )}
                               />
                             ))}

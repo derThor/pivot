@@ -10,6 +10,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@pivot/blocks": "workspace:*",
     "@base-ui/react": "^1.6.0",
     "@codemirror/lang-html": "^6.4.12",
     "@hookform/resolvers": "^5.5.7",
