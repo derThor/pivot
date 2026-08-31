@@ -675,7 +675,10 @@ Angewendet auf:
 graue Seiten-Grau an. Nutzervorgabe: weißer Hintergrund, aktiver Zustand
 unverändert – jetzt `bg-card` statt `bg-transparent`, der aktive Chip
 bleibt `bg-dark-surface`. `bg-card` statt eines harten `bg-white`, damit
-der Dark Mode weiter stimmt.
+der Dark Mode weiter stimmt. Dieselbe Umstellung auf Nachfrage direkt
+danach für die identischen Chips der Suchergebnis-Seite
+(`app/dashboard/search/page.tsx`) – damit gibt es app-weit keinen
+transparenten Chip dieser Bauart mehr.
 
 **Bewusst nicht angefasst:** `border-t border-border` als Trennlinie
 _innerhalb_ eines breiten Buttons (Datenschutz-/Vorfall-Panels) und

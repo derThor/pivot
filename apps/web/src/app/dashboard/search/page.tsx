@@ -214,7 +214,7 @@ export default function SearchPage() {
           "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
           active
             ? "border-transparent bg-dark-surface text-dark-surface-foreground"
-            : "border-button-border bg-transparent hover:bg-muted/40",
+            : "border-button-border bg-card hover:bg-muted/40",
         )}
       >
         {label}
