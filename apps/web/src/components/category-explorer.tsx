@@ -384,13 +384,13 @@ export function CategoryExplorer({
               ) : (
                 <>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="relative w-full sm:max-w-xs">
-                      <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <div className="flex h-9 w-full items-center gap-2 rounded-xl border border-border bg-card px-4 sm:max-w-xs">
+                      <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
                       <Input
                         value={searchValue}
                         onChange={(e) => setSearchValue(e.target.value)}
                         placeholder="Beitrag suchen"
-                        className="bg-card pl-9"
+                        className="h-auto flex-1 border-none bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
                       />
                     </div>
                     <Tabs
