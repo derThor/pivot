@@ -279,6 +279,22 @@ ist also nicht geplant, sondern gebaut:
   (per Test bestätigt: `/admin` antwortet mit
   `Location: /admin/dashboard`).
 
+**Nachtrag (noch am selben Tag): Abmelden ging nicht mehr.** Der
+Cookie-Pfad wurde beim Setzen auf `/admin` umgestellt, das Löschen lief
+aber weiter über `cookieStore.delete(name)` – und das trifft nur Cookies
+auf `/`. Ergebnis: der Abmelden-Knopf lief durch, die Sitzung blieb
+bestehen. Betroffen waren fünf Stellen (Logout-Route, Middleware,
+Impersonation starten/beenden). Jetzt gilt:
+
+- `baseCookieOptions` ist exportiert; die beiden lokalen Kopien in den
+  Impersonations-Routen (die noch `path: "/"` hatten) nutzen sie.
+- `authCookieDeleteTargets(name)` liefert die Löschziele – aktueller Pfad
+  **und** `/`, damit auch Cookies aus Sitzungen verschwinden, die vor dem
+  Umzug begonnen haben.
+
+**Lehre:** ein geänderter Cookie-Pfad betrifft immer beide Seiten, Setzen
+**und** Löschen; letzteres schlägt lautlos fehl.
+
 **apps/api**
 
 - `app.set('trust proxy', 1)` in `main.ts` – ohne das sähe der globale

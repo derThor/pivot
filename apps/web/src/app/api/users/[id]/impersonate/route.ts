@@ -5,17 +5,14 @@ import {
   ADMIN_ACCESS_TOKEN_COOKIE,
   ADMIN_REFRESH_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
+  authCookieDeleteOptions,
+  baseCookieOptions,
 } from "@/lib/auth";
 import { resolveAccessToken } from "@/lib/bff-proxy";
 
 const API_URL = process.env.API_URL ?? "http://localhost:3001/v1";
-const isProd = process.env.NODE_ENV === "production";
-const cookieOptions = {
-  httpOnly: true,
-  secure: isProd,
-  sameSite: "lax" as const,
-  path: "/",
-};
+// Gemeinsame Optionen inkl. Pfad, siehe stop-impersonation.
+const cookieOptions = baseCookieOptions;
 
 // Startet "Als Nutzer ansehen": sichert die eigenen Tokens des Admins unter
 // admin_*-Cookies (siehe lib/auth.ts) und ersetzt access_token durch den
@@ -60,7 +57,7 @@ export async function POST(
     ...cookieOptions,
     maxAge: 15 * 60,
   });
-  cookieStore.delete(REFRESH_TOKEN_COOKIE);
+  cookieStore.delete(authCookieDeleteOptions(REFRESH_TOKEN_COOKIE));
 
   return NextResponse.json({ success: true });
 }

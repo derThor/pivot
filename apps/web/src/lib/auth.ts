@@ -21,12 +21,30 @@ export const ADMIN_REFRESH_TOKEN_COOKIE = "admin_refresh_token";
 // path "/" würde das Sitzungs-Cookie bei JEDEM Besucher-Request an die
 // öffentliche Website mitgeschickt – unnötige Übertragung, und ein
 // vorgelagertes CDN cached Antworten mit Cookies üblicherweise nicht.
-const baseCookieOptions = {
+export const baseCookieOptions = {
   httpOnly: true,
   secure: isProd,
   sameSite: "lax" as const,
   path: BASE_PATH || "/",
 };
+
+/** Zum Loeschen MUSS derselbe Pfad angegeben werden wie beim Setzen -
+ * sonst trifft das Loeschen die Cookies unter /admin nicht und der
+ * Abmelden-Knopf bleibt wirkungslos (Fehler vom 2026-08-31, entstanden
+ * beim Umzug des Backends unter den /admin-Pfad). */
+export function authCookieDeleteOptions(name: string) {
+  return { name, path: baseCookieOptions.path };
+}
+
+/** Alle Pfade, unter denen ein Auth-Cookie liegen KANN. Neben dem
+ * aktuellen Pfad auch "/" - dort liegen die Cookies aller Sitzungen, die
+ * vor dem Umzug des Backends unter /admin begonnen haben. Ohne diese
+ * Aufraeum-Loeschung bliebe ein altes "/"-Cookie liegen, wuerde bei jedem
+ * Request mitgeschickt und die Abmeldung damit wirkungslos aussehen. */
+export function authCookieDeleteTargets(name: string) {
+  const paths = new Set([baseCookieOptions.path, "/"]);
+  return [...paths].map((path) => ({ name, path }));
+}
 
 export interface TokenPair {
   accessToken: string;

@@ -1,6 +1,10 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { AUTH_COOKIE_NAMES, REFRESH_TOKEN_COOKIE } from "@/lib/auth";
+import {
+  AUTH_COOKIE_NAMES,
+  REFRESH_TOKEN_COOKIE,
+  authCookieDeleteTargets,
+} from "@/lib/auth";
 
 const API_URL = process.env.API_URL ?? "http://localhost:3001/v1";
 
@@ -17,7 +21,9 @@ export async function POST() {
   }
 
   for (const name of AUTH_COOKIE_NAMES) {
-    cookieStore.delete(name);
+    for (const target of authCookieDeleteTargets(name)) {
+      cookieStore.delete(target);
+    }
   }
 
   return NextResponse.json({ success: true });

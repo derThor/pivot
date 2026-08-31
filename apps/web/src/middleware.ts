@@ -3,6 +3,7 @@ import {
   ACCESS_TOKEN_COOKIE,
   AUTH_COOKIE_NAMES,
   REFRESH_TOKEN_COOKIE,
+  authCookieDeleteTargets,
   buildAuthCookies,
   type TokenPair,
 } from "@/lib/auth";
@@ -101,7 +102,9 @@ async function tryRefresh(
 
 function clearAuthCookies(response: NextResponse) {
   for (const name of AUTH_COOKIE_NAMES) {
-    response.cookies.delete(name);
+    for (const target of authCookieDeleteTargets(name)) {
+      response.cookies.delete(target);
+    }
   }
   return response;
 }

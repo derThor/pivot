@@ -5,15 +5,13 @@ import {
   ADMIN_ACCESS_TOKEN_COOKIE,
   ADMIN_REFRESH_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
+  authCookieDeleteOptions,
+  baseCookieOptions,
 } from "@/lib/auth";
 
-const isProd = process.env.NODE_ENV === "production";
-const cookieOptions = {
-  httpOnly: true,
-  secure: isProd,
-  sameSite: "lax" as const,
-  path: "/",
-};
+// Bewusst die gemeinsamen Optionen aus lib/auth.ts (inkl. Pfad!) statt
+// einer lokalen Kopie - siehe authCookieDeleteOptions().
+const cookieOptions = baseCookieOptions;
 
 // "Zurück zu deinem Konto": stellt die vor der Impersonation gesicherten
 // admin_*-Cookies wieder als access_token/refresh_token her (siehe
@@ -40,8 +38,8 @@ export async function POST() {
       maxAge: 30 * 24 * 60 * 60,
     });
   }
-  cookieStore.delete(ADMIN_ACCESS_TOKEN_COOKIE);
-  cookieStore.delete(ADMIN_REFRESH_TOKEN_COOKIE);
+  cookieStore.delete(authCookieDeleteOptions(ADMIN_ACCESS_TOKEN_COOKIE));
+  cookieStore.delete(authCookieDeleteOptions(ADMIN_REFRESH_TOKEN_COOKIE));
 
   return NextResponse.json({ success: true });
 }
