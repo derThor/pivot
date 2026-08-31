@@ -87,13 +87,92 @@
   (`PATCH` ergänzt)
 - `apps/web/src/lib/utils.ts` (`slugify`)
 - `apps/api/test/taxonomy.e2e-spec.ts`
+- `apps/web/src/components/category-explorer.tsx` (neu, 2026-08-31)
+- `apps/web/src/app/api/content/[id]/featured/route.ts` (neu)
+- `apps/web/src/lib/tag-colors.ts` (`categoryColor`)
+- `packages/database/prisma/schema.prisma` (`Content.isFeatured`)
 
 ## Offene Punkte
 
 - ~~Content-Editor erlaubt noch keine Zuordnung von Kategorien/Tags zu
   einem Content-Eintrag~~ – Kategorien seit 2026-08-05 erledigt, siehe
-  [content-categories.md](../content/content-categories.md). Tags zu
+  [content-categories.md](../content/content-categories.md). ~~Tags zu
   Content sind weiterhin nicht zugeordnet (Datenmodell `ContentTag`
-  wäre analog vorhanden, aber nicht angefordert).
+  wäre analog vorhanden, aber nicht angefordert)~~ – seit dem
+  Kategorien-Redesign (2026-08-31, siehe unten) über die
+  Kategorien-Seite selbst zugeordnet (nicht im Content-Editor).
 - ~~Kein Umbenennen bestehender Kategorien/Tags (nur Anlegen/Löschen)~~ –
   seit 2026-08-04 erledigt (`PATCH`-Endpoints + Edit-Dialog).
+- Tags haben weiterhin kein Editor-UI zur Zuordnung – nur der "+Tag"-
+  Schnellzuweiser auf der Kategorien-Seite (siehe Update unten). Ein
+  Tag lässt sich dort nicht wieder entfernen (kein "x" auf dem Chip,
+  1:1 nach Bildvorlage) – falls das gebraucht wird, noch offen.
+
+## Update 2026-08-31: Kategorien-Seite als Liste+Detail-Explorer, Tags landen in Content
+
+Nutzervorgabe: "baue Kategorie genauso um [wie im Bild] ... fasse vor
+Umsetzung zusammen und hole Freigabe ein." Ersetzt die bisherige flache
+`TaxonomyManager`-Tabelle unter `/dashboard/categories` durch eine neue
+`category-explorer.tsx` (Liste+Detail, gleiches Muster wie
+`content-versions-explorer.tsx`/die Einstellungen-Sidebar: eine Kachel,
+`divide-y`-Trennlinien, `border-l-4`-Aktiv-Akzent). `/dashboard/tags`
+bleibt unverändert auf `TaxonomyManager`/`TaxonomyItemDialog` – beide
+Komponenten wurden NICHT angefasst, nur eine neue Konsumentenseite
+daneben gebaut.
+
+**Neu in der Sidebar:** farbiger Balken pro Rubrik (dekorative
+Hash-Farbe, `categoryColor()` in `tag-colors.ts` – neuer, benannter
+Alias auf dieselbe Funktion wie `tagDotColor()`, da auch `Category`
+kein eigenes `color`-Feld hat), echter Beitragszähler/"leer"-Badge
+(`_count.contents`, vorher fehlte das in `findAll()`), und eine
+zweite Kachel "Tags in dieser Rubrik" – neue Abfrage
+`TagsService.findByCategory()`/`GET /tags/by-category/:categoryId`,
+da es vorher keine Möglichkeit gab, Tags nach Kategorie-Zugehörigkeit
+ihrer Beiträge zu filtern.
+
+**Zwei bewusst nicht gebaute Mockup-Elemente** (per Rückfrage vorab
+geklärt statt stillschweigend erfunden):
+- **"RSS aktiv"-Badge** – komplett weggelassen. Es gibt in der
+  gesamten App kein RSS-Feature (kein Feed-Endpunkt, kein Feld) und
+  auch keine öffentliche Seite, die einen Feed ausliefern könnte
+  (Pivot ist headless).
+- **"AUFRUFE 30 T."** (Kennzahl + Tabellenspalte) – komplett
+  weggelassen. Es gibt nirgends im System ein Seitenaufruf-/
+  Analytics-Tracking, das je eine echte Zahl liefern könnte.
+
+**Neu, echt gebaut statt erfunden:**
+- `Content.isFeatured` (neues Schema-Feld) – Stern-Symbol in der
+  Aktionen-Spalte schaltet es um (`POST /content/:id/featured`,
+  gleiches Muster wie `lock`/`unlock`), Badge "Aufmacher" erscheint
+  dann neben dem Titel. Ersetzt das im Bild ebenfalls fiktive
+  Stern-"Favorit" (es gibt keine Favoriten-Funktion/-Tabelle in der
+  App) durch eine einzige echte Funktion statt zwei erfundener.
+- `ContentTag` (existierte im Schema, wurde aber nirgends im Backend
+  gelesen/geschrieben) ist jetzt vollständig angebunden: `tags` im
+  `include` von `findAll()`/`findOne()`/`findTrashed()` (neuer
+  gemeinsamer Mapper `mapContentRelations()`, ersetzt das vorherige
+  `mapContentCategories()`), `tagIds` in `CreateContentDto`/
+  `UpdateContentDto` (identisches Muster wie `categoryIds`:
+  `deleteMany({}) + create(...)` bei Update). Der "+Tag"-Button in
+  der Beitragstabelle ruft dafür einfach `PATCH /content/:id` mit der
+  erweiterten `tagIds`-Liste auf – kein neuer Endpoint nötig.
+- `QueryContentDto` bekam `categoryId`/`search` (Titel-Substring,
+  case-insensitive) – die "Beiträge"-Tabelle der Kategorien-Seite
+  filtert/sucht/paginiert dadurch vollständig serverseitig über
+  URL-Parameter (`?category=&status=&search=&postsPage=`), nicht nur
+  clientseitig auf der aktuell geladenen Seite.
+- `CategoriesService.findOne()` (neu, gab es vorher gar nicht als
+  Einzelabruf) liefert `contentCount`/`liveCount` – zwei echte
+  `content.count()`-Abfragen, keine erfundenen Kennzahlen.
+
+**Nebenbei, gleicher Tag:** "Tags" aus der Sidebar-Untergruppe von
+"Medien" herausgelöst und zu einem eigenen, gleichrangigen Menüpunkt
+neben "Kategorien" gemacht (Nutzervorgabe: "nimm tags aus medien raus
+und mache es zu einem eigenen menüpunkt").
+
+Live gegen die laufende API verifiziert: Kategorie+Tag einem echten
+Beitrag zugewiesen → Sidebar-Zähler, Tags-in-Rubrik-Zähler,
+Beiträge/Live-Kennzahlen und die Tabellenzeile (Status-Badge,
+Aufmacher-Badge, Tag-Chip) aktualisieren sich korrekt; Status-Filter
+und Suche liefern über echte URL-Parameter die richtigen Treffer;
+Testzuordnungen danach wieder entfernt.
