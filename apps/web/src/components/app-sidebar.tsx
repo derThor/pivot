@@ -81,7 +81,10 @@ const navLabelClass =
 // Icons OHNE eigenen Hintergrund-Chip (Nutzervorgabe) – nur Größe/Farbe
 // vereinheitlicht, damit Icon und Label sauber ausgerichtet bleiben.
 const navIconChipClass =
-  "flex size-7 shrink-0 items-center justify-center text-sidebar-foreground/70 transition-colors group-data-active/menu-button:text-primary-foreground [&_svg]:size-4";
+  // Eingeklappt sind die Icons das einzige Erkennungsmerkmal und deshalb
+  // eine Stufe groesser als im ausgeklappten Zustand (Nutzervorgabe,
+  // 2026-08-31).
+  "flex size-7 shrink-0 items-center justify-center text-sidebar-foreground/70 transition-colors group-data-active/menu-button:text-primary-foreground [&_svg]:size-4 group-data-[collapsible=icon]:[&_svg]:size-5";
 
 // Unterpunkte (z.B. "FAQs"/"Galerien" unter "Seiten") – deutlich tiefer
 // eingerückt als `navActiveClass` (pl-3), sonst wirken sie bei diesem

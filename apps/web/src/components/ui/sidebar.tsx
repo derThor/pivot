@@ -395,6 +395,11 @@ function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
       data-sidebar="content"
       className={cn(
         "themed-scrollbar flex min-h-0 flex-1 flex-col gap-0 overflow-x-hidden overflow-y-auto",
+        // Eingeklappt (nur Icons) stoert der Balken in der schmalen Spalte
+        // (Nutzervorgabe, 2026-08-31). Nur die Anzeige wird versteckt,
+        // gescrollt werden kann weiterhin - bei vielen Modulen passt die
+        // Liste sonst nicht auf kleine Bildschirme.
+        "group-data-[collapsible=icon]:[scrollbar-width:none] group-data-[collapsible=icon]:[&::-webkit-scrollbar]:hidden",
         className,
       )}
       {...props}

@@ -84,14 +84,13 @@ bestimmt – funktioniert für Listen-Seiten, aber nicht für deren
 Detailseiten (`/dashboard/content/new`, `/dashboard/content/[id]/edit`
 etc.), die dadurch keinen aktiven Menüpunkt/keine fette Gruppen-
 Beschriftung zeigten. Fix: `findBestMatchingUrl(pathname, urls)` prüft
-`pathname === url || pathname.startsWith(\`${url}/\`)` und wählt bei
-mehreren Treffern die **längste** passende URL (sonst würde z.B.
-`/dashboard` als Präfix jeder anderen Route immer zuerst matchen). Ein
-gemeinsamer `activeItemUrl`-Wert treibt sowohl die Menüpunkt-
+`pathname === url || pathname.startsWith(\`${url}/\`)`und wählt bei
+mehreren Treffern die **längste** passende URL (sonst würde z.B.`/dashboard`als Präfix jeder anderen Route immer zuerst matchen). Ein
+gemeinsamer`activeItemUrl`-Wert treibt sowohl die Menüpunkt-
 Hervorhebung (`isActive`) als auch die fette Gruppen-Beschriftung
 (`isEmphasized`) – gilt automatisch für alle künftigen Detailseiten
 unter einem Listen-Item, ohne dass pro Route etwas ergänzt werden muss.
-Beim Verifizieren per `curl`+`grep` Vorsicht: Base-UI rendert `data-active`
+Beim Verifizieren per `curl`+`grep`Vorsicht: Base-UI rendert`data-active`
 als leeres, aber vorhandenes Attribut (`data-active=""`), dessen Position
 im Tag relativ zu anderen Attributen variiert – ein fixes
 Zeichen-Lookbehind-Fenster im Grep-Pattern kann dadurch fälschlich
@@ -136,3 +135,21 @@ Avatar auf Mobile schon eng).
 - Noch keine API-Anbindung (Platzhalterdaten in `content/page.tsx` und
   Dashboard-Statistiken).
 - Kein Dark-Mode-Umschalter, obwohl Tailwind-Theming dafür vorbereitet ist.
+
+## Update 2026-08-31: eingeklappte Sidebar ohne Scrollbalken, größere Icons
+
+Nutzervorgabe: "sidebar eingeklappt kein Scrollbalken und Icons etwas
+größer".
+
+- `SidebarContent` (`ui/sidebar.tsx`) blendet den Balken im eingeklappten
+  Zustand aus: `group-data-[collapsible=icon]:[scrollbar-width:none]` plus
+  `group-data-[collapsible=icon]:[&::-webkit-scrollbar]:hidden`. Bewusst
+  nur die **Anzeige** – `overflow-y-auto` bleibt, sonst wären bei vielen
+  Modulen die unteren Einträge auf kleinen Bildschirmen nicht mehr
+  erreichbar.
+- `navIconChipClass` (`app-sidebar.tsx`): eingeklappt `[&_svg]:size-5`
+  statt `size-4` – dort sind die Icons das einzige Erkennungsmerkmal.
+  Ausgeklappt bleibt es bei `size-4`, damit Icon und Label ausgerichtet
+  bleiben.
+
+Beide Regeln landen nachweislich im kompilierten Stylesheet (geprüft).
