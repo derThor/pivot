@@ -119,6 +119,7 @@ export function CategoryExplorer({
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<"posts" | "settings">("posts");
   const [searchValue, setSearchValue] = useState(currentSearch);
+  const [settingsSubmitting, setSettingsSubmitting] = useState(false);
 
   function buildUrl(overrides: Record<string, string | undefined>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -329,7 +330,7 @@ export function CategoryExplorer({
                         {selectedCategory.rssEnabled && (
                           <Badge
                             variant="secondary"
-                            className="badge--lime border-0"
+                            className="badge--green border-0"
                           >
                             RSS aktiv
                           </Badge>
@@ -361,18 +362,29 @@ export function CategoryExplorer({
                     </div>
                   </div>
                 </div>
-                <Tabs
-                  className="mt-4 w-fit"
-                  value={tab}
-                  onValueChange={(v) => setTab(v as "posts" | "settings")}
-                >
-                  <TabsList>
-                    <TabsTrigger value="posts">Beiträge</TabsTrigger>
-                    <TabsTrigger value="settings">
-                      Kategorie-Einstellungen
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                  <Tabs
+                    className="w-fit"
+                    value={tab}
+                    onValueChange={(v) => setTab(v as "posts" | "settings")}
+                  >
+                    <TabsList>
+                      <TabsTrigger value="posts">Beiträge</TabsTrigger>
+                      <TabsTrigger value="settings">
+                        Kategorie-Einstellungen
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                  {tab === "settings" && (
+                    <Button
+                      type="submit"
+                      form="category-settings-form"
+                      disabled={settingsSubmitting}
+                    >
+                      {settingsSubmitting ? "Speichert…" : "Speichern"}
+                    </Button>
+                  )}
+                </div>
               </div>
 
               {tab === "settings" ? (
@@ -380,6 +392,7 @@ export function CategoryExplorer({
                   key={selectedCategory.id}
                   category={selectedCategory}
                   feedUrl={feedUrl}
+                  onSubmittingChange={setSettingsSubmitting}
                 />
               ) : (
                 <>
@@ -619,9 +632,11 @@ export function CategoryExplorer({
 function CategorySettingsForm({
   category,
   feedUrl,
+  onSubmittingChange,
 }: {
   category: CategoryDetail;
   feedUrl: string;
+  onSubmittingChange: (submitting: boolean) => void;
 }) {
   const router = useRouter();
   const [name, setName] = useState(category.name);
@@ -638,7 +653,6 @@ function CategorySettingsForm({
   const [sortOrder, setSortOrder] = useState(category.sortOrder);
   const [postsPerPage, setPostsPerPage] = useState(category.postsPerPage ?? 10);
   const [slugTouched, setSlugTouched] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const currentColor = color ?? CATEGORY_COLOR_PRESETS[0].hex;
@@ -649,7 +663,7 @@ function CategorySettingsForm({
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
-    setIsSubmitting(true);
+    onSubmittingChange(true);
     try {
       const res = await fetch(`/api/categories/${category.id}`, {
         method: "PATCH",
@@ -676,12 +690,13 @@ function CategorySettingsForm({
     } catch {
       setError("Server nicht erreichbar. Bitte später erneut versuchen.");
     } finally {
-      setIsSubmitting(false);
+      onSubmittingChange(false);
     }
   }
 
   return (
     <form
+      id="category-settings-form"
       onSubmit={handleSubmit}
       className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2"
     >
@@ -840,12 +855,9 @@ function CategorySettingsForm({
         />
       </div>
 
-      <div className="flex flex-col gap-3 lg:col-span-2">
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        <Button type="submit" disabled={isSubmitting} className="w-fit">
-          {isSubmitting ? "Speichert…" : "Speichern"}
-        </Button>
-      </div>
+      {error && (
+        <p className="text-sm text-destructive lg:col-span-2">{error}</p>
+      )}
     </form>
   );
 }
