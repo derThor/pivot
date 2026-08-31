@@ -174,12 +174,14 @@ das Bild (Präfix-Strip greift), und ein WebSocket-Upgrade auf
 `/admin/_next/webpack-hmr` beantwortet die API mit `101 Switching
 Protocols`.
 
-**Hinweis für den vollständigen Durchlauf:** Medien-URLs im Browser kommen
-aus `NEXT_PUBLIC_API_ORIGIN`. Lokal steht dort `http://localhost:3001`,
-die Bilder gehen also am Proxy vorbei. Wer den Produktionspfad komplett
-testen will, setzt in `apps/site/.env.local` und `apps/web/.env.local`
-`NEXT_PUBLIC_API_ORIGIN=http://localhost:8080/api` – dann müssen die Apps
-aber immer über den Proxy aufgerufen werden.
+**Medien-URLs laufen seit 2026-08-31 ebenfalls über den Proxy:** in
+`apps/site/.env.local` und `apps/web/.env.local` steht
+`NEXT_PUBLIC_API_ORIGIN=http://localhost:8080/api` (Nutzerentscheidung –
+damit ist der Produktionspfad lokal vollständig nachgestellt, Favicon und
+Bilder inklusive). `API_URL` bleibt bewusst auf `http://127.0.0.1:3001/v1`:
+serverseitige Aufrufe sollen nicht den Umweg über den Proxy nehmen. **Folge:
+der Proxy muss laufen**, sonst fehlen beim direkten Aufruf über Port 3000
+bzw. 3002 die Bilder.
 
 ## Prozesse starten
 
