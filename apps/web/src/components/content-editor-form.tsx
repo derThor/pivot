@@ -52,8 +52,10 @@ import type {
   ContentDetail,
   GlobalModule,
   ModuleType,
+  TagRef,
 } from "@/lib/api-server";
-import { formatName, slugify } from "@/lib/utils";
+import { tagDotColor } from "@/lib/tag-colors";
+import { cn, formatName, slugify } from "@/lib/utils";
 
 const LOCK_HEARTBEAT_INTERVAL_MS = 60_000;
 
@@ -158,6 +160,7 @@ interface DraftSnapshot {
   status: ContentStatus;
   scheduledForValue: string;
   categoryIds: string[];
+  tagIds: string[];
   dataValues: Record<string, string>;
   moduleValues: Record<string, ModuleInstance[]>;
   seoValues: SeoValues;
@@ -187,6 +190,7 @@ export function ContentEditorForm({
   moduleTypes,
   globalModules,
   categories,
+  tags,
   content,
   autosaveEnabled = true,
   canForceUnlock = false,
@@ -195,6 +199,7 @@ export function ContentEditorForm({
   moduleTypes: ModuleType[];
   globalModules: GlobalModule[];
   categories: CategoryRef[];
+  tags: TagRef[];
   content?: ContentDetail;
   autosaveEnabled?: boolean;
   canForceUnlock?: boolean;
@@ -211,6 +216,9 @@ export function ContentEditorForm({
   const [dataErrors, setDataErrors] = useState<Record<string, string>>({});
   const [categoryIds, setCategoryIds] = useState<string[]>(
     content?.categories.map((category) => category.id) ?? [],
+  );
+  const [tagIds, setTagIds] = useState<string[]>(
+    content?.tags.map((tag) => tag.id) ?? [],
   );
   const [seoValues, setSeoValues] = useState<SeoValues>(toSeoValues(content));
   const [scheduledForValue, setScheduledForValue] = useState(
@@ -328,6 +336,7 @@ export function ContentEditorForm({
         status: watchedValues.status,
         scheduledForValue,
         categoryIds,
+        tagIds,
         dataValues,
         moduleValues,
         seoValues,
@@ -356,6 +365,7 @@ export function ContentEditorForm({
     watchedValues.contentTypeId,
     scheduledForValue,
     categoryIds,
+    tagIds,
     dataValues,
     moduleValues,
     seoValues,
@@ -454,6 +464,7 @@ export function ContentEditorForm({
     setSlugTouched(true);
     setScheduledForValue(draftBanner.scheduledForValue);
     setCategoryIds(draftBanner.categoryIds);
+    setTagIds(draftBanner.tagIds ?? []);
     setDataValues(draftBanner.dataValues);
     setModuleValues(draftBanner.moduleValues ?? {});
     setSeoValues(draftBanner.seoValues);
@@ -649,10 +660,18 @@ export function ContentEditorForm({
             status: values.status,
             data,
             categoryIds,
+            tagIds,
             scheduledFor,
             ...seoPayload,
           }
-        : { ...values, data, categoryIds, scheduledFor, ...seoPayload };
+        : {
+            ...values,
+            data,
+            categoryIds,
+            tagIds,
+            scheduledFor,
+            ...seoPayload,
+          };
 
       const res = await fetch(url, {
         method,
@@ -1055,6 +1074,68 @@ export function ContentEditorForm({
                                           onClick={() =>
                                             setCategoryIds((prev) =>
                                               prev.filter((c) => c !== id),
+                                            )
+                                          }
+                                          className="ml-0.5 rounded-full hover:text-foreground"
+                                        >
+                                          <X className="size-3" />
+                                        </button>
+                                      </Badge>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {tags.length > 0 && (
+                            <div className="flex flex-col gap-2">
+                              <Label>Tags</Label>
+                              <Select
+                                multiple
+                                value={tagIds}
+                                onValueChange={(value) => setTagIds(value ?? [])}
+                                items={Object.fromEntries(
+                                  tags.map((tag) => [tag.id, tag.name]),
+                                )}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Tags wählen">
+                                    {(value: string[]) =>
+                                      value.length === 0
+                                        ? "Kein Tag ausgewählt"
+                                        : `${value.length} ${value.length === 1 ? "Tag" : "Tags"} ausgewählt`
+                                    }
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {tags.map((tag) => (
+                                    <SelectItem key={tag.id} value={tag.id}>
+                                      {tag.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {tagIds.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {tagIds.map((id) => {
+                                    const tag = tags.find((t) => t.id === id);
+                                    if (!tag) return null;
+                                    return (
+                                      <Badge key={id} variant="secondary" className="gap-1.5">
+                                        <span
+                                          className={cn(
+                                            "size-1.5 rounded-full",
+                                            tagDotColor(tag.id),
+                                          )}
+                                        />
+                                        {tag.name}
+                                        <button
+                                          type="button"
+                                          aria-label={`${tag.name} entfernen`}
+                                          onClick={() =>
+                                            setTagIds((prev) =>
+                                              prev.filter((t) => t !== id),
                                             )
                                           }
                                           className="ml-0.5 rounded-full hover:text-foreground"

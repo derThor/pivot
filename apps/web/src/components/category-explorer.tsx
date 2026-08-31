@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Pencil, Search as SearchIcon, Star, Trash2 } from "lucide-react";
+import {
+  Palette,
+  Pencil,
+  Search as SearchIcon,
+  Star,
+  Trash2,
+} from "lucide-react";
 
 import { toastDeleted, toastEdited } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +49,20 @@ const STATUS_LABEL: Record<ContentStatus, string> = {
   SCHEDULED: "Geplant",
   ARCHIVED: "Archiviert",
 };
+
+// Kategorien-Seite, "Farbe" in den Kategorie-Einstellungen (Nutzervorgabe,
+// 2026-08-31: "nutze den gleichen color picker wie in einstellungen und
+// darstellung") – gleiches Muster wie ACCENT_PRESETS in settings-form.tsx
+// (feste Auswahl + freier Farbwähler), eigene Palette statt Wiederverwendung
+// der Akzentfarben-Presets, da das eine andere Farbwahl ist.
+const CATEGORY_COLOR_PRESETS = [
+  { label: "Blau", hex: "#0ea5e9" },
+  { label: "Lila", hex: "#a855f7" },
+  { label: "Orange", hex: "#f59e0b" },
+  { label: "Grün", hex: "#14b8a6" },
+  { label: "Rot", hex: "#ef4444" },
+  { label: "Grau", hex: "#94a3b8" },
+] as const;
 
 const STATUS_BADGE_CLASS: Record<ContentStatus, string> = {
   PUBLISHED: "badge--green border-0",
@@ -153,7 +173,7 @@ export function CategoryExplorer({
           <div className="overflow-hidden rounded-xl bg-card shadow-sm">
             <div className="flex items-center justify-between px-4 py-3">
               <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                Rubriken · {categories.length}
+                Kategorien · {categories.length}
               </span>
             </div>
             <div className="flex flex-col divide-y divide-border">
@@ -173,8 +193,13 @@ export function CategoryExplorer({
                     <span
                       className={cn(
                         "mt-0.5 h-8 w-1 shrink-0 rounded-full",
-                        categoryColor(category.id),
+                        !category.color && categoryColor(category.id),
                       )}
+                      style={
+                        category.color
+                          ? { backgroundColor: category.color }
+                          : undefined
+                      }
                     />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">
@@ -201,7 +226,7 @@ export function CategoryExplorer({
               <TaxonomyItemDialog
                 apiPath="categories"
                 withDescription
-                newLabel="Rubrik anlegen"
+                newLabel="Kategorie anlegen"
                 entitySingular="Kategorie"
               />
             </div>
@@ -211,13 +236,13 @@ export function CategoryExplorer({
             <div className="overflow-hidden rounded-xl bg-card shadow-sm">
               <div className="px-4 py-3">
                 <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                  Tags in dieser Rubrik
+                  Tags in dieser Kategorie
                 </span>
               </div>
               <div className="flex flex-col gap-1 px-4 pb-4">
                 {categoryTags.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    Noch keine Tags in dieser Rubrik.
+                    Noch keine Tags in dieser Kategorie.
                   </p>
                 ) : (
                   categoryTags.map((tag) => (
@@ -258,8 +283,14 @@ export function CategoryExplorer({
                     <span
                       className={cn(
                         "mt-1 h-8 w-1.5 shrink-0 rounded-full",
-                        categoryColor(selectedCategory.id),
+                        !selectedCategory.color &&
+                          categoryColor(selectedCategory.id),
                       )}
+                      style={
+                        selectedCategory.color
+                          ? { backgroundColor: selectedCategory.color }
+                          : undefined
+                      }
                     />
                     <div>
                       <h2 className="text-xl font-semibold">
@@ -314,13 +345,16 @@ export function CategoryExplorer({
                         : "text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    Rubrik-Einstellungen
+                    Kategorie-Einstellungen
                   </button>
                 </div>
               </div>
 
               {tab === "settings" ? (
-                <CategorySettingsForm category={selectedCategory} />
+                <CategorySettingsForm
+                  key={selectedCategory.id}
+                  category={selectedCategory}
+                />
               ) : (
                 <>
                   <div className="flex flex-col gap-3 rounded-xl bg-card p-4 shadow-sm sm:flex-row sm:items-center">
@@ -561,9 +595,15 @@ function CategorySettingsForm({ category }: { category: CategoryDetail }) {
   const [name, setName] = useState(category.name);
   const [slug, setSlug] = useState(category.slug);
   const [description, setDescription] = useState(category.description ?? "");
+  const [color, setColor] = useState(category.color);
   const [slugTouched, setSlugTouched] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const currentColor = color ?? CATEGORY_COLOR_PRESETS[0].hex;
+  const isCustomColor = !CATEGORY_COLOR_PRESETS.some(
+    (preset) => preset.hex.toLowerCase() === currentColor.toLowerCase(),
+  );
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -573,7 +613,12 @@ function CategorySettingsForm({ category }: { category: CategoryDetail }) {
       const res = await fetch(`/api/categories/${category.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, slug, description: description || undefined }),
+        body: JSON.stringify({
+          name,
+          slug,
+          description: description || undefined,
+          color,
+        }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
@@ -592,8 +637,14 @@ function CategorySettingsForm({ category }: { category: CategoryDetail }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex max-w-lg flex-col gap-4 rounded-xl bg-card p-6 shadow-sm"
+      className="flex max-w-lg flex-col gap-5 rounded-xl bg-card p-6 shadow-sm"
     >
+      <div>
+        <h3 className="text-lg font-semibold">Kategorie</h3>
+        <p className="text-sm text-muted-foreground">
+          Name und Pfad wirken sich auf die Navigation aus.
+        </p>
+      </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="category-settings-name" required>
           Name
@@ -610,7 +661,7 @@ function CategorySettingsForm({ category }: { category: CategoryDetail }) {
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="category-settings-slug" required>
-          Slug
+          Pfad
         </Label>
         <Input
           id="category-settings-slug"
@@ -630,6 +681,51 @@ function CategorySettingsForm({ category }: { category: CategoryDetail }) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label>Farbe</Label>
+        <div className="flex items-center gap-3 rounded-lg border border-border bg-muted p-4">
+          <div className="flex items-center gap-2">
+            {CATEGORY_COLOR_PRESETS.map((preset) => {
+              const isSelected =
+                currentColor.toLowerCase() === preset.hex.toLowerCase();
+              return (
+                <button
+                  key={preset.hex}
+                  type="button"
+                  aria-label={preset.label}
+                  onClick={() => setColor(preset.hex)}
+                  className={cn(
+                    "size-8 shrink-0 rounded-full ring-2 ring-offset-2 transition-all",
+                    isSelected ? "ring-foreground" : "ring-transparent",
+                  )}
+                  style={{ backgroundColor: preset.hex }}
+                />
+              );
+            })}
+            <label
+              className={cn(
+                "relative flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-white transition-all",
+                isCustomColor
+                  ? "ring-2 ring-foreground ring-offset-2"
+                  : "border border-dashed border-muted-foreground/40 text-muted-foreground",
+              )}
+              style={isCustomColor ? { backgroundColor: currentColor } : undefined}
+              title="Eigene Farbe wählen"
+            >
+              <Palette className="size-4" />
+              <input
+                type="color"
+                className="absolute inset-0 size-full cursor-pointer opacity-0"
+                value={currentColor}
+                onChange={(e) => setColor(e.target.value)}
+              />
+            </label>
+          </div>
+          <span className="ml-auto shrink-0 font-mono text-sm text-muted-foreground">
+            {currentColor.toLowerCase()}
+          </span>
+        </div>
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" disabled={isSubmitting} className="w-fit">

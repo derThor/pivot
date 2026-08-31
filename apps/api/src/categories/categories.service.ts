@@ -35,7 +35,7 @@ export class CategoriesService {
     };
   }
 
-  /** Kategorien-Seite, Kopfkachel der ausgewählten Rubrik (Nutzervorgabe,
+  /** Kategorien-Seite, Kopfkachel der ausgewählten Kategorie (Nutzervorgabe,
    * 2026-08-31, 1:1 nach Bildvorlage) – "BEITRÄGE"/"LIVE" sind echte
    * Zählungen, keine erfundenen Kennzahlen (Aufrufe wurden bewusst
    * weggelassen, siehe knowledge-base). */

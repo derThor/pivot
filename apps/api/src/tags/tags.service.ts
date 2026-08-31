@@ -49,10 +49,10 @@ export class TagsService {
     }));
   }
 
-  /** Kategorien-Seite, Kachel "Tags in dieser Rubrik" (Nutzervorgabe,
+  /** Kategorien-Seite, Kachel "Tags in dieser Kategorie" (Nutzervorgabe,
    * 2026-08-31, 1:1 nach Bildvorlage) – nur Tags, die tatsächlich an
-   * einem (nicht gelöschten) Beitrag dieser Rubrik hängen, mit der
-   * echten Anzahl innerhalb dieser Rubrik (nicht der globalen
+   * einem (nicht gelöschten) Beitrag dieser Kategorie hängen, mit der
+   * echten Anzahl innerhalb dieser Kategorie (nicht der globalen
    * Medien-Zählung wie in `findAll()`). */
   async findByCategory(categoryId: string) {
     const tags = await this.prisma.tag.findMany({

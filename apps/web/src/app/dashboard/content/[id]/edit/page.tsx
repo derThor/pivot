@@ -6,6 +6,7 @@ import { ContentEditorForm } from "@/components/content-editor-form";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
 import { PreviewLinksDialog } from "@/components/preview-links-dialog";
 import {
+  getAllTags,
   getCategories,
   getContent,
   getContentTypes,
@@ -27,6 +28,7 @@ export default async function EditContentPage({
     moduleTypes,
     globalModules,
     categories,
+    tags,
     settings,
     user,
   ] = await Promise.all([
@@ -35,6 +37,7 @@ export default async function EditContentPage({
     getModuleTypes(),
     getGlobalModules(),
     getCategories({ pageSize: 100 }),
+    getAllTags(),
     getPublicSettings(),
     getCurrentUser(),
   ]);
@@ -72,6 +75,7 @@ export default async function EditContentPage({
         moduleTypes={moduleTypes ?? []}
         globalModules={globalModules ?? []}
         categories={categories?.items ?? []}
+        tags={tags ?? []}
         content={content}
         autosaveEnabled={settings?.autosaveEnabled ?? true}
         canForceUnlock={user?.permissions?.includes("content:delete") ?? false}

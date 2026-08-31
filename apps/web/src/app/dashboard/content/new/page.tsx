@@ -2,6 +2,7 @@ import { ContentEditorForm } from "@/components/content-editor-form";
 import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
 import {
+  getAllTags,
   getCategories,
   getContentTypes,
   getGlobalModules,
@@ -10,12 +11,13 @@ import {
 } from "@/lib/api-server";
 
 export default async function NewContentPage() {
-  const [contentTypes, moduleTypes, globalModules, categories, settings] =
+  const [contentTypes, moduleTypes, globalModules, categories, tags, settings] =
     await Promise.all([
       getContentTypes(),
       getModuleTypes(),
       getGlobalModules(),
       getCategories({ pageSize: 100 }),
+      getAllTags(),
       getPublicSettings(),
     ]);
 
@@ -36,6 +38,7 @@ export default async function NewContentPage() {
           moduleTypes={moduleTypes ?? []}
           globalModules={globalModules ?? []}
           categories={categories?.items ?? []}
+          tags={tags ?? []}
           autosaveEnabled={settings?.autosaveEnabled ?? true}
         />
       )}

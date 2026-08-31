@@ -1019,6 +1019,14 @@ model Category {
   name        String            @unique
   slug        String            @unique
   description String?
+  // Kategorien-Seite, Kopfkachel/Sidebar-Balken (Nutzervorgabe,
+  // 2026-08-31: "nutze den gleichen color picker wie in einstellungen
+  // und darstellung") – Hex-Wert wie `AppSettings.accentColor`, nicht
+  // die vorher rein dekorative Hash-Farbe (siehe tag-colors.ts). `null`
+  // = noch keine eigene Farbe gewählt, Sidebar/Balken fallen dann auf
+  // die bisherige Hash-Farbe zurück statt einen erfundenen Standard
+  // vorzuspiegeln.
+  color       String?
   // Papierkorb, siehe Content.deletedAt.
   deletedAt   DateTime?
   deletedById String?

@@ -609,6 +609,7 @@ function taxonomyQuery(params?: { page?: number; pageSize?: number }) {
 }
 
 export interface CategoryListItem extends TaxonomyItem {
+  color: string | null;
   contentCount: number;
 }
 
@@ -624,6 +625,7 @@ export function getCategories(params?: { page?: number; pageSize?: number }) {
 }
 
 export interface CategoryDetail extends TaxonomyItem {
+  color: string | null;
   contentCount: number;
   liveCount: number;
 }
@@ -636,8 +638,8 @@ export interface TagWithCategoryCount extends TaxonomyItem {
   contentCount: number;
 }
 
-/** Kategorien-Seite, Kachel "Tags in dieser Rubrik" – nur Tags, die
- * tatsächlich an einem Beitrag dieser Rubrik hängen. */
+/** Kategorien-Seite, Kachel "Tags in dieser Kategorie" – nur Tags, die
+ * tatsächlich an einem Beitrag dieser Kategorie hängen. */
 export function getCategoryTags(categoryId: string) {
   return apiFetch<TagWithCategoryCount[]>(`/tags/by-category/${categoryId}`);
 }
