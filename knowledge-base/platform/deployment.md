@@ -295,6 +295,30 @@ Impersonation starten/beenden). Jetzt gilt:
 **Lehre:** ein geänderter Cookie-Pfad betrifft immer beide Seiten, Setzen
 **und** Löschen; letzteres schlägt lautlos fehl.
 
+**Und noch ein Nachtrag: ERR_TOO_MANY_REDIRECTS.** Durch die doppelten
+Cookies (alt auf `/`, neu auf `/admin`) landete der Browser in einer
+Endlosschleife: das alte, abgelaufene Zugriffstoken galt der Middleware
+als "angemeldet", sie ließ `/dashboard` durch, die Seite scheiterte
+serverseitig am 401 und leitete zurück auf `/login` – wo dasselbe Cookie
+wieder als Sitzung zählte. Zwei Korrekturen:
+
+- `isAccessTokenUsable()` in der Middleware prüft jetzt das `exp`-Feld.
+  Ein abgelaufenes Token zählt nicht mehr als Sitzung; die Middleware
+  geht stattdessen in den Refresh-Zweig und – wenn auch der scheitert –
+  auf die Login-Seite mit gelöschten Cookies. Das Verhalten hängt damit
+  nicht mehr an der Cookie-Pfad-Frage, sondern ist generell korrekt.
+- Die Löschzeilen werden über `appendAuthCookieDeletions()` **direkt an
+  die Header angehängt**: `cookies().delete()` bzw.
+  `response.cookies.delete()` legen ihre Set-Cookie-Zeilen in einer Map
+  ab, die nach dem Cookie-**Namen** schlüsselt – zwei Löschungen
+  desselben Namens mit verschiedenen Pfaden überschreiben sich sonst
+  gegenseitig, und nur die letzte landet in der Antwort.
+
+Verifiziert mit einem künstlich abgelaufenen Token: `/admin/dashboard`
+antwortet mit 307 auf die Login-Seite und vier Set-Cookie-Zeilen (zwei
+Cookies × zwei Pfade), `/admin/login` mit demselben Token antwortet 200
+statt erneut weiterzuleiten.
+
 **apps/api**
 
 - `app.set('trust proxy', 1)` in `main.ts` – ohne das sähe der globale

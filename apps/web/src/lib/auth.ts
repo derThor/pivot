@@ -36,14 +36,26 @@ export function authCookieDeleteOptions(name: string) {
   return { name, path: baseCookieOptions.path };
 }
 
-/** Alle Pfade, unter denen ein Auth-Cookie liegen KANN. Neben dem
- * aktuellen Pfad auch "/" - dort liegen die Cookies aller Sitzungen, die
- * vor dem Umzug des Backends unter /admin begonnen haben. Ohne diese
- * Aufraeum-Loeschung bliebe ein altes "/"-Cookie liegen, wuerde bei jedem
- * Request mitgeschickt und die Abmeldung damit wirkungslos aussehen. */
-export function authCookieDeleteTargets(name: string) {
-  const paths = new Set([baseCookieOptions.path, "/"]);
-  return [...paths].map((path) => ({ name, path }));
+/** Loeschen ueber `cookies().delete()`/`response.cookies.delete()` legt
+ * die Set-Cookie-Zeilen in einer Map ab, die nach dem NAMEN schluesselt -
+ * zwei Loeschungen desselben Cookies mit verschiedenen Pfaden ueber-
+ * schreiben sich dabei gegenseitig, und nur die letzte landet in der
+ * Antwort. Deshalb werden die Zeilen hier direkt angehaengt. */
+export function appendAuthCookieDeletions(
+  headers: Headers,
+  names: readonly string[],
+) {
+  const paths = [...new Set([baseCookieOptions.path, "/"])];
+  for (const name of names) {
+    for (const path of paths) {
+      headers.append(
+        "set-cookie",
+        `${name}=; Path=${path}; Max-Age=0; HttpOnly; SameSite=Lax${
+          isProd ? "; Secure" : ""
+        }`,
+      );
+    }
+  }
 }
 
 export interface TokenPair {

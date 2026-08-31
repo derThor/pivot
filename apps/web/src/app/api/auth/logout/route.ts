@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import {
   AUTH_COOKIE_NAMES,
   REFRESH_TOKEN_COOKIE,
-  authCookieDeleteTargets,
+  appendAuthCookieDeletions,
 } from "@/lib/auth";
 
 const API_URL = process.env.API_URL ?? "http://localhost:3001/v1";
@@ -20,11 +20,7 @@ export async function POST() {
     }).catch(() => null);
   }
 
-  for (const name of AUTH_COOKIE_NAMES) {
-    for (const target of authCookieDeleteTargets(name)) {
-      cookieStore.delete(target);
-    }
-  }
-
-  return NextResponse.json({ success: true });
+  const response = NextResponse.json({ success: true });
+  appendAuthCookieDeletions(response.headers, AUTH_COOKIE_NAMES);
+  return response;
 }

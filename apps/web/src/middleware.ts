@@ -3,7 +3,7 @@ import {
   ACCESS_TOKEN_COOKIE,
   AUTH_COOKIE_NAMES,
   REFRESH_TOKEN_COOKIE,
-  authCookieDeleteTargets,
+  appendAuthCookieDeletions,
   buildAuthCookies,
   type TokenPair,
 } from "@/lib/auth";
@@ -29,6 +29,8 @@ const ACCOUNT_PATH = "/dashboard/account";
 interface LockoutPayload {
   mustChangePassword?: boolean;
   twoFactorSetupRequired?: boolean;
+  /** Ablaufzeitpunkt in Sekunden (Standard-JWT-Feld). */
+  exp?: number;
 }
 
 // Nur zur UX-Weiterleitung, keine Signaturprüfung nötig: die eigentliche
@@ -48,6 +50,21 @@ function decodeAccessToken(token: string): LockoutPayload | null {
   } catch {
     return null;
   }
+}
+
+/** Ein vorhandenes, aber abgelaufenes Zugriffstoken darf nicht als
+ * gueltige Sitzung durchgehen: sonst laesst die Middleware die Anfrage
+ * durch, die Seite scheitert serverseitig am 401 und leitet zurueck auf
+ * /login - wo das Cookie wieder als "angemeldet" gilt. Genau diese
+ * Endlosschleife (ERR_TOO_MANY_REDIRECTS) trat am 2026-08-31 auf, als
+ * nach dem Wechsel des Cookie-Pfads auf /admin zusaetzlich noch ein altes
+ * Cookie auf "/" im Browser lag. Ist das Token abgelaufen, faellt die
+ * Middleware stattdessen auf den Refresh-Zweig zurueck. */
+function isAccessTokenUsable(token: string | undefined): token is string {
+  if (!token) return false;
+  const payload = decodeAccessToken(token);
+  if (!payload?.exp) return true; // ohne exp nicht beurteilbar - wie bisher behandeln
+  return payload.exp * 1000 > Date.now();
 }
 
 function applyLockoutRedirect(
@@ -101,11 +118,7 @@ async function tryRefresh(
 }
 
 function clearAuthCookies(response: NextResponse) {
-  for (const name of AUTH_COOKIE_NAMES) {
-    for (const target of authCookieDeleteTargets(name)) {
-      response.cookies.delete(target);
-    }
-  }
+  appendAuthCookieDeletions(response.headers, AUTH_COOKIE_NAMES);
   return response;
 }
 
@@ -171,9 +184,11 @@ export async function middleware(request: NextRequest) {
   const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
   const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
 
+  const accessTokenUsable = isAccessTokenUsable(accessToken);
+
   if (pathname.startsWith(PROTECTED_PREFIX)) {
-    if (accessToken) {
-      return applyLockoutRedirect(request, accessToken, NextResponse.next());
+    if (accessTokenUsable) {
+      return applyLockoutRedirect(request, accessToken!, NextResponse.next());
     }
 
     if (refreshToken) {
@@ -199,7 +214,7 @@ export async function middleware(request: NextRequest) {
 
   if (
     (pathname === "/login" || pathname === "/register") &&
-    (accessToken || refreshToken)
+    (accessTokenUsable || refreshToken)
   ) {
     return NextResponse.redirect(internalUrl(request, "/dashboard"));
   }
