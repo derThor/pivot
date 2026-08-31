@@ -39,8 +39,8 @@ import type {
   Tag,
 } from "@/lib/api-server";
 
-const STATUS_PILLS: { label: string; value: ContentStatus | null }[] = [
-  { label: "Alle", value: null },
+const STATUS_PILLS: { label: string; value: ContentStatus | "ALL" }[] = [
+  { label: "Alle", value: "ALL" },
   { label: "Live", value: "PUBLISHED" },
   { label: "Entwurf", value: "DRAFT" },
   { label: "Geplant", value: "SCHEDULED" },
@@ -400,30 +400,20 @@ export function CategoryExplorer({
                         className="bg-card pl-9"
                       />
                     </div>
-                    <div className="flex gap-1 rounded-lg bg-muted p-1">
-                      {STATUS_PILLS.map((pill) => {
-                        const active =
-                          (currentStatus ?? null) === pill.value ||
-                          (!currentStatus && pill.value === null);
-                        return (
-                          <Link
-                            key={pill.label}
-                            href={buildUrl({
-                              status: pill.value ?? undefined,
-                              postsPage: undefined,
-                            })}
-                            className={cn(
-                              "rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-                              active
-                                ? "bg-card text-foreground shadow-sm"
-                                : "text-muted-foreground hover:text-foreground",
-                            )}
-                          >
-                            {pill.label}
-                          </Link>
-                        );
-                      })}
-                    </div>
+                    <SegmentedPicker
+                      options={STATUS_PILLS}
+                      value={
+                        (currentStatus as ContentStatus | undefined) ?? "ALL"
+                      }
+                      onChange={(value) =>
+                        router.push(
+                          buildUrl({
+                            status: value === "ALL" ? undefined : value,
+                            postsPage: undefined,
+                          }),
+                        )
+                      }
+                    />
                   </div>
 
                   <div className="overflow-hidden rounded-xl bg-card shadow-sm">
