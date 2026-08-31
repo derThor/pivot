@@ -95,7 +95,11 @@ Details: [rbac-rework.md](../knowledge-base/auth/rbac-rework.md),
 - [x] Rich-Text/Block-Editor für Content-Body (Tiptap Core + StarterKit,
       HTML-String-Ausgabe)
 - [x] Versions-Diff & Rollback-UI (`GET /content/:id/versions`, `POST
-    .../rollback`, Feld-für-Feld-Wortdiff gegen den aktuellen Stand)
+    .../rollback`) – seit dem Redesign (2026-08-30) als Liste+Detail-
+      Explorer (Sidebar + Vorschau-/Änderungen-Tabs), Feld-Diff
+      standardmäßig gegen die direkte Vorversion statt gegen den
+      aktuellen Stand, echte Status-/Sicherung-Badges über neue
+      `ContentVersion.status`/`.trigger`-Felder
 
 Details: [rich-text-and-versioning.md](../knowledge-base/content/rich-text-and-versioning.md).
 
@@ -726,8 +730,27 @@ für Details. Zwei Folgevorhaben dabei zunächst vom Nutzer als
       voraus, da `apps/web` selbst keine öffentliche Website-
       Auslieferung hat.
 
-- [ ] Audit-Log tatsächlich befüllen (aktuell nur Datenmodell)
-- [ ] Dark-Mode-Umschalter im Dashboard
+- [x] Audit-Log tatsächlich befüllen (aktuell nur Datenmodell) – längst
+      weit darüber hinaus: `AuditLogService.record()` wird app-weit
+      genutzt (Aktivität-Tab, Einstellungen-Protokoll, Job-Läufe,
+      Impersonation, Content-Publish u.a.), inkl. automatischer
+      Aufräum-Retention (`activityLogRetentionDays`, siehe
+      [scheduled-jobs-tab.md](../knowledge-base/tooling/scheduled-jobs-tab.md))
+- [x] Dark-Mode-Umschalter im Dashboard – `theme-toggle.tsx`, in Header
+      und Sidebar eingebunden
+- [x] Job-Lauf-/Aktivitäten-Historie-Aufbewahrung (2026-08-30) – zwei
+      neue, einstellbare Retention-Fristen unter Einstellungen → Jobs
+      (`jobRunRetentionDays`, `activityLogRetentionDays`), täglich per
+      neuem `job-run-cleanup`/`activity-log-cleanup`-Job durchgesetzt.
+      Ersetzt bewusst die bisherige rein manuelle
+      Zugriffsprotokoll-Löschliste. Siehe
+      [scheduled-jobs-tab.md](../knowledge-base/tooling/scheduled-jobs-tab.md).
+- [x] Datenschutz-Modul-Freischaltung erreicht auch Hintergrund-Jobs
+      (2026-08-30) – DSB-Monatsbericht/Löschanfragen-Fristerinnerung
+      erscheinen nur noch bei aktiviertem Feature, dritter Konsument des
+      Modul-Feature-Entitlement-Musters neben Controllern und
+      `NotificationsService`. Siehe
+      [master-slave-licensing.md](../knowledge-base/platform/master-slave-licensing.md).
 - [ ] Redis-Anbindung für Caching/Sessions aktivieren
 - [ ] API-Keys für externe Anwendungen
 - [ ] Rate Limits pro API-Key
