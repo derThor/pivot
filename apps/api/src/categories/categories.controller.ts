@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -15,6 +17,7 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { QueryCategoryDto } from './dto/query-category.dto';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { FindPageDto } from '../common/dto/find-page.dto';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
@@ -46,6 +49,20 @@ export class CategoriesController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.categoriesService.findOne(id);
+  }
+
+  // Öffentlich wie die anderen Vorschau-/Feed-Auslieferungen dieser App
+  // (z.B. GET /content/preview/:token) – ein RSS-Feed ist per Definition
+  // ohne Login abrufbar, sonst könnte ihn kein Feed-Reader abonnieren.
+  @Public()
+  @Get(':id/feed.xml')
+  @Header('Content-Type', 'application/rss+xml; charset=utf-8')
+  async feed(@Param('id') id: string) {
+    const xml = await this.categoriesService.generateFeed(id);
+    if (!xml) {
+      throw new NotFoundException('Kein RSS-Feed für diese Kategorie.');
+    }
+    return xml;
   }
 
   @RequirePermission('categories:create')

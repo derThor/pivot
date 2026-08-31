@@ -9,6 +9,22 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { QueryCategoryDto } from './dto/query-category.dto';
 
+// RSS 2.0 verlangt kein XML-Escaping-Framework – vier Zeichen reichen für
+// gültiges XML aus Nutzer-eingegebenem Titel/Auszug (Category.name/
+// description, Content.title/excerpt).
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function toRfc822(date: Date): string {
+  return date.toUTCString();
+}
+
+const FEED_ITEM_LIMIT = 20;
+
 @Injectable()
 export class CategoriesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -57,6 +73,63 @@ export class CategoriesService {
       }),
     ]);
     return { ...category, contentCount, liveCount };
+  }
+
+  /** Kategorien-Seite, Schalter "RSS-Feed anbieten" (Nutzervorgabe,
+   * 2026-08-31) – echter RSS-2.0-Feed aus den zuletzt veröffentlichten
+   * Beiträgen dieser Kategorie. `null` = Kategorie unbekannt/gelöscht
+   * oder Feed deaktiviert, Controller antwortet dann mit 404.
+   *
+   * Bekannte Lücke: `<link>` fehlt bei Beiträgen ohne `canonicalUrl` –
+   * es gibt aktuell keine echte Basis-URL für eine öffentlich
+   * ausgelieferte Seite (die öffentliche Website selbst ist noch nicht
+   * gebaut, siehe knowledge-base). Kein erfundener Domain-Platzhalter,
+   * `<guid isPermaLink="false">` bleibt als eindeutiger Bezug bestehen. */
+  async generateFeed(id: string): Promise<string | null> {
+    const category = await this.prisma.category.findUnique({ where: { id } });
+    if (!category || category.deletedAt || !category.rssEnabled) return null;
+
+    const items = await this.prisma.content.findMany({
+      where: {
+        deletedAt: null,
+        status: ContentStatus.PUBLISHED,
+        categories: { some: { categoryId: id } },
+      },
+      orderBy: { publishedAt: 'desc' },
+      take: FEED_ITEM_LIMIT,
+      select: {
+        id: true,
+        title: true,
+        excerpt: true,
+        canonicalUrl: true,
+        publishedAt: true,
+      },
+    });
+
+    const itemsXml = items
+      .map((item) => {
+        const link = item.canonicalUrl
+          ? `<link>${escapeXml(item.canonicalUrl)}</link>`
+          : '';
+        return `    <item>
+      <title>${escapeXml(item.title)}</title>
+      ${item.excerpt ? `<description>${escapeXml(item.excerpt)}</description>` : ''}
+      <guid isPermaLink="false">${item.id}</guid>
+      ${link}
+      <pubDate>${toRfc822(item.publishedAt ?? new Date())}</pubDate>
+    </item>`;
+      })
+      .join('\n');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>${escapeXml(category.name)}</title>
+    ${category.description ? `<description>${escapeXml(category.description)}</description>` : ''}
+    <lastBuildDate>${toRfc822(new Date())}</lastBuildDate>
+${itemsXml}
+  </channel>
+</rss>`;
   }
 
   /** Ermittelt, auf welcher Seite (bei gegebener pageSize) ein Eintrag liegt. */

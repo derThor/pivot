@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
-import { ContentStatus } from '@pivot/database';
+import { CategorySortOrder, ContentStatus } from '@pivot/database';
 
 export class QueryContentDto {
   @ApiPropertyOptional({ enum: ContentStatus })
@@ -23,6 +23,13 @@ export class QueryContentDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  // Kategorien-Seite, "Sortierung" (Nutzervorgabe, 2026-08-31) – wirkt nur
+  // in Kombination mit `categoryId`, siehe ContentService.findAll().
+  @ApiPropertyOptional({ enum: CategorySortOrder })
+  @IsOptional()
+  @IsEnum(CategorySortOrder)
+  sortOrder?: CategorySortOrder;
 
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()

@@ -5,6 +5,7 @@ import {
   getAllTags,
   getCategories,
   getCategory,
+  getCategoryFeedUrl,
   getCategoryTags,
   getContentList,
   getPublicSettings,
@@ -21,8 +22,12 @@ export default async function CategoriesPage({
     postsPage?: string;
   }>;
 }) {
-  const { category: categoryParam, status, search, postsPage } =
-    await searchParams;
+  const {
+    category: categoryParam,
+    status,
+    search,
+    postsPage,
+  } = await searchParams;
 
   const [categories, settings, allTags] = await Promise.all([
     getCategories({ page: 1, pageSize: 100 }),
@@ -37,19 +42,22 @@ export default async function CategoriesPage({
     notFound();
   }
 
-  const [selectedCategory, categoryTags, posts] = selectedId
+  const selectedCategory = selectedId ? await getCategory(selectedId) : null;
+
+  const [categoryTags, posts] = selectedId
     ? await Promise.all([
-        getCategory(selectedId),
         getCategoryTags(selectedId),
         getContentList({
           categoryId: selectedId,
           status: status as ContentStatus | undefined,
           search,
+          sortOrder: selectedCategory?.sortOrder,
           page: Number(postsPage) || 1,
-          pageSize: settings?.defaultPageSize ?? 10,
+          pageSize:
+            selectedCategory?.postsPerPage ?? settings?.defaultPageSize ?? 10,
         }),
       ])
-    : [null, null, null];
+    : [null, null];
 
   return (
     <CategoryExplorer
@@ -61,6 +69,7 @@ export default async function CategoriesPage({
       allTags={allTags ?? []}
       currentStatus={status}
       currentSearch={search ?? ""}
+      feedUrl={selectedId ? getCategoryFeedUrl(selectedId) : ""}
     />
   );
 }

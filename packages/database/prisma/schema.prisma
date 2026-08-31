@@ -837,6 +837,14 @@ enum ContentStatus {
   ARCHIVED
 }
 
+// Kategorien-Seite, "Sortierung" unter Kategorie-Einstellungen, siehe
+// Category.sortOrder.
+enum CategorySortOrder {
+  NEWEST
+  OLDEST
+  MANUAL
+}
+
 model ContentType {
   id        String    @id @default(cuid())
   name      String    @unique
@@ -1027,6 +1035,27 @@ model Category {
   // die bisherige Hash-Farbe zurück statt einen erfundenen Standard
   // vorzuspiegeln.
   color       String?
+  // Kategorien-Seite, Kachel "Archiv & Feed" (Nutzervorgabe, 2026-08-31:
+  // "wir bauen eine öffentliche Webseite. Master und Client haben immer
+  // eine öffentliche Webseite ... das folgt in einem weiteren Schritt")
+  // – echte, persistierte Einstellungen für die noch zu bauende
+  // öffentliche Website ("Frontend" in Nutzer-Terminologie, nicht zu
+  // verwechseln mit apps/web, das der Nutzer "Backend"/Administration
+  // nennt). `archivePublished`/`showFeaturedLarge` haben aktuell noch
+  // KEINEN Konsumenten (die öffentliche Website existiert noch nicht),
+  // sind aber bewusst echte Felder statt Mockup-Attrappen, da der Nutzer
+  // das Vorziehen dieser Einstellung explizit angeordnet hat.
+  rssEnabled       Boolean          @default(false)
+  archivePublished Boolean          @default(false)
+  showFeaturedLarge Boolean         @default(false)
+  // Sortierung/Seitengröße wirken auf die eigene Beiträge-Tabelle dieser
+  // Kategorie im Dashboard (Nutzerentscheidung nach Rückfrage – im
+  // Mockup ursprünglich für die nicht existierende Archivseite gedacht).
+  // MANUAL ist als Wert wählbar/speicherbar, aber mangels eines
+  // Reihenfolge-Felds auf `ContentCategory` noch nicht wirksam umgesetzt
+  // – fällt bis dahin auf NEWEST zurück (siehe ContentService.findAll()).
+  sortOrder    CategorySortOrder @default(NEWEST)
+  postsPerPage Int?
   // Papierkorb, siehe Content.deletedAt.
   deletedAt   DateTime?
   deletedById String?

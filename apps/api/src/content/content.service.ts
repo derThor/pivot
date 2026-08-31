@@ -83,7 +83,15 @@ export class ContentService {
   ) {}
 
   async findAll(query: QueryContentDto) {
-    const { page, pageSize, status, contentTypeId, categoryId, search } = query;
+    const {
+      page,
+      pageSize,
+      status,
+      contentTypeId,
+      categoryId,
+      search,
+      sortOrder,
+    } = query;
     const where = {
       deletedAt: null,
       ...(status && { status }),
@@ -94,12 +102,21 @@ export class ContentService {
       }),
     };
 
+    // Kategorien-Seite, "Sortierung" (Nutzervorgabe, 2026-08-31) – MANUAL
+    // ist zwar an der Kategorie speicherbar, mangels eines
+    // Reihenfolge-Felds auf `ContentCategory` aber noch nicht umgesetzt
+    // und fällt bewusst auf NEWEST zurück, statt einen Fehler zu werfen.
+    const orderBy =
+      sortOrder === 'OLDEST'
+        ? ({ updatedAt: 'asc' } as const)
+        : ({ updatedAt: 'desc' } as const);
+
     const [items, total] = await Promise.all([
       this.prisma.content.findMany({
         where,
         skip: (page - 1) * pageSize,
         take: pageSize,
-        orderBy: { updatedAt: 'desc' },
+        orderBy,
         include: {
           author: { select: { id: true, firstName: true, lastName: true } },
           contentType: { select: { id: true, name: true, slug: true } },

@@ -260,6 +260,7 @@ export function getContentList(params?: {
   status?: ContentStatus;
   categoryId?: string;
   search?: string;
+  sortOrder?: CategorySortOrder;
   page?: number;
   pageSize?: number;
 }) {
@@ -267,6 +268,7 @@ export function getContentList(params?: {
   if (params?.status) search.set("status", params.status);
   if (params?.categoryId) search.set("categoryId", params.categoryId);
   if (params?.search) search.set("search", params.search);
+  if (params?.sortOrder) search.set("sortOrder", params.sortOrder);
   if (params?.page) search.set("page", String(params.page));
   if (params?.pageSize) search.set("pageSize", String(params.pageSize));
   const query = search.toString();
@@ -619,19 +621,32 @@ export interface CategoryListResponse {
 }
 
 export function getCategories(params?: { page?: number; pageSize?: number }) {
-  return apiFetch<CategoryListResponse>(
-    `/categories${taxonomyQuery(params)}`,
-  );
+  return apiFetch<CategoryListResponse>(`/categories${taxonomyQuery(params)}`);
 }
+
+export type CategorySortOrder = "NEWEST" | "OLDEST" | "MANUAL";
 
 export interface CategoryDetail extends TaxonomyItem {
   color: string | null;
   contentCount: number;
   liveCount: number;
+  rssEnabled: boolean;
+  archivePublished: boolean;
+  showFeaturedLarge: boolean;
+  sortOrder: CategorySortOrder;
+  postsPerPage: number | null;
 }
 
 export function getCategory(id: string) {
   return apiFetch<CategoryDetail>(`/categories/${id}`);
+}
+
+/** Kategorien-Seite, Anzeige der echten Feed-Adresse in den
+ * Kategorie-Einstellungen (Nutzervorgabe, 2026-08-31) – die tatsächlich
+ * erreichbare API-Route, keine erfundene Domain (siehe generateFeed() im
+ * Backend: es gibt noch keine öffentliche Website/Basis-URL). */
+export function getCategoryFeedUrl(id: string) {
+  return `${API_URL}/categories/${id}/feed.xml`;
 }
 
 export interface TagWithCategoryCount extends TaxonomyItem {
