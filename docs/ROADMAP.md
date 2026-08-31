@@ -791,6 +791,66 @@ für Details. Zwei Folgevorhaben dabei zunächst vom Nutzer als
       für externe Konsumenten fehlt weiterhin.
 - [ ] SDKs für JavaScript und .NET
 
+### 4.0 – Öffentliche Website (`apps/site`) – Umsetzung des Frontend-Plans
+
+Die zweite Kern-App jeder Installation neben dem Backend ("Frontend" im
+Nutzer-Sprachgebrauch, siehe Begriffsklärung in
+[taxonomy-management.md](../knowledge-base/frontend/taxonomy-management.md)).
+Architektur, Entscheidungen und Stolpersteine:
+[public-website.md](../knowledge-base/frontend/public-website.md).
+
+- [x] **Schritt 1** – `AppSettings`-Felder (Titel, Tagline, Favicon,
+      Standard-SEO/OG, öffentliche Basis-URL, Hauptmenü), Einstellungen-
+      Bereich "Frontend", Content-Delivery-API (2026-08-31)
+- [x] **Schritt 2** – gemeinsames Block-Rendering als Paket
+      `packages/blocks`; Backend-Vorschau und Website nutzen denselben
+      Code (2026-08-31)
+- [x] **Schritt 3** – Grundgerüst `apps/site` (Port 3002): Layout mit
+      `GET /public/site`, freie Seiten `/{slug}`, `sitemap.xml`,
+      `robots.txt`, eigenes Token-Set statt Admin-Theme (2026-08-31)
+- [x] **Startseite** – wird am Menüpunkt markiert
+      (`NavigationItem.isHomepage`, app-weit genau einer, Badge in der
+      Menü-Verwaltung); `GET /public/home` + `/` in `apps/site`
+      (2026-08-31, Details in
+      [navigation-management.md](../knowledge-base/content/navigation-management.md))
+- [ ] **Schritt 4** – Kategorie-Archiv `/{kategorie}` (Aufmacher-Kachel,
+      Pagination) und Beitragsseite `/{kategorie}/{slug}`
+- [ ] **Schritt 5** – Hauptmenü im Header (`AppSettings.mainNavigationId`
+      hat noch **kein Eingabefeld** in den Einstellungen), RSS-`<link>`
+      bei `rssEnabled`, abschließender SEO-Feinschliff
+- [ ] Formular-Bausteine auf öffentlichen Seiten (brauchen einen
+      BFF-Proxy in `apps/site`; bis dahin werden sie dort nicht
+      gerendert)
+- [ ] Kategorie-Archiv-Endpunkt auf nullable Antwort umstellen (die
+      Inhalts-Endpunkte antworten seit 2026-08-31 mit `{ content: null }`
+      statt 404, weil Next.js fehlgeschlagene Antworten nicht cached und
+      sonst dauerhaft veraltete Seiten ausliefert)
+- [ ] Mehrsprachigkeit/Locale-Routing (`Content.locale` existiert, ist
+      aber nicht ans Routing angebunden)
+- [ ] Eigene visuelle Gestaltung des Frontends (aktuell bewusst minimal)
+
+### 4.0.1 – Betrieb unter einer Domain
+
+Nutzerentscheidung 2026-08-31: Website, Backend und API liegen unter
+**einer** Domain (`/`, `/admin`, `/api`) statt auf Subdomains.
+Vollständige Anleitung inkl. nginx-/Caddy-Konfiguration, `.env`-Vorlagen
+und Verifikationsliste:
+[deployment.md](../knowledge-base/platform/deployment.md).
+
+- [x] `apps/web` unter `basePath` (`/admin`), 243 URL-Literale auf den
+      neuen `bff()`/`asset()`-Helfer umgestellt, Cookie-Pfad, Middleware-
+      Redirects (2026-08-31)
+- [x] `trust proxy` in der API, `ADMIN_BASE_URL` getrennt von
+      `CORS_ORIGIN` (Mail-Links), reservierte Slugs `admin`/`api`
+      (2026-08-31)
+- [x] Lokaler Reverse Proxy `pnpm dev:proxy` (Port 8080), der das
+      Produktions-Layout nachbildet (2026-08-31)
+- [ ] Echter Reverse Proxy mit TLS auf einem Server (nginx/Caddy) –
+      dokumentiert, aber nie produktiv erprobt
+- [ ] Prozessmanager (PM2/systemd/Docker) statt Dev-Server
+- [ ] Baseline-Migration, damit `prisma migrate deploy` produktiv nutzbar
+      ist (die Dev-DB ist von der Migrationshistorie abgedriftet)
+
 ### 4.1 – Entwicklerfreundlichkeit
 
 - [ ] Eigene Feldtypen registrieren
@@ -956,6 +1016,11 @@ Details, Datenmodell, gelöster NestJS-Zirkelbezug und offene Punkte
       3010/3011), seitdem durchgehend als echte zweite Installation für
       alle Master/Slave-Tests genutzt.
 - [ ] **Echter Deploy-/Produktivbetrieb statt lokaler Simulation**
+      (Konkrete Anleitung inzwischen vorhanden:
+      [deployment.md](../knowledge-base/platform/deployment.md) – eine
+      Domain, drei Prozesse, nginx-/Caddy-Beispiel, `.env`-Vorlagen,
+      Verifikationsliste; die Code-Anpassungen dafür sind seit
+      2026-08-31 erledigt, siehe Phase 4.0.1.)
       (Nutzerfrage, 2026-08-25: "geht sowas auch wie wir es jetzt machen
       später im Live-Betrieb?" – Antwort: nein). Bisher laufen die meisten
       lokalen Prozesse über `nest start --watch`/`next dev`, Schema-
