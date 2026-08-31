@@ -19,6 +19,7 @@ import {
   summarizeFieldChanges,
 } from "@/lib/content-version-diff";
 import { cn, formatName, formatRelativeTime } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 import type {
   AuthorRef,
   ContentDetail,
@@ -63,7 +64,10 @@ interface Row {
   compareData: Record<string, unknown> | null;
 }
 
-function unionFieldNames(a: Record<string, unknown>, b: Record<string, unknown>) {
+function unionFieldNames(
+  a: Record<string, unknown>,
+  b: Record<string, unknown>,
+) {
   return Array.from(new Set([...Object.keys(a), ...Object.keys(b)]));
 }
 
@@ -198,7 +202,10 @@ export function ContentVersionsExplorer({
 
   const changeBlocks = useMemo(() => {
     if (!selectedRow?.compareData) return [];
-    const fieldNames = unionFieldNames(selectedRow.compareData, selectedRow.data);
+    const fieldNames = unionFieldNames(
+      selectedRow.compareData,
+      selectedRow.data,
+    );
     const changes = computeFieldChanges(
       selectedRow.compareData,
       selectedRow.data,
@@ -223,15 +230,18 @@ export function ContentVersionsExplorer({
   );
 
   async function handleRollback(versionId: string) {
-    await fetch(`/api/content/${contentId}/versions/${versionId}/rollback`, {
-      method: "POST",
-    });
+    await fetch(
+      bff(`/api/content/${contentId}/versions/${versionId}/rollback`),
+      {
+        method: "POST",
+      },
+    );
     toastEdited("Die Version wurde wiederhergestellt.");
     router.refresh();
   }
 
   async function handleDelete(versionId: string) {
-    await fetch(`/api/content/${contentId}/versions/${versionId}`, {
+    await fetch(bff(`/api/content/${contentId}/versions/${versionId}`), {
       method: "DELETE",
     });
     toastDeleted("Die Version wurde gelöscht.");
@@ -269,7 +279,11 @@ export function ContentVersionsExplorer({
         </div>
         <ConfirmDeleteDialog
           trigger={
-            <Button type="button" variant="outline" disabled={selectedRow.isCurrent}>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={selectedRow.isCurrent}
+            >
               <History />
               Wiederherstellen
             </Button>
@@ -371,7 +385,10 @@ export function ContentVersionsExplorer({
         </div>
 
         <div className="min-w-0">
-          <Tabs value={tab} onValueChange={(v) => setTab(v as "preview" | "changes")}>
+          <Tabs
+            value={tab}
+            onValueChange={(v) => setTab(v as "preview" | "changes")}
+          >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <TabsList>
                 <TabsTrigger value="preview">Vorschau</TabsTrigger>
@@ -382,7 +399,9 @@ export function ContentVersionsExplorer({
                   <span className="text-emerald-600 dark:text-emerald-400">
                     +{totalAdded} hinzugefügt
                   </span>
-                  <span className="text-destructive">-{totalRemoved} entfernt</span>
+                  <span className="text-destructive">
+                    -{totalRemoved} entfernt
+                  </span>
                 </div>
               )}
             </div>
@@ -396,7 +415,8 @@ export function ContentVersionsExplorer({
                     <span className="size-2.5 rounded-full bg-border" />
                   </div>
                   <div className="flex-1 truncate rounded-md bg-card px-3 py-1 text-center text-xs text-muted-foreground">
-                    /{content.slug} · Vorschau · Version {selectedRow.versionNumber}
+                    /{content.slug} · Vorschau · Version{" "}
+                    {selectedRow.versionNumber}
                   </div>
                 </div>
                 <div className="p-6">

@@ -15,6 +15,14 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService);
 
+  // Hinter einem Reverse Proxy (Produktivbetrieb, siehe
+  // knowledge-base/platform/deployment.md) käme sonst jede Anfrage von
+  // 127.0.0.1: der globale ThrottlerGuard würde alle Nutzer in einen
+  // gemeinsamen Zähler werfen und protokollierte IPs wären wertlos. Mit
+  // "trust proxy" wertet Express X-Forwarded-For/-Proto aus – Wert 1, weil
+  // genau ein vertrauenswürdiger Proxy davor steht.
+  app.set('trust proxy', 1);
+
   // Vor helmet() registrieren: sonst würde helmets Cross-Origin-Resource-Policy
   // (same-origin) das Einbetten der Bilder vom Frontend-Origin (Port 3000) blockieren.
   //

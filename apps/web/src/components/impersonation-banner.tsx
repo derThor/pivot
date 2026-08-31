@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { asset, bff } from "@/lib/bff";
 
 // Durchgängig sichtbarer Hinweis während "Als Nutzer ansehen" (2b.14,
 // Sicherheitsdesign) – macht die Impersonation im UI unübersehbar, "Zurück
@@ -14,9 +15,9 @@ export function ImpersonationBanner({ targetName }: { targetName: string }) {
   async function handleReturn() {
     setIsReturning(true);
     try {
-      await fetch("/api/auth/stop-impersonation", { method: "POST" });
+      await fetch(bff("/api/auth/stop-impersonation"), { method: "POST" });
     } finally {
-      window.location.assign("/dashboard/users");
+      window.location.assign(asset("/dashboard/users"));
     }
   }
 

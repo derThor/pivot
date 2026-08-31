@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 
 import { toastWarning } from "@/components/app-toast";
+import { bff } from "@/lib/bff";
 
 const TOAST_ID = "license-development";
 // Gleiches Intervall wie middleware.ts' LOCKED_CACHE_TTL_MS – konsistente
@@ -46,7 +47,7 @@ export function LicenseDevelopmentToast() {
     let cancelled = false;
 
     async function checkStatus() {
-      const res = await fetch("/api/license/state", {
+      const res = await fetch(bff("/api/license/state"), {
         cache: "no-store",
       }).catch(() => null);
       const data = (await res

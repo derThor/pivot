@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { formatRelativePast, formatDuration } from "@/lib/jobs-format";
 import type { JobRunsResponse } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const STATUS_DOT: Record<string, string> = {
   success: "bg-green-500",
@@ -40,7 +41,7 @@ export function JobLogDialog({
   useEffect(() => {
     if (!open || !jobId) return;
     setIsLoading(true);
-    fetch(`/api/jobs/${jobId}/runs?page=${page}&pageSize=10`)
+    fetch(bff(`/api/jobs/${jobId}/runs?page=${page}&pageSize=10`))
       .then((res) => res.json())
       .then(setData)
       .finally(() => setIsLoading(false));

@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { MediaItem, TaxonomyItem } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 export function MediaTagsDialog({
   item,
@@ -46,7 +47,7 @@ export function MediaTagsDialog({
     setError(null);
     setIsSaving(true);
     try {
-      const res = await fetch(`/api/media/${item.id}`, {
+      const res = await fetch(bff(`/api/media/${item.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tagIds: [...selected] }),

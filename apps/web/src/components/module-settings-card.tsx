@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import type { ModuleSettingsEntry } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const CATEGORY_LABEL: Record<ModuleSettingsEntry["category"], string> = {
   integration: "Schnittstelle",
@@ -34,13 +35,10 @@ export function ModuleSettingsCard({
   const router = useRouter();
   const [pendingKey, setPendingKey] = useState<string | null>(null);
 
-  async function patchModule(
-    moduleKey: string,
-    body: Record<string, boolean>,
-  ) {
+  async function patchModule(moduleKey: string, body: Record<string, boolean>) {
     setPendingKey(moduleKey);
     try {
-      const res = await fetch(`/api/module-settings/${moduleKey}`, {
+      const res = await fetch(bff(`/api/module-settings/${moduleKey}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -64,7 +62,7 @@ export function ModuleSettingsCard({
     setPendingKey(`${moduleKey}:${featureKey}`);
     try {
       const res = await fetch(
-        `/api/module-settings/${moduleKey}/features/${featureKey}`,
+        bff(`/api/module-settings/${moduleKey}/features/${featureKey}`),
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -94,9 +92,7 @@ export function ModuleSettingsCard({
                 </span>
                 <div>
                   <div className="flex items-center gap-2">
-                    <CardTitle className="text-base">
-                      {module.label}
-                    </CardTitle>
+                    <CardTitle className="text-base">{module.label}</CardTitle>
                     <Badge className="badge--slate border-0">
                       {CATEGORY_LABEL[module.category]}
                     </Badge>
@@ -122,7 +118,9 @@ export function ModuleSettingsCard({
                   <p className="text-sm font-medium">{feature.label}</p>
                   <Switch
                     checked={module.enabledFeatures.includes(feature.key)}
-                    disabled={pendingKey === `${module.moduleKey}:${feature.key}`}
+                    disabled={
+                      pendingKey === `${module.moduleKey}:${feature.key}`
+                    }
                     onCheckedChange={(checked) =>
                       patchFeature(module.moduleKey, feature.key, checked)
                     }

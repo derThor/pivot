@@ -33,6 +33,7 @@ import {
   ComboboxStatus,
 } from "@/components/ui/combobox";
 import type { ContentListItem, NavigationItemNode } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const targetTypeOptions: Record<string, string> = {
   content: "Inhalt",
@@ -105,7 +106,7 @@ function ContentPicker({
     setIsLoading(true);
     const timeout = setTimeout(async () => {
       const res = await fetch(
-        `/api/content/search?q=${encodeURIComponent(trimmed)}&limit=8`,
+        bff(`/api/content/search?q=${encodeURIComponent(trimmed)}&limit=8`),
       );
       const data = await res.json().catch(() => null);
       setSearchResults(Array.isArray(data) ? data : []);
@@ -246,8 +247,8 @@ export function NavigationItemDialog({
     try {
       const res = await fetch(
         isEditing
-          ? `/api/navigations/${navigationId}/items/${item!.id}`
-          : `/api/navigations/${navigationId}/items`,
+          ? bff(`/api/navigations/${navigationId}/items/${item!.id}`)
+          : bff(`/api/navigations/${navigationId}/items`),
         {
           method: isEditing ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },

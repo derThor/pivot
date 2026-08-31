@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
+import { bff } from "@/lib/bff";
 
 const loginSchema = z.object({
   email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben."),
@@ -61,7 +62,7 @@ export function LoginForm({
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch(bff("/api/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
@@ -93,7 +94,7 @@ export function LoginForm({
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/auth/2fa/login-verify", {
+      const res = await fetch(bff("/api/auth/2fa/login-verify"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

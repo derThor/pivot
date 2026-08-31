@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { bff } from "@/lib/bff";
 import {
   Form,
   FormControl,
@@ -40,7 +41,7 @@ export function ForgotPasswordForm() {
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/auth/forgot-password", {
+      const res = await fetch(bff("/api/auth/forgot-password"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),

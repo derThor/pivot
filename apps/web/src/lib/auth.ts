@@ -1,3 +1,5 @@
+import { BASE_PATH } from "@/lib/bff";
+
 const isProd = process.env.NODE_ENV === "production";
 
 export const ACCESS_TOKEN_COOKIE = "access_token";
@@ -14,11 +16,16 @@ export const AUTH_COOKIE_NAMES = [
 export const ADMIN_ACCESS_TOKEN_COOKIE = "admin_access_token";
 export const ADMIN_REFRESH_TOKEN_COOKIE = "admin_refresh_token";
 
+// Pfad = Backend-Präfix, nicht "/": Backend und öffentliche Website teilen
+// sich dieselbe Domain (siehe knowledge-base/platform/deployment.md). Mit
+// path "/" würde das Sitzungs-Cookie bei JEDEM Besucher-Request an die
+// öffentliche Website mitgeschickt – unnötige Übertragung, und ein
+// vorgelagertes CDN cached Antworten mit Cookies üblicherweise nicht.
 const baseCookieOptions = {
   httpOnly: true,
   secure: isProd,
   sameSite: "lax" as const,
-  path: "/",
+  path: BASE_PATH || "/",
 };
 
 export interface TokenPair {

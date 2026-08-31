@@ -20,6 +20,7 @@ import { useHighlightParam } from "@/hooks/use-highlight-param";
 import { tagDotColor } from "@/lib/tag-colors";
 import { cn, truncateMiddle } from "@/lib/utils";
 import type { Tag } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const dateFormatter = new Intl.DateTimeFormat("de-DE", {
   day: "2-digit",
@@ -47,7 +48,7 @@ export function TagsManager({
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    await fetch(`/api/tags/${deleteTarget.id}`, { method: "DELETE" });
+    await fetch(bff(`/api/tags/${deleteTarget.id}`), { method: "DELETE" });
     toastDeleted(`„${deleteTarget.name}“ wurde gelöscht.`);
     router.refresh();
   }

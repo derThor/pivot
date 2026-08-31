@@ -20,6 +20,7 @@ import {
   type RepeaterItem,
 } from "@/components/block-field-output";
 import type { ContentTypeField, GlobalModule } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 /** Schlanker Dialog nur für "Frage" + "Antwort" + "Veröffentlicht"
  * (Nutzervorgabe, 2026-08-15) – ohne `question`-Prop: hängt beim
@@ -117,7 +118,7 @@ export function FaqQuestionDialog({
             )
           : [...currentItems, { id: crypto.randomUUID(), values: newValues }];
 
-      const res = await fetch(`/api/global-modules/${group.id}`, {
+      const res = await fetch(bff(`/api/global-modules/${group.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

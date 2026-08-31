@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { bff } from "@/lib/bff";
 import {
   Dialog,
   DialogContent,
@@ -52,7 +53,7 @@ export function WebhookDialog() {
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/webhooks", {
+      const res = await fetch(bff("/api/webhooks"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, events }),

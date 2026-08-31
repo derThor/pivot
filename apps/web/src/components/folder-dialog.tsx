@@ -17,6 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import type { MediaFolder } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 export function FolderDialog({
   parentId,
@@ -49,7 +50,9 @@ export function FolderDialog({
     setIsSubmitting(true);
     try {
       const res = await fetch(
-        isEditing ? `/api/media-folders/${folder!.id}` : "/api/media-folders",
+        isEditing
+          ? bff(`/api/media-folders/${folder!.id}`)
+          : bff("/api/media-folders"),
         {
           method: isEditing ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },

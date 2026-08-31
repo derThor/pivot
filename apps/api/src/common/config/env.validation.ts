@@ -14,7 +14,16 @@ export const envSchema = z.object({
     .min(32, 'JWT_REFRESH_SECRET muss mind. 32 Zeichen lang sein'),
   JWT_ACCESS_TTL: z.string().default('15m'),
   JWT_REFRESH_TTL: z.string().default('30d'),
+  // Origin der Web-App für den CORS-Header – nur Schema+Host, niemals mit
+  // Pfad (ein CORS-Origin verträgt keinen).
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
+  // Basis für Links, die im Backend landen (Passwort-Reset,
+  // E-Mail-Verifikation, Benachrichtigungs-Aktionen). Getrennt von
+  // CORS_ORIGIN, seit das Backend unter einem Pfad derselben Domain liegen
+  // kann (z.B. https://kunde.de/admin) – siehe
+  // knowledge-base/platform/deployment.md. Ohne Wert wird CORS_ORIGIN
+  // benutzt, was nur für den Betrieb auf einer eigenen (Sub-)Domain stimmt.
+  ADMIN_BASE_URL: z.string().optional(),
   TOTP_ENCRYPTION_KEY: z
     .string()
     .regex(

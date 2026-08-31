@@ -17,6 +17,7 @@ import { QueryContentVersionsDto } from './dto/query-content-versions.dto';
 import { CreatePreviewLinkDto } from './dto/create-preview-link.dto';
 import { UpdatePreviewLinkDto } from './dto/update-preview-link.dto';
 import { QueryPreviewLinksDto } from './dto/query-preview-links.dto';
+import { assertSlugNotReserved } from '../common/utils/reserved-slugs';
 
 export interface CategoryRef {
   id: string;
@@ -263,6 +264,7 @@ export class ContentService {
   }
 
   async create(dto: CreateContentDto, authorId: string) {
+    assertSlugNotReserved(dto.slug);
     if (dto.categoryIds) {
       await this.assertCategoriesExist(dto.categoryIds);
     }
@@ -335,6 +337,7 @@ export class ContentService {
   }
 
   async update(id: string, dto: UpdateContentDto, editorId: string) {
+    assertSlugNotReserved(dto.slug);
     const existing = await this.findOne(id);
     const { categoryIds, tagIds, scheduledFor, ...rest } = dto;
 

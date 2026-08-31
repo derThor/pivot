@@ -20,6 +20,7 @@ import { RowActionButtons } from "@/components/row-action-buttons";
 import { companyFields, type CompanyFieldKey } from "@/lib/company-fields";
 import { resolveImageSrc } from "@/lib/media";
 import { formatName, truncateMiddle } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 import type {
   CompanyChange,
   CompanyLocation,
@@ -83,7 +84,7 @@ export function CompanyView({
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/settings/company", {
+      const res = await fetch(bff("/api/settings/company"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
@@ -118,7 +119,7 @@ export function CompanyView({
 
   async function handleDeleteLocation() {
     if (!deleteTarget) return;
-    await fetch(`/api/company-locations/${deleteTarget.id}`, {
+    await fetch(bff(`/api/company-locations/${deleteTarget.id}`), {
       method: "DELETE",
     });
     setLocations((prev) => prev.filter((l) => l.id !== deleteTarget.id));

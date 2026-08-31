@@ -34,6 +34,7 @@ import { Switch } from "@/components/ui/switch";
 import { SystemMessage } from "@/components/ui/system-message";
 import { Textarea } from "@/components/ui/textarea";
 import type { MandantListItem, ModuleCatalogEntry } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 // Nutzervorgabe, 2026-08-27: "Aktiv in Pivot grün, Inaktiv in orange und
 // Gesperrt in rot" – wiederverwendet dieselben `badge--*`-Farbklassen wie
@@ -140,7 +141,7 @@ export function MandantDetailView({
     setIsSaving(true);
     setSaveError(null);
     try {
-      const res = await fetch(`/api/mandanten/${mandant.id}`, {
+      const res = await fetch(bff(`/api/mandanten/${mandant.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -184,7 +185,7 @@ export function MandantDetailView({
     setDomainError(null);
     setIsAddingWebsite(true);
     try {
-      const res = await fetch(`/api/mandanten/${mandant.id}/websites`, {
+      const res = await fetch(bff(`/api/mandanten/${mandant.id}/websites`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ domain: newDomain }),
@@ -212,7 +213,7 @@ export function MandantDetailView({
   // (`DELETE /websites/:id`, unverändert).
   async function handleDeleteWebsite() {
     if (!deleteWebsiteTarget) return;
-    const res = await fetch(`/api/websites/${deleteWebsiteTarget.id}`, {
+    const res = await fetch(bff(`/api/websites/${deleteWebsiteTarget.id}`), {
       method: "DELETE",
     });
     if (!res.ok) return;
@@ -228,7 +229,7 @@ export function MandantDetailView({
   async function handleAddModule(moduleKey: string) {
     setPendingModuleKey(moduleKey);
     try {
-      const res = await fetch(`/api/mandanten/${mandant.id}/modules`, {
+      const res = await fetch(bff(`/api/mandanten/${mandant.id}/modules`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ moduleKey }),
@@ -249,7 +250,7 @@ export function MandantDetailView({
     setPendingModuleKey(moduleKey);
     try {
       const res = await fetch(
-        `/api/mandanten/${mandant.id}/modules/${moduleKey}`,
+        bff(`/api/mandanten/${mandant.id}/modules/${moduleKey}`),
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -275,7 +276,9 @@ export function MandantDetailView({
     setPendingFeatureKey(featureKey);
     try {
       const res = await fetch(
-        `/api/mandanten/${mandant.id}/modules/${moduleKey}/features/${featureKey}`,
+        bff(
+          `/api/mandanten/${mandant.id}/modules/${moduleKey}/features/${featureKey}`,
+        ),
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -296,7 +299,7 @@ export function MandantDetailView({
   async function handleRemoveModule() {
     if (!removeModuleTarget) return;
     const res = await fetch(
-      `/api/mandanten/${mandant.id}/modules/${removeModuleTarget}`,
+      bff(`/api/mandanten/${mandant.id}/modules/${removeModuleTarget}`),
       { method: "DELETE" },
     );
     if (!res.ok) return;

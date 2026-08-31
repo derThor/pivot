@@ -36,6 +36,7 @@ import {
 } from "@/components/block-field-output";
 import { resolveImageSrc } from "@/lib/media";
 import type { ContentTypeField, FormListItem } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 // Nur veröffentlichte Formulare sind wählbar – ein Entwurf/pausiertes
 // Formular hätte im Baustein nichts zu suchen (siehe FormsService.submit(),
@@ -45,7 +46,7 @@ import type { ContentTypeField, FormListItem } from "@/lib/api-server";
 let formsCache: Promise<FormListItem[]> | null = null;
 export function loadPublishedForms(): Promise<FormListItem[]> {
   if (!formsCache) {
-    formsCache = fetch("/api/forms?status=published&pageSize=100")
+    formsCache = fetch(bff("/api/forms?status=published&pageSize=100"))
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => data?.items ?? [])
       .catch(() => []);

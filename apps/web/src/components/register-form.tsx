@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/form";
 import { PasswordPolicyChecklist } from "@/components/password-policy-checklist";
 import { isPasswordValid, type PasswordPolicy } from "@/lib/password-policy";
+import { bff } from "@/lib/bff";
 
 export function RegisterForm({
   passwordPolicy,
@@ -79,7 +80,7 @@ export function RegisterForm({
     setResult(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await fetch(bff("/api/auth/register"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

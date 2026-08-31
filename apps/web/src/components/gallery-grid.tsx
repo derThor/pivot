@@ -27,6 +27,7 @@ import {
 import { resolveImageSrc } from "@/lib/media";
 import { cn, truncateMiddle } from "@/lib/utils";
 import type { GlobalModule, ModuleType } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const darkTextClassName = "text-pivot-navy";
 // Höchstens 3 Bild-Kacheln pro Galerie-Karte (Nutzervorgabe, 2026-08-15) –
@@ -62,7 +63,7 @@ export function GalleryGrid({
 
   async function handleDelete() {
     if (!deleteGallery) return;
-    await fetch(`/api/global-modules/${deleteGallery.id}`, {
+    await fetch(bff(`/api/global-modules/${deleteGallery.id}`), {
       method: "DELETE",
     });
     toastDeleted(`„${deleteGallery.name}“ wurde gelöscht.`);

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toastEdited } from "@/components/app-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { bff } from "@/lib/bff";
 
 /** Administration → Module → [key] (Korrektur 2026-08-29: ursprünglich
  * fälschlich unter Einstellungen → Module gebaut, siehe Kommentar dort –
@@ -26,7 +27,7 @@ export function ModuleAutoInstallToggle({
   async function patch(checked: boolean) {
     setPending(true);
     try {
-      const res = await fetch(`/api/module-settings/${moduleKey}`, {
+      const res = await fetch(bff(`/api/module-settings/${moduleKey}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ autoInstallForNewMandants: checked }),

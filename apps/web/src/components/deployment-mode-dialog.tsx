@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { SegmentedPicker } from "@/components/segmented-picker";
 import type { AppSettings } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const MODE_OPTIONS: { value: "master" | "slave"; label: string }[] = [
   { value: "master", label: "Master" },
@@ -64,7 +65,7 @@ export function DeploymentModeDialog({
   async function handleSave() {
     setIsSaving(true);
     try {
-      const res = await fetch("/api/settings", {
+      const res = await fetch(bff("/api/settings"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ deploymentMode: mode }),

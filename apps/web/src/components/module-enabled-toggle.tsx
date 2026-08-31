@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { toastEdited } from "@/components/app-toast";
 import { cn } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 
 /** Administration → Module (Kachel-Übersicht) – Nutzervorgabe, 2026-08-29:
  * der Schalter ist ein Kill-Switch für ALLE Mandanten, nicht nur Masters
@@ -27,7 +28,7 @@ export function ModuleEnabledToggle({
   async function patch(checked: boolean) {
     setPending(true);
     try {
-      const res = await fetch(`/api/module-settings/${moduleKey}`, {
+      const res = await fetch(bff(`/api/module-settings/${moduleKey}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ enabled: checked }),

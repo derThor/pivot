@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
+import { bff } from "@/lib/bff";
 
 type SetupStep = "qr" | "recovery-codes";
 
@@ -66,7 +67,7 @@ export function TwoFactorSetupCard({
     setRegenerateError(null);
     setIsRegenerating(true);
     try {
-      const res = await fetch("/api/auth/2fa/regenerate-recovery-codes", {
+      const res = await fetch(bff("/api/auth/2fa/regenerate-recovery-codes"), {
         method: "POST",
       });
       const data = await res.json().catch(() => null);
@@ -87,7 +88,7 @@ export function TwoFactorSetupCard({
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/auth/2fa/setup", { method: "POST" });
+      const res = await fetch(bff("/api/auth/2fa/setup"), { method: "POST" });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         setError(data?.message ?? "Einrichtung konnte nicht gestartet werden.");
@@ -108,7 +109,7 @@ export function TwoFactorSetupCard({
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/auth/2fa/verify-setup", {
+      const res = await fetch(bff("/api/auth/2fa/verify-setup"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code }),
@@ -136,7 +137,7 @@ export function TwoFactorSetupCard({
     setDisableError(null);
     setIsDisabling(true);
     try {
-      const res = await fetch("/api/auth/2fa/disable", {
+      const res = await fetch(bff("/api/auth/2fa/disable"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: disablePassword }),

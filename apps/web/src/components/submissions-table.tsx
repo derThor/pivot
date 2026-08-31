@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import type { FormFieldOption, FormSubmission } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const dateFormatter = new Intl.DateTimeFormat("de-DE", {
   dateStyle: "medium",
@@ -80,7 +81,7 @@ export function SubmissionsTable({
 
   async function toggleRead(submission: FormSubmission) {
     await fetch(
-      `/api/forms/${submission.formId}/submissions/${submission.id}`,
+      bff(`/api/forms/${submission.formId}/submissions/${submission.id}`),
       {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -95,7 +96,7 @@ export function SubmissionsTable({
 
   async function handleDelete(submission: FormSubmission) {
     await fetch(
-      `/api/forms/${submission.formId}/submissions/${submission.id}`,
+      bff(`/api/forms/${submission.formId}/submissions/${submission.id}`),
       { method: "DELETE" },
     );
     toastDeleted("Einsendung wurde gelöscht.");

@@ -17,6 +17,7 @@ import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { PaginationControls } from "@/components/pagination-controls";
 import { formatRelativePast } from "@/lib/jobs-format";
 import type { JobRunsResponse } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const STATUS_DOT: Record<string, string> = {
   success: "bg-green-500",
@@ -54,7 +55,9 @@ export function RecentJobRunsCard({
     setIsRefreshing(true);
     try {
       const res = await fetch(
-        `/api/jobs/runs?page=${runs.meta.page}&pageSize=${runs.meta.pageSize}`,
+        bff(
+          `/api/jobs/runs?page=${runs.meta.page}&pageSize=${runs.meta.pageSize}`,
+        ),
       );
       const data = await res.json().catch(() => null);
       if (res.ok && data) setRuns(data);
@@ -64,7 +67,7 @@ export function RecentJobRunsCard({
   }
 
   async function handleDeleteAll() {
-    await fetch("/api/jobs/runs", { method: "DELETE" });
+    await fetch(bff("/api/jobs/runs"), { method: "DELETE" });
     toastDeleted("Alle Läufe wurden gelöscht.");
     router.refresh();
   }
@@ -125,9 +128,7 @@ export function RecentJobRunsCard({
                   className={`mt-1.5 size-2 shrink-0 rounded-full ${STATUS_DOT[run.status] ?? "bg-muted-foreground"}`}
                 />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">
-                    {run.jobTitle}
-                  </p>
+                  <p className="truncate text-sm font-medium">{run.jobTitle}</p>
                   <p className="truncate text-sm text-muted-foreground">
                     {run.message ?? "—"}
                   </p>

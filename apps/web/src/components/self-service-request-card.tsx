@@ -21,6 +21,7 @@ import {
   DELETION_REQUEST_STATUS_LABELS,
 } from "@/components/deletion-request-dialog";
 import type { DataSubjectRequestType, DeletionRequest } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("de-DE", {
@@ -74,9 +75,12 @@ export function SelfServiceRequestCard({
     if (!detailTarget) return;
     setIsWithdrawing(true);
     try {
-      await fetch(`/api/deletion-requests/self-service/${detailTarget.id}`, {
-        method: "DELETE",
-      });
+      await fetch(
+        bff(`/api/deletion-requests/self-service/${detailTarget.id}`),
+        {
+          method: "DELETE",
+        },
+      );
       toastDeleted(`Anfrage ${detailTarget.dsrId} wurde zurückgezogen.`);
       setRequests((prev) => prev.filter((r) => r.id !== detailTarget.id));
       setDetailTarget(null);
@@ -92,7 +96,7 @@ export function SelfServiceRequestCard({
     event.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/deletion-requests/self-service", {
+      const res = await fetch(bff("/api/deletion-requests/self-service"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type, reason: reason || undefined }),

@@ -37,6 +37,7 @@ import {
 import { HtmlCodeEditor } from "@/components/html-code-editor";
 import { cn } from "@/lib/utils";
 import { mediaUrl } from "@/lib/media";
+import { bff } from "@/lib/bff";
 import type {
   MailShellListItem,
   MailTemplateCategory,
@@ -63,7 +64,7 @@ const PLACEHOLDER_DESCRIPTIONS: Record<string, string> = {
   companyAddress: "Firmenadresse (Straße, PLZ, Ort)",
   companyEmail: "Firmen-E-Mail-Adresse",
   companyPhone: "Firmen-Telefonnummer",
-  companyLogo: "URL des Firmenlogos (für ein <img src=\"...\">)",
+  companyLogo: 'URL des Firmenlogos (für ein <img src="...">)',
   companyLogoDark:
     "URL des Dunkelmodus-Firmenlogos, leer ohne eigenes Dark-Logo",
   link: "Bestätigungs- bzw. Zurücksetzen-Link",
@@ -222,7 +223,12 @@ function CreateNamedItemDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button type="button" variant="outline" size="sm" className="border-border" />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="border-border"
+          />
         }
       >
         <Plus className="size-4" />
@@ -328,7 +334,7 @@ function TemplateDetail({
     setIsSaving(true);
     try {
       const res = await fetch(
-        `/api/settings/mail-templates/${encodeURIComponent(template.id)}`,
+        bff(`/api/settings/mail-templates/${encodeURIComponent(template.id)}`),
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -354,7 +360,7 @@ function TemplateDetail({
 
   async function handleDelete() {
     await fetch(
-      `/api/settings/mail-templates/${encodeURIComponent(template.id)}`,
+      bff(`/api/settings/mail-templates/${encodeURIComponent(template.id)}`),
       { method: "DELETE" },
     );
     toastDeleted("Vorlage wurde auf den Standard zurückgesetzt.");
@@ -366,7 +372,9 @@ function TemplateDetail({
     setIsSendingTest(true);
     try {
       const res = await fetch(
-        `/api/settings/mail-templates/${encodeURIComponent(template.id)}/test`,
+        bff(
+          `/api/settings/mail-templates/${encodeURIComponent(template.id)}/test`,
+        ),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -390,7 +398,9 @@ function TemplateDetail({
   const selectedShell = shells.find((s) => s.id === shellId);
   const defaultShell = shells.find((s) => s.isDefault);
   const previewShellContent =
-    selectedShell?.content ?? defaultShell?.content ?? SHELL_CONTENT_PLACEHOLDER;
+    selectedShell?.content ??
+    defaultShell?.content ??
+    SHELL_CONTENT_PLACEHOLDER;
 
   return (
     <div className="flex flex-col gap-4">
@@ -469,7 +479,8 @@ function TemplateDetail({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__default">
-                  Standard-Template{defaultShell ? ` (${defaultShell.name})` : ""}
+                  Standard-Template
+                  {defaultShell ? ` (${defaultShell.name})` : ""}
                 </SelectItem>
                 {shells.map((shell) => (
                   <SelectItem key={shell.id} value={shell.id}>
@@ -496,8 +507,8 @@ function TemplateDetail({
             <div className="flex flex-col gap-1.5">
               <Label>Platzhalter-Legende</Label>
               <p className="text-xs text-muted-foreground">
-                Klick fügt den Platzhalter im zuletzt ausgewählten Feld
-                (Betreff oder Text) an der Cursor-Position ein.
+                Klick fügt den Platzhalter im zuletzt ausgewählten Feld (Betreff
+                oder Text) an der Cursor-Position ein.
               </p>
               <div className="flex flex-col gap-0.5 rounded-lg border border-border p-1.5">
                 {template.placeholders.map((placeholder) => (
@@ -628,7 +639,7 @@ function ShellDetail({
     setError(null);
     try {
       const res = await fetch(
-        `/api/settings/mail-shells/${encodeURIComponent(shell.id)}`,
+        bff(`/api/settings/mail-shells/${encodeURIComponent(shell.id)}`),
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -649,12 +660,14 @@ function ShellDetail({
 
   async function handleDelete() {
     const res = await fetch(
-      `/api/settings/mail-shells/${encodeURIComponent(shell.id)}`,
+      bff(`/api/settings/mail-shells/${encodeURIComponent(shell.id)}`),
       { method: "DELETE" },
     );
     if (!res.ok) {
       const data = await res.json().catch(() => null);
-      toastEdited(data?.message ?? "E-Mail-Template konnte nicht gelöscht werden.");
+      toastEdited(
+        data?.message ?? "E-Mail-Template konnte nicht gelöscht werden.",
+      );
       return;
     }
     toastDeleted(`„${shell.name}“ wurde gelöscht.`);
@@ -711,19 +724,18 @@ function ShellDetail({
           onChange={setContent}
           note={
             <>
-              Der Platzhalter {SHELL_CONTENT_PLACEHOLDER} markiert die
-              Stelle, an der der Vorlagen-Inhalt eingesetzt wird – muss
-              genau einmal vorhanden sein. Betreff und Firmenangaben (siehe
-              Legende unten) sind zusätzlich verfügbar und dürfen beliebig
-              oft vorkommen.
+              Der Platzhalter {SHELL_CONTENT_PLACEHOLDER} markiert die Stelle,
+              an der der Vorlagen-Inhalt eingesetzt wird – muss genau einmal
+              vorhanden sein. Betreff und Firmenangaben (siehe Legende unten)
+              sind zusätzlich verfügbar und dürfen beliebig oft vorkommen.
               <br />
               Automatisches Umschalten zwischen {"{{companyLogo}}"} und{" "}
               {"{{companyLogoDark}}"} je nach Mail-Programm: beide{" "}
               <code>{"<img>"}</code>-Tags einbetten und per CSS{" "}
-              <code>@media (prefers-color-scheme: dark)</code> zwischen
-              ihnen umschalten (Anzeige/Verstecken per{" "}
-              <code>display</code>). Wird nicht von jedem Mail-Programm
-              unterstützt (u. a. nicht zuverlässig in der Gmail-App).
+              <code>@media (prefers-color-scheme: dark)</code> zwischen ihnen
+              umschalten (Anzeige/Verstecken per <code>display</code>). Wird
+              nicht von jedem Mail-Programm unterstützt (u. a. nicht zuverlässig
+              in der Gmail-App).
             </>
           }
           placeholderChips={[
@@ -891,7 +903,7 @@ export function MailingSettingsCard({
                     triggerLabel="Neu"
                     dialogTitle="Neues E-Mail-Template anlegen"
                     nameLabel="Name"
-                    endpoint="/api/settings/mail-shells"
+                    endpoint={bff("/api/settings/mail-shells")}
                     onCreated={setSelectedShellId}
                   />
                 </div>

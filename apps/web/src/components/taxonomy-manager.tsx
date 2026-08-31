@@ -22,6 +22,7 @@ import { useSelection } from "@/hooks/use-selection";
 import { useHighlightParam } from "@/hooks/use-highlight-param";
 import type { TaxonomyItem } from "@/lib/api-server";
 import { truncateMiddle } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 
 function TaxonomyRowActions({
   apiPath,
@@ -101,7 +102,7 @@ export function TaxonomyManager({
 
   async function handleDelete(id: string) {
     const item = items.find((i) => i.id === id);
-    await fetch(`/api/${apiPath}/${id}`, { method: "DELETE" });
+    await fetch(bff(`/api/${apiPath}/${id}`), { method: "DELETE" });
     toastDeleted(item ? `„${item.name}“ wurde gelöscht.` : undefined);
     router.refresh();
   }
@@ -110,7 +111,7 @@ export function TaxonomyManager({
     const deletedCount = selected.size;
     await Promise.all(
       [...selected].map((id) =>
-        fetch(`/api/${apiPath}/${id}`, { method: "DELETE" }),
+        fetch(bff(`/api/${apiPath}/${id}`), { method: "DELETE" }),
       ),
     );
     clear();

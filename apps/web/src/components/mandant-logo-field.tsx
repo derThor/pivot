@@ -7,6 +7,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { toastDeleted, toastEdited } from "@/components/app-toast";
 import { resolveImageSrc } from "@/lib/media";
 import type { MediaListResponse } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 /** Logo-Upload auf der Mandant-Detailseite (Nutzervorgabe, 2026-08-27,
  * 1:1 nach Bildvorlage: gestricheltes Quadrat mit "+", statt der
@@ -30,7 +31,7 @@ export function MandantLogoField({
   const [isRemoving, setIsRemoving] = useState(false);
 
   async function patchMandant(logoUrl: string | null) {
-    const res = await fetch(`/api/mandanten/${mandantId}`, {
+    const res = await fetch(bff(`/api/mandanten/${mandantId}`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ logoUrl }),
@@ -43,7 +44,9 @@ export function MandantLogoField({
 
   async function findMediaIdByUrl(url: string): Promise<string | null> {
     if (!folderId) return null;
-    const res = await fetch(`/api/media?folderId=${folderId}&pageSize=100`);
+    const res = await fetch(
+      bff(`/api/media?folderId=${folderId}&pageSize=100`),
+    );
     if (!res.ok) return null;
     const data = (await res
       .json()
@@ -54,7 +57,7 @@ export function MandantLogoField({
   async function deleteMediaByUrl(url: string) {
     const mediaId = await findMediaIdByUrl(url);
     if (mediaId) {
-      await fetch(`/api/media/${mediaId}`, { method: "DELETE" });
+      await fetch(bff(`/api/media/${mediaId}`), { method: "DELETE" });
     }
   }
 
@@ -66,7 +69,7 @@ export function MandantLogoField({
       formData.set("file", file);
       if (folderId) formData.set("folderId", folderId);
 
-      const uploadRes = await fetch("/api/media", {
+      const uploadRes = await fetch(bff("/api/media"), {
         method: "POST",
         body: formData,
       });

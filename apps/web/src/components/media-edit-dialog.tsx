@@ -20,6 +20,7 @@ import { MediaFocalPointDialog } from "@/components/media-focal-point-dialog";
 import { MoveToFolderDialog } from "@/components/move-to-folder-dialog";
 import { isCroppableImage } from "@/lib/media";
 import type { MediaFolder, MediaItem } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 /** Bündelt die bisher einzeln über ein ⋮-Menü erreichbaren Bearbeiten-
  * Aktionen (Alt-Text, Zuschneiden, Fokuspunkt, Verschieben) in einem
@@ -55,7 +56,7 @@ export function MediaEditDialog({
     setError(null);
     setIsSaving(true);
     try {
-      const res = await fetch(`/api/media/${item.id}`, {
+      const res = await fetch(bff(`/api/media/${item.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ alt }),

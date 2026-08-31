@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/form";
 import { PasswordPolicyChecklist } from "@/components/password-policy-checklist";
 import { isPasswordValid, type PasswordPolicy } from "@/lib/password-policy";
+import { bff } from "@/lib/bff";
 
 export function ChangePasswordForm({
   passwordPolicy,
@@ -75,7 +76,7 @@ export function ChangePasswordForm({
     setError(null);
     onSubmittingChange?.(true);
     try {
-      const res = await fetch("/api/auth/password", {
+      const res = await fetch(bff("/api/auth/password"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -92,7 +93,7 @@ export function ChangePasswordForm({
 
       // Passwort-Änderung widerruft alle Sessions (auch die aktuelle) –
       // Nutzer muss sich neu anmelden.
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch(bff("/api/auth/logout"), { method: "POST" });
       toastEdited("Dein Passwort wurde geändert.");
       router.push("/login?passwordChanged=1");
       router.refresh();

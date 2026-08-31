@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { ModuleFieldInput } from "@/components/module-field-input";
 import type { GlobalModule, ModuleType } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 /** Öffnet sich, wenn im Designer ein FAQ- oder Galerie-Baustein auf die
  * Fläche gezogen wird (siehe block-editor-field.tsx): entweder eine
@@ -68,7 +69,7 @@ export function InsertSharedBlockDialog({
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/global-modules", {
+      const res = await fetch(bff("/api/global-modules"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, moduleTypeId: moduleType.id, values }),

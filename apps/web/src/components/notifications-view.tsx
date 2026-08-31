@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn, formatRelativeTime, truncateMiddle } from "@/lib/utils";
 import type { AppNotification, NotificationCategory } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const CATEGORY_LABELS: Record<NotificationCategory, string> = {
   system: "System",
@@ -180,9 +181,12 @@ export function NotificationsView({
     setNotifications((prev) =>
       prev.map((row) => (row.id === n.id ? { ...row, isRead: nextRead } : row)),
     );
-    await fetch(`/api/notifications/${n.id}/${nextRead ? "read" : "unread"}`, {
-      method: "POST",
-    });
+    await fetch(
+      bff(`/api/notifications/${n.id}/${nextRead ? "read" : "unread"}`),
+      {
+        method: "POST",
+      },
+    );
     router.refresh();
   }
 
@@ -190,7 +194,7 @@ export function NotificationsView({
     if (!deleteTarget) return;
     const id = deleteTarget.id;
     setNotifications((prev) => prev.filter((n) => n.id !== id));
-    await fetch(`/api/notifications/${id}`, { method: "DELETE" });
+    await fetch(bff(`/api/notifications/${id}`), { method: "DELETE" });
     toastDeleted("Benachrichtigung wurde gelöscht.");
     setDeleteTarget(null);
     router.refresh();
@@ -202,15 +206,15 @@ export function NotificationsView({
         n.id === id ? { ...n, isRead: true, isResolved: true } : n,
       ),
     );
-    await fetch(`/api/notifications/${id}/resolve`, { method: "POST" }).catch(
-      () => {},
-    );
+    await fetch(bff(`/api/notifications/${id}/resolve`), {
+      method: "POST",
+    }).catch(() => {});
     router.refresh();
   }
 
   async function handleMarkAllRead() {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    await fetch("/api/notifications/read-all", { method: "POST" });
+    await fetch(bff("/api/notifications/read-all"), { method: "POST" });
     toastEdited("Alle Benachrichtigungen wurden als gelesen markiert.");
     router.refresh();
   }

@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { formatName } from "@/lib/utils";
 import type { PreviewLink } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const expiryOptions: Record<string, string> = {
   "24": "1 Tag",
@@ -44,7 +45,7 @@ export function PreviewLinksDialog({ contentId }: { contentId: string }) {
   const [error, setError] = useState<string | null>(null);
 
   async function loadLinks() {
-    const res = await fetch(`/api/content/${contentId}/preview-links`);
+    const res = await fetch(bff(`/api/content/${contentId}/preview-links`));
     const data = await res.json().catch(() => null);
     setLinks(Array.isArray(data) ? data : []);
   }
@@ -62,7 +63,7 @@ export function PreviewLinksDialog({ contentId }: { contentId: string }) {
     setError(null);
     setIsCreating(true);
     try {
-      const res = await fetch(`/api/content/${contentId}/preview-links`, {
+      const res = await fetch(bff(`/api/content/${contentId}/preview-links`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ expiresInHours: Number(expiresInHours) }),
@@ -82,7 +83,7 @@ export function PreviewLinksDialog({ contentId }: { contentId: string }) {
   }
 
   async function handleRevoke(linkId: string) {
-    await fetch(`/api/content/${contentId}/preview-links/${linkId}`, {
+    await fetch(bff(`/api/content/${contentId}/preview-links/${linkId}`), {
       method: "DELETE",
     });
     await loadLinks();
@@ -108,7 +109,7 @@ export function PreviewLinksDialog({ contentId }: { contentId: string }) {
     setError(null);
     try {
       const res = await fetch(
-        `/api/content/${contentId}/preview-links/${linkId}`,
+        bff(`/api/content/${contentId}/preview-links/${linkId}`),
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

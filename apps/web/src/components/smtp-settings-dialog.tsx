@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { SystemMessage } from "@/components/ui/system-message";
 import type { SmtpSettings } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const SECURE_LABELS: Record<string, string> = {
   none: "Keine",
@@ -108,7 +109,7 @@ export function SmtpSettingsDialog({
         fromName: form.fromName || null,
         secure: form.secure,
       };
-      const res = await fetch("/api/settings/smtp", {
+      const res = await fetch(bff("/api/settings/smtp"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -143,7 +144,7 @@ export function SmtpSettingsDialog({
     setIsSendingTestMail(true);
     setTestMailResult(null);
     try {
-      const res = await fetch("/api/settings/smtp/test-email", {
+      const res = await fetch(bff("/api/settings/smtp/test-email"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ to: testEmailTo }),

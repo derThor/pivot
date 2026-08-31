@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { ContentListItem } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const expiryOptions: Record<string, string> = {
   "24": "1 Tag",
@@ -67,7 +68,7 @@ export function CreatePreviewLinkDialog({
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/content/${contentId}/preview-links`, {
+      const res = await fetch(bff(`/api/content/${contentId}/preview-links`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ expiresInHours: Number(expiresInHours) }),

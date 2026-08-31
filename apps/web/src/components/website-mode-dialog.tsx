@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { SegmentedPicker } from "@/components/segmented-picker";
 import type { WebsiteListItem } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const MODE_OPTIONS: { value: "master" | "slave"; label: string }[] = [
   { value: "master", label: "Master" },
@@ -60,7 +61,7 @@ export function WebsiteModeDialog({
     if (!target) return;
     setIsSaving(true);
     try {
-      const res = await fetch(`/api/websites/${target.id}`, {
+      const res = await fetch(bff(`/api/websites/${target.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ deploymentMode: mode }),

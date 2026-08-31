@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { CompanyLocation } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const EMPTY_FORM = {
   name: "",
@@ -88,8 +89,8 @@ export function CompanyLocationDialog({
       };
       const res = await fetch(
         isEdit
-          ? `/api/company-locations/${(target as CompanyLocation).id}`
-          : "/api/company-locations",
+          ? bff(`/api/company-locations/${(target as CompanyLocation).id}`)
+          : bff("/api/company-locations"),
         {
           method: isEdit ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },

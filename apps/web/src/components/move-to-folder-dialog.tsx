@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { getIndentedFolderOptions } from "@/lib/media-folders";
 import type { MediaFolder } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 export function MoveToFolderDialog({
   trigger,
@@ -54,7 +55,7 @@ export function MoveToFolderDialog({
     try {
       await Promise.all(
         mediaIds.map((id) =>
-          fetch(`/api/media/${id}`, {
+          fetch(bff(`/api/media/${id}`), {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

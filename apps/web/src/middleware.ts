@@ -9,6 +9,14 @@ import {
 
 const API_URL = process.env.API_URL ?? "http://localhost:3001/v1";
 const PROTECTED_PREFIX = "/dashboard";
+
+/** `request.nextUrl.pathname` ist bereits ohne `basePath` (deshalb passen
+ * Matcher und Präfix-Vergleiche unverändert), Redirect-/Rewrite-Ziele
+ * brauchen ihn dagegen ausgeschrieben – Next.js ergänzt ihn hier nicht von
+ * selbst. Siehe knowledge-base/platform/deployment.md. */
+function internalUrl(request: NextRequest, path: string): URL {
+  return new URL(`${request.nextUrl.basePath}${path}`, request.url);
+}
 // Einzige Seite, die PasswordChangeGuard/TwoFactorSetupGuard im Backend
 // trotz aktivem `mustChangePassword`/`twoFactorSetupRequired` erreichbar
 // lassen (siehe AllowPasswordChangeRequired()/AllowTwoFactorSetupRequired()
@@ -61,7 +69,7 @@ function applyLockoutRedirect(
   if (!reason) {
     return response;
   }
-  const url = new URL(ACCOUNT_PATH, request.url);
+  const url = internalUrl(request, ACCOUNT_PATH);
   url.searchParams.set("reason", reason);
   return NextResponse.redirect(url);
 }
@@ -152,7 +160,7 @@ export async function middleware(request: NextRequest) {
   // verfügbar", nicht indexieren), und macht `WebsiteMonitorService`s
   // `res.ok`-Prüfung nebenbei robuster (siehe website-monitor.service.ts).
   if (await isInstanceLocked()) {
-    return NextResponse.rewrite(new URL("/locked", request.url), {
+    return NextResponse.rewrite(internalUrl(request, "/locked"), {
       status: 503,
     });
   }
@@ -181,7 +189,7 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    const loginUrl = new URL("/login", request.url);
+    const loginUrl = internalUrl(request, "/login");
     loginUrl.searchParams.set("redirectTo", pathname);
     return clearAuthCookies(NextResponse.redirect(loginUrl));
   }
@@ -190,7 +198,7 @@ export async function middleware(request: NextRequest) {
     (pathname === "/login" || pathname === "/register") &&
     (accessToken || refreshToken)
   ) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(internalUrl(request, "/dashboard"));
   }
 
   return NextResponse.next();

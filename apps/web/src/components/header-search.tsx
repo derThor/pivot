@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
+import { bff } from "@/lib/bff";
 import {
   searchResultHref,
   searchTypeMeta,
@@ -92,7 +93,7 @@ export function HeaderSearch({
     setOpen(true);
     const timeout = setTimeout(async () => {
       const res = await fetch(
-        `/api/search?q=${encodeURIComponent(trimmed)}&limit=5`,
+        bff(`/api/search?q=${encodeURIComponent(trimmed)}&limit=5`),
       );
       const data = await res.json().catch(() => null);
       setResults(Array.isArray(data) ? data : []);

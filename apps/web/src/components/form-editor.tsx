@@ -60,6 +60,7 @@ import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { SegmentedPicker } from "@/components/segmented-picker";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
 import { cn } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 import type {
   ContentListItem,
   FormDetail,
@@ -153,7 +154,7 @@ const SUBMIT_ALIGN_CLASSES: Record<SubmitButtonAlign, string> = {
 let pagesCache: Promise<ContentListItem[]> | null = null;
 function loadPublishedPages(): Promise<ContentListItem[]> {
   if (!pagesCache) {
-    pagesCache = fetch("/api/content?status=PUBLISHED&pageSize=100")
+    pagesCache = fetch(bff("/api/content?status=PUBLISHED&pageSize=100"))
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => data?.items ?? [])
       .catch(() => []);
@@ -1008,7 +1009,9 @@ export function FormEditor({
   async function syncRecipient() {
     if (!adminTemplate) return;
     await fetch(
-      `/api/settings/mail-templates/${encodeURIComponent(adminTemplate.id)}`,
+      bff(
+        `/api/settings/mail-templates/${encodeURIComponent(adminTemplate.id)}`,
+      ),
       {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -1034,11 +1037,14 @@ export function FormEditor({
         redirectUrl,
       };
 
-      const res = await fetch(isNew ? "/api/forms" : `/api/forms/${form!.id}`, {
-        method: isNew ? "POST" : "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        isNew ? bff("/api/forms") : bff(`/api/forms/${form!.id}`),
+        {
+          method: isNew ? "POST" : "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         setError(data?.message ?? "Konnte nicht gespeichert werden.");
@@ -1051,7 +1057,7 @@ export function FormEditor({
       // Bearbeitung soll der Button-Beschriftung entsprechend live gehen.
       const formId = isNew ? data.id : form!.id;
       if (status !== "published") {
-        await fetch(`/api/forms/${formId}`, {
+        await fetch(bff(`/api/forms/${formId}`), {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: "published" }),
@@ -1078,7 +1084,7 @@ export function FormEditor({
   async function handleStatusChange(next: FormStatus) {
     if (!form) return;
     setStatus(next);
-    await fetch(`/api/forms/${form.id}`, {
+    await fetch(bff(`/api/forms/${form.id}`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: next }),
@@ -1095,7 +1101,7 @@ export function FormEditor({
 
   async function handleDelete() {
     if (!form) return;
-    await fetch(`/api/forms/${form.id}`, { method: "DELETE" });
+    await fetch(bff(`/api/forms/${form.id}`), { method: "DELETE" });
     toastDeleted(`„${name}“ wurde gelöscht.`);
     router.push("/dashboard/forms");
   }

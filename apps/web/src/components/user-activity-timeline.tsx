@@ -6,6 +6,7 @@ import { PaginationControls } from "@/components/pagination-controls";
 import { formatName } from "@/lib/utils";
 import { describeSettingsAction } from "@/lib/settings-change-labels";
 import type { ActivityLogEntry, ActivityLogResponse } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("de-DE", {
@@ -172,7 +173,9 @@ export function UserActivityTimeline({
     setIsLoading(true);
     try {
       const res = await fetch(
-        `/api/users/${userId}/activity?page=${page}&pageSize=${data.meta.pageSize}`,
+        bff(
+          `/api/users/${userId}/activity?page=${page}&pageSize=${data.meta.pageSize}`,
+        ),
       );
       const next = await res.json().catch(() => null);
       if (res.ok && next) {

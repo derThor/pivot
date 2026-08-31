@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SegmentedPicker } from "@/components/segmented-picker";
+import { bff } from "@/lib/bff";
 
 /** "Jobs"-Reiter unter Einstellungen (Nutzervorgabe, 2026-08-30: "bitte
  * auch noch den aktivitäten history über sowas regeln. mache eine
@@ -25,7 +26,7 @@ export function ActivityLogRetentionCard({
   async function handleChange(value: number) {
     const next = value === -1 ? null : value;
     setRetentionDays(next);
-    await fetch("/api/settings", {
+    await fetch(bff("/api/settings"), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ activityLogRetentionDays: next }),
@@ -52,8 +53,8 @@ export function ActivityLogRetentionCard({
         <p className="text-xs text-muted-foreground">
           Läuft täglich über den kompletten Audit-Log hinweg – betrifft den
           Aktivität-Tab, das Einstellungen-Protokoll und das
-          Datenschutz-Zugriffsprotokoll gleichermaßen, da alle dieselbe
-          Historie teilen.
+          Datenschutz-Zugriffsprotokoll gleichermaßen, da alle dieselbe Historie
+          teilen.
         </p>
       </CardContent>
     </Card>

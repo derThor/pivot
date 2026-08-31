@@ -24,6 +24,7 @@ import {
 } from "@/components/block-field-output";
 import { cn, truncateMiddle } from "@/lib/utils";
 import type { GlobalModule, ModuleType } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 // Exakte Werte aus der Figma-Referenz übernommen (nicht die generischen
 // Badge-/Card-Tokens aus globals.css), damit Farben/Radien/Abstände 1:1
@@ -106,7 +107,9 @@ export function FaqGroupsManager({
 
   async function handleDeleteGroup() {
     if (!deleteGroup) return;
-    await fetch(`/api/global-modules/${deleteGroup.id}`, { method: "DELETE" });
+    await fetch(bff(`/api/global-modules/${deleteGroup.id}`), {
+      method: "DELETE",
+    });
     toastDeleted(`„${deleteGroup.name}“ wurde gelöscht.`);
     router.refresh();
   }
@@ -117,7 +120,7 @@ export function FaqGroupsManager({
     const nextItems = questionsOf(group).filter(
       (item) => item.id !== questionId,
     );
-    await fetch(`/api/global-modules/${group.id}`, {
+    await fetch(bff(`/api/global-modules/${group.id}`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

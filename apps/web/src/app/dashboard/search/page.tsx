@@ -9,6 +9,7 @@ import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
 import { PaginationControls } from "@/components/pagination-controls";
 import { cn } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 import {
   ALL_SEARCH_RESULT_TYPES,
   searchResultHref,
@@ -90,7 +91,9 @@ export default function SearchPage() {
     page: number,
   ): Promise<GroupState> {
     const res = await fetch(
-      `/api/search/paged?type=${type}&q=${encodeURIComponent(q)}&page=${page}&pageSize=${PAGE_SIZE}`,
+      bff(
+        `/api/search/paged?type=${type}&q=${encodeURIComponent(q)}&page=${page}&pageSize=${PAGE_SIZE}`,
+      ),
     );
     const data: PagedSearchResult | null = await res.json().catch(() => null);
     const items = data?.items ?? [];

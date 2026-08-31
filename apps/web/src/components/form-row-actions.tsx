@@ -7,13 +7,14 @@ import { toastDeleted } from "@/components/app-toast";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { RowActionButtons } from "@/components/row-action-buttons";
 import { truncateMiddle } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 
 export function FormRowActions({ id, name }: { id: string; name: string }) {
   const router = useRouter();
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   async function handleDelete() {
-    await fetch(`/api/forms/${id}`, { method: "DELETE" });
+    await fetch(bff(`/api/forms/${id}`), { method: "DELETE" });
     toastDeleted(`„${name}“ wurde gelöscht.`);
     router.refresh();
   }

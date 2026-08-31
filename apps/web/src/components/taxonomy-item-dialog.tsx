@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { slugify } from "@/lib/utils";
 import type { TaxonomyItem } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 export function TaxonomyItemDialog({
   apiPath,
@@ -86,7 +87,7 @@ export function TaxonomyItemDialog({
     setIsSubmitting(true);
     try {
       const res = await fetch(
-        isEditing ? `/api/${apiPath}/${item!.id}` : `/api/${apiPath}`,
+        isEditing ? bff(`/api/${apiPath}/${item!.id}`) : bff(`/api/${apiPath}`),
         {
           method: isEditing ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },

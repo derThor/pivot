@@ -14,6 +14,7 @@ import {
   type SearchResult,
 } from "@/lib/search";
 import type { CurrentUser } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const MIN_QUERY_LENGTH = 3;
 
@@ -116,7 +117,7 @@ export function CommandPalette({
     setIsSearching(true);
     const timeout = setTimeout(async () => {
       const res = await fetch(
-        `/api/search?q=${encodeURIComponent(trimmed)}&limit=8`,
+        bff(`/api/search?q=${encodeURIComponent(trimmed)}&limit=8`),
       );
       const data = await res.json().catch(() => null);
       setSearchResults(Array.isArray(data) ? data : []);
@@ -138,7 +139,7 @@ export function CommandPalette({
 
   async function handleLogout() {
     close();
-    await fetch("/api/auth/logout", { method: "POST" });
+    await fetch(bff("/api/auth/logout"), { method: "POST" });
     router.push("/login");
     router.refresh();
   }

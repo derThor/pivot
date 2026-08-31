@@ -15,6 +15,7 @@ import {
 import type { MediaItem } from "@/lib/api-server";
 import { mediaUrl } from "@/lib/media";
 import { cn } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 
 export function MediaFocalPointDialog({
   item,
@@ -45,7 +46,7 @@ export function MediaFocalPointDialog({
     setError(null);
     setIsSaving(true);
     try {
-      const res = await fetch(`/api/media/${item.id}`, {
+      const res = await fetch(bff(`/api/media/${item.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ focalX: focal.x, focalY: focal.y }),

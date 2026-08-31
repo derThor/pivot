@@ -16,6 +16,7 @@ import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { FolderDialog } from "@/components/folder-dialog";
 import type { MediaFolder } from "@/lib/api-server";
 import { truncateMiddle } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 
 export function FolderTileMenu({ folder }: { folder: MediaFolder }) {
   const router = useRouter();
@@ -24,7 +25,7 @@ export function FolderTileMenu({ folder }: { folder: MediaFolder }) {
   const isEmpty = folder.mediaCount === 0 && folder.childCount === 0;
 
   async function handleDelete() {
-    await fetch(`/api/media-folders/${folder.id}`, { method: "DELETE" });
+    await fetch(bff(`/api/media-folders/${folder.id}`), { method: "DELETE" });
     toastDeleted(`„${folder.name}“ wurde gelöscht.`);
     router.refresh();
   }

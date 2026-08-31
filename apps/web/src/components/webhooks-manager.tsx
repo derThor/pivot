@@ -18,6 +18,7 @@ import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { RowActionButtons } from "@/components/row-action-buttons";
 import type { Webhook } from "@/lib/api-server";
 import { truncateMiddle } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 
 const eventLabel: Record<string, string> = {
   "content.published": "Veröffentlicht",
@@ -29,7 +30,7 @@ export function WebhooksManager({ items }: { items: Webhook[] }) {
   const [deleteTarget, setDeleteTarget] = useState<Webhook | null>(null);
 
   async function handleToggleActive(webhook: Webhook, isActive: boolean) {
-    await fetch(`/api/webhooks/${webhook.id}`, {
+    await fetch(bff(`/api/webhooks/${webhook.id}`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive }),
@@ -39,7 +40,7 @@ export function WebhooksManager({ items }: { items: Webhook[] }) {
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    await fetch(`/api/webhooks/${deleteTarget.id}`, { method: "DELETE" });
+    await fetch(bff(`/api/webhooks/${deleteTarget.id}`), { method: "DELETE" });
     toastDeleted(`Webhook „${deleteTarget.url}“ wurde gelöscht.`);
     router.refresh();
   }

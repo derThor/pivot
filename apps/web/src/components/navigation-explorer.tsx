@@ -35,6 +35,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn, truncateMiddle } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 import type {
   ContentListItem,
   NavigationDetail,
@@ -102,7 +103,7 @@ export function NavigationExplorer({
     reorderItems: { id: string; parentId: string | null; sortOrder: number }[],
   ) {
     if (!navigation) return;
-    await fetch(`/api/navigations/${navigation.id}/items/reorder`, {
+    await fetch(bff(`/api/navigations/${navigation.id}/items/reorder`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ items: reorderItems }),
@@ -184,7 +185,7 @@ export function NavigationExplorer({
     if (!navigation) return;
     const next = !node.isHomepage;
     const res = await fetch(
-      `/api/navigations/${navigation.id}/items/${node.id}`,
+      bff(`/api/navigations/${navigation.id}/items/${node.id}`),
       {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -208,16 +209,19 @@ export function NavigationExplorer({
 
   async function handleDeleteItem() {
     if (!deleteItem || !navigation) return;
-    await fetch(`/api/navigations/${navigation.id}/items/${deleteItem.id}`, {
-      method: "DELETE",
-    });
+    await fetch(
+      bff(`/api/navigations/${navigation.id}/items/${deleteItem.id}`),
+      {
+        method: "DELETE",
+      },
+    );
     toastDeleted(`Menüpunkt „${deleteItem.label}“ wurde gelöscht.`);
     router.refresh();
   }
 
   async function handleDeleteMenu() {
     if (!navigation) return;
-    await fetch(`/api/navigations/${navigation.id}`, { method: "DELETE" });
+    await fetch(bff(`/api/navigations/${navigation.id}`), { method: "DELETE" });
     toastDeleted(`Menü „${navigation.name}“ wurde gelöscht.`);
     router.push("/dashboard/navigation");
   }

@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { formatName } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 import type {
   CurrentUser,
   DataSubjectRequestType,
@@ -128,8 +129,8 @@ export function DeletionRequestDialog({
       };
       const res = await fetch(
         isEdit
-          ? `/api/deletion-requests/${(target as DeletionRequest).id}`
-          : "/api/deletion-requests",
+          ? bff(`/api/deletion-requests/${(target as DeletionRequest).id}`)
+          : bff("/api/deletion-requests"),
         {
           method: isEdit ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },

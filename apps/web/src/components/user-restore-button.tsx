@@ -6,6 +6,7 @@ import { RotateCcw } from "lucide-react";
 
 import { toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
+import { bff } from "@/lib/bff";
 import {
   Tooltip,
   TooltipContent,
@@ -37,7 +38,7 @@ export function UserRestoreButton({
   async function handleRestore() {
     setIsRestoring(true);
     try {
-      await fetch(`/api/users/${userId}/restore`, { method: "POST" });
+      await fetch(bff(`/api/users/${userId}/restore`), { method: "POST" });
       toastEdited(`„${name}“ wurde wiederhergestellt.`);
       onRestored?.();
       router.refresh();

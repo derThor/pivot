@@ -17,6 +17,7 @@ import { WebsiteDialog } from "@/components/website-dialog";
 import { resolveImageSrc } from "@/lib/media";
 import { WEBSITE_STATUS_BADGE } from "@/lib/website-status";
 import type { WebsiteCheckAllResult, WebsiteListItem } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 // Nutzervorgabe, 2026-08-26: "zuletzt geprüft text weg, gerade eben oder
 // datum" + "stunden als zeit auch, am nächsten tag datum" – am selben Tag
@@ -91,7 +92,9 @@ export function WebsitesView({
   async function handleCheckNow() {
     setIsChecking(true);
     try {
-      const res = await fetch("/api/websites/check-now", { method: "POST" });
+      const res = await fetch(bff("/api/websites/check-now"), {
+        method: "POST",
+      });
       const data = (await res
         .json()
         .catch(() => null)) as WebsiteCheckAllResult | null;
@@ -119,7 +122,7 @@ export function WebsitesView({
   async function handleWakeup(website: WebsiteListItem) {
     setWakingId(website.id);
     try {
-      const res = await fetch(`/api/websites/${website.id}/wakeup`, {
+      const res = await fetch(bff(`/api/websites/${website.id}/wakeup`), {
         method: "POST",
       });
       const data = await res.json().catch(() => null);

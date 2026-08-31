@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SwitchRow } from "@/components/switch-row";
 import type { AppSettings } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 type NotifyKey =
   | "notifyMaintenanceMode"
@@ -119,7 +120,7 @@ export function NotificationSettingsCard({
     setValues((prev) => ({ ...prev, [key]: next }));
     setPendingKey(key);
     try {
-      await fetch("/api/settings", {
+      await fetch(bff("/api/settings"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [key]: next }),
@@ -133,7 +134,7 @@ export function NotificationSettingsCard({
   async function handleSaveRecipient() {
     setIsSavingRecipient(true);
     try {
-      await fetch("/api/settings", {
+      await fetch(bff("/api/settings"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

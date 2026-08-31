@@ -17,6 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import type { GlobalModule, ModuleType } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 /** Schlanker Anlegen-/Bearbeiten-Dialog nur für Name + Beschreibung einer
  * FAQ-Gruppe (Nutzervorgabe, 2026-08-15: Gruppe anlegen und Fragen
@@ -76,8 +77,8 @@ export function FaqGroupDialog({
     setIsSubmitting(true);
     try {
       const url = isEditing
-        ? `/api/global-modules/${group!.id}`
-        : "/api/global-modules";
+        ? bff(`/api/global-modules/${group!.id}`)
+        : bff("/api/global-modules");
       const method = isEditing ? "PATCH" : "POST";
       const body = isEditing
         ? { name, values: { ...group!.values, description } }

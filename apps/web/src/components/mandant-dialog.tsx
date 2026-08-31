@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { bff } from "@/lib/bff";
 
 /** "+ Mandant anlegen" (Nutzervorgabe, 2026-08-27: "bei den Mandanten
  * gehört immer eine Webseite oder mehrere dazu") – ein Mandant entsteht
@@ -65,7 +66,7 @@ export function MandantDialog({
     setSubmitError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/mandanten", {
+      const res = await fetch(bff("/api/mandanten"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, domain }),

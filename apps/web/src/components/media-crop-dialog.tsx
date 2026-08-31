@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import type { MediaItem } from "@/lib/api-server";
 import { mediaUrl } from "@/lib/media";
+import { bff } from "@/lib/bff";
 
 export function MediaCropDialog({
   item,
@@ -48,7 +49,7 @@ export function MediaCropDialog({
     setError(null);
     setIsSaving(true);
     try {
-      const res = await fetch(`/api/media/${item.id}/crop`, {
+      const res = await fetch(bff(`/api/media/${item.id}/crop`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

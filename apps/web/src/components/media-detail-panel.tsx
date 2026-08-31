@@ -39,6 +39,7 @@ import {
 import { tagDotColor } from "@/lib/tag-colors";
 import { cn, formatBytes, truncateMiddle } from "@/lib/utils";
 import type { MediaFolder, MediaItem, TaxonomyItem } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const dateFormatter = new Intl.DateTimeFormat("de-DE", {
   day: "2-digit",
@@ -85,7 +86,7 @@ export function MediaDetailPanel({
 
   useEffect(() => {
     setUsageCount(null);
-    fetch(`/api/media/${item.id}/usage`)
+    fetch(bff(`/api/media/${item.id}/usage`))
       .then((res) => (res.ok ? res.json() : null))
       .then((data) =>
         setUsageCount(typeof data?.count === "number" ? data.count : 0),
@@ -101,7 +102,7 @@ export function MediaDetailPanel({
   async function handleDuplicate() {
     setIsDuplicating(true);
     try {
-      await fetch(`/api/media/${item.id}/duplicate`, { method: "POST" });
+      await fetch(bff(`/api/media/${item.id}/duplicate`), { method: "POST" });
       toastCreated(`„${item.filename}“ wurde dupliziert.`);
       router.refresh();
     } finally {
@@ -110,7 +111,7 @@ export function MediaDetailPanel({
   }
 
   async function handleDelete() {
-    await fetch(`/api/media/${item.id}`, { method: "DELETE" });
+    await fetch(bff(`/api/media/${item.id}`), { method: "DELETE" });
     toastDeleted(`„${item.filename}“ wurde gelöscht.`);
     onClose();
     router.refresh();

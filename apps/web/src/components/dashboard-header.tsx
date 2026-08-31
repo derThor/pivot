@@ -31,6 +31,7 @@ import {
 import type { CurrentUser } from "@/lib/api-server";
 import { mediaUrl } from "@/lib/media";
 import { cn, formatName, initials } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 
 export function DashboardHeader({
   user,
@@ -59,7 +60,7 @@ export function DashboardHeader({
   async function handleLogout() {
     setIsLoggingOut(true);
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch(bff("/api/auth/logout"), { method: "POST" });
     } finally {
       router.push("/login");
       router.refresh();
@@ -82,7 +83,10 @@ export function DashboardHeader({
         <>
           <SidebarTrigger />
           <div className="ml-6">
-            <AdminMenu permissions={permissions} enabledModules={enabledModules} />
+            <AdminMenu
+              permissions={permissions}
+              enabledModules={enabledModules}
+            />
           </div>
         </>
       )}

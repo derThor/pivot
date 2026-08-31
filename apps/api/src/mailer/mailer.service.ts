@@ -718,8 +718,14 @@ export class MailerService {
     );
   }
 
+  /** Siehe AuthService.frontendOrigin() – `ADMIN_BASE_URL` zuerst, damit
+   * Aktions-Links auch dann stimmen, wenn das Backend unter einem Pfad
+   * derselben Domain läuft. */
   private frontendOrigin(): string {
-    return this.config.get<string>('CORS_ORIGIN', 'http://localhost:3000');
+    return (
+      this.config.get<string>('ADMIN_BASE_URL') ??
+      this.config.get<string>('CORS_ORIGIN', 'http://localhost:3000')
+    );
   }
 
   // Medien-URLs (u.a. `companyLogoUrl`) sind API-relativ gespeichert

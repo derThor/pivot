@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SegmentedPicker } from "@/components/segmented-picker";
 import type { WebsiteListItem, WebsiteStatus } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const STATUS_OPTIONS: { value: WebsiteStatus; label: string }[] = [
   { value: "live", label: "Live" },
@@ -103,9 +104,12 @@ export function WebsiteDialog({
     setIsRegenerating(true);
     setSubmitError(null);
     try {
-      const res = await fetch(`/api/websites/${target.id}/regenerate-key`, {
-        method: "POST",
-      });
+      const res = await fetch(
+        bff(`/api/websites/${target.id}/regenerate-key`),
+        {
+          method: "POST",
+        },
+      );
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         setSubmitError(data?.message ?? "API-Key konnte nicht erzeugt werden.");
@@ -130,7 +134,7 @@ export function WebsiteDialog({
     setIsLoadingExistingKey(true);
     setSubmitError(null);
     try {
-      const res = await fetch(`/api/websites/${target.id}/api-key`);
+      const res = await fetch(bff(`/api/websites/${target.id}/api-key`));
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         setSubmitError(data?.message ?? "API-Key konnte nicht geladen werden.");
@@ -174,7 +178,7 @@ export function WebsiteDialog({
     setSubmitError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/websites/${target.id}`, {
+      const res = await fetch(bff(`/api/websites/${target.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

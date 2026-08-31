@@ -40,6 +40,7 @@ import {
 import { resolveImageSrc } from "@/lib/media";
 import { cn } from "@/lib/utils";
 import type { GlobalModule, ModuleType } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const darkTextClassName = "text-pivot-navy";
 const cardClassName = "rounded-2xl bg-card p-5 shadow-sm ring-1 ring-border";
@@ -201,7 +202,7 @@ export function GalleryEditor({
     setSaveError(null);
     setIsSaving(true);
     try {
-      const res = await fetch(`/api/global-modules/${gallery.id}`, {
+      const res = await fetch(bff(`/api/global-modules/${gallery.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -5,6 +5,7 @@ import { Download } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { bff } from "@/lib/bff";
 
 function ExportRow({
   title,
@@ -56,7 +57,7 @@ export function SettingsExportCard({ hasChanges }: { hasChanges: boolean }) {
   async function handleExportChanges() {
     setIsExporting(true);
     try {
-      const res = await fetch("/api/settings/changes/export");
+      const res = await fetch(bff("/api/settings/changes/export"));
       if (!res.ok) return;
       // `res.blob()` statt `res.text()`: `text()` entfernt laut WHATWG-Spec
       // ein führendes UTF-8-BOM beim Dekodieren, Excel zeigt Umlaute dann
@@ -76,7 +77,7 @@ export function SettingsExportCard({ hasChanges }: { hasChanges: boolean }) {
   async function handleExportJson() {
     setIsExportingJson(true);
     try {
-      const res = await fetch("/api/settings/export");
+      const res = await fetch(bff("/api/settings/export"));
       if (!res.ok) return;
       const data = await res.json();
       const blob = new Blob([JSON.stringify(data, null, 2)], {

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { formatName } from "@/lib/utils";
 import type { CurrentUser } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 export function NoDashboardAccess({ user }: { user: CurrentUser }) {
   const router = useRouter();
@@ -13,7 +14,7 @@ export function NoDashboardAccess({ user }: { user: CurrentUser }) {
   async function handleLogout() {
     setIsLoggingOut(true);
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch(bff("/api/auth/logout"), { method: "POST" });
     } finally {
       router.push("/login");
       router.refresh();

@@ -56,6 +56,7 @@ import type {
 } from "@/lib/api-server";
 import { tagDotColor } from "@/lib/tag-colors";
 import { cn, formatName, slugify } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 
 const LOCK_HEARTBEAT_INTERVAL_MS = 60_000;
 
@@ -381,7 +382,7 @@ export function ContentEditorForm({
 
     async function acquireLock() {
       try {
-        const res = await fetch(`/api/content/${content!.id}/lock`, {
+        const res = await fetch(bff(`/api/content/${content!.id}/lock`), {
           method: "POST",
         });
         if (cancelled) return;
@@ -415,7 +416,7 @@ export function ContentEditorForm({
   useEffect(() => {
     if (!isEditing || lockState !== "held") return;
     const interval = setInterval(() => {
-      fetch(`/api/content/${content!.id}/lock`, { method: "POST" }).catch(
+      fetch(bff(`/api/content/${content!.id}/lock`), { method: "POST" }).catch(
         () => {},
       );
     }, LOCK_HEARTBEAT_INTERVAL_MS);
@@ -429,12 +430,12 @@ export function ContentEditorForm({
     const contentId = content!.id;
 
     function releaseOnUnload() {
-      navigator.sendBeacon?.(`/api/content/${contentId}/unlock`);
+      navigator.sendBeacon?.(bff(`/api/content/${contentId}/unlock`));
     }
     window.addEventListener("beforeunload", releaseOnUnload);
     return () => {
       window.removeEventListener("beforeunload", releaseOnUnload);
-      fetch(`/api/content/${contentId}/unlock`, { method: "POST" }).catch(
+      fetch(bff(`/api/content/${contentId}/unlock`), { method: "POST" }).catch(
         () => {},
       );
     };
@@ -444,9 +445,9 @@ export function ContentEditorForm({
     if (!content) return;
     setIsUnlocking(true);
     try {
-      await fetch(`/api/content/${content.id}/unlock`, { method: "POST" });
+      await fetch(bff(`/api/content/${content.id}/unlock`), { method: "POST" });
       setLockState("checking");
-      const res = await fetch(`/api/content/${content.id}/lock`, {
+      const res = await fetch(bff(`/api/content/${content.id}/lock`), {
         method: "POST",
       });
       setLockState(res.ok ? "held" : "error");
@@ -643,7 +644,9 @@ export function ContentEditorForm({
 
     setIsSubmitting(true);
     try {
-      const url = isEditing ? `/api/content/${content!.id}` : "/api/content";
+      const url = isEditing
+        ? bff(`/api/content/${content!.id}`)
+        : bff("/api/content");
       const method = isEditing ? "PATCH" : "POST";
       const seoPayload = {
         ...seoValues,
@@ -1094,7 +1097,9 @@ export function ContentEditorForm({
                               <Select
                                 multiple
                                 value={tagIds}
-                                onValueChange={(value) => setTagIds(value ?? [])}
+                                onValueChange={(value) =>
+                                  setTagIds(value ?? [])
+                                }
                                 items={Object.fromEntries(
                                   tags.map((tag) => [tag.id, tag.name]),
                                 )}
@@ -1122,7 +1127,11 @@ export function ContentEditorForm({
                                     const tag = tags.find((t) => t.id === id);
                                     if (!tag) return null;
                                     return (
-                                      <Badge key={id} variant="secondary" className="gap-1.5">
+                                      <Badge
+                                        key={id}
+                                        variant="secondary"
+                                        className="gap-1.5"
+                                      >
                                         <span
                                           className={cn(
                                             "size-1.5 rounded-full",

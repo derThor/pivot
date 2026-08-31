@@ -26,6 +26,7 @@ import {
 import { getIndentedFolderOptions } from "@/lib/media-folders";
 import { ACCEPTED_MEDIA_MIME_TYPES } from "@/lib/media-type";
 import type { MediaFolder } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 export function MediaUploadDialog({
   folders = [],
@@ -65,7 +66,7 @@ export function MediaUploadDialog({
       if (alt) formData.set("alt", alt);
       if (folderId !== "root") formData.set("folderId", folderId);
 
-      const res = await fetch("/api/media", {
+      const res = await fetch(bff("/api/media"), {
         method: "POST",
         body: formData,
       });

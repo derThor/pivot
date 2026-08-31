@@ -23,6 +23,7 @@ import { WebsiteModeDialog } from "@/components/website-mode-dialog";
 import { DEPLOYMENT_MODE_BADGE } from "@/lib/deployment-mode-badge";
 import { formatRelativeTime } from "@/lib/utils";
 import { WEBSITE_STATUS_BADGE } from "@/lib/website-status";
+import { bff } from "@/lib/bff";
 import type {
   AppSettings,
   LicenseRecheckResult,
@@ -72,7 +73,7 @@ export function MasterClientCard({
   async function handleRecheck() {
     setIsRechecking(true);
     try {
-      const res = await fetch("/api/license/recheck", { method: "POST" });
+      const res = await fetch(bff("/api/license/recheck"), { method: "POST" });
       const data = (await res
         .json()
         .catch(() => null)) as LicenseRecheckResult | null;

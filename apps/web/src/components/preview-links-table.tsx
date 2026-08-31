@@ -23,6 +23,7 @@ import { RowActionButtons } from "@/components/row-action-buttons";
 import { useHighlightParam } from "@/hooks/use-highlight-param";
 import type { PreviewLinkWithContent } from "@/lib/api-server";
 import { truncateMiddle } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 
 const dateFormatter = new Intl.DateTimeFormat("de-DE", {
   day: "2-digit",
@@ -68,7 +69,9 @@ export function PreviewLinksTable({
   async function handleRevoke() {
     if (!deleteTarget) return;
     await fetch(
-      `/api/content/${deleteTarget.content.id}/preview-links/${deleteTarget.id}`,
+      bff(
+        `/api/content/${deleteTarget.content.id}/preview-links/${deleteTarget.id}`,
+      ),
       {
         method: "DELETE",
       },

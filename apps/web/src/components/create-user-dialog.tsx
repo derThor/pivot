@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Role } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 export function CreateUserDialog({
   roles,
@@ -77,7 +78,7 @@ export function CreateUserDialog({
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/users", {
+      const res = await fetch(bff("/api/users"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { bff } from "@/lib/bff";
 
 /** Wartungsseiten-Inhalt für DIESE Installation (Nutzervorgabe, 2026-08-24:
  * "alle anderen Einstellungen unter Webseite" – zog Titel/Text aus dem
@@ -41,7 +42,7 @@ export function MaintenancePageCard({
       // Eigene Route statt /api/settings (Nutzer-Bugreport, 2026-08-25):
       // bleibt auch bei bereits gesperrter Client-Installation erreichbar,
       // siehe LicenseEnforcementGuard.
-      const res = await fetch("/api/settings/maintenance-page", {
+      const res = await fetch(bff("/api/settings/maintenance-page"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

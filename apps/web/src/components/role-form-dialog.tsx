@@ -31,6 +31,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import type { PermissionDescriptor, Role } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 import {
   actionLabels,
   categoryLabels,
@@ -107,7 +108,7 @@ export function RoleFormDialog({
     setError(null);
     setIsSubmitting(true);
     try {
-      const url = isEditing ? `/api/roles/${role!.id}` : "/api/roles";
+      const url = isEditing ? bff(`/api/roles/${role!.id}`) : bff("/api/roles");
       const method = isEditing ? "PATCH" : "POST";
 
       const res = await fetch(url, {

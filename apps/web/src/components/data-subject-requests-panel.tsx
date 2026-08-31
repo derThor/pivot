@@ -24,6 +24,7 @@ import {
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { Switch } from "@/components/ui/switch";
 import { cn, truncateMiddle } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 import type {
   CurrentUser,
   DataSubjectRequestType,
@@ -213,7 +214,7 @@ export function DataSubjectRequestsPanel({
     setFollowUpError(null);
     try {
       const res = await fetch(
-        `/api/deletion-requests/${followUpTarget.id}/follow-up`,
+        bff(`/api/deletion-requests/${followUpTarget.id}/follow-up`),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -243,7 +244,7 @@ export function DataSubjectRequestsPanel({
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    await fetch(`/api/deletion-requests/${deleteTarget.id}`, {
+    await fetch(bff(`/api/deletion-requests/${deleteTarget.id}`), {
       method: "DELETE",
     });
     onRequestsChange((prev) => prev.filter((r) => r.id !== deleteTarget.id));
@@ -256,7 +257,7 @@ export function DataSubjectRequestsPanel({
   async function handleComplete() {
     if (!completeTarget) return;
     const res = await fetch(
-      `/api/deletion-requests/${completeTarget.id}/complete`,
+      bff(`/api/deletion-requests/${completeTarget.id}/complete`),
       { method: "POST" },
     );
     const data = await res.json().catch(() => null);
@@ -276,7 +277,7 @@ export function DataSubjectRequestsPanel({
     setAutomatik((prev) => ({ ...prev, [key]: next }));
     setPendingAutomatikKey(key);
     try {
-      await fetch("/api/settings/privacy", {
+      await fetch(bff("/api/settings/privacy"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [key]: next }),
@@ -446,7 +447,9 @@ export function DataSubjectRequestsPanel({
                 className="w-full"
                 render={
                   <a
-                    href={`/api/deletion-requests/${selected.id}/data-extract`}
+                    href={bff(
+                      `/api/deletion-requests/${selected.id}/data-extract`,
+                    )}
                   />
                 }
               >

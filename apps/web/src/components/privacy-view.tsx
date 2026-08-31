@@ -53,6 +53,7 @@ import type {
 } from "@/lib/api-server";
 import { SubjectAccessRequestDialog } from "@/components/subject-access-request-dialog";
 import { UserRestoreButton } from "@/components/user-restore-button";
+import { bff } from "@/lib/bff";
 
 type PrivacyPageSettings = CompanySettings & PrivacySettings;
 
@@ -300,7 +301,7 @@ export function PrivacyView({
     setRequestingContractFor(processor.id);
     try {
       const res = await fetch(
-        `/api/data-processors/${processor.id}/request-contract`,
+        bff(`/api/data-processors/${processor.id}/request-contract`),
         { method: "POST" },
       );
       if (!res.ok) {
@@ -322,13 +323,13 @@ export function PrivacyView({
     try {
       const formData = new FormData();
       formData.set("file", file);
-      const uploadRes = await fetch("/api/media", {
+      const uploadRes = await fetch(bff("/api/media"), {
         method: "POST",
         body: formData,
       });
       const uploaded = await uploadRes.json().catch(() => null);
       if (!uploadRes.ok) return;
-      await fetch("/api/settings/privacy/scc-template", {
+      await fetch(bff("/api/settings/privacy/scc-template"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sccTemplateMediaId: uploaded.id }),
@@ -345,12 +346,14 @@ export function PrivacyView({
     if (!sccTemplateMedia) return;
     setIsRemovingSccTemplate(true);
     try {
-      await fetch("/api/settings/privacy/scc-template", {
+      await fetch(bff("/api/settings/privacy/scc-template"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sccTemplateMediaId: null }),
       });
-      await fetch(`/api/media/${sccTemplateMedia.id}`, { method: "DELETE" });
+      await fetch(bff(`/api/media/${sccTemplateMedia.id}`), {
+        method: "DELETE",
+      });
       setSccTemplateMedia(null);
       toastDeleted("SCC-Vorlage wurde entfernt.");
       router.refresh();
@@ -451,7 +454,7 @@ export function PrivacyView({
     setRegeneratingKey(key);
     setLegalDocumentError(null);
     try {
-      const res = await fetch(`/api/legal-documents/${key}/regenerate`, {
+      const res = await fetch(bff(`/api/legal-documents/${key}/regenerate`), {
         method: "POST",
       });
       const data = await res.json().catch(() => null);
@@ -477,7 +480,7 @@ export function PrivacyView({
   async function handleExportReport() {
     setIsExporting(true);
     try {
-      const res = await fetch("/api/privacy/report");
+      const res = await fetch(bff("/api/privacy/report"));
       if (!res.ok) return;
       // `res.blob()` statt `res.text()`: `text()` dekodiert laut WHATWG-Spec
       // als UTF-8 und entfernt dabei ein führendes BOM automatisch – die
@@ -515,7 +518,7 @@ export function PrivacyView({
       // würde nur unnötig an `ModuleFeatureGuard` scheitern (404) und den
       // Speichern-Vorgang fälschlich als Ganzes fehlschlagen lassen.
       const requests = [
-        fetch("/api/settings/privacy", {
+        fetch(bff("/api/settings/privacy"), {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -530,7 +533,7 @@ export function PrivacyView({
       ];
       if (TAB_IDS.includes("dsb")) {
         requests.push(
-          fetch("/api/settings/privacy/dsb", {
+          fetch(bff("/api/settings/privacy/dsb"), {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -545,8 +548,7 @@ export function PrivacyView({
               dpoReportedAt: dpo.dpoReportedAt
                 ? new Date(dpo.dpoReportedAt).toISOString()
                 : undefined,
-              dpoSupervisoryAuthority:
-                dpo.dpoSupervisoryAuthority || undefined,
+              dpoSupervisoryAuthority: dpo.dpoSupervisoryAuthority || undefined,
               dpoLastContactAt: dpo.dpoLastContactAt
                 ? new Date(dpo.dpoLastContactAt).toISOString()
                 : undefined,
@@ -925,8 +927,8 @@ export function PrivacyView({
                     Nach Ablauf erscheint der Eintrag unten zur manuellen
                     Löschung. Zusätzlich räumt die Aufbewahrungsfrist unter
                     Einstellungen → Jobs den kompletten Aktivitäten-Verlauf
-                    automatisch auf – bei kürzerer Frist dort verschwindet
-                    ein Eintrag ggf. schon vorher.
+                    automatisch auf – bei kürzerer Frist dort verschwindet ein
+                    Eintrag ggf. schon vorher.
                   </p>
                   <RetentionDueList
                     title="Fällig zur Löschung"
@@ -937,16 +939,19 @@ export function PrivacyView({
                       date: formatDate(e.createdAt),
                     }))}
                     onDeleteOne={async (id) => {
-                      await fetch(`/api/privacy/retention/access-log/${id}`, {
-                        method: "DELETE",
-                      });
+                      await fetch(
+                        bff(`/api/privacy/retention/access-log/${id}`),
+                        {
+                          method: "DELETE",
+                        },
+                      );
                       setAccessLogDue((prev) =>
                         prev.filter((e) => e.id !== id),
                       );
                       toastDeleted("Eintrag wurde gelöscht.");
                     }}
                     onDeleteAll={async () => {
-                      await fetch("/api/privacy/retention/access-log", {
+                      await fetch(bff("/api/privacy/retention/access-log"), {
                         method: "DELETE",
                       });
                       setAccessLogDue([]);
@@ -1014,7 +1019,7 @@ export function PrivacyView({
                     }))}
                     onDeleteOne={async (compositeId) => {
                       const [type, id] = compositeId.split(":");
-                      await fetch(`/api/${type}/${id}/permanent`, {
+                      await fetch(bff(`/api/${type}/${id}/permanent`), {
                         method: "DELETE",
                       });
                       setTrashDue((prev) => ({
@@ -1048,7 +1053,7 @@ export function PrivacyView({
                       ];
                       await Promise.all(
                         all.map((i) =>
-                          fetch(`/api/${i.type}/${i.id}/permanent`, {
+                          fetch(bff(`/api/${i.type}/${i.id}/permanent`), {
                             method: "DELETE",
                           }),
                         ),
@@ -1212,7 +1217,9 @@ export function PrivacyView({
                       variant="outline"
                       size="sm"
                       className="border-border"
-                      render={<a href="/api/data-processors/contracts.zip" />}
+                      render={
+                        <a href={bff("/api/data-processors/contracts.zip")} />
+                      }
                     >
                       AV-Verträge herunterladen
                     </Button>
@@ -1615,7 +1622,7 @@ export function PrivacyView({
                   onClick={async () => {
                     await Promise.all(
                       deactivatedAccountsDue.map((u) =>
-                        fetch(`/api/users/${u.id}/anonymize`, {
+                        fetch(bff(`/api/users/${u.id}/anonymize`), {
                           method: "POST",
                         }),
                       ),
@@ -1662,9 +1669,7 @@ export function PrivacyView({
                       ) : (
                         <div className="flex w-28 flex-col items-end gap-1">
                           <span className="text-sm font-medium">
-                            {u.daysLeft === 0
-                              ? "heute"
-                              : `in ${u.daysLeft} T.`}
+                            {u.daysLeft === 0 ? "heute" : `in ${u.daysLeft} T.`}
                           </span>
                           <div className="h-1.5 w-full rounded-full bg-muted">
                             <div
@@ -1728,7 +1733,9 @@ export function PrivacyView({
         onConfirm={async () => {
           if (!processingActivityDeleteTarget) return;
           await fetch(
-            `/api/processing-activities/${processingActivityDeleteTarget.id}`,
+            bff(
+              `/api/processing-activities/${processingActivityDeleteTarget.id}`,
+            ),
             {
               method: "DELETE",
             },
@@ -1761,9 +1768,12 @@ export function PrivacyView({
         description="Diese Aktion kann nicht rückgängig gemacht werden."
         onConfirm={async () => {
           if (!dataProcessorDeleteTarget) return;
-          await fetch(`/api/data-processors/${dataProcessorDeleteTarget.id}`, {
-            method: "DELETE",
-          });
+          await fetch(
+            bff(`/api/data-processors/${dataProcessorDeleteTarget.id}`),
+            {
+              method: "DELETE",
+            },
+          );
           setDataProcessors((prev) =>
             prev.filter((r) => r.id !== dataProcessorDeleteTarget.id),
           );
@@ -1787,7 +1797,7 @@ export function PrivacyView({
         confirmingLabel="Anonymisiert…"
         onConfirm={async () => {
           if (!anonymizeTarget) return;
-          await fetch(`/api/users/${anonymizeTarget.id}/anonymize`, {
+          await fetch(bff(`/api/users/${anonymizeTarget.id}/anonymize`), {
             method: "POST",
           });
           setDeactivatedAccountsDue((prev) =>

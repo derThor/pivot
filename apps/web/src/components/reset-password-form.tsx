@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import { PasswordPolicyChecklist } from "@/components/password-policy-checklist";
 import { isPasswordValid, type PasswordPolicy } from "@/lib/password-policy";
+import { bff } from "@/lib/bff";
 
 export function ResetPasswordForm({
   token,
@@ -63,7 +64,7 @@ export function ResetPasswordForm({
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/auth/reset-password", {
+      const res = await fetch(bff("/api/auth/reset-password"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, newPassword: values.newPassword }),

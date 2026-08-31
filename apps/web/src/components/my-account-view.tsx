@@ -25,6 +25,7 @@ import type {
   UserSession,
 } from "@/lib/api-server";
 import type { PasswordPolicy } from "@/lib/password-policy";
+import { bff } from "@/lib/bff";
 
 const PROFILE_FORM_ID = "my-account-profile-form";
 const PASSWORD_FORM_ID = "my-account-password-form";
@@ -101,7 +102,9 @@ export function MyAccountView({
   }
 
   async function handleRevokeSession(sessionId: string) {
-    await fetch(`/api/auth/me/sessions/${sessionId}`, { method: "DELETE" });
+    await fetch(bff(`/api/auth/me/sessions/${sessionId}`), {
+      method: "DELETE",
+    });
     setSessionsState((prev) => {
       const next = prev.filter((s) => s.id !== sessionId);
       const maxPage = Math.max(1, Math.ceil(next.length / SESSIONS_PAGE_SIZE));
@@ -111,7 +114,7 @@ export function MyAccountView({
   }
 
   async function handleRevokeOtherSessions() {
-    await fetch("/api/auth/me/sessions/revoke-others", { method: "POST" });
+    await fetch(bff("/api/auth/me/sessions/revoke-others"), { method: "POST" });
     setSessionsState((prev) => prev.filter((s) => s.isCurrent));
   }
 

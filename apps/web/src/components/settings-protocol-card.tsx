@@ -16,6 +16,7 @@ import {
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { PaginationControls } from "@/components/pagination-controls";
 import { formatName } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 import {
   describeSettingsFieldChange,
   SETTINGS_ACTION_LABELS,
@@ -52,7 +53,7 @@ export function SettingsProtocolCard({
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    await fetch(`/api/settings/changes/${deleteTarget.id}`, {
+    await fetch(bff(`/api/settings/changes/${deleteTarget.id}`), {
       method: "DELETE",
     });
     toastDeleted("Eintrag wurde gelöscht.");
@@ -61,7 +62,7 @@ export function SettingsProtocolCard({
   }
 
   async function handleDeleteAll() {
-    await fetch("/api/settings/changes", { method: "DELETE" });
+    await fetch(bff("/api/settings/changes"), { method: "DELETE" });
     toastDeleted("Alle Einträge wurden gelöscht.");
     router.refresh();
   }

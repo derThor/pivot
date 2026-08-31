@@ -21,6 +21,7 @@ import {
   PRIVACY_INCIDENT_SEVERITY_LABELS,
 } from "@/components/privacy-incident-dialog";
 import { cn, truncateMiddle } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 import type {
   PrivacyIncident,
   PrivacyIncidentSeverity,
@@ -131,7 +132,7 @@ export function PrivacyIncidentsPanel({
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    await fetch(`/api/privacy-incidents/${deleteTarget.id}`, {
+    await fetch(bff(`/api/privacy-incidents/${deleteTarget.id}`), {
       method: "DELETE",
     });
     onIncidentsChange((prev) => prev.filter((r) => r.id !== deleteTarget.id));
@@ -144,7 +145,7 @@ export function PrivacyIncidentsPanel({
   async function handleReport() {
     if (!reportTarget) return;
     const res = await fetch(
-      `/api/privacy-incidents/${reportTarget.id}/report`,
+      bff(`/api/privacy-incidents/${reportTarget.id}/report`),
       {
         method: "POST",
       },
@@ -160,7 +161,7 @@ export function PrivacyIncidentsPanel({
   async function handleNotify() {
     if (!notifyTarget) return;
     const res = await fetch(
-      `/api/privacy-incidents/${notifyTarget.id}/notify-subjects`,
+      bff(`/api/privacy-incidents/${notifyTarget.id}/notify-subjects`),
       { method: "POST" },
     );
     const data = await res.json().catch(() => null);
@@ -321,7 +322,9 @@ export function PrivacyIncidentsPanel({
                       className="w-full border-border"
                       render={
                         <a
-                          href={`/api/privacy-incidents/${selected.id}/report`}
+                          href={bff(
+                            `/api/privacy-incidents/${selected.id}/report`,
+                          )}
                         />
                       }
                     >

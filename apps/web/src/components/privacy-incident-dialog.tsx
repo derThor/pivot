@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { bff } from "@/lib/bff";
 import type {
   PrivacyIncident,
   PrivacyIncidentSeverity,
@@ -96,8 +97,8 @@ export function PrivacyIncidentDialog({
       };
       const res = await fetch(
         isEdit
-          ? `/api/privacy-incidents/${(target as PrivacyIncident).id}`
-          : "/api/privacy-incidents",
+          ? bff(`/api/privacy-incidents/${(target as PrivacyIncident).id}`)
+          : bff("/api/privacy-incidents"),
         {
           method: isEdit ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },

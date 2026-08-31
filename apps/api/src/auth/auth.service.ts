@@ -1051,8 +1051,16 @@ export class AuthService {
     return createHash('sha256').update(token).digest('hex');
   }
 
+  /** Basis für Links, die im Backend geöffnet werden (Reset-/Verifikations-
+   * Mails). `ADMIN_BASE_URL` gewinnt, weil das Backend unter einem Pfad
+   * derselben Domain liegen kann (`https://kunde.de/admin`) – `CORS_ORIGIN`
+   * ist dann nur noch der Host und würde auf die öffentliche Website
+   * zeigen. Siehe knowledge-base/platform/deployment.md. */
   private frontendOrigin(): string {
-    return this.config.get<string>('CORS_ORIGIN', 'http://localhost:3000');
+    return (
+      this.config.get<string>('ADMIN_BASE_URL') ??
+      this.config.get<string>('CORS_ORIGIN', 'http://localhost:3000')
+    );
   }
 
   private isProduction(): boolean {

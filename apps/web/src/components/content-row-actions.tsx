@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { RowActionButtons } from "@/components/row-action-buttons";
 import { truncateMiddle } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 
 export function ContentRowActions({
   id,
@@ -22,7 +23,7 @@ export function ContentRowActions({
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   async function handleDelete() {
-    await fetch(`/api/content/${id}`, { method: "DELETE" });
+    await fetch(bff(`/api/content/${id}`), { method: "DELETE" });
     toastDeleted(`„${title}“ wurde gelöscht.`);
     router.refresh();
   }

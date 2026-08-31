@@ -12,6 +12,7 @@ import {
 import { mediaUrl, resolveImageSrc } from "@/lib/media";
 import { mediaCategory, mediaTypeIcon } from "@/lib/media-type";
 import { getFolderBreadcrumb, getFolderChildren } from "@/lib/media-folders";
+import { bff } from "@/lib/bff";
 import type {
   MediaFolder,
   MediaItem,
@@ -50,10 +51,10 @@ export function MediaBrowserPanel({
     setItems(null);
     setLoadError(null);
     Promise.all([
-      fetch("/api/media?pageSize=100").then((res) =>
+      fetch(bff("/api/media?pageSize=100")).then((res) =>
         res.ok ? (res.json() as Promise<MediaListResponse>) : null,
       ),
-      fetch("/api/media-folders").then((res) =>
+      fetch(bff("/api/media-folders")).then((res) =>
         res.ok ? (res.json() as Promise<MediaFolder[]>) : null,
       ),
     ])

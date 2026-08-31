@@ -24,6 +24,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import type { CurrentUser } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const profileSchema = z.object({
   firstName: z.string().optional(),
@@ -76,7 +77,7 @@ export function AccountForm({
     setSuccess(false);
     onSubmittingChange?.(true);
     try {
-      const res = await fetch("/api/auth/me", {
+      const res = await fetch(bff("/api/auth/me"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

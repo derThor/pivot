@@ -37,6 +37,7 @@ import type {
   UserSession,
 } from "@/lib/api-server";
 import { mediaUrl } from "@/lib/media";
+import { asset, bff } from "@/lib/bff";
 import {
   cn,
   formatName,
@@ -150,7 +151,7 @@ export function UserEditView({
     setError(null);
     setIsSaving(true);
     try {
-      const res = await fetch(`/api/users/${user.id}`, {
+      const res = await fetch(bff(`/api/users/${user.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -185,7 +186,7 @@ export function UserEditView({
   async function handleLock() {
     setIsTogglingActive(true);
     try {
-      await fetch(`/api/users/${user.id}`, { method: "DELETE" });
+      await fetch(bff(`/api/users/${user.id}`), { method: "DELETE" });
       setIsActive(false);
       toastEdited(`„${name}“ wurde gesperrt.`);
       router.refresh();
@@ -197,7 +198,7 @@ export function UserEditView({
   async function handleUnlock() {
     setIsTogglingActive(true);
     try {
-      const res = await fetch(`/api/users/${user.id}`, {
+      const res = await fetch(bff(`/api/users/${user.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: true }),
@@ -215,7 +216,7 @@ export function UserEditView({
   async function handleResetPassword() {
     setIsResetting(true);
     try {
-      const res = await fetch(`/api/users/${user.id}/reset-password`, {
+      const res = await fetch(bff(`/api/users/${user.id}/reset-password`), {
         method: "POST",
       });
       const body = await res.json().catch(() => null);
@@ -233,7 +234,7 @@ export function UserEditView({
   async function handleDisableTwoFactor() {
     setIsDisablingTwoFactor(true);
     try {
-      const res = await fetch(`/api/users/${user.id}/disable-2fa`, {
+      const res = await fetch(bff(`/api/users/${user.id}/disable-2fa`), {
         method: "POST",
       });
       if (res.ok) {
@@ -250,11 +251,11 @@ export function UserEditView({
   async function handleImpersonate() {
     setIsImpersonating(true);
     try {
-      const res = await fetch(`/api/users/${user.id}/impersonate`, {
+      const res = await fetch(bff(`/api/users/${user.id}/impersonate`), {
         method: "POST",
       });
       if (res.ok) {
-        window.location.assign("/dashboard");
+        window.location.assign(asset("/dashboard"));
         return;
       }
     } finally {
@@ -273,7 +274,7 @@ export function UserEditView({
   async function handleExportActivity() {
     setIsExportingActivity(true);
     try {
-      const res = await fetch(`/api/users/${user.id}/activity/export`);
+      const res = await fetch(bff(`/api/users/${user.id}/activity/export`));
       if (!res.ok) return;
       // `res.blob()` statt `res.text()`: `text()` entfernt laut WHATWG-Spec
       // ein führendes UTF-8-BOM beim Dekodieren, Excel zeigt Umlaute dann
@@ -291,13 +292,13 @@ export function UserEditView({
   }
 
   async function handleDelete() {
-    await fetch(`/api/users/${user.id}/delete`, { method: "POST" });
+    await fetch(bff(`/api/users/${user.id}/delete`), { method: "POST" });
     toastDeleted(`„${name}“ wurde gelöscht.`);
     router.push("/dashboard/users");
   }
 
   async function handleRevokeSession(sessionId: string) {
-    await fetch(`/api/users/${user.id}/sessions/${sessionId}`, {
+    await fetch(bff(`/api/users/${user.id}/sessions/${sessionId}`), {
       method: "DELETE",
     });
     setSessionsState((prev) => {
@@ -309,7 +310,7 @@ export function UserEditView({
   }
 
   async function handleRevokeOthers() {
-    await fetch(`/api/users/${user.id}/sessions/revoke-others`, {
+    await fetch(bff(`/api/users/${user.id}/sessions/revoke-others`), {
       method: "POST",
     });
     setSessionsState((prev) => prev.filter((s) => s.isCurrent));

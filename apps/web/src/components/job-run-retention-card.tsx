@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SegmentedPicker } from "@/components/segmented-picker";
 import { SwitchRow } from "@/components/switch-row";
+import { bff } from "@/lib/bff";
 
 /** "Jobs"-Reiter unter Einstellungen, ganz oben auf der Seite
  * (Nutzervorgabe, 2026-08-30: "setze das am anfang der seite" – vorher
@@ -31,7 +32,7 @@ export function JobRunRetentionCard({
   async function handleChange(value: number) {
     const next = value === -1 ? null : value;
     setRetentionDays(next);
-    await fetch("/api/settings", {
+    await fetch(bff("/api/settings"), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ jobRunRetentionDays: next }),
@@ -43,7 +44,7 @@ export function JobRunRetentionCard({
     setGloballyPaused(checked);
     setIsSavingPause(true);
     try {
-      await fetch("/api/settings", {
+      await fetch(bff("/api/settings"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jobsGloballyPaused: checked }),
@@ -72,8 +73,8 @@ export function JobRunRetentionCard({
             ]}
           />
           <p className="text-xs text-muted-foreground">
-            Läuft täglich über alle Jobs hinweg, inklusive der
-            Live-Überwachung gesperrter Websites.
+            Läuft täglich über alle Jobs hinweg, inklusive der Live-Überwachung
+            gesperrter Websites.
           </p>
         </div>
         <SwitchRow

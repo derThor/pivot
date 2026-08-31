@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { asset } from "@/lib/bff";
 
 // Gemeinsames Split-Screen-Layout für Login/Registrierung (Maglo-Referenz):
 // links das Formular, rechts ein großformatiges Bild. Logo und Bild sind
@@ -20,7 +21,7 @@ export function AuthShell({
           <Link href="/" className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/brand/logo-expanded.png"
+              src={asset("/brand/logo-expanded.png")}
               alt="pivot CMS"
               className="pivot-logo h-8 w-auto object-contain"
             />
@@ -39,7 +40,7 @@ export function AuthShell({
             unnötig scrollte und der Overlay-Text unten abgeschnitten wurde. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/brand/auth-image.jpg"
+          src={asset("/brand/auth-image.jpg")}
           alt=""
           className="absolute inset-0 size-full object-cover"
         />

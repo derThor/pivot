@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
+import { bff } from "@/lib/bff";
 
 type Step = "credentials" | "key" | "done";
 
@@ -60,7 +61,7 @@ export function LicenseRecoveryDialog({ children }: { children: ReactNode }) {
     setPending(true);
     setError(null);
     try {
-      const res = await fetch("/api/license/recovery/verify", {
+      const res = await fetch(bff("/api/license/recovery/verify"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -83,7 +84,7 @@ export function LicenseRecoveryDialog({ children }: { children: ReactNode }) {
     setPending(true);
     setError(null);
     try {
-      const res = await fetch("/api/license/recovery/apply-key", {
+      const res = await fetch(bff("/api/license/recovery/apply-key"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ recoveryToken, apiKey }),

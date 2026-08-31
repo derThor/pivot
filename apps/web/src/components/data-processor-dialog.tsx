@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { DataProcessor } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const EMPTY_FORM = {
   name: "",
@@ -81,7 +82,10 @@ export function DataProcessorDialog({
       const formData = new FormData();
       formData.set("file", file);
       formData.set("folderId", avsFolderId);
-      const res = await fetch("/api/media", { method: "POST", body: formData });
+      const res = await fetch(bff("/api/media"), {
+        method: "POST",
+        body: formData,
+      });
       const uploaded = await res.json().catch(() => null);
       if (!res.ok) {
         setError(uploaded?.message ?? "Upload fehlgeschlagen.");
@@ -106,7 +110,7 @@ export function DataProcessorDialog({
     setError(null);
     try {
       if (mediaId) {
-        await fetch(`/api/media/${mediaId}`, { method: "DELETE" });
+        await fetch(bff(`/api/media/${mediaId}`), { method: "DELETE" });
       }
       setForm((p) => ({ ...p, contractMediaId: "", contractFilename: "" }));
     } catch {
@@ -140,8 +144,8 @@ export function DataProcessorDialog({
       };
       const res = await fetch(
         isEdit
-          ? `/api/data-processors/${(target as DataProcessor).id}`
-          : "/api/data-processors",
+          ? bff(`/api/data-processors/${(target as DataProcessor).id}`)
+          : bff("/api/data-processors"),
         {
           method: isEdit ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },

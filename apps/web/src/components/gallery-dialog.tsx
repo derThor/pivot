@@ -21,6 +21,7 @@ import {
   type GallerySettings,
 } from "@/lib/gallery-settings";
 import type { ModuleType } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 /** Schlanker Anlegen-Dialog nur für Name + Anzeige-Einstellungen einer
  * Bildergalerie (Nutzervorgabe, 2026-08-15) – ohne Bilder-Verwaltung.
@@ -72,7 +73,7 @@ export function GalleryDialog({
     setSubmitError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/global-modules", {
+      const res = await fetch(bff("/api/global-modules"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

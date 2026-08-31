@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ModuleFieldInput } from "@/components/module-field-input";
+import { bff } from "@/lib/bff";
 import {
   GallerySwiper,
   type GallerySwiperImage,
@@ -339,8 +340,8 @@ export function GlobalModuleFormDialog({
     setIsSubmitting(true);
     try {
       const url = isEditing
-        ? `/api/global-modules/${globalModule!.id}`
-        : "/api/global-modules";
+        ? bff(`/api/global-modules/${globalModule!.id}`)
+        : bff("/api/global-modules");
       const method = isEditing ? "PATCH" : "POST";
       const body = isEditing
         ? { name, values, ...(isGallery && { settings }) }

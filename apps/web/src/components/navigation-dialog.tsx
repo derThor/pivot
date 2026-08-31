@@ -17,6 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { slugify } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 
 interface NavigationRef {
   id: string;
@@ -64,7 +65,9 @@ export function NavigationDialog({
     setIsSubmitting(true);
     try {
       const res = await fetch(
-        isEditing ? `/api/navigations/${navigation!.id}` : "/api/navigations",
+        isEditing
+          ? bff(`/api/navigations/${navigation!.id}`)
+          : bff("/api/navigations"),
         {
           method: isEditing ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },

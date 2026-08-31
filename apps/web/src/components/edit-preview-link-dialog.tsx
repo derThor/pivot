@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { PreviewLinkWithContent } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const expiryOptions: Record<string, string> = {
   "24": "1 Tag",
@@ -51,11 +52,14 @@ export function EditPreviewLinkDialog({
   async function handleSave() {
     setIsSaving(true);
     try {
-      await fetch(`/api/content/${link.content.id}/preview-links/${link.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ expiresInHours: Number(expiresInHours) }),
-      });
+      await fetch(
+        bff(`/api/content/${link.content.id}/preview-links/${link.id}`),
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ expiresInHours: Number(expiresInHours) }),
+        },
+      );
       setOpen(false);
       toastEdited("Die Gültigkeitsdauer wurde aktualisiert.");
       router.refresh();

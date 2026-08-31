@@ -28,6 +28,7 @@ import { useSelection } from "@/hooks/use-selection";
 import { useHighlightParam } from "@/hooks/use-highlight-param";
 import type { GlobalModule, ModuleType } from "@/lib/api-server";
 import { truncateMiddle } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 
 export function GlobalModulesManager({
   items,
@@ -57,14 +58,16 @@ export function GlobalModulesManager({
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    await fetch(`/api/global-modules/${deleteTarget.id}`, { method: "DELETE" });
+    await fetch(bff(`/api/global-modules/${deleteTarget.id}`), {
+      method: "DELETE",
+    });
     router.refresh();
   }
 
   async function handleBulkDelete() {
     await Promise.all(
       [...selected].map((id) =>
-        fetch(`/api/global-modules/${id}`, { method: "DELETE" }),
+        fetch(bff(`/api/global-modules/${id}`), { method: "DELETE" }),
       ),
     );
     clear();

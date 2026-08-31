@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { mediaUrl } from "@/lib/media";
 import { cn } from "@/lib/utils";
 import type { MediaListResponse } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 export function LogoUploadField({
   field,
@@ -35,7 +36,7 @@ export function LogoUploadField({
   const [isRemoving, setIsRemoving] = useState(false);
 
   async function patchSettings(value: string | null) {
-    const res = await fetch("/api/settings", {
+    const res = await fetch(bff("/api/settings"), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ [field]: value }),
@@ -49,7 +50,9 @@ export function LogoUploadField({
   /** Findet den Medien-Eintrag im Logo-Ordner, der aktuell unter dieser URL hinterlegt ist. */
   async function findMediaIdByUrl(url: string): Promise<string | null> {
     if (!folderId) return null;
-    const res = await fetch(`/api/media?folderId=${folderId}&pageSize=100`);
+    const res = await fetch(
+      bff(`/api/media?folderId=${folderId}&pageSize=100`),
+    );
     if (!res.ok) return null;
     const data = (await res
       .json()
@@ -60,7 +63,7 @@ export function LogoUploadField({
   async function deleteMediaByUrl(url: string) {
     const mediaId = await findMediaIdByUrl(url);
     if (mediaId) {
-      await fetch(`/api/media/${mediaId}`, { method: "DELETE" });
+      await fetch(bff(`/api/media/${mediaId}`), { method: "DELETE" });
     }
   }
 
@@ -72,7 +75,7 @@ export function LogoUploadField({
       formData.set("file", file);
       if (folderId) formData.set("folderId", folderId);
 
-      const uploadRes = await fetch("/api/media", {
+      const uploadRes = await fetch(bff("/api/media"), {
         method: "POST",
         body: formData,
       });

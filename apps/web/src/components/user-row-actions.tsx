@@ -8,6 +8,7 @@ import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { RowActionButtons } from "@/components/row-action-buttons";
 import type { CurrentUser } from "@/lib/api-server";
 import { formatName, truncateMiddle } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 
 export function UserRowActions({
   user,
@@ -31,7 +32,7 @@ export function UserRowActions({
   // Symbol (Nutzer-Bugreport, 2026-08-21: "ich rede von dem mülleimer
   // symbol in der auflistung" – zeigte vorher "deaktiviert").
   async function handleDelete() {
-    await fetch(`/api/users/${user.id}/delete`, { method: "POST" });
+    await fetch(bff(`/api/users/${user.id}/delete`), { method: "POST" });
     toastDeleted(`„${name}“ wurde gelöscht.`);
     router.refresh();
   }

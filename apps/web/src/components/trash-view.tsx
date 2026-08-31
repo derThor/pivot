@@ -38,6 +38,7 @@ import {
 import { useSelection } from "@/hooks/use-selection";
 import { cn, formatBytes, truncateMiddle } from "@/lib/utils";
 import type { TrashItem, TrashStats, TrashType } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const TYPE_FILTERS: { value: TrashType | null; label: string }[] = [
   { value: null, label: "Alle" },
@@ -120,7 +121,7 @@ export function TrashView({
   }
 
   async function handleRestore(item: TrashItem) {
-    await fetch(`/api/trash/${item.type}/${item.id}/restore`, {
+    await fetch(bff(`/api/trash/${item.type}/${item.id}/restore`), {
       method: "POST",
     });
     toastEdited(`„${item.title}“ wurde wiederhergestellt.`);
@@ -128,7 +129,9 @@ export function TrashView({
   }
 
   async function handlePermanentDelete(item: TrashItem) {
-    await fetch(`/api/trash/${item.type}/${item.id}`, { method: "DELETE" });
+    await fetch(bff(`/api/trash/${item.type}/${item.id}`), {
+      method: "DELETE",
+    });
     toastDeleted(`„${item.title}“ wurde endgültig gelöscht.`);
     router.refresh();
   }
@@ -139,7 +142,7 @@ export function TrashView({
     );
     await Promise.all(
       targets.map((item) =>
-        fetch(`/api/trash/${item.type}/${item.id}`, { method: "DELETE" }),
+        fetch(bff(`/api/trash/${item.type}/${item.id}`), { method: "DELETE" }),
       ),
     );
     clear();
@@ -152,13 +155,13 @@ export function TrashView({
   }
 
   async function handleEmptyTrash() {
-    await fetch("/api/trash", { method: "DELETE" });
+    await fetch(bff("/api/trash"), { method: "DELETE" });
     toastDeleted("Papierkorb wurde geleert.");
     router.refresh();
   }
 
   async function handleRestoreExpiring() {
-    await fetch("/api/trash/restore-expiring", { method: "POST" });
+    await fetch(bff("/api/trash/restore-expiring"), { method: "POST" });
     toastEdited("Bald ablaufende Einträge wurden wiederhergestellt.");
     router.refresh();
   }

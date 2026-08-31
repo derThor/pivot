@@ -56,6 +56,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { DEPLOYMENT_MODE_BADGE } from "@/lib/deployment-mode-badge";
 import { cn } from "@/lib/utils";
 import type { CurrentUser } from "@/lib/api-server";
+import { asset, bff } from "@/lib/bff";
 
 // Referenzbild: aktiver Eintrag ist ein moderat gerundetes Rechteck (kein
 // volles Pillen-Oval wie bei Buttons), Text/Icon fett und dunkel auf Lime.
@@ -368,7 +369,7 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
   async function handleLogout() {
     setIsLoggingOut(true);
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch(bff("/api/auth/logout"), { method: "POST" });
     } finally {
       router.push("/login");
       router.refresh();
@@ -383,7 +384,7 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
             <div className="flex size-full items-center justify-center overflow-hidden rounded-lg shadow-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/brand/logo-collapsed.png"
+                src={asset("/brand/logo-collapsed.png")}
                 alt="pivot CMS"
                 className="pivot-logo size-full object-contain"
               />
@@ -416,7 +417,7 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
             <span className="relative inline-block">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/brand/logo-expanded.png"
+                src={asset("/brand/logo-expanded.png")}
                 alt="pivot CMS"
                 className="pivot-logo h-11 w-auto max-w-full object-contain"
               />

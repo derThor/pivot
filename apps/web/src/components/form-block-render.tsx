@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { FormFieldOption } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 interface PublicForm {
   id: string;
@@ -184,7 +185,7 @@ export function FormBlockRender({ formId }: { formId: string }) {
   // des ausgewählten Formulars, statt hier manuell zurückzusetzen.
   useEffect(() => {
     let active = true;
-    fetch(`/api/forms/public/${formId}`)
+    fetch(bff(`/api/forms/public/${formId}`))
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (active) setForm(data);
@@ -234,7 +235,7 @@ export function FormBlockRender({ formId }: { formId: string }) {
     setStatus("submitting");
     setErrorMessage(null);
     try {
-      const res = await fetch(`/api/forms/${form!.slug}/submit`, {
+      const res = await fetch(bff(`/api/forms/${form!.slug}/submit`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ values }),

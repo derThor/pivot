@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getLicenseState } from "@/lib/api-server";
 import { LicenseRecoveryDialog } from "@/components/license-recovery-dialog";
 import { mediaUrl } from "@/lib/media";
+import { asset } from "@/lib/bff";
 
 // Meta-Tag-Marker, den WebsiteMonitorService (Master-seitige Live-
 // Überwachung, siehe knowledge-base/platform/master-slave-licensing.md)
@@ -90,7 +91,7 @@ export default async function LockedPage() {
            * Footer, siehe unten). */}
           {/* eslint-disable-next-line @next/next/no-img-element -- statisches Asset unter public/, kein next/image nötig */}
           <img
-            src="/brand/logo-collapsed.png"
+            src={asset("/brand/logo-collapsed.png")}
             alt="Pivot"
             className="size-8 rounded-lg object-contain"
           />

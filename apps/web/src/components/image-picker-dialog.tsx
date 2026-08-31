@@ -24,6 +24,7 @@ import { MediaBrowserPanel } from "@/components/media-browser-panel";
 import { getIndentedFolderOptions } from "@/lib/media-folders";
 import { ACCEPTED_IMAGE_MIME_TYPES } from "@/lib/media-type";
 import type { MediaFolder, MediaItem } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 function isImage(item: MediaItem) {
   return item.mimeType.startsWith("image/");
@@ -80,7 +81,10 @@ export function ImagePickerDialog({
       if (alt) formData.set("alt", alt);
       if (uploadFolderId !== "root") formData.set("folderId", uploadFolderId);
 
-      const res = await fetch("/api/media", { method: "POST", body: formData });
+      const res = await fetch(bff("/api/media"), {
+        method: "POST",
+        body: formData,
+      });
       const body = await res.json().catch(() => null);
 
       if (!res.ok) {

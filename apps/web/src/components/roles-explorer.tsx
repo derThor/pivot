@@ -42,6 +42,7 @@ import {
   resourceLabels,
 } from "@/lib/permission-labels";
 import type { PermissionDescriptor, Role } from "@/lib/api-server";
+import { asset, bff } from "@/lib/bff";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("de-DE", {
@@ -101,7 +102,7 @@ export function RolesExplorer({
     setLoadingUsers(true);
     try {
       const res = await fetch(
-        `/api/users?roleId=${selectedRole.id}&pageSize=100`,
+        bff(`/api/users?roleId=${selectedRole.id}&pageSize=100`),
       );
       const data = await res.json().catch(() => null);
       const items = Array.isArray(data?.items) ? data.items : [];
@@ -188,7 +189,7 @@ export function RolesExplorer({
     if (!selectedRole) return;
     setIsSaving(true);
     try {
-      const res = await fetch(`/api/roles/${selectedRole.id}`, {
+      const res = await fetch(bff(`/api/roles/${selectedRole.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -214,7 +215,7 @@ export function RolesExplorer({
   // zugewiesen ist) zeigte trotzdem "erfolgreich gelöscht" an.
   async function handleDelete() {
     if (!selectedRole) return;
-    const res = await fetch(`/api/roles/${selectedRole.id}`, {
+    const res = await fetch(bff(`/api/roles/${selectedRole.id}`), {
       method: "DELETE",
     });
     if (!res.ok) {
@@ -228,7 +229,7 @@ export function RolesExplorer({
 
   async function handleDuplicate() {
     if (!selectedRole) return;
-    const res = await fetch("/api/roles", {
+    const res = await fetch(bff("/api/roles"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -302,7 +303,7 @@ export function RolesExplorer({
                   {isPivotRole ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src="/brand/logo-collapsed.png"
+                      src={asset("/brand/logo-collapsed.png")}
                       alt=""
                       className="pivot-logo size-3.5 shrink-0 object-contain"
                     />
@@ -356,7 +357,7 @@ export function RolesExplorer({
                   {selectedRole.name === "Pivot" && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src="/brand/logo-collapsed.png"
+                      src={asset("/brand/logo-collapsed.png")}
                       alt=""
                       className="pivot-logo size-5 shrink-0 object-contain"
                     />
@@ -526,7 +527,7 @@ export function RolesExplorer({
                           // vorbehalten sind (siehe PERMISSIONS_CATALOG).
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src="/brand/logo-collapsed.png"
+                            src={asset("/brand/logo-collapsed.png")}
                             alt="Pivot"
                             className="pivot-logo size-3.5 shrink-0 object-contain"
                           />

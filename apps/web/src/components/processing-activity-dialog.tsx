@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ProcessingActivity } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const EMPTY_FORM = {
   purpose: "",
@@ -72,8 +73,10 @@ export function ProcessingActivityDialog({
       };
       const res = await fetch(
         isEdit
-          ? `/api/processing-activities/${(target as ProcessingActivity).id}`
-          : "/api/processing-activities",
+          ? bff(
+              `/api/processing-activities/${(target as ProcessingActivity).id}`,
+            )
+          : bff("/api/processing-activities"),
         {
           method: isEdit ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },

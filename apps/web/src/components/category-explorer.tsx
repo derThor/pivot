@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { categoryColor, tagDotColor } from "@/lib/tag-colors";
 import { cn, formatName, slugify } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 import type {
   CategoryDetail,
   CategoryListItem,
@@ -145,13 +146,13 @@ export function CategoryExplorer({
   }, [searchValue]);
 
   async function handleDeletePost(id: string) {
-    await fetch(`/api/content/${id}`, { method: "DELETE" });
+    await fetch(bff(`/api/content/${id}`), { method: "DELETE" });
     toastDeleted("Der Beitrag wurde gelöscht.");
     router.refresh();
   }
 
   async function handleToggleFeatured(id: string) {
-    await fetch(`/api/content/${id}/featured`, { method: "POST" });
+    await fetch(bff(`/api/content/${id}/featured`), { method: "POST" });
     router.refresh();
   }
 
@@ -160,7 +161,7 @@ export function CategoryExplorer({
     existingTagIds: string[],
     tagId: string,
   ) {
-    await fetch(`/api/content/${postId}`, {
+    await fetch(bff(`/api/content/${postId}`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tagIds: [...existingTagIds, tagId] }),
@@ -667,7 +668,7 @@ function CategorySettingsForm({
     setError(null);
     onSubmittingChange(true);
     try {
-      const res = await fetch(`/api/categories/${category.id}`, {
+      const res = await fetch(bff(`/api/categories/${category.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

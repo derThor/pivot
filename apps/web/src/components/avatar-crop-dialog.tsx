@@ -12,6 +12,7 @@ import "react-image-crop/dist/ReactCrop.css";
 
 import { toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
+import { bff } from "@/lib/bff";
 import {
   Dialog,
   DialogContent,
@@ -85,7 +86,7 @@ export function AvatarCropDialog({
 
       const formData = new FormData();
       formData.set("file", blob, file?.name ?? "avatar.png");
-      const res = await fetch("/api/auth/me/avatar", {
+      const res = await fetch(bff("/api/auth/me/avatar"), {
         method: "POST",
         body: formData,
       });

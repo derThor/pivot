@@ -54,6 +54,7 @@ import { ActivityLogRetentionCard } from "@/components/activity-log-retention-ca
 import { MailingSettingsCard } from "@/components/mailing-settings-card";
 import { PaginationControls } from "@/components/pagination-controls";
 import { cn } from "@/lib/utils";
+import { bff } from "@/lib/bff";
 import type {
   AppSettings,
   JobRunsResponse,
@@ -342,7 +343,7 @@ export function SettingsForm({
   async function handleClearCache() {
     setIsClearingCache(true);
     try {
-      await fetch("/api/settings/clear-cache", { method: "POST" });
+      await fetch(bff("/api/settings/clear-cache"), { method: "POST" });
       toastEdited("Cache wurde geleert.");
     } finally {
       setIsClearingCache(false);
@@ -353,7 +354,7 @@ export function SettingsForm({
   async function handleRevokeAllSessions() {
     setIsRevokingAllSessions(true);
     try {
-      const res = await fetch("/api/settings/revoke-all-sessions", {
+      const res = await fetch(bff("/api/settings/revoke-all-sessions"), {
         method: "POST",
       });
       const data = await res.json().catch(() => null);
@@ -363,7 +364,7 @@ export function SettingsForm({
       // zu 15 Minuten weiter angemeldet (Nutzer-Bugreport, 2026-08-22:
       // "alle sitzungen beenden funktioniert nicht. ich bin immer noch
       // angemeldet"). Gleiches Muster wie change-password-form.tsx.
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch(bff("/api/auth/logout"), { method: "POST" });
       toastEdited(
         `Alle Sitzungen wurden beendet${data?.count != null ? ` (${data.count})` : ""}. Du wirst abgemeldet.`,
       );
@@ -379,7 +380,7 @@ export function SettingsForm({
   async function handleForcePasswordResetAll() {
     setIsForcingPasswordResetAll(true);
     try {
-      const res = await fetch("/api/settings/force-password-reset-all", {
+      const res = await fetch(bff("/api/settings/force-password-reset-all"), {
         method: "POST",
       });
       const data = await res.json().catch(() => null);
@@ -442,7 +443,7 @@ export function SettingsForm({
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/settings", {
+      const res = await fetch(bff("/api/settings"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

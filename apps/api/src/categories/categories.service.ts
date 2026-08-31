@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { QueryCategoryDto } from './dto/query-category.dto';
+import { assertSlugNotReserved } from '../common/utils/reserved-slugs';
 
 // RSS 2.0 verlangt kein XML-Escaping-Framework – vier Zeichen reichen für
 // gültiges XML aus Nutzer-eingegebenem Titel/Auszug (Category.name/
@@ -144,6 +145,7 @@ ${itemsXml}
   }
 
   async create(dto: CreateCategoryDto) {
+    assertSlugNotReserved(dto.slug);
     const existing = await this.prisma.category.findFirst({
       where: { OR: [{ name: dto.name }, { slug: dto.slug }] },
     });
@@ -156,6 +158,7 @@ ${itemsXml}
   }
 
   async update(id: string, dto: UpdateCategoryDto) {
+    assertSlugNotReserved(dto.slug);
     if (dto.name || dto.slug) {
       const existing = await this.prisma.category.findFirst({
         where: {

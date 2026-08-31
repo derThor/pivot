@@ -34,6 +34,7 @@ import {
   rhythmLabelForCron,
 } from "@/lib/jobs-format";
 import type { ScheduledJob, ScheduledJobsResponse } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 const RHYTHM_ITEMS = {
   ...Object.fromEntries(RHYTHM_PRESETS.map((p) => [p.cron, p.label])),
@@ -82,7 +83,7 @@ export function ScheduledJobsCard({
     setIsRefreshing(true);
     try {
       const res = await fetch(
-        `/api/jobs?page=${jobs.meta.page}&pageSize=${jobs.meta.pageSize}`,
+        bff(`/api/jobs?page=${jobs.meta.page}&pageSize=${jobs.meta.pageSize}`),
       );
       const data = await res.json().catch(() => null);
       if (res.ok && data) setJobs(data);
@@ -92,7 +93,7 @@ export function ScheduledJobsCard({
   }
 
   async function patchJob(id: string, body: Record<string, unknown>) {
-    const res = await fetch(`/api/jobs/${id}`, {
+    const res = await fetch(bff(`/api/jobs/${id}`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -119,7 +120,9 @@ export function ScheduledJobsCard({
   async function handleRunNow(job: ScheduledJob) {
     setRunningId(job.id);
     try {
-      const res = await fetch(`/api/jobs/${job.id}/run`, { method: "POST" });
+      const res = await fetch(bff(`/api/jobs/${job.id}/run`), {
+        method: "POST",
+      });
       const data = await res.json().catch(() => null);
       if (res.ok && data) updateJobLocal(data);
     } finally {

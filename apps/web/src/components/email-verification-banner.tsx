@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MailWarning } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { bff } from "@/lib/bff";
 
 export function EmailVerificationBanner() {
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
@@ -12,7 +13,7 @@ export function EmailVerificationBanner() {
   async function handleResend() {
     setStatus("sending");
     try {
-      const res = await fetch("/api/auth/resend-verification", {
+      const res = await fetch(bff("/api/auth/resend-verification"), {
         method: "POST",
       });
       setStatus(res.ok ? "sent" : "error");

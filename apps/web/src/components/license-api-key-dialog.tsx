@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { bff } from "@/lib/bff";
 
 /** Schlüssel-Icon bei "Diese Installation" in `master-client-card.tsx`
  * (Nutzervorgabe, 2026-08-24: "eine Eingabe, wo man den Schlüssel ändern
@@ -48,7 +49,7 @@ export function LicenseApiKeyDialog({
       setReveal(false);
       setHasApiKey(null);
       setIsLoading(true);
-      fetch("/api/settings/license-client")
+      fetch(bff("/api/settings/license-client"))
         .then((res) => res.json())
         .then((data) => setHasApiKey(Boolean(data?.hasApiKey)))
         .finally(() => setIsLoading(false));
@@ -58,7 +59,7 @@ export function LicenseApiKeyDialog({
   async function handleSave() {
     setIsSaving(true);
     try {
-      const res = await fetch("/api/settings/license-client", {
+      const res = await fetch(bff("/api/settings/license-client"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ apiKey }),

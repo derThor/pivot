@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { formatName } from "@/lib/utils";
 import type { CurrentUser } from "@/lib/api-server";
+import { bff } from "@/lib/bff";
 
 /** "Auskunft erstellen" (Art. 15 DSGVO, Betroffenenrechte-Kachel,
  * Nutzervorgabe 2026-08-19): Person auswählen, Bericht mit allen im
@@ -57,7 +58,7 @@ export function SubjectAccessRequestDialog({
     setSendError(null);
     try {
       const res = await fetch(
-        `/api/privacy/subject-access-report/${userId}/send`,
+        bff(`/api/privacy/subject-access-report/${userId}/send`),
         { method: "POST" },
       );
       if (!res.ok) {
@@ -154,7 +155,7 @@ export function SubjectAccessRequestDialog({
               <a
                 href={
                   userId
-                    ? `/api/privacy/subject-access-report/${userId}`
+                    ? bff(`/api/privacy/subject-access-report/${userId}`)
                     : undefined
                 }
                 onClick={() => onOpenChange(false)}

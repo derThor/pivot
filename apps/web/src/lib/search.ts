@@ -11,6 +11,8 @@ import {
   Users,
 } from "lucide-react";
 
+import { bff } from "@/lib/bff";
+
 export type SearchResultType =
   | "content"
   | "category"
@@ -131,7 +133,9 @@ export const searchTypeMeta: Record<
  */
 async function locateResult(result: SearchResult, defaultPageSize: number) {
   const res = await fetch(
-    `/api/search/locate?type=${result.type}&id=${result.id}&pageSize=${defaultPageSize}`,
+    bff(
+      `/api/search/locate?type=${result.type}&id=${result.id}&pageSize=${defaultPageSize}`,
+    ),
   );
   const data = await res.json().catch(() => null);
   return data as { page?: number; folderId?: string | null } | null;
