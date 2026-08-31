@@ -781,6 +781,15 @@ export interface AppSettings {
   keyboardShortcutsEnabled: boolean;
   reduceMotion: boolean;
   defaultPageSize: number;
+  // Einstellungen → Frontend (öffentliche Website, siehe
+  // knowledge-base/frontend/taxonomy-management.md, Update 2026-08-31).
+  siteTitle: string | null;
+  siteTagline: string | null;
+  faviconUrl: string | null;
+  defaultSeoDescription: string | null;
+  defaultOgImageUrl: string | null;
+  publicBaseUrl: string | null;
+  mainNavigationId: string | null;
   notifyMaintenanceMode: boolean;
   notifyStorageQuota: boolean;
   notifyWebhookFailures: boolean;

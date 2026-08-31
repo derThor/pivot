@@ -7,6 +7,7 @@ import {
   IsISO8601,
   IsOptional,
   IsString,
+  IsUrl,
   Matches,
   Max,
   Min,
@@ -226,6 +227,49 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsBoolean()
   reduceMotion?: boolean;
+
+  // Einstellungen → Frontend (öffentliche Website, siehe
+  // knowledge-base/frontend/taxonomy-management.md, Update 2026-08-31 –
+  // Frontend/Backend-Begriffsklärung).
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @IsString()
+  siteTitle?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @IsString()
+  siteTagline?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @IsString()
+  faviconUrl?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @IsString()
+  defaultSeoDescription?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @IsString()
+  defaultOgImageUrl?: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Basis-URL der öffentlichen Website, z.B. https://www.strasev.de',
+  })
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsUrl({ require_tld: false })
+  publicBaseUrl?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @IsString()
+  mainNavigationId?: string | null;
 
   @ApiPropertyOptional()
   @IsOptional()

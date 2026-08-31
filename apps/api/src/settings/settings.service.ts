@@ -93,6 +93,13 @@ const FIELD_LABELS: Record<string, string> = {
   jobsGloballyPaused: 'Alle Jobs pausieren',
   jobRunRetentionDays: 'Job-Lauf-Historie aufbewahren',
   activityLogRetentionDays: 'Aktivitäten-Historie aufbewahren',
+  siteTitle: 'Website-Titel',
+  siteTagline: 'Website-Untertitel',
+  faviconUrl: 'Favicon',
+  defaultSeoDescription: 'Standard-SEO-Beschreibung',
+  defaultOgImageUrl: 'Standard-Social-Media-Bild',
+  publicBaseUrl: 'Basis-URL der Website',
+  mainNavigationId: 'Hauptmenü',
 };
 
 // Firma-Stammdaten-Felder (Verwaltung → Firma, "Letzte Änderungen"-Karte,

@@ -17,7 +17,11 @@ export function LogoUploadField({
   folderId,
   previewClassName,
 }: {
-  field: "companyLogoUrl" | "companyLogoUrlDark";
+  field:
+    | "companyLogoUrl"
+    | "companyLogoUrlDark"
+    | "faviconUrl"
+    | "defaultOgImageUrl";
   label: string;
   currentUrl: string | null;
   folderId: string | null;

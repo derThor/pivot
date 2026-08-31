@@ -83,6 +83,13 @@ const SETTINGS_FIELD_LABELS: Record<string, string> = {
   jobsGloballyPaused: 'Alle Jobs pausieren',
   jobRunRetentionDays: 'Job-Lauf-Historie aufbewahren',
   activityLogRetentionDays: 'Aktivitäten-Historie aufbewahren',
+  siteTitle: 'Website-Titel',
+  siteTagline: 'Website-Untertitel',
+  faviconUrl: 'Favicon',
+  defaultSeoDescription: 'Standard-SEO-Beschreibung',
+  defaultOgImageUrl: 'Standard-Social-Media-Bild',
+  publicBaseUrl: 'Basis-URL der Website',
+  mainNavigationId: 'Hauptmenü',
 };
 
 const SETTINGS_ACTION_LABELS: Record<string, string> = {

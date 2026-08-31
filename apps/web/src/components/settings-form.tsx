@@ -10,6 +10,7 @@ import {
   Blocks,
   Construction,
   Contrast,
+  Globe,
   History,
   Mail,
   Menu,
@@ -29,6 +30,7 @@ import { SwitchRow } from "@/components/switch-row";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
@@ -103,6 +105,10 @@ const settingsSchema = z.object({
   keyboardShortcutsEnabled: z.boolean(),
   reduceMotion: z.boolean(),
   defaultPageSize: z.number().int().min(1).max(100),
+  siteTitle: z.string().nullable(),
+  siteTagline: z.string().nullable(),
+  defaultSeoDescription: z.string().nullable(),
+  publicBaseUrl: z.string().nullable(),
 });
 
 type SettingsValues = z.infer<typeof settingsSchema>;
@@ -111,6 +117,7 @@ type SectionId =
   | "access"
   | "security"
   | "display"
+  | "frontend"
   | "integrations"
   | "webhooks"
   | "notifications"
@@ -168,6 +175,12 @@ const SECTIONS: {
     title: "Darstellung",
     subtitle: "Logo, Akzentfarbe, Dichte",
     icon: Contrast,
+  },
+  {
+    id: "frontend",
+    title: "Frontend",
+    subtitle: "Öffentliche Website",
+    icon: Globe,
   },
   {
     id: "integrations",
@@ -350,6 +363,10 @@ export function SettingsForm({
     keyboardShortcutsEnabled: settings.keyboardShortcutsEnabled,
     reduceMotion: settings.reduceMotion,
     defaultPageSize: settings.defaultPageSize,
+    siteTitle: settings.siteTitle,
+    siteTagline: settings.siteTagline,
+    defaultSeoDescription: settings.defaultSeoDescription,
+    publicBaseUrl: settings.publicBaseUrl,
   };
 
   const form = useForm<SettingsValues>({
@@ -435,8 +452,7 @@ export function SettingsForm({
             <div className="flex flex-col divide-y divide-border">
               {SECTIONS.filter(
                 (section) =>
-                  !section.masterOnly ||
-                  settings.deploymentMode === "master",
+                  !section.masterOnly || settings.deploymentMode === "master",
               ).map((section) => {
                 const isActive = section.id === activeSection;
                 const Icon = section.icon;
@@ -1159,6 +1175,129 @@ export function SettingsForm({
                   </CardContent>
                 </Card>
               </>
+            )}
+
+            {activeSection === "frontend" && (
+              <Card className="rounded-xl shadow-sm">
+                <CardHeader>
+                  <CardTitle>Frontend</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Grundwerte für die öffentliche Website dieser Installation –
+                    die Website selbst ist noch nicht gebaut, diese Felder
+                    werden bereits jetzt gespeichert.
+                  </p>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="siteTitle"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col gap-1.5">
+                        <Label htmlFor="siteTitle">Website-Titel</Label>
+                        <FormControl>
+                          <Input
+                            id="siteTitle"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) =>
+                              field.onChange(e.target.value || null)
+                            }
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="siteTagline"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col gap-1.5">
+                        <Label htmlFor="siteTagline">Website-Untertitel</Label>
+                        <FormControl>
+                          <Input
+                            id="siteTagline"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) =>
+                              field.onChange(e.target.value || null)
+                            }
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex flex-col gap-1.5">
+                    <Label>Favicon</Label>
+                    <LogoUploadField
+                      field="faviconUrl"
+                      label="Favicon"
+                      currentUrl={settings.faviconUrl}
+                      folderId={logoFolderId}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label>Standard-Social-Media-Bild</Label>
+                    <LogoUploadField
+                      field="defaultOgImageUrl"
+                      label="Standard-Social-Media-Bild"
+                      currentUrl={settings.defaultOgImageUrl}
+                      folderId={logoFolderId}
+                    />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="publicBaseUrl"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col gap-1.5 sm:col-span-2">
+                        <Label htmlFor="publicBaseUrl">
+                          Basis-URL der Website
+                        </Label>
+                        <FormControl>
+                          <Input
+                            id="publicBaseUrl"
+                            placeholder="https://www.example.de"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) =>
+                              field.onChange(e.target.value || null)
+                            }
+                          />
+                        </FormControl>
+                        <p className="text-sm text-muted-foreground">
+                          Grundlage für die Sitemap und die kanonische URL von
+                          Inhalten ohne eigene Angabe.
+                        </p>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="defaultSeoDescription"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col gap-1.5 sm:col-span-2">
+                        <Label htmlFor="defaultSeoDescription">
+                          Standard-SEO-Beschreibung
+                        </Label>
+                        <FormControl>
+                          <Textarea
+                            id="defaultSeoDescription"
+                            rows={3}
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) =>
+                              field.onChange(e.target.value || null)
+                            }
+                          />
+                        </FormControl>
+                        <p className="text-sm text-muted-foreground">
+                          Wird verwendet, wenn eine Seite keine eigene
+                          SEO-Beschreibung hat.
+                        </p>
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
             )}
 
             {activeSection === "integrations" && (

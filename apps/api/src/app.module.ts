@@ -39,6 +39,7 @@ import { WebsitesModule } from './websites/websites.module';
 import { MandantenModule } from './mandanten/mandanten.module';
 import { ModuleSettingsModule } from './module-settings/module-settings.module';
 import { LicenseClientModule } from './license-client/license-client.module';
+import { PublicContentModule } from './public-content/public-content.module';
 import { validateEnv } from './common/config/env.validation';
 
 @Module({
@@ -86,6 +87,7 @@ import { validateEnv } from './common/config/env.validation';
     MandantenModule,
     ModuleSettingsModule,
     LicenseClientModule,
+    PublicContentModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

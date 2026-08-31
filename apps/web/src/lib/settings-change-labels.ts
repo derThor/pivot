@@ -68,6 +68,14 @@ export const SETTINGS_FIELD_LABELS: Record<string, string> = {
   jobsGloballyPaused: "Alle Jobs pausieren",
   jobRunRetentionDays: "Job-Lauf-Historie aufbewahren",
   activityLogRetentionDays: "Aktivitäten-Historie aufbewahren",
+  // Einstellungen → Frontend (öffentliche Website, 2026-08-31).
+  siteTitle: "Website-Titel",
+  siteTagline: "Website-Untertitel",
+  faviconUrl: "Favicon",
+  defaultSeoDescription: "Standard-SEO-Beschreibung",
+  defaultOgImageUrl: "Standard-Social-Media-Bild",
+  publicBaseUrl: "Basis-URL der Website",
+  mainNavigationId: "Hauptmenü",
 };
 
 // Für Protokoll-/Aktivitäts-Einträge, die kein Feld ändern, sondern eine
