@@ -1,0 +1,134 @@
+# Frontend: die öffentliche Website (`apps/site`)
+
+**Datum:** 2026-08-31
+**Betroffene Bereiche:** apps/site (neu) | apps/api | packages/blocks | packages/database
+
+Begriffsklärung vorweg (Nutzervorgabe, siehe
+[taxonomy-management.md](./taxonomy-management.md#update-2026-08-31-2-folgetag-rss-feed-archiv-einstellungen-und-die-frontendbackend-begriffsklärung)):
+**"Backend"** = die Verwaltungsoberfläche (`apps/api` + `apps/web`),
+**"Frontend"** = die öffentliche Website, die Besucher sehen. Dieser
+Eintrag beschreibt das Frontend. Jede Installation – der Master (Pivot
+selbst) wie jeder Mandant – hat beides als eigene, physisch getrennte Kopie
+mit eigener Datenbank (siehe
+[master-slave-licensing.md](../platform/master-slave-licensing.md)).
+
+## Was wurde gebaut
+
+Umsetzung des genehmigten Architekturplans in drei bisher abgeschlossenen
+Schritten:
+
+**Schritt 1 – Content-Delivery-API + Einstellungen-Bereich "Frontend"**
+(Commit `26c665c`): neue `AppSettings`-Felder (`siteTitle`, `siteTagline`,
+`faviconUrl`, `defaultSeoDescription`, `defaultOgImageUrl`,
+`publicBaseUrl`, `mainNavigationId`), ein neuer Bereich "Frontend" in den
+Einstellungen und das API-Modul `apps/api/src/public-content/` mit
+`GET /public/site`, `/public/navigation/:slug`, `/public/pages/:slug`,
+`/public/categories/:slug(/:contentSlug)` und `/public/sitemap.xml`. Alle
+Routen sind `@Public()` und liefern ausschließlich `PUBLISHED`, nicht
+gelöschte Inhalte.
+
+**Schritt 2 – gemeinsames Block-Rendering** (Commit `c5f22c0`): die reine
+Render-/Wertelogik aus `apps/web/src/components/block-field-output.tsx`
+liegt jetzt im Workspace-Paket `packages/blocks` (`@pivot/blocks`);
+`apps/web` importiert weiterhin über dünne Re-Export-Shims.
+
+**Schritt 3 – Grundgerüst `apps/site`** (dieser Eintrag): eigene Next.js-App
+(Port 3002) mit
+
+- `src/app/layout.tsx` – lädt `GET /public/site` und setzt daraus Titel
+  (inkl. `%s – <Titel>`-Template), Beschreibung, Favicon, `metadataBase`
+  und OG-Defaults; Kopf-/Fußbereich zeigen Titel und Tagline. Die
+  Akzentfarbe der Installation überschreibt das Theme-Token
+  `--color-accent` per Inline-Style auf `<html>`.
+- `src/app/[slug]/page.tsx` – freie Seiten (Content **ohne** Kategorie)
+  unter `/{content-slug}`, inklusive vollständiger SEO-Metadaten pro Seite
+  (`seoTitle`/`seoDescription`/`ogTitle`/`ogDescription`/`ogImageUrl`/
+  `twitterCard`/`robotsIndex`/`robotsFollow`) und berechnetem
+  `canonical`-Fallback.
+- `src/app/sitemap.xml/route.ts` – reicht `GET /public/sitemap.xml` durch.
+- `src/components/content-blocks.tsx` – rendert `Content.data` über
+  `@pivot/blocks`, also mit exakt derselben Logik wie die Redakteurs-
+  Vorschau im Backend.
+- `src/lib/api.ts` – serverseitiger Client gegen die Content-Delivery-API,
+  jeder Aufruf mit `next: { revalidate: 60 }`.
+
+## Warum diese Lösung
+
+- **Eigene App statt Route in `apps/web`:** Backend und Frontend haben
+  eigene Design-Sprachen und eigene Zielgruppen; `apps/site` bringt darum
+  ein eigenes, kleines Token-Set in seiner `globals.css` mit statt das
+  Admin-Theme zu erben. Nur die fünf Token-Namen, die `@pivot/blocks`
+  verwendet (`bg-muted`, `text-muted-foreground`, `border-border`,
+  `border-input`, `divide-border`), existieren bewusst unter denselben
+  Namen – sonst würden die gemeinsamen Block-Komponenten im Frontend
+  ungestylt aussehen.
+- **Kein zweites Block-Rendering:** Vorschau (Backend) und echte Website
+  (Frontend) nutzen dieselben Komponenten, damit sie nicht auseinander
+  driften – der einzige Grund für Schritt 2.
+- **`revalidate: 60` statt Rebuild/Webhook:** bewusst gewählter Kompromiss
+  (Nutzerentscheidung) – eine frische Veröffentlichung ist im ungünstigsten
+  Fall 60 Sekunden später öffentlich sichtbar, dafür braucht es keine
+  Deploy-/Webhook-Infrastruktur, die es aktuell ohnehin nicht gibt.
+- **Sitemap wird durchgereicht, nicht neu gebaut:** die API kennt bereits
+  alle veröffentlichten Inhalte und respektiert `robotsIndex`; eine zweite
+  Sammel-Logik im Frontend wäre eine Drift-Quelle. Ohne gepflegte
+  `publicBaseUrl` liefert sie bewusst eine leere Sitemap statt erfundener
+  URLs.
+
+## Stolpersteine / Besonderheiten
+
+- **Modul-Typen/globale Module sind Pflicht zum Rendern:** `Content.data.
+blocks` enthält nur `moduleTypeId` + Werte; ohne `GET /module-types` und
+  `GET /global-modules` (beide bereits `@Public()`, ursprünglich für die
+  anonyme Vorschauseite) lässt sich kein Block auflösen.
+- **Formular-Bausteine rendern im Frontend noch nichts:**
+  `BlockFieldOutput` bekommt bewusst kein `renderForm` – die öffentliche
+  Formular-Übermittlung (BFF-Proxy + UI-Bausteine) ist noch nicht gebaut.
+  Ein Formular-Block auf einer öffentlichen Seite ist damit aktuell
+  unsichtbar, statt halb zu funktionieren.
+- **Medien-URLs:** `resolveImageSrc()` aus `@pivot/blocks` hängt
+  `NEXT_PUBLIC_API_ORIGIN` vor relative Upload-Pfade – dieser Wert landet
+  im Browser und muss in `apps/site/.env.local` auf die öffentlich
+  erreichbare API-Adresse zeigen, nicht auf `localhost`.
+- **`export const revalidate` muss ein Literal sein:** Next.js wertet den
+  Segment-Wert statisch aus, ein importierter `REVALIDATE_SECONDS` würde
+  dort nicht funktionieren – die Konstante in `lib/api.ts` gilt nur für die
+  `fetch()`-Aufrufe.
+- **`twitterCard` ist ein freier String im Datenmodell** (Default `"none"`);
+  übernommen werden nur `summary`/`summary_large_image`, weil `app`/`player`
+  Pflichtangaben verlangen, die das Datenmodell nicht kennt.
+- **404 ist ein Normalfall, kein Fehler:** der API-Client übersetzt
+  HTTP 404 in `null`, die Seite ruft dann `notFound()` – nur echte Fehler
+  (5xx) werfen.
+
+## Relevante Dateien
+
+- `apps/site/src/app/layout.tsx`, `apps/site/src/app/[slug]/page.tsx`,
+  `apps/site/src/app/sitemap.xml/route.ts`
+- `apps/site/src/components/content-blocks.tsx`, `apps/site/src/lib/api.ts`
+- `apps/site/src/app/globals.css` (eigenes Token-Set + `@source` auf
+  `packages/blocks/src`), `apps/site/next.config.ts` (`transpilePackages`)
+- `apps/api/src/public-content/public-content.{controller,service}.ts`
+- `packages/blocks/src/` (gemeinsames Rendering)
+
+## Offene Punkte
+
+- **Startseite (`/`) fehlt bewusst:** es gibt kein Datenmodell-Feld, das
+  festlegt, welcher Inhalt die Startseite ist (`mainNavigationId` ist das
+  Vorbild für so ein Feld). Solange das nicht entschieden ist, wird kein
+  magischer Slug wie `startseite` erfunden – `/` liefert derzeit 404.
+- Schritt 4 des Plans: Kategorie-Archiv `/[category]` (Aufmacher-Kachel,
+  Pagination) und Beitragsseite `/[category]/[slug]`.
+- Schritt 5 des Plans: Hauptmenü im Header (`mainNavigationId` →
+  `GET /public/navigation/:slug`), RSS-`<link>` bei `rssEnabled`,
+  `robots.txt`.
+- Mehrsprachigkeit/Locale-Routing (`Content.locale` existiert, ist aber
+  nicht ans Routing angebunden) – v1 geht von einer Sprache pro
+  Installation aus (`DEFAULT_LOCALE = "de"` im `PublicContentService`).
+- Visuelle Gestaltung: das aktuelle Layout ist bewusst minimal
+  (Titel/Tagline, zentrierte Inhaltsspalte) – die eigentliche Design-Runde
+  fürs Frontend steht noch aus.
+- Ende-zu-Ende nur teilweise verifiziert: `/sitemap.xml` (leer mangels
+  `publicBaseUrl`) und das 404-Verhalten laufen gegen die echte API, eine
+  gerenderte freie Seite konnte nicht geprüft werden, weil in der Dev-DB
+  aktuell **kein** veröffentlichter Inhalt ohne Kategorie existiert.

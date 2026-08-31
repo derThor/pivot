@@ -781,8 +781,14 @@ für Details. Zwei Folgevorhaben dabei zunächst vom Nutzer als
 - [ ] Webhook-Management im Dashboard
 - [ ] API-Explorer
 - [ ] OpenAPI-Client generieren
-- [ ] Content Delivery API
-- [ ] Preview API
+- [x] Content Delivery API – gebaut als `apps/api/src/public-content/`
+      (`GET /public/site|navigation|pages|categories|sitemap.xml`,
+      alles `@Public()`, nur veröffentlichte Inhalte). Teil des
+      Frontend-Plans (öffentliche Website), Details:
+      [public-website.md](../knowledge-base/frontend/public-website.md).
+- [ ] Preview API – die bestehende `GET /content/preview/:token`-Route
+      deckt den Redakteurs-Freigabelink ab; eine allgemeine Preview-API
+      für externe Konsumenten fehlt weiterhin.
 - [ ] SDKs für JavaScript und .NET
 
 ### 4.1 – Entwicklerfreundlichkeit

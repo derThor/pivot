@@ -228,8 +228,9 @@ Clients. Ich nenne das Frontend. Nicht zu verwechseln mit dem
 Frontend, das du für die UI hast. Ich unterscheide zwischen Frontend
 (Webseite öffentlich) und Backend (UI Administration, was du aktuell
 Frontend nennst)." Ab sofort: **"Frontend"** = die für jede
-Master-/Mandanten-Installation geplante, aber noch **nicht gebaute**
-öffentliche Website. **"Backend"** = das bestehende Next.js-Admin-UI
+Master-/Mandanten-Installation geplante öffentliche Website –
+seit 2026-08-31 als eigene App `apps/site` im Bau, siehe
+[public-website.md](./public-website.md). **"Backend"** = das bestehende Next.js-Admin-UI
 (`apps/web`, was in dieser Knowledge-Base bisher als "Frontend" im
 React/Next.js-Sinne bezeichnet wurde – weiterhin technisch korrekt,
 aber im Nutzer-Sprachgebrauch jetzt "Backend"). Die Bildvorlage

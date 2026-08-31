@@ -190,6 +190,46 @@ importers:
         specifier: ^8.20.0
         version: 8.65.0(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3)
 
+  apps/site:
+    dependencies:
+      '@pivot/blocks':
+        specifier: workspace:*
+        version: link:../../packages/blocks
+      next:
+        specifier: 16.2.12
+        version: 16.2.12(@babel/core@7.29.7(supports-color@8.1.1))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react:
+        specifier: 19.2.4
+        version: 19.2.4
+      react-dom:
+        specifier: 19.2.4
+        version: 19.2.4(react@19.2.4)
+    devDependencies:
+      '@tailwindcss/postcss':
+        specifier: ^4
+        version: 4.3.3
+      '@types/node':
+        specifier: ^20
+        version: 20.19.43
+      '@types/react':
+        specifier: ^19
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.2.4(@types/react@19.2.18)
+      eslint:
+        specifier: ^9
+        version: 9.39.5(jiti@2.7.0)(supports-color@8.1.1)
+      eslint-config-next:
+        specifier: 16.2.12
+        version: 16.2.12(@typescript-eslint/parser@8.65.0(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3)
+      tailwindcss:
+        specifier: ^4
+        version: 4.3.3
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
   apps/web:
     dependencies:
       '@base-ui/react':

@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+/* @pivot/blocks liegt außerhalb dieser App (packages/blocks) – Tailwinds
+   automatische Content-Erkennung deckt das nicht zuverlässig ab, daher
+   hier explizit als zusätzliche Quelle ergänzt (gleicher Eintrag wie in
+   apps/web/src/app/globals.css). */
+@source "../../../../packages/blocks/src";
+
+/* Eigenes, öffentliches Design-System – bewusst NICHT das Admin-Theme aus
+   apps/web (Architekturentscheidung, siehe
+   knowledge-base/frontend/public-website.md). Die fünf Token-Namen, die
+   @pivot/blocks verwendet (bg-muted, text-muted-foreground, border-border,
+   border-input, divide-border), müssen hier existieren, damit die
+   gemeinsamen Block-Komponenten auch im Frontend korrekt aussehen. */
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #17181c;
+  --color-muted: #f4f5f7;
+  --color-muted-foreground: #6b7280;
+  --color-border: #e6e8ec;
+  --color-input: #d5d8de;
+  /* Fallback; zur Laufzeit von AppSettings.accentColor überschrieben
+     (Inline-Style auf <html> in layout.tsx). */
+  --color-accent: #a3e635;
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+  }
+}
