@@ -150,9 +150,9 @@ export const navGroups = [
         title: "Medien",
         url: "/dashboard/media",
         icon: ImageIcon,
-        children: [{ title: "Tags", url: "/dashboard/tags", icon: Tags }],
       },
       { title: "Kategorien", url: "/dashboard/categories", icon: FolderTree },
+      { title: "Tags", url: "/dashboard/tags", icon: Tags },
       {
         title: "Formulare",
         url: "/dashboard/forms",
