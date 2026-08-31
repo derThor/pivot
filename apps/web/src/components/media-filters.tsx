@@ -69,7 +69,7 @@ export function MediaFilters({
           "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
           active
             ? "border-transparent bg-dark-surface text-dark-surface-foreground"
-            : "border-button-border bg-transparent hover:bg-muted/40",
+            : "border-button-border bg-card hover:bg-muted/40",
         )}
       >
         {label}
@@ -104,7 +104,7 @@ export function MediaFilters({
             "shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
             unused
               ? "border-transparent bg-primary text-primary-foreground"
-              : "border-button-border bg-transparent hover:bg-muted/40",
+              : "border-button-border bg-card hover:bg-muted/40",
           )}
         >
           Nur ungenutzte
@@ -123,7 +123,7 @@ export function MediaFilters({
               "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
               selectedTagIds.length === 0
                 ? "border-transparent bg-dark-surface text-dark-surface-foreground"
-                : "border-button-border bg-transparent hover:bg-muted/40",
+                : "border-button-border bg-card hover:bg-muted/40",
             )}
           >
             Alle
@@ -139,7 +139,7 @@ export function MediaFilters({
                   "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
                   active
                     ? "border-transparent bg-dark-surface text-dark-surface-foreground"
-                    : "border-button-border bg-transparent hover:bg-muted/40",
+                    : "border-button-border bg-card hover:bg-muted/40",
                 )}
               >
                 <span

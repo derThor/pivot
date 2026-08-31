@@ -669,6 +669,14 @@ Angewendet auf:
   `gallery-editor.tsx`, deren Klassen in `cn()`-Ausdrücken stehen und
   vom Codemod nicht erfasst wurden.
 
+**Nachtrag am selben Tag – Medien-Filter-Chips:** die inaktiven Chips auf
+`/dashboard/media` (Typ-Filter und Rubrik-Filter, vier Stellen in
+`media-filters.tsx`) standen auf `bg-transparent` und nahmen damit das
+graue Seiten-Grau an. Nutzervorgabe: weißer Hintergrund, aktiver Zustand
+unverändert – jetzt `bg-card` statt `bg-transparent`, der aktive Chip
+bleibt `bg-dark-surface`. `bg-card` statt eines harten `bg-white`, damit
+der Dark Mode weiter stimmt.
+
 **Bewusst nicht angefasst:** `border-t border-border` als Trennlinie
 _innerhalb_ eines breiten Buttons (Datenschutz-/Vorfall-Panels) und
 Info-Kästen mit `bg-muted` – beides sind keine weißen Button-Rahmen.
