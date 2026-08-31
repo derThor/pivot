@@ -128,8 +128,7 @@ type SectionId =
   | "module"
   | "maintenance-page"
   | "jobs"
-  | "mail-templates"
-  | "mail-shells"
+  | "mailing"
   | "protocol";
 
 const SECTIONS: {
@@ -187,16 +186,10 @@ const SECTIONS: {
     icon: Plug,
   },
   {
-    id: "mail-templates",
-    title: "Vorlagen",
-    subtitle: "System- & Formularmails",
+    id: "mailing",
+    title: "Mailing",
+    subtitle: "Mailvorlagen & Versand",
     icon: Mail,
-  },
-  {
-    id: "mail-shells",
-    title: "E-Mail-Templates",
-    subtitle: "Layout & Branding",
-    icon: Palette,
   },
   {
     id: "webhooks",
@@ -268,14 +261,14 @@ const GROUPS: {
   },
   {
     // Eigene Gruppe statt eines Bereichs unter "Verbindungen"
-    // (Nutzerentscheidung, 2026-08-31): das Mail-Thema hat zwei
-    // gleichwertige Teilbereiche, die vorher als dritte Navigationsebene
-    // (Reiterleiste in der Karte) umgesetzt waren.
+    // (Nutzerentscheidung, 2026-08-31). Bewusst mit nur EINEM Bereich:
+    // Vorlagen und E-Mail-Templates bleiben Reiter innerhalb der Karte,
+    // eine zweite Sidebar-Ebene soll es bei Mailing nicht geben.
     id: "mailing",
     title: "Mailing",
     subtitle: "Vorlagen & Templates",
     icon: Mail,
-    sections: ["mail-templates", "mail-shells"],
+    sections: ["mailing"],
   },
   {
     id: "operations",
@@ -339,6 +332,11 @@ export function SettingsForm({
   const [activeSection, setActiveSection] = useState<SectionId>("access");
   const activeGroup =
     GROUPS.find((group) => group.sections.includes(activeSection)) ?? GROUPS[0];
+  // Gruppen mit nur einem Bereich bekommen keine zweite Sidebar-Ebene
+  // (Nutzervorgabe, 2026-08-31, am Beispiel Mailing): eine Spalte mit
+  // einem einzigen Eintrag wiederholt nur den Gruppennamen. Betrifft
+  // aktuell Mailing, Sicherheit und Administration.
+  const showSectionColumn = activeGroup.sections.length > 1;
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -525,7 +523,13 @@ export function SettingsForm({
 
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
           <div className="w-full self-start overflow-hidden rounded-xl bg-card shadow-sm lg:flex xl:w-auto xl:shrink-0">
-            <div className="relative z-10 flex flex-col lg:w-1/2 lg:shrink-0 lg:border-r lg:border-border lg:shadow-[5px_0_14px_-9px_rgba(0,0,0,0.10)] xl:w-60">
+            <div
+              className={cn(
+                "relative z-10 flex flex-col lg:shrink-0 xl:w-60",
+                showSectionColumn &&
+                  "lg:w-1/2 lg:border-r lg:border-border lg:shadow-[5px_0_14px_-9px_rgba(0,0,0,0.10)]",
+              )}
+            >
               <div className="flex flex-col divide-y divide-border">
                 {GROUPS.filter(
                   (group) =>
@@ -569,53 +573,55 @@ export function SettingsForm({
               </div>
             </div>
 
-            <div className="flex flex-col border-t border-border lg:w-1/2 lg:shrink-0 lg:border-t-0 xl:w-68">
-              <div className="px-4 py-3">
-                <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                  {activeGroup.title}
-                </span>
-              </div>
-              <div className="flex flex-col divide-y divide-border">
-                {activeGroup.sections.map((sectionId) => {
-                  const section = SECTIONS_BY_ID.get(sectionId)!;
-                  const isActive = sectionId === activeSection;
-                  const Icon = section.icon;
-                  return (
-                    <button
-                      key={section.id}
-                      type="button"
-                      onClick={() => setActiveSection(section.id)}
-                      className={cn(
-                        "flex items-start gap-3 px-4 py-4 text-left transition-colors",
-                        isActive ? "bg-primary/15" : "hover:bg-muted/50",
-                      )}
-                    >
-                      <span
+            {showSectionColumn && (
+              <div className="flex flex-col border-t border-border lg:w-1/2 lg:shrink-0 lg:border-t-0 xl:w-68">
+                <div className="px-4 py-3">
+                  <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    {activeGroup.title}
+                  </span>
+                </div>
+                <div className="flex flex-col divide-y divide-border">
+                  {activeGroup.sections.map((sectionId) => {
+                    const section = SECTIONS_BY_ID.get(sectionId)!;
+                    const isActive = sectionId === activeSection;
+                    const Icon = section.icon;
+                    return (
+                      <button
+                        key={section.id}
+                        type="button"
+                        onClick={() => setActiveSection(section.id)}
                         className={cn(
-                          "flex size-9 shrink-0 items-center justify-center rounded-lg",
-                          isActive
-                            ? "bg-primary/25 text-foreground"
-                            : "bg-secondary text-muted-foreground",
+                          "flex items-start gap-3 px-4 py-4 text-left transition-colors",
+                          isActive ? "bg-primary/15" : "hover:bg-muted/50",
                         )}
                       >
-                        <Icon className="size-4" />
-                      </span>
-                      <span className="flex min-w-0 flex-1 flex-col gap-0.5 break-words">
-                        <span className="text-sm font-semibold">
-                          {section.title}
+                        <span
+                          className={cn(
+                            "flex size-9 shrink-0 items-center justify-center rounded-lg",
+                            isActive
+                              ? "bg-primary/25 text-foreground"
+                              : "bg-secondary text-muted-foreground",
+                          )}
+                        >
+                          <Icon className="size-4" />
                         </span>
-                        <span className="text-xs text-muted-foreground">
-                          {section.subtitle}
+                        <span className="flex min-w-0 flex-1 flex-col gap-0.5 break-words">
+                          <span className="text-sm font-semibold">
+                            {section.title}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {section.subtitle}
+                          </span>
                         </span>
-                      </span>
-                      {isActive && (
-                        <ChevronRight className="size-4 shrink-0 self-center text-muted-foreground" />
-                      )}
-                    </button>
-                  );
-                })}
+                        {isActive && (
+                          <ChevronRight className="size-4 shrink-0 self-center text-muted-foreground" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="flex min-w-0 flex-1 flex-col gap-4">
@@ -1526,12 +1532,8 @@ export function SettingsForm({
               </div>
             )}
 
-            {(activeSection === "mail-templates" ||
-              activeSection === "mail-shells") && (
+            {activeSection === "mailing" && (
               <MailingSettingsCard
-                view={
-                  activeSection === "mail-templates" ? "templates" : "shells"
-                }
                 templates={mailTemplates}
                 shells={mailShells}
                 company={{

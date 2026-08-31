@@ -403,28 +403,31 @@ Empfänger-Zeile in `notification-settings-card.tsx` ist
   verifiziert; die lokalen String-States nutzen dieselbe
   `handleDiscard()`-Funktion, Logik ist aber ungetestet).
 
-## Update 2026-08-31: Mailing ist eine eigene Gruppe
+## Update 2026-08-31: Mailing ist eine eigene Gruppe – ohne zweite Ebene
 
 Mailing lag als Bereich in Ebene 2 unter "Verbindungen" und hatte im
-Inhalt nochmal eine eigene Reiterleiste (Vorlagen | E-Mail-Templates) –
-also drei Navigationsebenen übereinander. Nach Rückfrage
-(Nutzerentscheidung, 2026-08-31) ist daraus eine **eigene Gruppe in
-Ebene 1** geworden, deren beide Reiter jetzt Bereiche in Ebene 2 sind:
+Inhalt zusätzlich eine eigene Reiterleiste (Vorlagen | E-Mail-Templates) –
+also drei Navigationsebenen übereinander. Es wurde zunächst in eine
+eigene Gruppe **mit** zwei Ebene-2-Bereichen aufgeteilt; die
+Nutzerkorrektur direkt danach: "Vorlagen und E-Mail-Template als Tab. Es
+soll bei Mailing keine 2te Ebene Sidebar geben."
 
-```
-Mailing
-  Vorlagen           System- & Formularmails
-  E-Mail-Templates   Layout & Branding
-```
+**Endstand:**
 
-- `SECTIONS`: der Eintrag `mailing` wurde durch `mail-templates` und
-  `mail-shells` ersetzt; "Verbindungen" führt nur noch Integrationen,
-  Webhooks und Master-Client.
-- `MailingSettingsCard` bekommt eine Pflicht-Prop `view: "templates" |
-"shells"` und rendert nur den jeweiligen Teil; die `Tabs`-Hülle ist
-  entfallen (die Reiter **innerhalb** einer Vorlage – Vorlage/Empfänger/
-  Vorschau – bleiben, das ist Detail-Navigation, keine Bereichsebene).
-  Der Kartentitel ist jetzt der Bereichsname statt "Mailing".
+- `Mailing` ist eine eigene Gruppe in Ebene 1 (`GROUPS`), "Verbindungen"
+  führt nur noch Integrationen, Webhooks und Master-Client.
+- Die Gruppe hat **genau einen** Bereich (`sections: ["mailing"]`); die
+  Reiterleiste in `mailing-settings-card.tsx` bleibt unverändert
+  bestehen.
+- Neu in `settings-form.tsx`: `showSectionColumn = activeGroup.sections.
+length > 1`. Gruppen mit nur einem Bereich rendern **keine zweite
+  Sidebar-Spalte** – eine Spalte mit einem einzigen Eintrag würde nur den
+  Gruppennamen wiederholen. Ebene 1 nimmt dann die volle Kartenbreite ein
+  und verzichtet auf Trennlinie und Seitenschatten.
+- **Gilt damit automatisch auch für "Sicherheit" und "Administration"**,
+  die ebenfalls nur einen Bereich haben. Das ist beabsichtigt, war aber
+  nicht ausdrücklich angefragt – bei Bedarf lässt es sich über ein Flag
+  auf Mailing beschränken.
 
 **Perspektive:** der SMTP-Versand liegt weiterhin unter Integrationen →
 Dienste. Fachlich gehört er in diese Gruppe; das Verschieben wäre ein
