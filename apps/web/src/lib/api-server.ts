@@ -1627,6 +1627,9 @@ export interface ModuleSettingsEntry {
   moduleKey: string;
   label: string;
   category: "compliance" | "integration";
+  /** Nur relevant für Einstellungen → Module (settings-form.tsx filtert
+   * danach) – Administration → Module zeigt weiterhin alle. */
+  usedByMasterItself: boolean;
   features: ModuleFeatureEntry[];
   enabled: boolean;
   enabledFeatures: string[];

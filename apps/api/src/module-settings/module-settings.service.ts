@@ -31,6 +31,7 @@ export class ModuleSettingsService {
         moduleKey: entry.key,
         label: entry.label,
         category: entry.category,
+        usedByMasterItself: entry.usedByMasterItself,
         features: entry.features ?? [],
         enabled: row?.enabled ?? true,
         enabledFeatures: row

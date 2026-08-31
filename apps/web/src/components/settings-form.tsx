@@ -1176,7 +1176,11 @@ export function SettingsForm({
             )}
 
             {activeSection === "module" && (
-              <ModuleSettingsCard modules={moduleSettings ?? []} />
+              <ModuleSettingsCard
+                modules={(moduleSettings ?? []).filter(
+                  (m) => m.usedByMasterItself,
+                )}
+              />
             )}
 
             {activeSection === "maintenance-page" && (

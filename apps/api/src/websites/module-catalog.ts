@@ -21,6 +21,15 @@ export interface ModuleCatalogEntry {
   description: string;
   category: 'compliance' | 'integration';
   features?: ModuleFeatureEntry[];
+  // Nutzervorgabe, 2026-08-31: "In Master Einstellungen - Module kommen
+  // nur Module, die auch vom Master selber benutzt werden" – NICHT der
+  // ganze Katalog. Betrifft nur die Anzeige unter Einstellungen → Module
+  // (settings-form.tsx filtert danach); Administration → Module
+  // (/dashboard/modules) zeigt weiterhin den kompletten Katalog, da dort
+  // alle für Mandanten buchbaren Module verwaltet werden. Bei jedem
+  // neuen Katalog-Eintrag muss das VORHER mit dem Nutzer geklärt werden,
+  // nicht automatisch annehmen.
+  usedByMasterItself: boolean;
 }
 
 export const MODULE_CATALOG: ModuleCatalogEntry[] = [
@@ -39,6 +48,9 @@ export const MODULE_CATALOG: ModuleCatalogEntry[] = [
       { key: 'dsb', label: 'Datenschutzbeauftragter' },
       { key: 'nutzer', label: 'Benutzer' },
     ],
+    // Master betreibt selbst /dashboard/privacy und nutzt diese Reiter
+    // für die eigene Installation.
+    usedByMasterItself: true,
   },
   {
     key: 'magicline',
@@ -46,6 +58,10 @@ export const MODULE_CATALOG: ModuleCatalogEntry[] = [
     description:
       'Anbindung an die Magicline-Fitnessstudio-Software (Stammdaten, Verträge, Vertragsabschluss/Leads).',
     category: 'integration',
+    // Reine Mandanten-Integration (Fitnessstudio-Software) – Master
+    // betreibt selbst kein Fitnessstudio, braucht also keine eigene
+    // Freischaltung dafür.
+    usedByMasterItself: false,
   },
 ];
 
