@@ -689,13 +689,35 @@
    werden kann weiterhin, nur die Anzeige entfaellt; nebenbei entfaellt
    damit auch der sonst reservierte 3px-Streifen, wodurch die Icons wieder
    exakt mittig in der Spalte sitzen. */
-[data-collapsible="icon"] * {
-  scrollbar-width: none;
+.no-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
-[data-collapsible="icon"] *::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+[data-collapsible="icon"],
+[data-collapsible="icon"] *,
+[data-collapsible="icon"] [data-sidebar="content"] {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+[data-collapsible="icon"]::-webkit-scrollbar,
+[data-collapsible="icon"] *::-webkit-scrollbar,
+[data-collapsible="icon"] [data-sidebar="content"]::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+[data-collapsible="icon"] *::-webkit-scrollbar-button,
+[data-collapsible="icon"] *::-webkit-scrollbar-track,
+[data-collapsible="icon"] *::-webkit-scrollbar-thumb {
+  display: none !important;
+  background: transparent !important;
 }
 
 .themed-scrollbar {

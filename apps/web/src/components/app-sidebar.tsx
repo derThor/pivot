@@ -448,7 +448,13 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
           {isMobile && <ThemeToggle className="mr-0 ml-auto" />}
         </div>
       </SidebarHeader>
-      <SidebarContent>
+      {/* Eingeklappt ohne sichtbaren Scrollbalken (Nutzervorgabe,
+          2026-08-31). Klasse statt reinem Attribut-Selektor, damit es
+          nicht davon abhaengt, ob der data-collapsible-Selektor greift -
+          gescrollt werden kann weiterhin. */}
+      <SidebarContent
+        className={sidebarState === "collapsed" ? "no-scrollbar" : undefined}
+      >
         {visibleNavGroups.map((group) => {
           // Im eingeklappten (icon-only) Zustand macht ein Auf-/Zuklappen der
           // Gruppen keinen Sinn (Labels sind ohnehin ausgeblendet) – Items

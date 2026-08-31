@@ -175,3 +175,24 @@ größer".
   bleiben.
 
 Beide Regeln landen nachweislich im kompilierten Stylesheet (geprüft).
+
+### Nachtrag: der Balken blieb trotzdem stehen
+
+Zwei Anläufe reichten nicht (Tailwind-Variante an `SidebarContent`, dann
+eine Regel auf `[data-collapsible="icon"]`). Endstand ist deshalb
+zusätzlich eine ganz gewöhnliche Klasse, die vom React-Zustand gesetzt
+wird – damit hängt nichts mehr daran, ob ein Attribut-Selektor zum
+richtigen Element passt:
+
+```tsx
+<SidebarContent className={sidebarState === "collapsed" ? "no-scrollbar" : undefined}>
+```
+
+`.no-scrollbar` in `globals.css` setzt `scrollbar-width: none` und
+`::-webkit-scrollbar { display: none }`, beides mit `!important`, weil
+`.themed-scrollbar` dieselben Eigenschaften belegt. Die Attribut-Regel
+bleibt als Netz für andere scrollende Elemente in der eingeklappten
+Spalte bestehen.
+
+**Merke:** Dev-CSS wird aggressiv gecacht – nach solchen Änderungen ein
+hartes Neuladen (Strg+F5), sonst sieht man weiter den alten Stand.
