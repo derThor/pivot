@@ -197,6 +197,12 @@ export class NavigationService {
     const losesHomepageByTarget =
       existing.isHomepage && dto.isHomepage !== true && !effectiveContentId;
 
+    const targetData = dto.contentId
+      ? { contentId: dto.contentId, externalUrl: null }
+      : dto.externalUrl
+        ? { externalUrl: dto.externalUrl, contentId: null }
+        : {};
+
     const item = await this.prisma.$transaction(async (tx) => {
       if (dto.isHomepage === true) {
         // Exklusivität: erst alle anderen abwählen, dann diesen setzen –
@@ -212,17 +218,16 @@ export class NavigationService {
           ...(dto.isHomepage !== undefined && { isHomepage: dto.isHomepage }),
           ...(losesHomepageByTarget && { isHomepage: false }),
           ...(dto.label !== undefined && { label: dto.label }),
-          // contentId/externalUrl bewusst als Paar behandelt: sobald eines
-          // explizit gesetzt wird, muss das jeweils andere geleert werden,
-          // sonst blieben beide gleichzeitig gesetzt.
-          ...(dto.contentId !== undefined && {
-            contentId: dto.contentId,
-            externalUrl: null,
-          }),
-          ...(dto.externalUrl !== undefined && {
-            externalUrl: dto.externalUrl,
-            contentId: null,
-          }),
+          // contentId/externalUrl bewusst als Paar behandelt: wird ein
+          // Ziel gesetzt, muss das jeweils andere geleert werden, sonst
+          // blieben beide gleichzeitig gesetzt. Ausschlaggebend ist der
+          // tatsächlich befüllte Wert, NICHT `!== undefined`: der
+          // Bearbeiten-Dialog schickt immer beide Felder und setzt das
+          // ungenutzte explizit auf null – bei einer `undefined`-Prüfung
+          // gewann dadurch immer die zweite Zuweisung und löschte die
+          // gerade gesetzte Seite wieder (Fehlerbild: "nach dem Speichern
+          // ist die hinterlegte Seite weg").
+          ...targetData,
           ...(dto.parentId !== undefined && { parentId: dto.parentId }),
           ...(dto.openInNewTab !== undefined && {
             openInNewTab: dto.openInNewTab,

@@ -481,3 +481,58 @@ auftauchte.
 Frontend-Schritt 1 in der Datenbank, hat aber weiterhin **kein
 Eingabefeld** in den Einstellungen – nötig für den Header von `apps/site`
 (Schritt 5 des Frontend-Plans).
+
+## Update 2026-08-31: Bearbeiten eines Menüpunkts löschte die verknüpfte Seite
+
+**Fehlerbild (Nutzermeldung):** "ich kann keine Menüs mehr speichern, sobald
+ich einen Menüpunkt bearbeite und speichere, ist die hinterlegte Seite weg
+und ich habe keine Icons mehr dort."
+
+**Ursache:** `NavigationService.updateItem()` behandelte contentId und
+externalUrl als Paar – aber über `!== undefined` statt über den tatsächlich
+befüllten Wert:
+
+```ts
+...(dto.contentId !== undefined && { contentId: dto.contentId, externalUrl: null }),
+...(dto.externalUrl !== undefined && { externalUrl: dto.externalUrl, contentId: null }),
+```
+
+Der Bearbeiten-Dialog schickt seit dem Explorer-Umbau (2026-08-16,
+`navigation-item-dialog.tsx`) **immer beide Felder** und setzt das
+ungenutzte explizit auf `null` (`{ contentId, externalUrl: null }`).
+Damit war auch `externalUrl` "definiert", die zweite Zuweisung gewann und
+setzte `contentId: null` – die gerade gespeicherte Seite war weg. Folgefehler
+genau wie gemeldet: das Haus-Icon (nur bei Inhalts-Ziel sichtbar)
+verschwand, und ein erneutes Speichern desselben Punktes scheiterte mit
+"Ein Navigationspunkt braucht genau ein Ziel", weil der Dialog nun ohne
+Ziel öffnete.
+
+**Fix:** ausschlaggebend ist der befüllte Wert, nicht seine bloße Existenz:
+
+```ts
+const targetData = dto.contentId
+  ? { contentId: dto.contentId, externalUrl: null }
+  : dto.externalUrl
+    ? { externalUrl: dto.externalUrl, contentId: null }
+    : {};
+```
+
+**Warum es erst jetzt auffiel (wichtig fürs nächste Mal):** der Fehler steckt
+seit dem 2026-08-16 im Quellcode, wurde aber nie ausgeführt – die API lief
+als älterer kompilierter Build (`node dist/main`, kein Watch-Modus, siehe
+[master-slave-licensing.md](../platform/master-slave-licensing.md) und den
+`multer`-Fall vom 2026-08-27). Erst der `nest build` im Zuge der
+Startseiten-Änderung brachte den Quellstand tatsächlich zur Ausführung.
+**Konsequenz:** nach jedem `nest build` müssen auch die Bereiche
+gegengeprüft werden, die seit dem letzten Build nur im Quellcode geändert
+wurden, nicht nur die gerade gebaute Funktion.
+
+**Datenschaden:** vier Menüpunkte verloren dabei ihr Ziel. Drei ließen sich
+aus einem vorher gezogenen Datenbank-Auszug wiederherstellen (`gfsdgf`,
+`ccbxcvb`, `xvcvxbxcbvxv`); bei `gdfgsdfg` war vorher gar kein Ziel
+gesetzt, das muss neu vergeben werden.
+
+**Verifikation:** `NavigationService.updateItem()` direkt gegen die Dev-DB
+mit der Dialog-Nutzlast aufgerufen (Seite bleibt verknüpft, Wechsel auf
+externen Link, Wechsel zurück) – ein HTTP-Test war ohne Login-Session nicht
+möglich.
