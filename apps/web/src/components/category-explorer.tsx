@@ -397,7 +397,7 @@ export function CategoryExplorer({
                         value={searchValue}
                         onChange={(e) => setSearchValue(e.target.value)}
                         placeholder="Beitrag suchen"
-                        className="pl-9"
+                        className="bg-card pl-9"
                       />
                     </div>
                     <div className="flex gap-1 rounded-lg bg-muted p-1">
