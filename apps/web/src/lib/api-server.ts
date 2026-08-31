@@ -1423,7 +1423,7 @@ export function getAllFormSubmissions(params?: {
   );
 }
 
-export type MailTemplateCategory = "auth" | "privacy" | "forms";
+export type MailTemplateCategory = "auth" | "privacy" | "forms" | "system";
 
 export interface MailTemplateListItem {
   id: string;

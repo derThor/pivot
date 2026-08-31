@@ -1,19 +1,26 @@
-// Standard-Wortlaut + Metadaten der acht System-Mails, die einen festen,
-// vorlagen-fähigen Text haben (siehe mailer.service.ts). Zwei bestehende
-// Mail-Methoden bleiben bewusst AUSSER dieser Liste, weil ihr Inhalt schon
+// Standard-Wortlaut + Metadaten der System-Mails, die einen festen,
+// vorlagen-fähigen Text haben (siehe mailer.service.ts). Eine bestehende
+// Mail-Methode bleibt bewusst AUSSER dieser Liste, weil ihr Inhalt schon
 // vollständig dynamisch ist – eine "Vorlage" hätte dort nichts, das über
 // den Aufrufer hinaus als fester Standard existiert:
 // - sendDeletionRequestFollowUp: der Admin tippt die Rückfrage frei im
 //   Popup, es gibt keinen Standardtext zum Bearbeiten.
-// - sendSystemNotificationEmail: Titel/Text kommen bereits fertig
-//   formuliert aus NotificationsService (z.B. "Speicherplatz wird knapp").
+//
+// `system.notification` (Nutzer-Bugreport, 2026-08-31: "alle geschickten
+// emails durch jobs sind nicht mit dem mailtemplate") ist bewusst EINE
+// generische Vorlage für ALLE `NotificationsService`-Kategorien
+// (Wartungsmodus, Speicherplatz, Webhooks, Fehlversuche, ...) statt einer
+// Vorlage pro Kategorie – der eigentliche Titel/Text kommt weiterhin
+// dynamisch aus NotificationsService, die Vorlage sorgt nur dafür, dass er
+// (wie jede andere System-Mail) in der Mail-Hülle mit Firmen-CI statt als
+// unformatierter Klartext ankommt.
 //
 // Kein DB-Row wird vorab geseedet (bewusst anders als im Plan zunächst
 // skizziert): `MailTemplate` bleibt leer, bis jemand über Mailing etwas
 // bearbeitet – ohne eigene Zeile liefert `renderSystemTemplate()` genau
 // diesen Standardtext zurück. "Auf Standard zurücksetzen" ist damit
 // einfach: DB-Zeile löschen.
-export type MailTemplateCategory = 'auth' | 'privacy' | 'forms';
+export type MailTemplateCategory = 'auth' | 'privacy' | 'forms' | 'system';
 
 export interface SystemMailTemplateDefault {
   key: string;
@@ -30,6 +37,15 @@ export interface SystemMailTemplateDefault {
 }
 
 export const SYSTEM_MAIL_TEMPLATES: SystemMailTemplateDefault[] = [
+  {
+    key: 'system.notification',
+    category: 'system',
+    label: 'Systembenachrichtigung',
+    placeholders: ['title', 'description', 'actionLabel', 'actionUrl'],
+    recipientEditable: false,
+    subject: '{{title}}',
+    body: '{{description}}\n\n{{actionLabel}}: {{actionUrl}}',
+  },
   {
     key: 'auth.verify-email',
     category: 'auth',

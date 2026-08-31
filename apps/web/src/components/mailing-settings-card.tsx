@@ -47,6 +47,7 @@ const CATEGORY_LABELS: Record<MailTemplateCategory, string> = {
   auth: "Konto & Anmeldung",
   privacy: "Datenschutz",
   forms: "Formulare",
+  system: "System",
 };
 
 // Erklärung je Platzhalter für die Legende unter Betreff/Text – deckt die

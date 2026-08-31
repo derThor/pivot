@@ -653,14 +653,21 @@ export class MailerService {
   ): Promise<void> {
     const link = notification.actionUrl
       ? `${this.frontendOrigin()}${notification.actionUrl}`
-      : null;
-    const text = [
-      notification.description,
-      link ? `${notification.actionLabel ?? 'Öffnen'}: ${link}` : null,
-    ]
-      .filter(Boolean)
-      .join('\n\n');
-    await this.deliver(to, notification.title, text);
+      : '';
+    const rendered = await this.renderSystemTemplate('system.notification', {
+      title: notification.title,
+      description: notification.description,
+      actionLabel: link ? (notification.actionLabel ?? 'Öffnen') : '',
+      actionUrl: link,
+    });
+    if (!rendered) return;
+    await this.deliver(
+      to,
+      rendered.subject,
+      rendered.text,
+      undefined,
+      rendered.html,
+    );
   }
 
   /** Formular-Baustein: Admin-Benachrichtigung nach jeder Einsendung. */
