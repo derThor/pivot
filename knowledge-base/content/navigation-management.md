@@ -431,6 +431,22 @@ trägt ein `badge--lime`-Badge "Startseite" (gleiche Optik wie
 Punkt genügt – der Server wählt den bisherigen ab, `router.refresh()`
 zeigt das Badge danach nur noch an der neuen Stelle.
 
+**Tooltips in der Zeile (Nutzervorgabe, 2026-08-31):** die Menü-Zeile
+trägt inzwischen bis zu vier Icon-Buttons nebeneinander (Startseite,
+Untereintrag, Bearbeiten, Löschen) – ohne Beschriftung nicht
+selbsterklärend. `RowActionButtons` hat dafür ein neues, **standardmäßig
+ausgeschaltetes** `tooltips`-Flag bekommen (nur die Menü-Verwaltung setzt
+es, alle übrigen Listen bleiben unverändert). Zwei Details dabei:
+
+- Base UI erwartet beim `render`-Muster einen Trigger ohne eigene Kinder –
+  das Icon hängt am `TooltipTrigger`, der Button wird childless
+  übergeben (Vorbild: `user-restore-button.tsx`).
+- Der "Untereintrag hinzufügen"-Button ist deshalb kein Dialog-Trigger
+  mehr, sondern setzt `addChildTarget` und nutzt dieselbe kontrollierte
+  Dialog-Instanz wie der mobile "…"-Eintrag: ein Element kann nicht
+  gleichzeitig Dialog-Trigger und Tooltip-Trigger sein, ohne die
+  `render`-Ketten ineinander zu schachteln.
+
 **API-Auswirkungen:**
 
 - `PATCH /navigations/:id/items/:itemId` akzeptiert `isHomepage`.

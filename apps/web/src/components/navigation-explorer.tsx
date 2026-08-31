@@ -29,6 +29,11 @@ import {
 import { NavigationDialog } from "@/components/navigation-dialog";
 import { NavigationItemDialog } from "@/components/navigation-item-dialog";
 import { RowActionButtons } from "@/components/row-action-buttons";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn, truncateMiddle } from "@/lib/utils";
 import type {
   ContentListItem,
@@ -288,48 +293,60 @@ export function NavigationExplorer({
             onDelete={() => setDeleteItem(node)}
             editLabel={`„${node.label}“ bearbeiten`}
             deleteLabel={`„${node.label}“ löschen`}
+            tooltips
             extra={
               <>
                 {node.content && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon-sm"
-                    className={cn(
-                      "rounded-lg border-border",
-                      node.isHomepage && "bg-primary/15",
-                    )}
-                    onClick={() => void handleToggleHomepage(node)}
-                    aria-label={
-                      node.isHomepage
-                        ? `„${node.label}“ ist die Startseite – Markierung entfernen`
-                        : `„${node.label}“ als Startseite festlegen`
-                    }
-                    title={
-                      node.isHomepage
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon-sm"
+                          className={cn(
+                            "rounded-lg border-border",
+                            node.isHomepage && "bg-primary/15",
+                          )}
+                          onClick={() => void handleToggleHomepage(node)}
+                          aria-label={
+                            node.isHomepage
+                              ? `„${node.label}“ ist die Startseite – Markierung entfernen`
+                              : `„${node.label}“ als Startseite festlegen`
+                          }
+                        />
+                      }
+                    >
+                      <House />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {node.isHomepage
                         ? "Ist die Startseite – klicken zum Aufheben"
-                        : "Als Startseite festlegen"
+                        : "Als Startseite festlegen"}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                {/* Nutzt dieselbe kontrollierte Dialog-Instanz wie der
+                    mobile "…"-Eintrag (`addChildTarget`) statt eines
+                    eigenen Dialog-Triggers – ein Trigger-Button lässt sich
+                    sonst nicht zusätzlich in einen Tooltip einhängen. */}
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon-sm"
+                        className="rounded-lg border-border"
+                        onClick={() => setAddChildTarget(node)}
+                        aria-label={`Untereintrag zu „${node.label}“ hinzufügen`}
+                      />
                     }
                   >
-                    <House />
-                  </Button>
-                )}
-                <NavigationItemDialog
-                  navigationId={navigation.id}
-                  contentItems={contentItems}
-                  parentId={node.id}
-                  trigger={
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon-sm"
-                      className="rounded-lg border-border"
-                      aria-label={`Untereintrag zu „${node.label}“ hinzufügen`}
-                    >
-                      <Plus />
-                    </Button>
-                  }
-                />
+                    <Plus />
+                  </TooltipTrigger>
+                  <TooltipContent>Untereintrag hinzufügen</TooltipContent>
+                </Tooltip>
               </>
             }
           />
