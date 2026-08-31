@@ -107,11 +107,11 @@ eigenes Recht.
   Auswahl/Hervorhebung.
   - **Bugfix, gleicher Tag:** Hervorhebung der ausgewählten Kachel war
     zunächst 1:1 nach Bildvorlage `border-2 border-amber-500
-    bg-lime-50` (fest verdrahtetes Orange/Lime) – Nutzer-Feedback:
+bg-lime-50` (fest verdrahtetes Orange/Lime) – Nutzer-Feedback:
     "jobs orientiert sich nicht an der akzentfarbe. der border um die
     selektierte kachel muss dazu passen". Auf `border-primary
-    bg-primary/10` umgestellt (gleiches Muster wie `border-l-primary
-    bg-primary/15` in `roles-explorer.tsx`/`navigation-explorer.tsx`/
+bg-primary/10` umgestellt (gleiches Muster wie `border-l-primary
+bg-primary/15` in `roles-explorer.tsx`/`navigation-explorer.tsx`/
     `settings-form.tsx` u.a.) – reagiert jetzt auf die unter
     Einstellungen → Darstellung gewählte Akzentfarbe.
   - **Nachbesserung, gleicher Tag:** Status-Badge hieß zunächst "läuft"
@@ -141,7 +141,7 @@ eigenes Recht.
   - **Pagination ergänzt** (Nutzervorgabe, gleicher Tag: "bei geplante
     aufgaben auch pagination beachten") – `GET /jobs` liefert seither
     `{ items, meta }` statt eines flachen Arrays (`JobsService.
-    findAll(page, pageSize)` slict das in-memory `definitions`-Array,
+findAll(page, pageSize)` slict das in-memory `definitions`-Array,
     kein DB-Query nötig). **Achtung, Stolperstein:** Die Backend-Antwort
     wurde umgestellt, bevor Frontend/Typen nachgezogen waren → Live-Fehler
     "jobs.map is not a function" auf `/dashboard/settings` (Nutzer-
@@ -394,3 +394,19 @@ Sidebar-Breiten-Muster von "Mein Konto"
 `lg:col-span-2`), siehe [[feedback_sidebar_width_convention]]: Hauptspalte
 = `ScheduledJobsCard` + `RecentJobRunsCard`, rechte Sidebar =
 `JobRunRetentionCard` + `ActivityLogRetentionCard`.
+
+## Update 2026-08-31: kein Zeitstempel mehr in der eingeklappten Zeile
+
+Nutzervorgabe: "in der Übersicht in eingeklapptem Zustand keinen Zeitpunkt
+anzeigen. sobald man da aufklappt, sieht man das ja". Die rechte Spalte der
+Job-Zeile (letzter Lauf + Dauer, `formatRelativePast`/`formatDuration`)
+ist deshalb entfallen; die Zeile zeigt jetzt nur noch Titel, Beschreibung,
+Rhythmus samt Cron-Ausdruck, Status-Badge und Schalter.
+
+**Wichtig dabei:** der aufgeklappte Bereich zeigte den _letzten_ Lauf
+vorher gar nicht – nur "N Läufe · N Fehler · nächster: …". Ein reines
+Löschen hätte die Information also komplett aus der Oberfläche entfernt
+(sie stünde nur noch im Protokoll-Dialog). Die Fußzeile im aufgeklappten
+Zustand lautet deshalb jetzt: "N Läufe · N Fehler · letzter: <Zeitpunkt>
+(<Dauer>) · nächster: <Zeitpunkt>". Die Dauer wird nur angehängt, wenn es
+überhaupt einen Lauf gab – sonst stünde dort "letzter: Noch nie (–)".

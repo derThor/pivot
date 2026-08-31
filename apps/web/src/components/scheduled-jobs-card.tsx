@@ -197,14 +197,6 @@ export function ScheduledJobsCard({
                         {job.cronExpression}
                       </span>
                     </div>
-                    <div className="hidden shrink-0 flex-col items-end @md:flex">
-                      <span className="text-xs text-muted-foreground">
-                        {formatRelativePast(job.lastRunAt)}
-                      </span>
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {formatDuration(job.lastRunDurationMs)}
-                      </span>
-                    </div>
                   </button>
                   <Badge
                     className={
@@ -312,10 +304,17 @@ export function ScheduledJobsCard({
                           Letztes Protokoll
                         </Button>
                       </div>
+                      {/* Letzter Lauf steht bewusst nur hier, nicht mehr in
+                          der eingeklappten Zeile (Nutzervorgabe,
+                          2026-08-31: "in der Übersicht im eingeklappten
+                          Zustand keinen Zeitpunkt anzeigen"). */}
                       <p className="text-xs text-muted-foreground">
                         {job.totalRuns.toLocaleString("de-DE")} Läufe ·{" "}
                         {job.totalErrors.toLocaleString("de-DE")} Fehler ·
-                        nächster: {formatRelativeFuture(job.nextRunAt)}
+                        letzter: {formatRelativePast(job.lastRunAt)}
+                        {job.lastRunAt &&
+                          ` (${formatDuration(job.lastRunDurationMs)})`}{" "}
+                        · nächster: {formatRelativeFuture(job.nextRunAt)}
                       </p>
                     </div>
                   </div>
