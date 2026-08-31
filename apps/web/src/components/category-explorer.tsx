@@ -380,6 +380,8 @@ export function CategoryExplorer({
                       type="submit"
                       form="category-settings-form"
                       disabled={settingsSubmitting}
+                      size="sm"
+                      className="h-10"
                     >
                       {settingsSubmitting ? "Speichert…" : "Speichern"}
                     </Button>
