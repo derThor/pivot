@@ -327,24 +327,12 @@
    dunkel; im Dark-Modus zieht der Verlauf ihn nur noch tiefer und
    verschiebt den Mittelpunkt von 48% auf 78%, wodurch die hellen Bögen
    rechts länger stehen bleiben. */
-/* Grundton unter dem Motiv. Liegt hier statt als Inline-Style an der
-   Komponente, weil er seit 2026-09-01 theme-abhängig ist (Nutzervorgabe:
-   "in light modus nur hier etwas dunkler") – im Dark-Modus sorgt schon der
-   sehr dunkle Scrim darüber für Tiefe, im Light-Modus muss der Grund das
-   allein leisten. */
-.mandant-header-bg {
-  background: #0a1220;
-}
-[data-pivot-theme="dark"] .mandant-header-bg {
-  background: #0e1827;
-}
-
 .mandant-header-scrim {
   background: linear-gradient(
     100deg,
-    rgba(10, 18, 32, 0.74) 0%,
-    rgba(10, 18, 32, 0.4) 48%,
-    rgba(10, 18, 32, 0.08) 100%
+    rgba(14, 24, 39, 0.74) 0%,
+    rgba(14, 24, 39, 0.4) 48%,
+    rgba(14, 24, 39, 0.08) 100%
   );
 }
 [data-pivot-theme="dark"] .mandant-header-scrim {
