@@ -699,3 +699,54 @@ _innerhalb_ eines breiten Buttons (Datenschutz-/Vorfall-Panels) und
 Info-Kästen mit `bg-muted` – beides sind keine weißen Button-Rahmen.
 Im Dark Mode bleibt es bei `dark:border-input`, dort gibt es keine weißen
 Flächen.
+
+## Update 2026-09-01: Sidebar-Icons – grau im Light, grün im Dark
+
+Zweistufige Nutzervorgabe am selben Tag: erst *"alle icon grün"*, direkt
+danach *"im light modus sollen die icons und schrift grau sein"*.
+Endstand ist deshalb **grau im Light-, grün im Dark-Modus** – der
+Zwischenstand "immer grün" ist überholt.
+
+**Ursache der ursprünglichen Ungleichheit**: die beiden Menü-Ebenen
+bezogen ihre Icon-Farbe aus zwei verschiedenen Quellen.
+
+- Unterpunkte (FAQs/Galerien/Vorschau-Links/Webseiten) rendern ihr Icon
+  direkt im `SidebarMenuSubButton`, ohne eigene Wrapper-Klasse – die
+  Farbe kommt dort aus dem Primitive selbst
+  (`[&>svg]:text-sidebar-accent-foreground` in `ui/sidebar.tsx`), also
+  grün, und zwar in **beiden** Themes.
+- Hauptpunkte packen ihr Icon in `navIconChipClass`, und die stand auf
+  `text-sidebar-foreground/70` – grau.
+
+**Endstand**:
+
+- `navIconChipClass`: `text-sidebar-foreground/70` +
+  `dark:text-sidebar-accent-foreground`.
+- `navSubActiveClass` überschreibt die Primitive-Farbe mit denselben
+  zwei Regeln als `[&>svg]`-Varianten – ohne das blieben die
+  Unterpunkte im Light-Modus grün, während die Hauptpunkte grau sind.
+- `data-active:[&>svg]:text-primary-foreground` bei den Unterpunkten ist
+  dabei **nicht optional**: ein graues Icon auf der Lime-Pille wäre kaum
+  lesbar. Bei den Hauptpunkten erledigt das die schon vorhandene
+  `group-data-active/menu-button`-Variante, die dank höherer Spezifität
+  auch gegen `dark:` gewinnt.
+
+**Warum theme-abhängig**: `--pivot-acc-fg` ist im hellen Theme ein
+dunkles Oliv (`#4d6b12`), das neben dem grauen Label unruhig wirkt; im
+dunklen Theme ist es ein helles Lime (`#cbe86e`) und trägt die
+Farbigkeit der Sidebar.
+
+**Die Label-Schrift blieb unverändert** – sie erbt `text-sidebar-foreground`
+(= `--pivot-g-mid`, `#8c8c8c` im Light) und war damit bereits grau. Sie
+bewusst NICHT zusätzlich auf `/70` gesetzt: das ergäbe rund `#b5b5b5`
+auf hellem Grund und damit zu wenig Kontrast für Fließtext.
+
+Unverändert bleiben außerdem die **Auf-/Zuklapp-Chevrons** rechts an
+"Mandanten"/"Seiten" (`text-sidebar-foreground`): Steuerelement des
+Menüs, kein Icon eines Eintrags.
+
+**Verhältnis zur Regel "Icon-Boxen bleiben grau"**: die gilt weiterhin
+für Icon-*Kacheln mit Hintergrund-Chip* in Listen und Kachelrastern (grau
+im Normalzustand, accent-grün nur bei aktiv/ausgewählt/freigeschaltet).
+Die Sidebar-Icons haben ausdrücklich **keinen** Chip (siehe Kommentar an
+`navIconChipClass`) und sind von dieser Regel nicht betroffen.

@@ -84,14 +84,34 @@ const navIconChipClass =
   // Eingeklappt sind die Icons das einzige Erkennungsmerkmal und deshalb
   // eine Stufe groesser als im ausgeklappten Zustand (Nutzervorgabe,
   // 2026-08-31).
-  "flex size-7 shrink-0 items-center justify-center text-sidebar-foreground/70 transition-colors group-data-active/menu-button:text-primary-foreground [&_svg]:size-4 group-data-[collapsible=icon]:[&_svg]:size-5";
+  //
+  // Farbe, zweistufige Nutzervorgabe vom 2026-09-01: erst "alle icon
+  // grün" (Haupt- und Unterebene auf dasselbe Token, vorher standen die
+  // Unterpunkte über das `SidebarMenuSubButton`-Primitive auf grün, die
+  // Hauptpunkte auf grau), direkt danach "im light modus sollen die icons
+  // und schrift grau sein". Ergebnis: **grau im Light-, grün im
+  // Dark-Modus** – im hellen Theme ist `--pivot-acc-fg` ein dunkles
+  // Oliv (#4d6b12), das neben dem grauen Label unruhig wirkt; im dunklen
+  // Theme ist es ein helles Lime (#cbe86e) und trägt die Farbigkeit der
+  // Sidebar. Im aktiven Zustand bleibt es in beiden Themes beim dunklen
+  // `primary-foreground` auf der Lime-Pille (Kontrast) – die
+  // `group-data-active`-Variante hat die höhere Spezifität und gewinnt
+  // daher auch gegen `dark:`.
+  "flex size-7 shrink-0 items-center justify-center text-sidebar-foreground/70 transition-colors group-data-active/menu-button:text-primary-foreground dark:text-sidebar-accent-foreground [&_svg]:size-4 group-data-[collapsible=icon]:[&_svg]:size-5";
 
 // Unterpunkte (z.B. "FAQs"/"Galerien" unter "Seiten") – deutlich tiefer
 // eingerückt als `navActiveClass` (pl-3), sonst wirken sie bei diesem
 // Rechteck-Zeilen-Design nicht wie eine verschachtelte Ebene, sondern wie
 // normale gleichrangige Einträge.
+//
+// Die drei `[&>svg]`-Regeln am Ende überschreiben die Icon-Farbe, die das
+// `SidebarMenuSubButton`-Primitive fest auf `text-sidebar-accent-foreground`
+// setzt (siehe ui/sidebar.tsx) – ohne sie blieben die Unterpunkte auch im
+// Light-Modus grün, während die Hauptpunkte grau sind. Der
+// `data-active`-Fall ist dabei nicht optional: ein graues Icon auf der
+// Lime-Pille wäre kaum lesbar.
 const navSubActiveClass =
-  "h-auto w-full gap-2 overflow-hidden rounded-xl pl-10 pr-4 py-2 text-sm transition-[gap,padding] duration-200 ease-linear data-active:bg-primary data-active:font-semibold data-active:text-primary-foreground data-active:hover:text-primary-foreground";
+  "h-auto w-full gap-2 overflow-hidden rounded-xl pl-10 pr-4 py-2 text-sm transition-[gap,padding] duration-200 ease-linear data-active:bg-primary data-active:font-semibold data-active:text-primary-foreground data-active:hover:text-primary-foreground [&>svg]:text-sidebar-foreground/70 dark:[&>svg]:text-sidebar-accent-foreground data-active:[&>svg]:text-primary-foreground";
 
 // Exportiert, damit `dashboard-breadcrumbs.tsx` dieselbe Gruppen-/Item-
 // Struktur wiederverwenden kann – eine einzige Quelle für "welche Seite
