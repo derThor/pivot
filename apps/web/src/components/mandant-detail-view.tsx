@@ -454,13 +454,20 @@ export function MandantDetailView({
               {/* Der Sperrvermerk folgt dem Theme, obwohl er auf dem immer
                   dunklen Kartengrund liegt (Nutzervorgabe, 2026-09-01:
                   "soll der sperrvermerk im light design bei light modus
-                  sein") – im Light-Modus also die helle Warnfarbe. Werte
-                  wie die `warning`-Variante in `ui/system-message.tsx`.
+                  sein") – im Light-Modus also die helle Warnfarbe.
                   Ein früherer Versuch mit fest dunklen Werten ist damit
                   überholt: die Box soll als Warnhinweis auffallen, nicht
-                  sich in den Kartengrund einfügen. */}
+                  sich in den Kartengrund einfügen.
+
+                  Der Light-Hintergrund ist `#fdf5da` statt des `#fffbeb`
+                  der `warning`-Variante in `ui/system-message.tsx`
+                  (Nutzervorgabe: "etwas dunkler") – bewusst die einzige
+                  Abweichung von jener Palette, weil die Box hier auf einem
+                  fast schwarzen Grund liegt statt auf Weiß und dort sonst
+                  grell wirkt. Rahmen- und Textfarbe bleiben unverändert,
+                  der Ton liegt zwischen Fläche und Rahmen. */}
               {status === "locked" && (
-                <div className="flex flex-col gap-2 rounded-lg border border-[#fde68a] bg-[#fffbeb] p-4 dark:border-[#6b5220] dark:bg-[#3d2f10]">
+                <div className="flex flex-col gap-2 rounded-lg border border-[#fde68a] bg-[#fdf5da] p-4 dark:border-[#6b5220] dark:bg-[#3d2f10]">
                   <p className="flex items-center gap-2 text-sm font-semibold text-[#78350f] dark:text-[#f8e6bd]">
                     <Lock className="size-4" />
                     Sperrvermerk
