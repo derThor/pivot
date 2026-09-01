@@ -317,6 +317,32 @@
   color: #132033;
   box-shadow: inset 0 0 0 1px rgba(19, 32, 51, 0.18);
 }
+
+/* Abdunkelung über dem Bögen-Motiv im Mandanten-Kopf (Kacheln der
+   Übersicht + erste Karte der Detailseite, siehe mandant-header.tsx),
+   damit Logo und Name links lesbar bleiben. Als Klasse statt als
+   Inline-Style, weil die beiden Themes hier unterschiedliche Verläufe
+   bekommen (Nutzervorgabe, 2026-09-01) – ein `style`-Attribut kann keine
+   `dark:`-Variante tragen. Der Kopf selbst bleibt in beiden Themes
+   dunkel; im Dark-Modus zieht der Verlauf ihn nur noch tiefer und
+   verschiebt den Mittelpunkt von 48% auf 78%, wodurch die hellen Bögen
+   rechts länger stehen bleiben. */
+.mandant-header-scrim {
+  background: linear-gradient(
+    100deg,
+    rgba(19, 32, 51, 0.74) 0%,
+    rgba(19, 32, 51, 0.4) 48%,
+    rgba(19, 32, 51, 0.08) 100%
+  );
+}
+[data-pivot-theme="dark"] .mandant-header-scrim {
+  background: linear-gradient(
+    100deg,
+    rgb(5 9 16 / 74%) 0%,
+    rgb(4 13 25 / 40%) 78%,
+    rgb(6 15 29 / 13%) 100%
+  );
+}
 [data-pivot-theme="dark"] .badge--ink {
   background: #3d4d5e;
   color: #ffffff;

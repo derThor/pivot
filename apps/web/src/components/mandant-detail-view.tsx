@@ -28,6 +28,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  MandantHeaderShell,
+  STATUS_ACCENT,
+  initialsOf,
+} from "@/components/mandant-header";
 import { MandantLogoField } from "@/components/mandant-logo-field";
 import { SegmentedPicker } from "@/components/segmented-picker";
 import { Switch } from "@/components/ui/switch";
@@ -61,6 +66,18 @@ const MODULE_ICONS: Record<string, typeof Diamond> = {
   magicline: Diamond,
   datenschutz: ShieldCheck,
 };
+
+// Die erste Karte liegt komplett auf dem dunklen Kopf-Motiv (Nutzervorgabe,
+// 2026-09-01, nach Bildvorlage) – Label und Eingabefelder brauchen dort
+// eigene Farben, die App-Standardwerte (dunkler Text auf hellem Grund)
+// wären unlesbar. Bewusst zwei Konstanten statt einer neuen `dark`-Variante
+// an `Input`/`Label`: es ist die einzige Stelle in der App mit einem
+// dauerhaft dunklen Formulargrund, und die Komponenten sind sonst
+// theme-gesteuert.
+const DARK_LABEL =
+  "text-xs font-semibold tracking-wide text-white/60 uppercase";
+const DARK_INPUT =
+  "border-white/15 bg-white/5 text-white placeholder:text-white/40 focus-visible:border-white/40 focus-visible:ring-white/20";
 
 const CATEGORY_LABEL: Record<ModuleCatalogEntry["category"], string> = {
   integration: "Schnittstelle",
@@ -331,463 +348,517 @@ export function MandantDetailView({
         </div>
       </div>
 
-      <Card className="overflow-hidden rounded-xl py-0 shadow-sm">
-        <div
-          className="flex items-center gap-6 p-6"
-          style={{
-            backgroundImage:
-              "linear-gradient(135deg, #3c4d24 0%, #16202b 55%, #0a0e16 100%)",
-          }}
-        >
-          <MandantLogoField
-            mandantId={mandant.id}
-            currentUrl={mandant.logoUrl}
-            folderId={logoFolderId}
-          />
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-lg font-semibold text-white">{mandant.name}</p>
-              <Badge
-                className={
-                  status === "active"
-                    ? "badge--green border-0"
-                    : status === "locked"
-                      ? "badge--red border-0"
-                      : "badge--slate border-0"
-                }
-              >
-                {STATUS_OPTIONS.find((o) => o.value === status)?.label}
-              </Badge>
-            </div>
-            <p className="truncate text-base text-white/70">
-              {primaryDomain}
-              {location && `, ${location}`}
-            </p>
-          </div>
-        </div>
-        <CardContent className="flex flex-col gap-5 py-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mandant-name" required>
-                Bezeichnung
-              </Label>
-              <Input
-                id="mandant-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mandant-domain">Hauptdomain</Label>
-              <Input id="mandant-domain" value={primaryDomain} readOnly />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <SegmentedPicker
-              label="Mitgliedschaft"
-              options={STATUS_OPTIONS}
-              value={status}
-              onChange={setStatus}
-            />
-            <p className="text-xs text-muted-foreground">
-              {STATUS_DESCRIPTION[status]}
-            </p>
-          </div>
-          {status === "locked" && (
-            <div className="flex flex-col gap-2 rounded-lg border border-[#fde68a] bg-[#fffbeb] p-4 dark:border-[#6b5220] dark:bg-[#3d2f10]">
-              <p className="flex items-center gap-2 text-sm font-semibold text-[#78350f] dark:text-[#f8e6bd]">
-                <Lock className="size-4" />
-                Sperrvermerk
-              </p>
-              <Textarea
-                value={lockReason}
-                onChange={(e) => setLockReason(e.target.value)}
-                placeholder="z.B. Beitrag für Q3/2026 offen — Zugang bis Zahlungseingang gesperrt."
-                className="bg-card"
-              />
-            </div>
-          )}
-          {saveError && <p className="text-sm text-destructive">{saveError}</p>}
-        </CardContent>
-      </Card>
-
-      <Card className="rounded-xl shadow-sm">
-        <CardHeader>
-          <CardTitle>Firmenangaben</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Speisen Impressum, Datenschutzhinweise und Systemmails dieses
-            Mandanten.
-          </p>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <SystemMessage
-            variant={requiredFilled ? "success" : "warning"}
-            title={
-              requiredFilled
-                ? "Pflichtangaben vollständig."
-                : "Pflichtangaben unvollständig."
-            }
-            icon={false}
-          />
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mandant-legal-name" required>
-                Firmierung
-              </Label>
-              <Input
-                id="mandant-legal-name"
-                value={legalName}
-                onChange={(e) => setLegalName(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mandant-representative">
-                Vertretungsberechtigte Person
-              </Label>
-              <Input
-                id="mandant-representative"
-                value={representativeName}
-                onChange={(e) => setRepresentativeName(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mandant-street" required>
-                Straße und Hausnummer
-              </Label>
-              <Input
-                id="mandant-street"
-                value={street}
-                onChange={(e) => setStreet(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mandant-postal-code" required>
-                PLZ
-              </Label>
-              <Input
-                id="mandant-postal-code"
-                value={postalCode}
-                onChange={(e) => setPostalCode(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mandant-city" required>
-                Ort
-              </Label>
-              <Input
-                id="mandant-city"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mandant-country">Land</Label>
-              <Input
-                id="mandant-country"
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mandant-email" required>
-                E-Mail
-              </Label>
-              <Input
-                id="mandant-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mandant-phone">Telefon</Label>
-              <Input
-                id="mandant-phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mandant-register">
-                Registergericht &amp; Nummer
-              </Label>
-              <Input
-                id="mandant-register"
-                value={registerInfo}
-                onChange={(e) => setRegisterInfo(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="mandant-vat-id">USt-IdNr.</Label>
-              <Input
-                id="mandant-vat-id"
-                value={vatId}
-                onChange={(e) => setVatId(e.target.value)}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="rounded-xl shadow-sm">
-        <CardHeader>
-          <CardTitle>Websites</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Domains, die dieser Mandant betreibt. Inhalte und Module gelten je
-            Domain.
-          </p>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex flex-col divide-y divide-border rounded-lg border border-border">
-            {mandant.websites.map((website, index) => (
-              <div
-                key={website.id}
-                className="flex items-center justify-between gap-3 px-3 py-2.5"
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                    <Globe className="size-4" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-medium">{website.domain}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {index === 0 ? "Hauptdomain" : "Website"}
+      {/* Zweispaltig ab lg (Nutzervorgabe, 2026-09-01: "mandanten detail
+          zu 2 spaltig, so das websites und module rechts als sidebar
+          sind") – Stammdaten und Firmenangaben links, die beiden
+          Verwaltungs-Karten rechts. Breitenverhältnis nach der
+          app-weiten Konvention (`grid-cols-3` + `col-span-2`, siehe
+          Mein Konto). `items-start` ist Pflicht, sonst zieht die
+          höhere Spalte die andere auf ihre Höhe.  */}
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+        <div className="flex flex-col gap-4 lg:col-span-2">
+          {/* Ganze Karte auf dem dunklen Kopf-Motiv (Nutzervorgabe,
+            2026-09-01, nach Bildvorlage: "stell unter mandanten detailseite
+            die erste kachel so dar") – vorher lag nur der Kopf auf dem
+            Motiv und darunter kam eine normale weiße `CardContent`-Fläche.
+            Die Formularfelder tragen deshalb hier eigene Klassen für den
+            dunklen Grund; `MandantHeaderShell` bringt Rundung, Motiv, Scrim
+            und Statusstreifen mit. Der Streifen folgt dem im Formular
+            GEWÄHLTEN Status, nicht dem gespeicherten: die Umschaltung
+            darunter wird so sofort oben sichtbar, auch bevor gespeichert
+            wurde. */}
+          <MandantHeaderShell
+            status={status}
+            className="rounded-xl p-6 pb-8 shadow-sm"
+          >
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-4">
+                <MandantLogoField
+                  mandantId={mandant.id}
+                  currentUrl={mandant.logoUrl}
+                  folderId={logoFolderId}
+                  initials={initialsOf(mandant.name)}
+                  accentColor={STATUS_ACCENT[status]}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-xl leading-[1.15] font-bold text-white">
+                      {mandant.name}
                     </p>
+                    <Badge
+                      className={
+                        status === "active"
+                          ? "badge--green border-0"
+                          : status === "locked"
+                            ? "badge--red border-0"
+                            : "badge--slate border-0"
+                      }
+                    >
+                      {STATUS_OPTIONS.find((o) => o.value === status)?.label}
+                    </Badge>
+                  </div>
+                  {/* Domain, Ort und Website-Zahl in einer Monospace-Zeile
+                    (Bildvorlage) statt wie bisher untereinander – die drei
+                    Angaben sind kurz und gehören zusammen. `flex-wrap`
+                    fängt schmale Breiten ab. */}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-5 gap-y-1 font-mono text-xs text-white/55">
+                    {primaryDomain && (
+                      <span className="truncate">{primaryDomain}</span>
+                    )}
+                    {location && <span className="truncate">{location}</span>}
+                    <span>
+                      {mandant.websites.length}{" "}
+                      {mandant.websites.length === 1 ? "Webseite" : "Webseiten"}
+                    </span>
                   </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="border-button-border"
-                    render={
-                      <a
-                        href={`https://${website.domain}/login`}
-                        target="_blank"
-                        rel="noreferrer"
-                      />
-                    }
-                  >
-                    Öffnen
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`„${website.domain}“ löschen`}
-                    onClick={() => setDeleteWebsiteTarget(website)}
-                  >
-                    <Trash2 />
-                  </Button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="mandant-name" className={DARK_LABEL} required>
+                    Bezeichnung
+                  </Label>
+                  <Input
+                    id="mandant-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className={DARK_INPUT}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="mandant-domain" className={DARK_LABEL}>
+                    Hauptdomain
+                  </Label>
+                  <Input
+                    id="mandant-domain"
+                    value={primaryDomain}
+                    readOnly
+                    className={DARK_INPUT}
+                  />
                 </div>
               </div>
-            ))}
-          </div>
-          <form onSubmit={handleAddWebsite} className="flex flex-col gap-1.5">
-            <Label htmlFor="mandant-new-domain">Domain hinzufügen</Label>
-            <div className="flex gap-2">
-              <Input
-                id="mandant-new-domain"
-                value={newDomain}
-                onChange={(e) => {
-                  setNewDomain(e.target.value);
-                  if (domainError) setDomainError(null);
-                }}
-                placeholder="neue-domain.de"
-                aria-invalid={domainError ? true : undefined}
-              />
-              <Button type="submit" disabled={isAddingWebsite}>
-                {isAddingWebsite ? "Wird hinzugefügt…" : "Hinzufügen"}
-              </Button>
-            </div>
-            {domainError && (
-              <p className="text-sm text-destructive">{domainError}</p>
-            )}
-          </form>
-        </CardContent>
-      </Card>
 
-      <Card className="rounded-xl shadow-sm">
-        <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <CardTitle>Module</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Gilt für alle Websites dieses Mandanten gleichermaßen.
-              </p>
-            </div>
-            <Dialog open={moduleDialogOpen} onOpenChange={setModuleDialogOpen}>
-              <DialogTrigger
-                render={
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="border-button-border"
-                    disabled={availableModules.length === 0}
+              <div className="flex flex-col gap-2">
+                <SegmentedPicker
+                  label="Mitgliedschaft"
+                  options={STATUS_OPTIONS}
+                  value={status}
+                  onChange={setStatus}
+                  variant="onDark"
+                />
+                <p className="text-xs text-white/55">
+                  {STATUS_DESCRIPTION[status]}
+                </p>
+              </div>
+              {status === "locked" && (
+                <div className="flex flex-col gap-2 rounded-lg border border-[#6b5220] bg-[#3d2f10] p-4">
+                  <p className="flex items-center gap-2 text-sm font-semibold text-[#f8e6bd]">
+                    <Lock className="size-4" />
+                    Sperrvermerk
+                  </p>
+                  <Textarea
+                    value={lockReason}
+                    onChange={(e) => setLockReason(e.target.value)}
+                    placeholder="z.B. Beitrag für Q3/2026 offen — Zugang bis Zahlungseingang gesperrt."
+                    className={DARK_INPUT}
                   />
-                }
-              >
-                <Plus />
-                Modul hinzufügen
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Modul hinzufügen</DialogTitle>
-                </DialogHeader>
-                <div className="flex flex-col gap-2">
-                  {availableModules.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      Alle Module bereits hinzugefügt.
-                    </p>
-                  ) : (
-                    availableModules.map((module) => {
-                      const Icon = MODULE_ICONS[module.key] ?? Diamond;
-                      return (
-                        <button
-                          key={module.key}
-                          type="button"
-                          disabled={pendingModuleKey === module.key}
-                          onClick={() => handleAddModule(module.key)}
-                          className="flex items-center gap-3 rounded-lg border border-border bg-muted p-3 text-left transition-colors hover:bg-muted/70 disabled:cursor-default disabled:opacity-60"
-                        >
-                          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-card text-foreground shadow-sm">
-                            <Icon className="size-4.5" />
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="text-sm font-medium">
-                                {module.label}
-                              </p>
-                              <Badge className="badge--slate border-0">
-                                {CATEGORY_LABEL[module.category]}
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              {module.description}
-                            </p>
-                          </div>
-                        </button>
-                      );
-                    })
-                  )}
                 </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {mandant.modules.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Noch keine Module hinzugefügt.
-            </p>
-          ) : (
-            mandant.modules.map((entry) => {
-              const catalogEntry = moduleCatalog.find(
-                (m) => m.key === entry.moduleKey,
-              );
-              if (!catalogEntry) return null;
-              const Icon = MODULE_ICONS[entry.moduleKey] ?? Diamond;
-              const hasFeatures = (catalogEntry.features?.length ?? 0) > 0;
-              const isExpanded = expandedModuleKey === entry.moduleKey;
-              return (
-                <div
-                  key={entry.moduleKey}
-                  className="flex flex-col gap-3 rounded-lg border border-border bg-muted p-3"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <button
-                      type="button"
-                      disabled={!hasFeatures || !entry.enabled}
-                      onClick={() =>
-                        setExpandedModuleKey(
-                          isExpanded ? null : entry.moduleKey,
-                        )
-                      }
-                      className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:cursor-default"
-                    >
-                      <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-card text-foreground shadow-sm">
-                        <Icon className="size-4" />
+              )}
+              {saveError && (
+                <p className="text-sm text-[#fb9c9c]">{saveError}</p>
+              )}
+            </div>
+          </MandantHeaderShell>
+
+          <Card className="rounded-xl shadow-sm">
+            <CardHeader>
+              <CardTitle>Firmenangaben</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Speisen Impressum, Datenschutzhinweise und Systemmails dieses
+                Mandanten.
+              </p>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <SystemMessage
+                variant={requiredFilled ? "success" : "warning"}
+                title={
+                  requiredFilled
+                    ? "Pflichtangaben vollständig."
+                    : "Pflichtangaben unvollständig."
+                }
+                icon={false}
+              />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="mandant-legal-name" required>
+                    Firmierung
+                  </Label>
+                  <Input
+                    id="mandant-legal-name"
+                    value={legalName}
+                    onChange={(e) => setLegalName(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="mandant-representative">
+                    Vertretungsberechtigte Person
+                  </Label>
+                  <Input
+                    id="mandant-representative"
+                    value={representativeName}
+                    onChange={(e) => setRepresentativeName(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="mandant-street" required>
+                    Straße und Hausnummer
+                  </Label>
+                  <Input
+                    id="mandant-street"
+                    value={street}
+                    onChange={(e) => setStreet(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="mandant-postal-code" required>
+                    PLZ
+                  </Label>
+                  <Input
+                    id="mandant-postal-code"
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="mandant-city" required>
+                    Ort
+                  </Label>
+                  <Input
+                    id="mandant-city"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="mandant-country">Land</Label>
+                  <Input
+                    id="mandant-country"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="mandant-email" required>
+                    E-Mail
+                  </Label>
+                  <Input
+                    id="mandant-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="mandant-phone">Telefon</Label>
+                  <Input
+                    id="mandant-phone"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="mandant-register">
+                    Registergericht &amp; Nummer
+                  </Label>
+                  <Input
+                    id="mandant-register"
+                    value={registerInfo}
+                    onChange={(e) => setRegisterInfo(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="mandant-vat-id">USt-IdNr.</Label>
+                  <Input
+                    id="mandant-vat-id"
+                    value={vatId}
+                    onChange={(e) => setVatId(e.target.value)}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <Card className="rounded-xl shadow-sm">
+            <CardHeader>
+              <CardTitle>Webseiten</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Domains, die dieser Mandant betreibt. Inhalte und Module gelten
+                je Domain.
+              </p>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <div className="flex flex-col divide-y divide-border rounded-lg border border-border">
+                {mandant.websites.map((website, index) => (
+                  <div
+                    key={website.id}
+                    className="flex items-center justify-between gap-3 px-3 py-2.5"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                        <Globe className="size-4" />
                       </span>
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-medium">
-                            {catalogEntry.label}
-                          </p>
-                          <Badge className="badge--slate border-0">
-                            {CATEGORY_LABEL[catalogEntry.category]}
-                          </Badge>
-                        </div>
+                      <div>
+                        <p className="text-sm font-medium">{website.domain}</p>
                         <p className="text-xs text-muted-foreground">
-                          {entry.enabled
-                            ? `Für ${mandant.websites.length} ${mandant.websites.length === 1 ? "Website" : "Websites"} aktiv`
-                            : "Deaktiviert"}
+                          {index === 0 ? "Hauptdomain" : "Webseite"}
                         </p>
                       </div>
-                      {hasFeatures && entry.enabled && (
-                        <ChevronRight
-                          className={`size-4 shrink-0 text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`}
-                        />
-                      )}
-                    </button>
+                    </div>
                     <div className="flex shrink-0 items-center gap-1.5">
-                      <Switch
-                        checked={entry.enabled}
-                        disabled={pendingModuleKey === entry.moduleKey}
-                        onCheckedChange={(checked) =>
-                          handleToggleModule(entry.moduleKey, checked)
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="border-button-border"
+                        render={
+                          <a
+                            href={`https://${website.domain}/login`}
+                            target="_blank"
+                            rel="noreferrer"
+                          />
                         }
-                      />
+                      >
+                        Öffnen
+                      </Button>
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon-sm"
-                        aria-label={`${catalogEntry.label} entfernen`}
-                        onClick={() => setRemoveModuleTarget(entry.moduleKey)}
+                        aria-label={`„${website.domain}“ löschen`}
+                        onClick={() => setDeleteWebsiteTarget(website)}
                       >
                         <Trash2 />
                       </Button>
                     </div>
                   </div>
-                  {isExpanded && hasFeatures && entry.enabled && (
-                    <div className="flex flex-col gap-1.5 border-t border-border pt-3 pl-11">
-                      {catalogEntry.features!.map((feature) => (
-                        <div
-                          key={feature.key}
-                          className="flex items-center justify-between gap-3 rounded-md bg-card p-2.5"
+                ))}
+              </div>
+              <form
+                onSubmit={handleAddWebsite}
+                className="flex flex-col gap-1.5"
+              >
+                <Label htmlFor="mandant-new-domain">Domain hinzufügen</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="mandant-new-domain"
+                    value={newDomain}
+                    onChange={(e) => {
+                      setNewDomain(e.target.value);
+                      if (domainError) setDomainError(null);
+                    }}
+                    placeholder="neue-domain.de"
+                    aria-invalid={domainError ? true : undefined}
+                  />
+                  <Button type="submit" disabled={isAddingWebsite}>
+                    {isAddingWebsite ? "Wird hinzugefügt…" : "Hinzufügen"}
+                  </Button>
+                </div>
+                {domainError && (
+                  <p className="text-sm text-destructive">{domainError}</p>
+                )}
+              </form>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-xl shadow-sm">
+            <CardHeader>
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <CardTitle>Module</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Gilt für alle Webseiten dieses Mandanten gleichermaßen.
+                  </p>
+                </div>
+                <Dialog
+                  open={moduleDialogOpen}
+                  onOpenChange={setModuleDialogOpen}
+                >
+                  <DialogTrigger
+                    render={
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="border-button-border"
+                        disabled={availableModules.length === 0}
+                      />
+                    }
+                  >
+                    <Plus />
+                    Modul hinzufügen
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Modul hinzufügen</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex flex-col gap-2">
+                      {availableModules.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          Alle Module bereits hinzugefügt.
+                        </p>
+                      ) : (
+                        availableModules.map((module) => {
+                          const Icon = MODULE_ICONS[module.key] ?? Diamond;
+                          return (
+                            <button
+                              key={module.key}
+                              type="button"
+                              disabled={pendingModuleKey === module.key}
+                              onClick={() => handleAddModule(module.key)}
+                              className="flex items-center gap-3 rounded-lg border border-border bg-muted p-3 text-left transition-colors hover:bg-muted/70 disabled:cursor-default disabled:opacity-60"
+                            >
+                              <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-card text-foreground shadow-sm">
+                                <Icon className="size-4.5" />
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="text-sm font-medium">
+                                    {module.label}
+                                  </p>
+                                  <Badge className="badge--slate border-0">
+                                    {CATEGORY_LABEL[module.category]}
+                                  </Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  {module.description}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              {mandant.modules.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Noch keine Module hinzugefügt.
+                </p>
+              ) : (
+                mandant.modules.map((entry) => {
+                  const catalogEntry = moduleCatalog.find(
+                    (m) => m.key === entry.moduleKey,
+                  );
+                  if (!catalogEntry) return null;
+                  const Icon = MODULE_ICONS[entry.moduleKey] ?? Diamond;
+                  const hasFeatures = (catalogEntry.features?.length ?? 0) > 0;
+                  const isExpanded = expandedModuleKey === entry.moduleKey;
+                  return (
+                    <div
+                      key={entry.moduleKey}
+                      className="flex flex-col gap-3 rounded-lg border border-border bg-muted p-3"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          disabled={!hasFeatures || !entry.enabled}
+                          onClick={() =>
+                            setExpandedModuleKey(
+                              isExpanded ? null : entry.moduleKey,
+                            )
+                          }
+                          className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:cursor-default"
                         >
-                          <p className="text-sm">{feature.label}</p>
+                          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-card text-foreground shadow-sm">
+                            <Icon className="size-4" />
+                          </span>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-sm font-medium">
+                                {catalogEntry.label}
+                              </p>
+                              <Badge className="badge--slate border-0">
+                                {CATEGORY_LABEL[catalogEntry.category]}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {entry.enabled
+                                ? `Für ${mandant.websites.length} ${mandant.websites.length === 1 ? "Webseite" : "Webseiten"} aktiv`
+                                : "Deaktiviert"}
+                            </p>
+                          </div>
+                          {hasFeatures && entry.enabled && (
+                            <ChevronRight
+                              className={`size-4 shrink-0 text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                            />
+                          )}
+                        </button>
+                        <div className="flex shrink-0 items-center gap-1.5">
                           <Switch
-                            checked={entry.enabledFeatures.includes(
-                              feature.key,
-                            )}
-                            disabled={pendingFeatureKey === feature.key}
+                            checked={entry.enabled}
+                            disabled={pendingModuleKey === entry.moduleKey}
                             onCheckedChange={(checked) =>
-                              handleToggleFeature(
-                                entry.moduleKey,
-                                feature.key,
-                                checked,
-                              )
+                              handleToggleModule(entry.moduleKey, checked)
                             }
                           />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`${catalogEntry.label} entfernen`}
+                            onClick={() =>
+                              setRemoveModuleTarget(entry.moduleKey)
+                            }
+                          >
+                            <Trash2 />
+                          </Button>
                         </div>
-                      ))}
+                      </div>
+                      {isExpanded && hasFeatures && entry.enabled && (
+                        <div className="flex flex-col gap-1.5 border-t border-border pt-3 pl-11">
+                          {catalogEntry.features!.map((feature) => (
+                            <div
+                              key={feature.key}
+                              className="flex items-center justify-between gap-3 rounded-md bg-card p-2.5"
+                            >
+                              <p className="text-sm">{feature.label}</p>
+                              <Switch
+                                checked={entry.enabledFeatures.includes(
+                                  feature.key,
+                                )}
+                                disabled={pendingFeatureKey === feature.key}
+                                onCheckedChange={(checked) =>
+                                  handleToggleFeature(
+                                    entry.moduleKey,
+                                    feature.key,
+                                    checked,
+                                  )
+                                }
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </CardContent>
-      </Card>
+                  );
+                })
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       <ConfirmDeleteDialog
         open={deleteWebsiteTarget !== null}
         onOpenChange={(open) => !open && setDeleteWebsiteTarget(null)}
         title={`„${deleteWebsiteTarget?.domain}“ löschen?`}
-        description="Die Website wird endgültig aus diesem Mandanten entfernt. Die Installation selbst bleibt unberührt, meldet sich aber nicht mehr erfolgreich bei diesem Master."
+        description="Die Webseite wird endgültig aus diesem Mandanten entfernt. Die Installation selbst bleibt unberührt, meldet sich aber nicht mehr erfolgreich bei diesem Master."
         onConfirm={handleDeleteWebsite}
       />
 

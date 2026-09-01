@@ -32,17 +32,34 @@ export function SegmentedPicker<T extends string | number>({
   onChange: (value: T) => void;
   /** "dark" = dunkle, hervorgehobene aktive Pille (Nutzervorgabe,
    * 2026-08-18, 1:1 nach Bildvorlage des Status-Felds im Content-Editor)
-   * statt der sonst üblichen weißen aktiven Pille. */
-  variant?: "light" | "dark";
+   * statt der sonst üblichen weißen aktiven Pille.
+   *
+   * "onDark" = der Picker selbst steht auf einer dunklen Fläche
+   * (Mandant-Detailkarte, 2026-09-01): Rahmen/Grund und die inaktiven
+   * Beschriftungen werden aufgehellt, damit sie dort überhaupt lesbar
+   * sind. Die aktive Pille bleibt unverändert – sie trägt über
+   * `activeClassName` die Statusfarbe. */
+  variant?: "light" | "dark" | "onDark";
 }) {
+  const onDark = variant === "onDark";
   return (
     <div className="flex flex-col gap-2">
       {label && (
-        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        <span
+          className={cn(
+            "text-xs font-semibold tracking-wide uppercase",
+            onDark ? "text-white/60" : "text-muted-foreground",
+          )}
+        >
           {label}
         </span>
       )}
-      <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-muted p-1">
+      <div
+        className={cn(
+          "flex flex-wrap gap-1 rounded-lg border p-1",
+          onDark ? "border-white/15 bg-white/5" : "border-border bg-muted",
+        )}
+      >
         {options.map((option) => {
           // Zahl-Optionen ("30 Tage", "12 Monate") immer zweizeilig
           // darstellen (Zahl größer über dem Wort), statt sich auf
@@ -70,7 +87,9 @@ export function SegmentedPicker<T extends string | number>({
                       (variant === "dark"
                         ? "bg-dark-surface text-dark-surface-foreground"
                         : "bg-card text-foreground shadow-sm"))
-                  : "text-muted-foreground hover:text-foreground",
+                  : onDark
+                    ? "text-white/60 hover:text-white"
+                    : "text-muted-foreground hover:text-foreground",
               )}
             >
               {second ? (

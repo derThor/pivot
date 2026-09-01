@@ -1,6 +1,11 @@
 import { PageContent } from "@/components/page-content";
 import { MandantenView } from "@/components/mandanten-view";
-import { getMandanten, getMandantStats, getSettings } from "@/lib/api-server";
+import {
+  getMandanten,
+  getMandantModuleCatalog,
+  getMandantStats,
+  getSettings,
+} from "@/lib/api-server";
 
 // Master-exklusiv (siehe knowledge-base/platform/master-slave-licensing.md)
 // – gleiches Muster wie /dashboard/websites: der Sidebar-Punkt wird auf
@@ -15,9 +20,13 @@ export default async function MandantenPage({
   const page = Number(pageParam) || 1;
 
   const settings = await getSettings();
-  const [result, stats] = await Promise.all([
+  // Der Katalog liefert die Modul-Labels ("Datenschutz"), die auf den
+  // Kacheln neben dem Icon stehen – die Mandanten-Liste selbst kennt nur
+  // `moduleKey` (2026-09-01, Kachel-Redesign).
+  const [result, stats, moduleCatalog] = await Promise.all([
     getMandanten({ page, pageSize: settings?.defaultPageSize ?? 10 }),
     getMandantStats(),
+    getMandantModuleCatalog(),
   ]);
 
   return (
@@ -28,6 +37,7 @@ export default async function MandantenPage({
           page: result?.meta.page ?? 1,
           pageCount: result?.meta.pageCount ?? 1,
         }}
+        moduleCatalog={moduleCatalog ?? []}
         stats={
           stats ?? {
             mandantsTotal: 0,

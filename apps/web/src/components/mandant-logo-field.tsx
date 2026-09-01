@@ -20,10 +20,20 @@ export function MandantLogoField({
   mandantId,
   currentUrl,
   folderId,
+  initials,
+  accentColor,
 }: {
   mandantId: string;
   currentUrl: string | null;
   folderId: string | null;
+  /** Ohne hochgeladenes Logo stehen hier die Initialen statt eines nackten
+   * "+" (Nutzervorgabe, 2026-09-01, nach Bildvorlage) – dieselbe Kachel
+   * wie auf den Übersichts-Kacheln, nur weiterhin klickbar zum Hochladen.
+   * Das "+" erscheint stattdessen beim Überfahren. */
+  initials?: string;
+  /** Farbe der Initialen: folgt dem Mandantenstatus (aktiv = Lime), damit
+   * die Kachel dieselbe Aussage trägt wie der Statusstreifen. */
+  accentColor?: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -127,7 +137,9 @@ export function MandantLogoField({
           className={`flex size-full items-center justify-center overflow-hidden rounded-xl transition-colors ${
             currentUrl
               ? "bg-primary"
-              : "cursor-pointer border border-dashed border-white/30 text-white/70 hover:border-white hover:text-white"
+              : initials
+                ? "cursor-pointer bg-white/10 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)] hover:bg-white/20"
+                : "cursor-pointer border border-dashed border-white/30 text-white/70 hover:border-white hover:text-white"
           } ${isUploading ? "pointer-events-none opacity-50" : ""}`}
         >
           <input
@@ -148,6 +160,19 @@ export function MandantLogoField({
               alt="Logo"
               className="size-full object-contain px-3 py-1.5"
             />
+          ) : initials ? (
+            // Initialen im Ruhezustand, "+" beim Überfahren – die Kachel
+            // bleibt damit als Upload-Ziel erkennbar, ohne im Normalfall
+            // wie ein leeres Formularfeld auszusehen.
+            <>
+              <span
+                className="text-base font-bold group-hover:opacity-0"
+                style={{ color: accentColor }}
+              >
+                {initials}
+              </span>
+              <Plus className="absolute size-5 text-white/80 opacity-0 group-hover:opacity-100" />
+            </>
           ) : (
             <Plus className="size-5" />
           )}
