@@ -617,6 +617,9 @@ platzierten "2FA"-Spalte in der Benutzer-Tabelle.
       Webseite oder app-weit unter Einstellungen → Master-Client.
       Erkennt grobe Manipulation, verhindert sie nicht – die Zahl
       bestimmt weiterhin die Client-Installation selbst.
+- [x] Warnschwellen einstellbar + Verlaufsansicht unter Einstellungen →
+      Verbindungen → Master-Client (2026-09-01); verwaiste Banner-
+      Komponenten aus der Zeit vor dem Postfach entfernt.
 - [x] Mandanten-Detailseite zweispaltig (2026-09-01): Webseiten und
       Module als rechte Sidebar, "Websites" app-weit zu "Webseiten"
       umbenannt.

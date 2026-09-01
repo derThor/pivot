@@ -1865,3 +1865,30 @@ bei der mandantenkachel und gemeldete zählerstände pagination rein"*.
   `protocolPage`, `jobsPage`, `jobsRunsPage`, `mandantenPage`), das
   genau dafür da ist, dass sich die Paginierungen der Abschnitte nicht
   gegenseitig überschreiben.
+
+### Nachtrag: Schwellen einstellbar + Verlaufsansicht (2026-09-01)
+
+- **Beide Schwellen liegen jetzt in `AppSettings`**
+  (`statsAnomalyRelativeDropPercent`, `statsAnomalyAbsoluteDrop`),
+  editierbar unter Einstellungen → Verbindungen → Master-Client. Die
+  Konstanten in `websites.service.ts` bleiben als **Fallback** für
+  Installationen, deren Datenbank älter ist als die Spalten.
+- Der Prozentwert ist auf **1..99** begrenzt: 0 würde jede unveränderte
+  Meldung als Einbruch werten, 100 nur einen Sturz auf exakt null
+  erfassen.
+- Die Felder hängen im **bestehenden Formular** der Einstellungsseite, der
+  globale "Speichern"-Knopf nimmt sie mit – deshalb ist `SettingsValues`
+  aus `settings-form.tsx` jetzt exportiert und die Karte bekommt das
+  `form`-Objekt durchgereicht. Bewusst keine eigene Instant-Save-Karte
+  wie bei `notification-settings-card.tsx`: die Karte steht ohnehin
+  innerhalb des `<form>`.
+- **Labels an allen drei Stellen** ergänzt (web + zwei API-Maps), sonst
+  stünde im Protokoll und im CSV-Export rohes camelCase.
+- **Verlaufsansicht** als dritte Karte, `GET /websites/stats-history`
+  (auch diese Route MUSS vor den `:id`-Routen stehen). Sie sagt im
+  Untertitel ausdrücklich, dass ein Eintrag für eine *Änderung* steht und
+  bei gleichbleibenden Zahlen nur der Zeitraum verlängert wird – das ist
+  beim bloßen Draufschauen nicht erkennbar und würde sonst als
+  "Prüfungen werden nicht protokolliert" missverstanden.
+- Alle drei Karten der Seite blättern unabhängig (`mandantenPage`,
+  `statsPage`, `statsHistoryPage`).
