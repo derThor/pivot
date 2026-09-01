@@ -1892,3 +1892,35 @@ bei der mandantenkachel und gemeldete zählerstände pagination rein"*.
   "Prüfungen werden nicht protokolliert" missverstanden.
 - Alle drei Karten der Seite blättern unabhängig (`mandantenPage`,
   `statsPage`, `statsHistoryPage`).
+
+### Nachtrag: Drei Karten zu einer zusammengefasst (2026-09-01)
+
+Nutzervorgabe: *"kann man das nicht zusammenfassen, so dass alles in die
+obere kachel kommt. wenn man eine zeile anklickt öffnet sich ein bereich,
+wo man den gemeldeten zählerstand bekommt und master - client, statt
+popup"*.
+
+Die drei Karten zeigten Ausschnitte derselben Liste – Mandanten-Zeilen,
+deren Zählerstände, deren Verlauf. **Ein Klick auf eine Zeile klappt jetzt
+einen Bereich darunter auf**, der alles zu dieser Installation trägt:
+Master/Client-Umschalter, gemeldeter Zählerstand mit eigenem
+"Zurücksetzen", offener Anomalie-Hinweis und der Verlauf dieser Webseite.
+
+- **`website-mode-dialog.tsx` ist damit abgelöst und entfernt.** Der
+  Umschalter sitzt als eigene kleine Komponente `WebsiteModePicker` in
+  `master-client-card.tsx` – bewusst als Komponente und nicht als
+  Inline-JSX, weil **jede Zeile ihren eigenen Entwurfszustand braucht**:
+  ein gemeinsamer State im Elternteil würde beim Aufklappen einer zweiten
+  Zeile den ungespeicherten Stand der ersten übernehmen.
+- Nur eine Zeile ist gleichzeitig offen, sonst wird die Karte
+  unübersichtlich lang.
+- **Global bleibt nur, was zu keiner einzelnen Zeile gehört**: die beiden
+  Warnschwellen und "Alle zurücksetzen", als Abschnitt am Fuß der Karte.
+- Damit entfällt die **zweite Website-Abfrage samt `statsPage`** – die
+  Zahlen stehen jetzt an den Zeilen selbst. Der Verlauf wird einmal mit
+  großzügiger Obergrenze geladen (`pageSize: 200`) statt paginiert; je
+  Website entstehen ohnehin nur Einträge bei echten Änderungen und
+  höchstens 50 davon.
+
+Übrig bleiben auf der Master-Ansicht zwei Karten: "Diese Installation" und
+"Mandanten".
