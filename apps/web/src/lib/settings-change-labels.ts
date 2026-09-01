@@ -54,6 +54,8 @@ export const SETTINGS_FIELD_LABELS: Record<string, string> = {
   notifyLegalDocuments: "Benachrichtigung „Rechtstexte brauchen Aufmerksamkeit“",
   notifyDeletionRequests: "Benachrichtigung „Offene Betroffenenanfragen“",
   notifyTrashExpiring: "Benachrichtigung „Papierkorb-Einträge laufen ab“",
+  statsAnomalyRelativeDropPercent: "Zählerstand-Warnschwelle (relativ)",
+  statsAnomalyAbsoluteDrop: "Zählerstand-Warnschwelle (absolut)",
   notificationRecipientEmail: "Benachrichtigungsempfänger",
   // Einstellungen → Integrationen, Karte "Dienste" (Nutzervorgabe,
   // 2026-08-22) – eigener Endpoint statt UpdateSettingsDto, daher kein

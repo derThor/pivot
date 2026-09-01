@@ -66,6 +66,7 @@ import type {
   SmtpSettings,
   WebhookListResponse,
   WebsiteListResponse,
+  WebsiteStatsHistoryResponse,
 } from "@/lib/api-server";
 
 // Feste Akzentfarben-Auswahl (1:1 nach Bildvorlage) + freier Farbwähler
@@ -108,13 +109,20 @@ const settingsSchema = z.object({
   keyboardShortcutsEnabled: z.boolean(),
   reduceMotion: z.boolean(),
   defaultPageSize: z.number().int().min(1).max(100),
+  // Schwellen der Zählerstand-Plausibilitätsprüfung (2026-09-01) – Grenzen
+  // wie im Backend-DTO: 0 % würde jede unveränderte Meldung als Einbruch
+  // werten, 100 % nur einen Sturz auf exakt null erfassen.
+  statsAnomalyRelativeDropPercent: z.number().int().min(1).max(99),
+  statsAnomalyAbsoluteDrop: z.number().int().min(1),
   siteTitle: z.string().nullable(),
   siteTagline: z.string().nullable(),
   defaultSeoDescription: z.string().nullable(),
   publicBaseUrl: z.string().nullable(),
 });
 
-type SettingsValues = z.infer<typeof settingsSchema>;
+// Exportiert, damit MasterClientCard das Formular typsicher entgegennehmen
+// kann (die Zählerstand-Schwellen liegen im selben Formular, siehe dort).
+export type SettingsValues = z.infer<typeof settingsSchema>;
 
 type SectionId =
   | "access"
@@ -325,6 +333,7 @@ export function SettingsForm({
   mailShells,
   websites,
   statsWebsites,
+  statsHistory,
   moduleSettings,
 }: {
   settings: AppSettings;
@@ -340,6 +349,7 @@ export function SettingsForm({
   /** Gleiche Liste wie `websites`, aber mit eigener Seite – die Karte
    * "Gemeldete Zählerstände" blättert unabhängig von "Mandanten". */
   statsWebsites: WebsiteListResponse;
+  statsHistory: WebsiteStatsHistoryResponse;
   moduleSettings: ModuleSettingsEntry[] | null;
 }) {
   const router = useRouter();
@@ -451,6 +461,8 @@ export function SettingsForm({
     keyboardShortcutsEnabled: settings.keyboardShortcutsEnabled,
     reduceMotion: settings.reduceMotion,
     defaultPageSize: settings.defaultPageSize,
+    statsAnomalyRelativeDropPercent: settings.statsAnomalyRelativeDropPercent,
+    statsAnomalyAbsoluteDrop: settings.statsAnomalyAbsoluteDrop,
     siteTitle: settings.siteTitle,
     siteTagline: settings.siteTagline,
     defaultSeoDescription: settings.defaultSeoDescription,
@@ -1461,6 +1473,8 @@ export function SettingsForm({
                 settings={settings}
                 websites={websites}
                 statsWebsites={statsWebsites}
+                statsHistory={statsHistory}
+                form={form}
               />
             )}
 

@@ -70,7 +70,7 @@ model UserRole {
 }
 
 model AppSettings {
-  id                                 Int         @id @default(1)
+  id                             Int         @id @default(1)
   // "master" (verwaltet Websites/stellt Lizenz-Tokens aus) oder "slave"
   // (eine ausgelieferte Installation, prüft wöchentlich beim Master) –
   // Nutzervorgabe, 2026-08-24: vom Pivot-Admin unter Einstellungen
@@ -81,7 +81,7 @@ model AppSettings {
   // isolierte Datenbank hat und der Signierschlüssel für echte Lizenz-
   // Tokens ausschließlich auf dem echten Master liegt (siehe
   // knowledge-base/platform/master-slave-licensing.md).
-  deploymentMode                     String      @default("master")
+  deploymentMode                 String      @default("master")
   // Nur im Client-Modus relevant: der Schlüssel, mit dem sich DIESE
   // Installation beim Master ausweist (Nutzervorgabe, 2026-08-24: "eine
   // Eingabe, wo man den Schlüssel ändern kann" – bisher nur per
@@ -91,9 +91,9 @@ model AppSettings {
   // zurückgegeben – schreibt-only-Feld wie `smtpPasswordEncrypted`. `null`
   // = noch nichts über die UI gesetzt, `LicenseClientService` fällt dann
   // auf die `LICENSE_API_KEY`-Umgebungsvariable zurück (Erstinbetriebnahme).
-  licenseApiKeyEncrypted             String?
-  allowRegistration                  Boolean     @default(true)
-  allowPasswordReset                 Boolean     @default(true)
+  licenseApiKeyEncrypted         String?
+  allowRegistration              Boolean     @default(true)
+  allowPasswordReset             Boolean     @default(true)
   // Getrennt nach Rolle (Nutzervorgabe, 2026-08-21): `allowEmailChange` gilt
   // für alle Nutzer außer Manager/Administrator/Pivot ("Benutzer können
   // E-Mail-Adresse anpassen"), `allowAdminEmailChange` eigens für
@@ -102,21 +102,21 @@ model AppSettings {
   // selbst ändern ("manager nicht"). Pivot ist von beidem ausgenommen und
   // darf immer ändern (siehe UsersService.assertEmailChangeAllowed –
   // Pivot "kann alles").
-  allowEmailChange                   Boolean     @default(true)
-  allowAdminEmailChange              Boolean     @default(true)
-  requireAdminActivation             Boolean     @default(false)
-  autosaveEnabled                    Boolean     @default(true)
-  mediaResponsiveVariantsEnabled     Boolean     @default(true)
-  maintenanceModeEnabled             Boolean     @default(false)
+  allowEmailChange               Boolean     @default(true)
+  allowAdminEmailChange          Boolean     @default(true)
+  requireAdminActivation         Boolean     @default(false)
+  autosaveEnabled                Boolean     @default(true)
+  mediaResponsiveVariantsEnabled Boolean     @default(true)
+  maintenanceModeEnabled         Boolean     @default(false)
   // Inhalt der Wartungsseite, die eine Slave-Installation öffentlichen
   // Besuchern zeigt, sobald der Master sie sperrt (siehe
   // knowledge-base/platform/master-slave-licensing.md – "Wartungsseite
   // konfigurierbar"). Bewusst getrennt vom bestehenden
   // `maintenanceModeEnabled`-Schalter oben (eigenständiges, manuelles
   // Konzept). `null` = eingebauter Standardtext.
-  maintenancePageTitle               String?
-  maintenancePageMessage             String?
-  mediaStorageQuotaMb                Int?
+  maintenancePageTitle           String?
+  maintenancePageMessage         String?
+  mediaStorageQuotaMb            Int?
   // Maximale Dateigröße pro Upload (Nutzervorgabe, 2026-08-18) – gilt für
   // jeden Upload-Weg in der App (Medienbibliothek, Avatar, Firmenlogo,
   // alle laufen über MediaService.create()). null = keine Admin-Grenze,
@@ -124,68 +124,68 @@ model AppSettings {
   // weiterhin. Ist ein Wert gesetzt, gilt das Minimum aus beiden – die
   // Kategorie-Obergrenze kann per Einstellung nur verschärft, nie
   // aufgeweicht werden.
-  maxUploadSizeMb                    Int?
-  passwordMinLength                  Int         @default(8)
-  passwordRequireUppercase           Boolean     @default(true)
-  passwordRequireLowercase           Boolean     @default(true)
-  passwordRequireNumber              Boolean     @default(true)
-  passwordRequireSpecialChar         Boolean     @default(true)
-  defaultPageSize                    Int         @default(10)
+  maxUploadSizeMb                Int?
+  passwordMinLength              Int         @default(8)
+  passwordRequireUppercase       Boolean     @default(true)
+  passwordRequireLowercase       Boolean     @default(true)
+  passwordRequireNumber          Boolean     @default(true)
+  passwordRequireSpecialChar     Boolean     @default(true)
+  defaultPageSize                Int         @default(10)
   // Globaler Schalter fürs gesamte 2FA/TOTP-Feature (Nutzervorgabe,
   // 2026-08-17) – bei false bleibt jeder vorhandene UserRole.twoFactorEnabled
   // wirkungslos (Login überspringt den zweiten Faktor komplett) und die
   // Einrichtung wird im Dashboard nirgends mehr angezeigt. Gleiche
   // "allow*"-Namenskonvention wie allowRegistration/allowPasswordReset.
-  allowTwoFactor                     Boolean     @default(true)
+  allowTwoFactor                 Boolean     @default(true)
   // Erzwingt bei aktivem allowTwoFactor, dass Administrator-Konten 2FA
   // eingerichtet haben, bevor der Rest des Dashboards nutzbar ist (siehe
   // TwoFactorSetupGuard) – gleiche "require*"-Konvention wie
   // requireAdminActivation.
-  requireTwoFactorForAdmins          Boolean     @default(false)
+  requireTwoFactorForAdmins      Boolean     @default(false)
   // Zusätzliche, feingranulare 2FA-Pflicht-Stufen (Nutzervorgabe,
   // 2026-08-17, "Sicherheit"-Tab-Redesign) – bestehen unabhängig
   // nebeneinander (jede kann für sich an/aus sein), TwoFactorSetupGuard
   // prüft alle drei ODER-verknüpft. "…ForAll" gilt für jedes Konto,
   // "…ForPublishers" nur für Rollen mit `content:publish`-Recht.
-  requireTwoFactorForAll             Boolean     @default(false)
-  requireTwoFactorForPublishers      Boolean     @default(false)
+  requireTwoFactorForAll         Boolean     @default(false)
+  requireTwoFactorForPublishers  Boolean     @default(false)
   // Passwort-Ablauf: erzwingt nach N Tagen seit der letzten Passwort-
   // Änderung (User.passwordChangedAt) beim nächsten Login einen
   // Passwortwechsel (setzt mustChangePassword, gleicher Mechanismus wie
   // requireAdminActivation). null = kein Ablauf.
-  passwordExpiryDays                 Int?
+  passwordExpiryDays             Int?
   // Sperrt ein Konto automatisch (isActive=false, gleicher Zustand wie
   // die manuelle "Sperren"-Aktion) nach N aufeinanderfolgenden
   // Fehlversuchen (siehe AuthService.login()). null = keine automatische
   // Sperre – User.failedLoginAttempts zählt dann weiterhin nur zur
   // Anzeige/Systembenachrichtigung.
-  failedLoginLockoutThreshold        Int?
+  failedLoginLockoutThreshold    Int?
   // Prüft ein neues Passwort bei Registrierung/Passwortwechsel/-Reset
   // gegen die Have-I-Been-Pwned-Passwort-API (k-Anonymitäts-Abfrage,
   // Klartext-Passwort verlässt den Server nie – siehe
   // common/utils/pwned-password.ts).
-  passwordBlockLeaked                Boolean     @default(false)
+  passwordBlockLeaked            Boolean     @default(false)
   // Verhindert die Wiederverwendung eines der letzten 5 Passwörter eines
   // Kontos (siehe PasswordHistory-Modell unten). Feste Anzahl 5 (wie in
   // der Bildvorlage "Letzte 5 Passwörter nicht erneut zulassen") statt
   // eines weiteren konfigurierbaren Zahlenfelds.
-  passwordPreventReuseEnabled        Boolean     @default(false)
+  passwordPreventReuseEnabled    Boolean     @default(false)
   // Beendet eine Sitzung (Refresh-Token), wenn seit der letzten
   // Token-Erneuerung mehr als N Minuten vergangen sind (siehe
   // RefreshToken.lastUsedAt, AuthService.refresh()). null = kein
   // Inaktivitäts-Timeout, nur die feste expiresAt-Ablaufzeit gilt.
-  sessionIdleTimeoutMinutes          Int?
+  sessionIdleTimeoutMinutes      Int?
   // Darstellung (Nutzervorgabe, 2026-08-17, "Darstellung"-Tab-Redesign).
   // Hex-Farbe, null = Standard-Markenfarbe (#C8EE44, siehe globals.css).
   // Nur der Farbton wird übernommen (siehe lib/accent-color.ts) – Helligkeit
   // /Sättigung folgen demselben Muster wie die bisherige Lime-Palette, damit
   // Kontrast/Lesbarkeit für jede gewählte Farbe konsistent bleiben.
-  accentColor                        String?
+  accentColor                    String?
   // "compact" | "normal" | "airy" – Standard-Zeilenhöhe in Tabellen.
-  tableDensity                       String      @default("normal")
-  sidebarCollapsedByDefault          Boolean     @default(false)
-  keyboardShortcutsEnabled           Boolean     @default(true)
-  reduceMotion                       Boolean     @default(false)
+  tableDensity                   String      @default("normal")
+  sidebarCollapsedByDefault      Boolean     @default(false)
+  keyboardShortcutsEnabled       Boolean     @default(true)
+  reduceMotion                   Boolean     @default(false)
   // "Frontend" = die öffentliche Website jeder Installation (Master wie
   // jeder Mandant), zu unterscheiden vom "Backend" (diesem Admin-UI hier
   // – siehe Begriffsklärung in
@@ -195,51 +195,61 @@ model AppSettings {
   // knowledge-base/frontend/public-website.md-Plan), die Felder werden
   // hier bewusst vorbereitend angelegt, analog zu den bereits gebauten
   // `Category`-Feldern (rssEnabled usw.).
-  siteTitle                          String?
-  siteTagline                        String?
-  faviconUrl                         String?
-  defaultSeoDescription              String?
-  defaultOgImageUrl                  String?
+  siteTitle                      String?
+  siteTagline                    String?
+  faviconUrl                     String?
+  defaultSeoDescription          String?
+  defaultOgImageUrl              String?
   // Basis-URL der öffentlichen Website (z.B. "https://www.strasev.de"),
   // Grundlage für `Content.canonicalUrl`-Fallback und die Sitemap – jede
   // Installation (Master/Slave) trägt hier ihre EIGENE echte Domain ein,
   // keine Ableitung aus `Website.domain` (das ist eine Master-seitige,
   // Lizenz-interne Tabelle, siehe master-slave-licensing.md).
-  publicBaseUrl                      String?
+  publicBaseUrl                  String?
   // Welche `Navigation` das Hauptmenü der öffentlichen Website ist –
   // ohne dieses Feld gäbe es keine Möglichkeit, "das" Menü unter
   // mehreren `Navigation`-Datensätzen zu identifizieren.
-  mainNavigationId                   String?     @unique
-  mainNavigation                     Navigation? @relation(fields: [mainNavigationId], references: [id], onDelete: SetNull)
+  mainNavigationId               String?     @unique
+  mainNavigation                 Navigation? @relation(fields: [mainNavigationId], references: [id], onDelete: SetNull)
   // Ein/Aus je Systembenachrichtigung-Kategorie (Nutzervorgabe, 2026-08-16:
   // Karte auf /dashboard/system-messages) – bestimmt, ob die jeweilige
   // Kategorie überhaupt als Banner/Glocken-Zähler auftaucht, unabhängig
   // vom zugrunde liegenden Zustand (z.B. Wartungsmodus kann aktiv sein,
   // aber die Benachrichtigung dazu ausgeblendet).
-  notifyMaintenanceMode              Boolean     @default(true)
-  notifyStorageQuota                 Boolean     @default(true)
-  notifyWebhookFailures              Boolean     @default(true)
-  notifyLocalDrafts                  Boolean     @default(true)
-  notifyPendingActivations           Boolean     @default(true)
-  notifyFailedLogins                 Boolean     @default(true)
-  notifyPendingPasswordChanges       Boolean     @default(true)
+  notifyMaintenanceMode          Boolean     @default(true)
+  notifyStorageQuota             Boolean     @default(true)
+  notifyWebhookFailures          Boolean     @default(true)
+  notifyLocalDrafts              Boolean     @default(true)
+  notifyPendingActivations       Boolean     @default(true)
+  notifyFailedLogins             Boolean     @default(true)
+  notifyPendingPasswordChanges   Boolean     @default(true)
   // Nutzervorgabe, 2026-08-19: bestehende Inline-Warnhinweise (Firma-
   // Vollständigkeit, Datenschutz-Rechtstexte) müssen zusätzlich als
   // Systembenachrichtigung erscheinen, nicht nur lokal auf ihrer Seite.
-  notifyCompanyIncomplete            Boolean     @default(true)
-  notifyLegalDocuments               Boolean     @default(true)
+  notifyCompanyIncomplete        Boolean     @default(true)
+  notifyLegalDocuments           Boolean     @default(true)
   // Betroffenenanfragen-Automatik (Nutzervorgabe, 2026-08-19, Löschanfragen-
   // Neugestaltung): "Eingang automatisch bestätigen" (Mail an Absender bei
   // Anlage), "Erinnerung 7 Tage vor Fristende" (Mail an DSB, täglicher Cron).
-  dsrAutoAcknowledgeReceipt          Boolean     @default(true)
-  dsrDeadlineReminderEnabled         Boolean     @default(true)
-  notifyDeletionRequests             Boolean     @default(true)
-  notifyTrashExpiring                Boolean     @default(true)
+  dsrAutoAcknowledgeReceipt      Boolean     @default(true)
+  dsrDeadlineReminderEnabled     Boolean     @default(true)
+  notifyDeletionRequests         Boolean     @default(true)
+  notifyTrashExpiring            Boolean     @default(true)
   // Master-seitige Live-Überwachung gesperrter Websites (Nutzervorgabe,
   // 2026-08-24: "baue einen test ein, der regelmäßig testet, ob eine
   // Seite live ist. wenn gesperrt, dennoch live, dass ich in Master
   // gewarnt werde") – siehe WebsiteMonitorService.
-  notifyWebsiteAnomaly               Boolean     @default(true)
+  notifyWebsiteAnomaly           Boolean     @default(true)
+
+  // Schwellen der Plausibilitätsprüfung für die von Installationen selbst
+  // gemeldeten Zählerstände (Nutzervorgabe, 2026-09-01: konfigurierbar
+  // statt fest im Code, einstellbar unter Einstellungen → Verbindungen →
+  // Master-Client). Ein Rückgang gilt erst als unglaubwürdig, wenn er
+  // BEIDE Schwellen reißt – der Prozentwert allein würde bei kleinen
+  // Beständen ständig auslösen (2 → 1 Nutzer sind -50 %), der absolute
+  // allein bei großen nie. Siehe WebsitesService.recordStatsReport().
+  statsAnomalyRelativeDropPercent    Int       @default(50)
+  statsAnomalyAbsoluteDrop           Int       @default(5)
   // Gemeinsame Empfänger-Adresse für alle Systembenachrichtigungen
   // (Nutzervorgabe, 2026-08-22: "wie stelle ich ein, das die
   // benachrichtigungen an eine bestimmte email gesendet werden" – eine
@@ -252,12 +262,12 @@ model AppSettings {
   // maintenanceModeEnabled (Nutzerentscheidung: kein gemeinsamer Schalter,
   // obwohl die Bildvorlage "Wartungsmodus" nennt). Kritische Jobs
   // (ScheduledJob.isCritical) ignorieren diesen Schalter.
-  jobsGloballyPaused                 Boolean     @default(false)
+  jobsGloballyPaused                 Boolean   @default(false)
   // "Job-Lauf-Historie aufräumen" (Nutzervorgabe, 2026-08-30: "bau das,
   // aber einstellbar unter einstellung- jobs") – `null` = unbegrenzt
   // aufbewahren (kein automatisches Löschen), gleiches Nullable-Muster
   // wie retentionFormSubmissionsDays.
-  jobRunRetentionDays                Int?        @default(90)
+  jobRunRetentionDays                Int?      @default(90)
   // "Aktivitäten-Historie aufräumen" (Nutzervorgabe, 2026-08-30: "bitte
   // auch noch den aktivitäten history über sowas regeln") – räumt den
   // kompletten, geteilten `AuditLog` auf (Aktivität-Tab, Einstellungen-
@@ -271,12 +281,12 @@ model AppSettings {
   // Datenschutz-Frist – ein kürzerer automatischer Default würde
   // Zugriffsprotokoll-Einträge löschen, bevor sie dort je zur manuellen
   // Review anstehen.
-  activityLogRetentionDays           Int?        @default(365)
+  activityLogRetentionDays           Int?      @default(365)
   // Auftragsverarbeiter-Tab, Karte "Drittlandtransfer" (Nutzervorgabe,
   // 2026-08-20): admin-hochgeladene SCC-Vorlage (Standardvertragsklauseln)
   // zum Download – kein erfundenes Rechtsmuster im Repo, echte Datei nötig.
   sccTemplateMediaId                 String?
-  sccTemplateMedia                   Media?      @relation(fields: [sccTemplateMediaId], references: [id])
+  sccTemplateMedia                   Media?    @relation(fields: [sccTemplateMediaId], references: [id])
   // Einstellungen → Integrationen, Karte "Dienste" (Nutzervorgabe,
   // 2026-08-22: "email versand bauen ... als dienst", 1:1 nach
   // Bildvorlage "E-Mail-Versand (SMTP)"). smtpPasswordEncrypted nutzt
@@ -293,7 +303,7 @@ model AppSettings {
   smtpFromAddress                    String?
   smtpFromName                       String?
   // "none" | "starttls" | "ssl"
-  smtpSecure                         String      @default("starttls")
+  smtpSecure                         String    @default("starttls")
   smtpVerifiedAt                     DateTime?
   companyLogoUrl                     String?
   // Zweite, optionale Logo-Variante für Dark-Mode-fähige Oberflächen/
@@ -328,7 +338,7 @@ model AppSettings {
   // 1:1 nach Bildvorlage). Datenschutzbeauftragter: entweder eine externe
   // Person/Kanzlei (dpoIsExternal=true) oder intern benannt – reine
   // Kontaktfelder, keine eigene Rolle/Berechtigung.
-  dpoIsExternal                      Boolean     @default(true)
+  dpoIsExternal                      Boolean   @default(true)
   dpoName                            String?
   dpoCompany                         String?
   dpoEmail                           String?
@@ -345,30 +355,30 @@ model AppSettings {
   // Wirkt sich auf die Rechtstexte-Generierung aus (Impressum/
   // Datenschutzerklärung bekommen einen DSB-Absatz, siehe
   // LegalDocumentsService) – kein reiner Anzeige-Schalter.
-  dpoListInLegalTexts                Boolean     @default(false)
+  dpoListInLegalTexts                Boolean   @default(false)
   // Löst beim Anlegen eines Vorfalls eine Mail (Dev-Stub wie alle
   // System-Mails, siehe MailerService) an dpoEmail aus.
-  dpoNotifyOnIncident                Boolean     @default(false)
+  dpoNotifyOnIncident                Boolean   @default(false)
   // Monatlicher Bericht per Cron (PrivacyReportSchedulerService), nutzt
   // denselben CSV-Generator wie der manuelle "Bericht erzeugen"-Button.
-  dpoMonthlyReportEnabled            Boolean     @default(false)
+  dpoMonthlyReportEnabled            Boolean   @default(false)
   // Aufbewahrungsfristen – reine Richtwerte, KEINE automatische
   // Hintergrund-Löschung (explizite Nutzervorgabe: Löschung immer manuell
   // über die Review-Listen auf der Datenschutz-Seite). null bei
   // retentionFormSubmissionsDays = "unbegrenzt". Für Formular-Einsendungen
   // existiert in dieser App kein Formular-Modul – der Wert wird nur
   // gespeichert, es gibt dafür keine Review-Liste (siehe privacy-view.tsx).
-  retentionFormSubmissionsDays       Int?        @default(90)
-  retentionAccessLogMonths           Int         @default(12)
-  retentionDeactivatedAccountsMonths Int         @default(6)
-  retentionTrashDays                 Int         @default(30)
+  retentionFormSubmissionsDays       Int?      @default(90)
+  retentionAccessLogMonths           Int       @default(12)
+  retentionDeactivatedAccountsMonths Int       @default(6)
+  retentionTrashDays                 Int       @default(30)
   // Betroffenenrechte-Kachel (Datenschutz → Rechtstexte, Art. 15/17 DSGVO,
   // Nutzervorgabe 2026-08-19). Wie retentionFormSubmissionsDays: kein
   // Formular-Modul vorhanden, Werte werden nur vorgehalten (kein
   // tatsächlicher Formular-Footer, der sie auswerten könnte).
-  dsbFormSelfServiceDisclosure       Boolean     @default(false)
-  dsbFormStoreSubmissionIp           Boolean     @default(false)
-  updatedAt                          DateTime    @updatedAt
+  dsbFormSelfServiceDisclosure       Boolean   @default(false)
+  dsbFormStoreSubmissionIp           Boolean   @default(false)
+  updatedAt                          DateTime  @updatedAt
 
   @@map("app_settings")
 }

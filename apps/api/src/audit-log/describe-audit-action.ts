@@ -78,6 +78,8 @@ const SETTINGS_FIELD_LABELS: Record<string, string> = {
     'Benachrichtigung „Rechtstexte brauchen Aufmerksamkeit“',
   notifyDeletionRequests: 'Benachrichtigung „Offene Betroffenenanfragen“',
   notifyTrashExpiring: 'Benachrichtigung „Papierkorb-Einträge laufen ab“',
+  statsAnomalyRelativeDropPercent: 'Zählerstand-Warnschwelle (relativ)',
+  statsAnomalyAbsoluteDrop: 'Zählerstand-Warnschwelle (absolut)',
   notificationRecipientEmail: 'Benachrichtigungsempfänger',
   emailSmtp: 'E-Mail-Versand (SMTP)',
   licenseApiKey: 'Lizenz-API-Key',

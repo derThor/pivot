@@ -80,6 +80,14 @@ export class WebsitesController {
     return this.websitesService.update(id, dto);
   }
 
+  // Verlauf der gemeldeten Zählerstände (Nutzervorgabe, 2026-09-01).
+  // Wie die DELETE-Route unten: MUSS vor den `:id`-Routen stehen.
+  @RequirePermission('settings:read')
+  @Get('stats-history')
+  findStatsHistory(@Query() query: QueryWebsiteDto) {
+    return this.websitesService.findStatsHistory(query.page, query.pageSize);
+  }
+
   // Zählerstände app-weit zurücksetzen (Nutzervorgabe, 2026-09-01: "der
   // zählerstand muss zurücksetzbar sein"). MUSS vor `@Delete(':id')`
   // stehen: Nest prüft die Routen in Deklarationsreihenfolge, sonst würde

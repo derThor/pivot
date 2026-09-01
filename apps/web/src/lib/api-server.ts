@@ -803,6 +803,10 @@ export interface AppSettings {
   dsrDeadlineReminderEnabled: boolean;
   notifyDeletionRequests: boolean;
   notifyTrashExpiring: boolean;
+  // Schwellen der Zählerstand-Plausibilitätsprüfung (2026-09-01),
+  // einstellbar unter Einstellungen → Verbindungen → Master-Client.
+  statsAnomalyRelativeDropPercent: number;
+  statsAnomalyAbsoluteDrop: number;
   notificationRecipientEmail: string | null;
   jobsGloballyPaused: boolean;
   jobRunRetentionDays: number | null;
@@ -1556,6 +1560,36 @@ export interface WebsiteListItem {
   lastCheckChecks: WebsiteCheckItem[] | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Verlauf der von den Installationen gemeldeten Zählerstände – eine Zeile
+ * je Änderung, nicht je Prüfung (siehe WebsiteStatsReport im Schema).
+ * `lastReportedAt` sagt, bis wann dieser Stand zuletzt bestätigt wurde. */
+export interface WebsiteStatsReport {
+  id: string;
+  pageCount: number;
+  userCount: number;
+  firstReportedAt: string;
+  lastReportedAt: string;
+  website: { id: string; name: string; domain: string };
+}
+
+export interface WebsiteStatsHistoryResponse {
+  items: WebsiteStatsReport[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
+export function getWebsiteStatsHistory(params?: {
+  page?: number;
+  pageSize?: number;
+}) {
+  const query = new URLSearchParams();
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.pageSize) query.set("pageSize", String(params.pageSize));
+  const qs = query.toString();
+  return apiFetch<WebsiteStatsHistoryResponse>(
+    `/websites/stats-history${qs ? `?${qs}` : ""}`,
+  );
 }
 
 export interface WebsiteListResponse {

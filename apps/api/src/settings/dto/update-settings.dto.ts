@@ -514,6 +514,23 @@ export class UpdateSettingsDto {
   @IsBoolean()
   notifyWebsiteAnomaly?: boolean;
 
+  // Schwellen der Zählerstand-Plausibilitätsprüfung (2026-09-01). Der
+  // Prozentwert ist auf 1..99 begrenzt: 0 würde jede unveränderte Meldung
+  // als Einbruch werten, 100 wäre nur bei einem Sturz auf exakt null
+  // erfüllt. Der absolute Wert muss mindestens 1 sein.
+  @ApiPropertyOptional({ minimum: 1, maximum: 99 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(99)
+  statsAnomalyRelativeDropPercent?: number;
+
+  @ApiPropertyOptional({ minimum: 1 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  statsAnomalyAbsoluteDrop?: number;
+
   @ApiPropertyOptional({ nullable: true })
   @IsOptional()
   @IsString()

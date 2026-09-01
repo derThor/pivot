@@ -87,6 +87,8 @@ const FIELD_LABELS: Record<string, string> = {
   notifyLegalDocuments: 'Benachrichtigung „Rechtstexte brauchen Aufmerksamkeit“',
   notifyDeletionRequests: 'Benachrichtigung „Offene Betroffenenanfragen“',
   notifyTrashExpiring: 'Benachrichtigung „Papierkorb-Einträge laufen ab“',
+  statsAnomalyRelativeDropPercent: 'Zählerstand-Warnschwelle (relativ)',
+  statsAnomalyAbsoluteDrop: 'Zählerstand-Warnschwelle (absolut)',
   notificationRecipientEmail: 'Benachrichtigungsempfänger',
   emailSmtp: 'E-Mail-Versand (SMTP)',
   licenseApiKey: 'Lizenz-API-Key',
@@ -161,6 +163,8 @@ export const PRIVACY_FIELD_KEYS = [
   'dsrAutoAcknowledgeReceipt',
   'dsrDeadlineReminderEnabled',
   'sccTemplateMediaId',
+  'statsAnomalyRelativeDropPercent',
+  'statsAnomalyAbsoluteDrop',
 ] as const;
 
 // Alle drei unabhängigen 2FA-Pflicht-Stufen (siehe AuthService.
@@ -356,6 +360,8 @@ export class SettingsService {
       dsrDeadlineReminderEnabled: settings.dsrDeadlineReminderEnabled,
       notifyDeletionRequests: settings.notifyDeletionRequests,
       notifyTrashExpiring: settings.notifyTrashExpiring,
+      statsAnomalyRelativeDropPercent: settings.statsAnomalyRelativeDropPercent,
+      statsAnomalyAbsoluteDrop: settings.statsAnomalyAbsoluteDrop,
       sccTemplateMediaId: settings.sccTemplateMediaId,
       sccTemplateMedia,
       // Nutzervorgabe, 2026-08-25: Version dieser Installation klein im

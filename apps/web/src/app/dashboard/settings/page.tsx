@@ -12,6 +12,7 @@ import {
   getSmtpSettings,
   getWebhooks,
   getWebsites,
+  getWebsiteStatsHistory,
 } from "@/lib/api-server";
 
 export default async function SettingsPage({
@@ -24,6 +25,7 @@ export default async function SettingsPage({
     jobsRunsPage?: string;
     mandantenPage?: string;
     statsPage?: string;
+    statsHistoryPage?: string;
   }>;
 }) {
   const {
@@ -33,6 +35,7 @@ export default async function SettingsPage({
     jobsRunsPage: jobsRunsPageParam,
     mandantenPage: mandantenPageParam,
     statsPage: statsPageParam,
+    statsHistoryPage: statsHistoryPageParam,
   } = await searchParams;
   const webhooksPage = Number(webhooksPageParam) || 1;
   const protocolPage = Number(protocolPageParam) || 1;
@@ -44,6 +47,7 @@ export default async function SettingsPage({
   // zwangsweise gemeinsam, was beim Zurücksetzen eines einzelnen
   // Zählerstands verwirrt.
   const statsPage = Number(statsPageParam) || 1;
+  const statsHistoryPage = Number(statsHistoryPageParam) || 1;
 
   const [settings, folders] = await Promise.all([
     getSettings(),
@@ -62,6 +66,7 @@ export default async function SettingsPage({
     mailShells,
     websites,
     statsWebsites,
+    statsHistory,
     moduleSettings,
   ] = await Promise.all([
     getWebhooks({
@@ -86,6 +91,10 @@ export default async function SettingsPage({
     }),
     getWebsites({
       page: statsPage,
+      pageSize: settings?.defaultPageSize ?? 10,
+    }),
+    getWebsiteStatsHistory({
+      page: statsHistoryPage,
       pageSize: settings?.defaultPageSize ?? 10,
     }),
     // 404 auf einer Client-Installation (`MasterOnlyGuard`) – dann `null`,
@@ -156,6 +165,12 @@ export default async function SettingsPage({
       }
       statsWebsites={
         statsWebsites ?? {
+          items: [],
+          meta: { page: 1, pageSize: 10, total: 0, pageCount: 1 },
+        }
+      }
+      statsHistory={
+        statsHistory ?? {
           items: [],
           meta: { page: 1, pageSize: 10, total: 0, pageCount: 1 },
         }

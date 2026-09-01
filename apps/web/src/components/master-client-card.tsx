@@ -15,8 +15,14 @@ import { toast } from "sonner";
 import { toastEdited } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import type { UseFormReturn } from "react-hook-form";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
+import { FormControl, FormField, FormItem } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import type { SettingsValues } from "@/components/settings-form";
 import { DeploymentModeDialog } from "@/components/deployment-mode-dialog";
 import { LicenseApiKeyDialog } from "@/components/license-api-key-dialog";
 import { PaginationControls } from "@/components/pagination-controls";
@@ -30,6 +36,7 @@ import type {
   LicenseRecheckResult,
   WebsiteListItem,
   WebsiteListResponse,
+  WebsiteStatsHistoryResponse,
 } from "@/lib/api-server";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -59,6 +66,8 @@ export function MasterClientCard({
   settings,
   websites,
   statsWebsites,
+  statsHistory,
+  form,
 }: {
   settings: AppSettings;
   websites: WebsiteListResponse;
@@ -66,6 +75,16 @@ export function MasterClientCard({
    * die Zählerstände-Karte blättert unabhängig von "Mandanten", sonst
    * würden beide Karten zwangsweise gemeinsam springen. */
   statsWebsites: WebsiteListResponse;
+  /** Verlauf der gemeldeten Zählerstände – eigene Seite über den
+   * Query-Parameter `statsHistoryPage`, unabhängig von den beiden Listen
+   * darüber. */
+  statsHistory: WebsiteStatsHistoryResponse;
+  /** Das Formular der Einstellungsseite – die Schwellen der
+   * Plausibilitätsprüfung hängen bewusst darin und werden vom globalen
+   * "Speichern" oben mitgenommen, statt eine eigene Instant-Save-Karte zu
+   * bekommen (Nutzervorgabe, 2026-09-01: einstellbar an genau dieser
+   * Stelle). */
+  form: UseFormReturn<SettingsValues>;
 }) {
   const isMaster = settings.deploymentMode === "master";
   const router = useRouter();
@@ -335,6 +354,80 @@ export function MasterClientCard({
               </div>
             ))}
 
+            {/* Schwellen der Plausibilitätsprüfung (Nutzervorgabe,
+                2026-09-01: konfigurierbar statt fest im Code). Beide
+                müssen gerissen werden, damit gemeldet wird – der
+                Prozentwert allein würde bei kleinen Beständen ständig
+                auslösen (2 → 1 Nutzer sind -50 %), der absolute allein bei
+                großen nie. Sie hängen im Formular der Einstellungsseite,
+                der globale "Speichern"-Knopf oben nimmt sie mit. */}
+            <div className="flex flex-col gap-2 rounded-xl border border-border p-3">
+              <p className="text-sm font-medium">Warnschwelle</p>
+              <p className="text-sm text-muted-foreground">
+                Ein Rückgang wird nur gemeldet, wenn er beide Werte
+                überschreitet.
+              </p>
+              <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="statsAnomalyRelativeDropPercent"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted p-3">
+                        <Label
+                          htmlFor="statsAnomalyRelativeDropPercent"
+                          className="text-sm"
+                        >
+                          Anteil in %
+                        </Label>
+                        <FormControl>
+                          <Input
+                            id="statsAnomalyRelativeDropPercent"
+                            type="number"
+                            min={1}
+                            max={99}
+                            className="w-20"
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(e.target.valueAsNumber)
+                            }
+                          />
+                        </FormControl>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="statsAnomalyAbsoluteDrop"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted p-3">
+                        <Label
+                          htmlFor="statsAnomalyAbsoluteDrop"
+                          className="text-sm"
+                        >
+                          Mindestens
+                        </Label>
+                        <FormControl>
+                          <Input
+                            id="statsAnomalyAbsoluteDrop"
+                            type="number"
+                            min={1}
+                            className="w-20"
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(e.target.valueAsNumber)
+                            }
+                          />
+                        </FormControl>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
             <PaginationControls
               page={statsWebsites.meta.page}
               pageCount={statsWebsites.meta.pageCount}
@@ -361,6 +454,68 @@ export function MasterClientCard({
                   Alle zurücksetzen
                 </Button>
               }
+            />
+          </CardContent>
+        </Card>
+        {/* Verlauf (Nutzervorgabe, 2026-09-01). Wichtig beim Lesen: eine
+            Zeile steht für eine ÄNDERUNG, nicht für eine Prüfung – der
+            Zeitraum sagt, von wann bis wann dieser Stand galt. Zwei
+            aufeinanderfolgende Einträge derselben Webseite sind damit
+            immer ein echter Sprung. */}
+        <Card className="rounded-xl shadow-sm">
+          <CardHeader>
+            <CardTitle>Verlauf der Zählerstände</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Ein Eintrag je Änderung. Bleiben die Zahlen einer Installation
+              gleich, wird nur der Zeitraum verlängert statt eine neue Zeile
+              anzulegen.
+            </p>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {statsHistory.items.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Noch nichts aufgezeichnet – der Verlauf entsteht beim Prüfen
+                einer Installation.
+              </p>
+            ) : (
+              statsHistory.items.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-xl border border-border bg-muted p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{entry.website.name}</p>
+                    <p className="truncate font-mono text-xs text-muted-foreground">
+                      {entry.website.domain}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <span className="text-sm">
+                      <span className="font-semibold">{entry.pageCount}</span>{" "}
+                      <span className="text-muted-foreground">Seiten</span>
+                      <span className="px-1.5 text-muted-foreground">·</span>
+                      <span className="font-semibold">
+                        {entry.userCount}
+                      </span>{" "}
+                      <span className="text-muted-foreground">Nutzer</span>
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatRelativeTime(entry.firstReportedAt)}
+                      {entry.lastReportedAt !== entry.firstReportedAt &&
+                        ` – bestätigt ${formatRelativeTime(entry.lastReportedAt)}`}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+            <PaginationControls
+              page={statsHistory.meta.page}
+              pageCount={statsHistory.meta.pageCount}
+              buildHref={(p) => {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set("statsHistoryPage", String(p));
+                return `?${params.toString()}`;
+              }}
             />
           </CardContent>
         </Card>

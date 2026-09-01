@@ -58,16 +58,19 @@ export const DEVELOPMENT_MODE_AUTOLOCK_JOB_ID = 'development-mode-autolock';
 
 // Plausibilitätsprüfung der von einer Installation gemeldeten Kennzahlen
 // (Nutzervorgabe, 2026-09-01). Ein Rückgang gilt als unglaubwürdig, wenn er
-// BEIDE Schwellen reißt: relativ (die Hälfte weg) und absolut (mindestens
-// fünf Einheiten). Die absolute Schwelle verhindert Fehlalarme bei kleinen
-// Beständen – ein Testsystem, das von 2 auf 1 Nutzer geht, ist kein
-// Manipulationsverdacht. Bewusst nur RÜCKGÄNGE: ein Anstieg ist normales
-// Wachstum und wäre für eine Manipulation zum eigenen Vorteil auch der
-// falsche Weg. Feste Werte im Code statt einer Einstellung – erst wenn
-// sich zeigt, dass echte Installationen andere Schwellen brauchen, gehört
-// das in die Einstellungen.
-const STATS_ANOMALY_RELATIVE_DROP = 0.5;
-const STATS_ANOMALY_ABSOLUTE_DROP = 5;
+// BEIDE Schwellen reißt: relativ (Standard: die Hälfte weg) und absolut
+// (Standard: mindestens fünf Einheiten). Die absolute Schwelle verhindert
+// Fehlalarme bei kleinen Beständen – ein Testsystem, das von 2 auf 1
+// Nutzer geht, ist kein Manipulationsverdacht. Bewusst nur RÜCKGÄNGE: ein
+// Anstieg ist normales Wachstum und wäre für eine Manipulation zum eigenen
+// Vorteil auch der falsche Weg.
+//
+// Beide Werte sind seit 2026-09-01 unter Einstellungen → Verbindungen →
+// Master-Client einstellbar (`AppSettings.statsAnomaly*`); die Konstanten
+// hier greifen nur noch, wenn die Einstellungszeile fehlt – etwa bei einer
+// Installation, deren Datenbank älter ist als diese Felder.
+const STATS_ANOMALY_RELATIVE_DROP_FALLBACK = 0.5;
+const STATS_ANOMALY_ABSOLUTE_DROP_FALLBACK = 5;
 // Verlauf je Website begrenzen, damit häufiges Prüfen die Tabelle nicht
 // unbegrenzt wachsen lässt.
 const STATS_HISTORY_LIMIT = 50;
@@ -475,12 +478,27 @@ export class WebsitesService implements OnModuleInit {
 
     if (!previous) return;
 
+    const settings = await this.prisma.appSettings.findUnique({
+      where: { id: 1 },
+      select: {
+        statsAnomalyRelativeDropPercent: true,
+        statsAnomalyAbsoluteDrop: true,
+      },
+    });
+    const relativeDrop =
+      (settings?.statsAnomalyRelativeDropPercent ?? 0) > 0
+        ? settings!.statsAnomalyRelativeDropPercent / 100
+        : STATS_ANOMALY_RELATIVE_DROP_FALLBACK;
+    const absoluteDrop =
+      settings?.statsAnomalyAbsoluteDrop ??
+      STATS_ANOMALY_ABSOLUTE_DROP_FALLBACK;
+
     const drops: string[] = [];
     const check = (label: string, before: number, now: number) => {
       const delta = before - now;
-      if (delta < STATS_ANOMALY_ABSOLUTE_DROP) return;
+      if (delta < absoluteDrop) return;
       if (before === 0) return;
-      if (delta / before < STATS_ANOMALY_RELATIVE_DROP) return;
+      if (delta / before < relativeDrop) return;
       drops.push(`${label}: ${before} → ${now}`);
     };
     check('Nutzer', previous.userCount, stats.users);
@@ -494,6 +512,39 @@ export class WebsitesService implements OnModuleInit {
         statsAnomalyMessage: drops.join(', '),
       },
     });
+  }
+
+  /** Verlauf der gemeldeten Zählerstände für die Anzeige unter
+   * Einstellungen → Verbindungen → Master-Client (Nutzervorgabe,
+   * 2026-09-01). Neueste zuerst, mit Website-Namen, damit die Ansicht
+   * ohne zweite Abfrage auskommt.
+   *
+   * Zur Erinnerung beim Lesen: eine Zeile steht für eine ÄNDERUNG, nicht
+   * für eine Prüfung – `lastReportedAt` sagt, bis wann dieser Stand
+   * zuletzt bestätigt wurde (siehe recordStatsReport()). Zwei
+   * aufeinanderfolgende Zeilen derselben Website sind also immer ein
+   * echter Sprung. */
+  async findStatsHistory(page: number, pageSize: number) {
+    const [items, total] = await Promise.all([
+      this.prisma.websiteStatsReport.findMany({
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy: { firstReportedAt: 'desc' },
+        include: {
+          website: { select: { id: true, name: true, domain: true } },
+        },
+      }),
+      this.prisma.websiteStatsReport.count(),
+    ]);
+    return {
+      items,
+      meta: {
+        page,
+        pageSize,
+        total,
+        pageCount: Math.max(1, Math.ceil(total / pageSize)),
+      },
+    };
   }
 
   /** Setzt die gesammelten Zählerstände app-weit zurück (Nutzervorgabe,
