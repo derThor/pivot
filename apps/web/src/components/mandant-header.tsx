@@ -4,7 +4,10 @@ import type { MandantListItem } from "@/lib/api-server";
 // Kachel-/Seitenkopf eines Mandanten (Nutzervorgabe, 2026-09-01, CSS 1:1
 // mitgeliefert) – bewusst feste Hex-Werte statt Theme-Tokens: der Kopf ist
 // in beiden Themes dunkel, die Farben stammen unverändert aus der Vorlage.
-export const HEADER_BG = "#132033";
+// 2026-09-01 abgedunkelt (vorher #132033, Nutzervorgabe "etwas dunkler").
+// Der Light-Scrim in globals.css MUSS denselben Ton tragen, sonst wirkt
+// seine linke, stärkste Stufe heller als der Grund darunter.
+export const HEADER_BG = "#0e1827";
 export const HEADER_ACCENT = "#bce64d";
 
 /** Farbe der Initialen in der Logo-Kachel – folgt dem Status, damit sie

@@ -330,9 +330,9 @@
 .mandant-header-scrim {
   background: linear-gradient(
     100deg,
-    rgba(19, 32, 51, 0.74) 0%,
-    rgba(19, 32, 51, 0.4) 48%,
-    rgba(19, 32, 51, 0.08) 100%
+    rgba(14, 24, 39, 0.74) 0%,
+    rgba(14, 24, 39, 0.4) 48%,
+    rgba(14, 24, 39, 0.08) 100%
   );
 }
 [data-pivot-theme="dark"] .mandant-header-scrim {
