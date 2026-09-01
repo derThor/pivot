@@ -90,18 +90,20 @@ function WebsiteModePicker({ website }: { website: WebsiteListItem }) {
   }
 
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3">
-      <div className="min-w-56 flex-1">
-        <SegmentedPicker
-          label="Modus"
-          options={MODE_OPTIONS}
-          value={mode}
-          onChange={setMode}
-        />
-      </div>
+    // Speichern UNTER dem Umschalter, nicht daneben (Nutzervorgabe,
+    // 2026-09-01) – daneben drückte er den Umschalter in schmalen Spalten
+    // zusammen und wirkte auf gleicher Höhe wie ein Teil davon.
+    <div className="flex flex-col gap-3">
+      <SegmentedPicker
+        label="Modus"
+        options={MODE_OPTIONS}
+        value={mode}
+        onChange={setMode}
+      />
       <Button
         type="button"
         size="sm"
+        className="w-fit"
         disabled={!isDirty || isSaving}
         onClick={handleSave}
       >
