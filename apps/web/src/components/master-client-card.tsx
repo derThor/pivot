@@ -26,9 +26,9 @@ import type { SettingsValues } from "@/components/settings-form";
 import { DeploymentModeDialog } from "@/components/deployment-mode-dialog";
 import { LicenseApiKeyDialog } from "@/components/license-api-key-dialog";
 import { PaginationControls } from "@/components/pagination-controls";
-import { WebsiteModeDialog } from "@/components/website-mode-dialog";
+import { SegmentedPicker } from "@/components/segmented-picker";
 import { DEPLOYMENT_MODE_BADGE } from "@/lib/deployment-mode-badge";
-import { formatRelativeTime } from "@/lib/utils";
+import { cn, formatRelativeTime } from "@/lib/utils";
 import { WEBSITE_STATUS_BADGE } from "@/lib/website-status";
 import { bff } from "@/lib/bff";
 import type {
@@ -47,6 +47,70 @@ const STATUS_LABEL: Record<string, string> = {
   locked: "Gesperrt",
 };
 
+const MODE_OPTIONS: { value: "master" | "slave"; label: string }[] = [
+  { value: "master", label: "Master" },
+  { value: "slave", label: "Client" },
+];
+
+/** Master/Client-Umschalter direkt in der aufgeklappten Zeile
+ * (Nutzervorgabe, 2026-09-01: "wenn man eine zeile anklickt öffnet sich ein
+ * bereich … master - client, statt popup") – löste `website-mode-dialog.tsx`
+ * ab. Speichert `Website.deploymentMode`, ein rein dokumentarisches Feld
+ * ohne technische Wirkung (siehe schema.prisma): der Master hat keinen
+ * Push-Mechanismus, um den Modus einer entfernten Installation zu setzen,
+ * das stellt jede Installation nur für sich selbst ein.
+ *
+ * Eigene Komponente statt Inline-JSX, weil jede Zeile ihren eigenen
+ * Entwurfszustand braucht – ein gemeinsamer State im Elternteil würde beim
+ * Aufklappen einer zweiten Zeile den ungespeicherten Stand der ersten
+ * übernehmen. */
+function WebsiteModePicker({ website }: { website: WebsiteListItem }) {
+  const router = useRouter();
+  const [mode, setMode] = useState<"master" | "slave">(website.deploymentMode);
+  const [isSaving, setIsSaving] = useState(false);
+  const isDirty = mode !== website.deploymentMode;
+
+  async function handleSave() {
+    setIsSaving(true);
+    try {
+      const res = await fetch(bff(`/api/websites/${website.id}`), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deploymentMode: mode }),
+      });
+      if (!res.ok) {
+        toast.error("Modus konnte nicht gespeichert werden.");
+        return;
+      }
+      toastEdited("Modus gespeichert.");
+      router.refresh();
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="min-w-56 flex-1">
+        <SegmentedPicker
+          label="Modus"
+          options={MODE_OPTIONS}
+          value={mode}
+          onChange={setMode}
+        />
+      </div>
+      <Button
+        type="button"
+        size="sm"
+        disabled={!isDirty || isSaving}
+        onClick={handleSave}
+      >
+        {isSaving ? "Speichert…" : "Speichern"}
+      </Button>
+    </div>
+  );
+}
+
 /** Einstellungen → Master-Client (Nutzervorgabe, 2026-08-24, mehrfach
  * wiederholt: "wenn ich ... eine Seite anklicke, kommt ein Popup, wo man
  * NUR wechseln kann zwischen Master und Client. Mehr nicht."): Überblick
@@ -54,7 +118,8 @@ const STATUS_LABEL: Record<string, string> = {
  * verbundenen Mandanten. Jede Zeile öffnet ein Popup mit ausschließlich
  * dem Master/Client-Umschalter – für "Diese Installation" `
  * DeploymentModeDialog` (schreibt `AppSettings.deploymentMode`), für
- * Mandanten-Zeilen `WebsiteModeDialog` (schreibt `Website.deploymentMode`,
+ * Mandanten-Zeilen seit 2026-09-01 ein aufklappbarer Bereich statt eines
+ * Popups (schreibt `Website.deploymentMode`,
  * rein dokumentarisch – siehe Kommentar dort). Alle anderen
  * Website-Einstellungen (Name/Domain/API-Key/Status) bleiben ausschließlich
  * unter Administration → Webseite (`WebsiteDialog`). Nutzervorgabe: "das
@@ -65,19 +130,13 @@ const STATUS_LABEL: Record<string, string> = {
 export function MasterClientCard({
   settings,
   websites,
-  statsWebsites,
   statsHistory,
   form,
 }: {
   settings: AppSettings;
   websites: WebsiteListResponse;
-  /** Dieselbe Liste, aber mit eigener Seite (Query-Param `statsPage`) –
-   * die Zählerstände-Karte blättert unabhängig von "Mandanten", sonst
-   * würden beide Karten zwangsweise gemeinsam springen. */
-  statsWebsites: WebsiteListResponse;
-  /** Verlauf der gemeldeten Zählerstände – eigene Seite über den
-   * Query-Parameter `statsHistoryPage`, unabhängig von den beiden Listen
-   * darüber. */
+  /** Verlauf der gemeldeten Zählerstände über ALLE Websites – die
+   * aufgeklappte Zeile filtert sich ihren Teil selbst heraus. */
   statsHistory: WebsiteStatsHistoryResponse;
   /** Das Formular der Einstellungsseite – die Schwellen der
    * Plausibilitätsprüfung hängen bewusst darin und werden vom globalen
@@ -91,8 +150,12 @@ export function MasterClientCard({
   const searchParams = useSearchParams();
   const [selfDialogOpen, setSelfDialogOpen] = useState(false);
   const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false);
-  const [websiteDialogTarget, setWebsiteDialogTarget] =
-    useState<WebsiteListItem | null>(null);
+  // Nur eine Zeile gleichzeitig offen (Nutzervorgabe, 2026-09-01: der
+  // Bereich ersetzt das vorherige Popup) – mehrere offene Bereiche würden
+  // die Karte unübersichtlich lang machen.
+  const [expandedWebsiteId, setExpandedWebsiteId] = useState<string | null>(
+    null,
+  );
   const [isRechecking, setIsRechecking] = useState(false);
 
   async function handleRecheck() {
@@ -238,48 +301,152 @@ export function MasterClientCard({
           <CardContent className="flex flex-col gap-3">
             {websites.items.map((website) => {
               const badge = WEBSITE_STATUS_BADGE[website.status];
+              const isExpanded = expandedWebsiteId === website.id;
+              // Verlauf dieser Installation aus der gemeinsam geladenen
+              // Liste. Bewusst keine eigene Abfrage je Zeile: der Verlauf
+              // enthält nur echte Änderungen (siehe recordStatsReport()),
+              // ist also von Haus aus kurz.
+              const history = statsHistory.items.filter(
+                (entry) => entry.website.id === website.id,
+              );
               return (
-                <button
+                <div
                   key={website.id}
-                  type="button"
-                  onClick={() => setWebsiteDialogTarget(website)}
-                  className="flex items-center gap-3 rounded-xl border border-border bg-muted p-3 text-left transition-colors hover:bg-border"
+                  className="rounded-xl border border-border bg-muted"
                 >
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                    <Globe className="size-4.5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate font-semibold">{website.name}</p>
-                      <Badge
-                        className={
-                          DEPLOYMENT_MODE_BADGE[website.deploymentMode]
-                            .className
-                        }
-                      >
-                        {DEPLOYMENT_MODE_BADGE[website.deploymentMode].label}
-                      </Badge>
-                      <Badge className={badge.className}>{badge.label}</Badge>
+                  <button
+                    type="button"
+                    aria-expanded={isExpanded}
+                    onClick={() =>
+                      setExpandedWebsiteId(isExpanded ? null : website.id)
+                    }
+                    className="flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors hover:bg-border"
+                  >
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                      <Globe className="size-4.5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate font-semibold">{website.name}</p>
+                        <Badge
+                          className={
+                            DEPLOYMENT_MODE_BADGE[website.deploymentMode]
+                              .className
+                          }
+                        >
+                          {DEPLOYMENT_MODE_BADGE[website.deploymentMode].label}
+                        </Badge>
+                        <Badge className={badge.className}>{badge.label}</Badge>
+                      </div>
+                      <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
+                        {website.domain}
+                      </p>
+                      {website.lastReportedVersion && (
+                        <Badge
+                          variant="secondary"
+                          className="badge--amber mt-1 w-fit border-0 font-mono"
+                        >
+                          Version {website.lastReportedVersion}
+                        </Badge>
+                      )}
                     </div>
-                    <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
-                      {website.domain}
-                    </p>
-                    {website.lastReportedVersion && (
-                      <Badge
-                        variant="secondary"
-                        className="badge--amber mt-1 w-fit border-0 font-mono"
-                      >
-                        Version {website.lastReportedVersion}
-                      </Badge>
-                    )}
-                  </div>
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {website.lastCheckInAt
-                      ? formatRelativeTime(website.lastCheckInAt)
-                      : "Noch nicht geprüft"}
-                  </span>
-                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                </button>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {website.lastCheckInAt
+                        ? formatRelativeTime(website.lastCheckInAt)
+                        : "Noch nicht geprüft"}
+                    </span>
+                    <ChevronRight
+                      className={cn(
+                        "size-4 shrink-0 text-muted-foreground transition-transform",
+                        isExpanded && "rotate-90",
+                      )}
+                    />
+                  </button>
+
+                  {isExpanded && (
+                    <div className="flex flex-col gap-4 border-t border-border p-3">
+                      <WebsiteModePicker website={website} />
+
+                      <div className="flex flex-col gap-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-sm font-medium">
+                            Gemeldeter Zählerstand
+                          </p>
+                          <ConfirmDeleteDialog
+                            title={`Zählerstand von „${website.name}“ zurücksetzen?`}
+                            description="Löscht Verlauf, zuletzt gemeldete Zahlen und einen offenen Hinweis – nur für diese Webseite. Beim nächsten Prüfen füllen sich die Zahlen von selbst wieder."
+                            confirmLabel="Zurücksetzen"
+                            confirmingLabel="Setzt zurück…"
+                            onConfirm={() =>
+                              handleResetStatsHistory(website.id)
+                            }
+                            trigger={
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="shrink-0 border-button-border"
+                              >
+                                <RotateCcw />
+                                Zurücksetzen
+                              </Button>
+                            }
+                          />
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {website.reportedUserCount !== null
+                            ? `${website.reportedPageCount} Seiten · ${website.reportedUserCount} Nutzer`
+                            : "Noch nichts gemeldet – entsteht beim Prüfen."}
+                        </p>
+                        {website.statsAnomalyMessage && (
+                          <p className="text-sm text-[#b45309] dark:text-[#f6cf7e]">
+                            Unglaubwürdiger Rückgang:{" "}
+                            {website.statsAnomalyMessage}
+                          </p>
+                        )}
+                      </div>
+
+                      {history.length > 0 && (
+                        <div className="flex flex-col gap-1.5">
+                          <p className="text-sm font-medium">Verlauf</p>
+                          {/* Ein Eintrag je ÄNDERUNG, nicht je Prüfung –
+                              zwei aufeinanderfolgende Zeilen sind deshalb
+                              immer ein echter Sprung. */}
+                          {history.map((entry) => (
+                            <div
+                              key={entry.id}
+                              className="flex flex-wrap items-center justify-between gap-x-4 gap-y-0.5 text-sm"
+                            >
+                              <span>
+                                <span className="font-semibold">
+                                  {entry.pageCount}
+                                </span>{" "}
+                                <span className="text-muted-foreground">
+                                  Seiten
+                                </span>
+                                <span className="px-1.5 text-muted-foreground">
+                                  ·
+                                </span>
+                                <span className="font-semibold">
+                                  {entry.userCount}
+                                </span>{" "}
+                                <span className="text-muted-foreground">
+                                  Nutzer
+                                </span>
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {formatRelativeTime(entry.firstReportedAt)}
+                                {entry.lastReportedAt !==
+                                  entry.firstReportedAt &&
+                                  ` – bestätigt ${formatRelativeTime(entry.lastReportedAt)}`}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </CardContent>
@@ -298,146 +465,80 @@ export function MasterClientCard({
               }}
             />
           </CardContent>
-        </Card>
-        {/* Zählerstände (Nutzervorgabe, 2026-09-01). Bewusst eine eigene
-            Karte unter "Mandanten" statt eines Knopfs an jeder Zeile: das
-            Zurücksetzen wirkt app-weit, ein Knopf pro Mandant hätte eine
-            Genauigkeit vorgetäuscht, die es nicht gibt. */}
-        <Card className="rounded-xl shadow-sm">
-          <CardHeader>
-            <CardTitle>Gemeldete Zählerstände</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Seiten- und Nutzerzahlen melden die Installationen beim Prüfen
-              selbst. Der gespeicherte Verlauf dient der Plausibilitätsprüfung –
-              Zurücksetzen löscht ihn samt offener Hinweise für alle Webseiten.
-            </p>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {/* Je Webseite eine Zeile (Nutzervorgabe, 2026-09-01:
-                "einzelnen zählerstand je mandanten unter einstellungen
-                zurücksetzen button") – ein legitimer Rückgang betrifft in
-                der Regel genau eine Installation. Bewusst hier und nicht
-                in der Mandanten-Liste darüber: deren Zeilen sind selbst
-                `<button>`, ein zweiter Knopf darin wäre ungültiges HTML. */}
-            {statsWebsites.items.map((website) => (
-              <div
-                key={website.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted p-3"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{website.name}</p>
-                  <p className="truncate text-sm text-muted-foreground">
-                    {website.reportedUserCount !== null
-                      ? `${website.reportedPageCount} Seiten · ${website.reportedUserCount} Nutzer`
-                      : "Noch nichts gemeldet"}
-                    {website.statsAnomalyAt ? " · Hinweis offen" : ""}
-                  </p>
-                </div>
-                <ConfirmDeleteDialog
-                  title={`Zählerstand von „${website.name}“ zurücksetzen?`}
-                  description="Löscht Verlauf, zuletzt gemeldete Zahlen und einen offenen Hinweis – nur für diese Webseite. Beim nächsten Prüfen füllen sich die Zahlen von selbst wieder."
-                  confirmLabel="Zurücksetzen"
-                  confirmingLabel="Setzt zurück…"
-                  onConfirm={() => handleResetStatsHistory(website.id)}
-                  trigger={
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="shrink-0 border-button-border"
-                    >
-                      <RotateCcw />
-                      Zurücksetzen
-                    </Button>
-                  }
-                />
-              </div>
-            ))}
-
-            {/* Schwellen der Plausibilitätsprüfung (Nutzervorgabe,
-                2026-09-01: konfigurierbar statt fest im Code). Beide
-                müssen gerissen werden, damit gemeldet wird – der
-                Prozentwert allein würde bei kleinen Beständen ständig
-                auslösen (2 → 1 Nutzer sind -50 %), der absolute allein bei
-                großen nie. Sie hängen im Formular der Einstellungsseite,
-                der globale "Speichern"-Knopf oben nimmt sie mit. */}
-            <div className="flex flex-col gap-2 rounded-xl border border-border p-3">
-              <p className="text-sm font-medium">Warnschwelle</p>
+          {/* Globale Teile der Plausibilitätsprüfung – alles, was NICHT zu
+              einer einzelnen Zeile gehört (Nutzervorgabe, 2026-09-01:
+              "kann man das nicht zusammenfassen, so dass alles in die
+              obere kachel kommt"). Zählerstand, Verlauf und das
+              Zurücksetzen je Webseite stecken jetzt im aufgeklappten
+              Bereich der jeweiligen Zeile. */}
+          <CardContent className="flex flex-col gap-3 border-t border-border pt-4">
+            <div>
+              <p className="text-sm font-medium">Plausibilitätsprüfung</p>
               <p className="text-sm text-muted-foreground">
-                Ein Rückgang wird nur gemeldet, wenn er beide Werte
+                Seiten- und Nutzerzahlen melden die Installationen beim Prüfen
+                selbst. Ein Rückgang wird nur gemeldet, wenn er beide Werte
                 überschreitet.
               </p>
-              <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="statsAnomalyRelativeDropPercent"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted p-3">
-                        <Label
-                          htmlFor="statsAnomalyRelativeDropPercent"
-                          className="text-sm"
-                        >
-                          Anteil in %
-                        </Label>
-                        <FormControl>
-                          <Input
-                            id="statsAnomalyRelativeDropPercent"
-                            type="number"
-                            min={1}
-                            max={99}
-                            className="w-20"
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(e.target.valueAsNumber)
-                            }
-                          />
-                        </FormControl>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="statsAnomalyAbsoluteDrop"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted p-3">
-                        <Label
-                          htmlFor="statsAnomalyAbsoluteDrop"
-                          className="text-sm"
-                        >
-                          Mindestens
-                        </Label>
-                        <FormControl>
-                          <Input
-                            id="statsAnomalyAbsoluteDrop"
-                            type="number"
-                            min={1}
-                            className="w-20"
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(e.target.valueAsNumber)
-                            }
-                          />
-                        </FormControl>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              </div>
             </div>
-
-            <PaginationControls
-              page={statsWebsites.meta.page}
-              pageCount={statsWebsites.meta.pageCount}
-              buildHref={(p) => {
-                const params = new URLSearchParams(searchParams.toString());
-                params.set("statsPage", String(p));
-                return `?${params.toString()}`;
-              }}
-            />
-
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="statsAnomalyRelativeDropPercent"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted p-3">
+                      <Label
+                        htmlFor="statsAnomalyRelativeDropPercent"
+                        className="text-sm"
+                      >
+                        Anteil in %
+                      </Label>
+                      <FormControl>
+                        <Input
+                          id="statsAnomalyRelativeDropPercent"
+                          type="number"
+                          min={1}
+                          max={99}
+                          className="w-20"
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(e.target.valueAsNumber)
+                          }
+                        />
+                      </FormControl>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="statsAnomalyAbsoluteDrop"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted p-3">
+                      <Label
+                        htmlFor="statsAnomalyAbsoluteDrop"
+                        className="text-sm"
+                      >
+                        Mindestens
+                      </Label>
+                      <FormControl>
+                        <Input
+                          id="statsAnomalyAbsoluteDrop"
+                          type="number"
+                          min={1}
+                          className="w-20"
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(e.target.valueAsNumber)
+                          }
+                        />
+                      </FormControl>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
             <ConfirmDeleteDialog
               title="Alle Zählerstände zurücksetzen?"
               description="Löscht den gespeicherten Verlauf, die zuletzt gemeldeten Zahlen und offene Hinweise zu unglaubwürdigen Rückgängen – für alle Webseiten. Beim nächsten Prüfen füllen sich die Zahlen von selbst wieder."
@@ -457,78 +558,11 @@ export function MasterClientCard({
             />
           </CardContent>
         </Card>
-        {/* Verlauf (Nutzervorgabe, 2026-09-01). Wichtig beim Lesen: eine
-            Zeile steht für eine ÄNDERUNG, nicht für eine Prüfung – der
-            Zeitraum sagt, von wann bis wann dieser Stand galt. Zwei
-            aufeinanderfolgende Einträge derselben Webseite sind damit
-            immer ein echter Sprung. */}
-        <Card className="rounded-xl shadow-sm">
-          <CardHeader>
-            <CardTitle>Verlauf der Zählerstände</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Ein Eintrag je Änderung. Bleiben die Zahlen einer Installation
-              gleich, wird nur der Zeitraum verlängert statt eine neue Zeile
-              anzulegen.
-            </p>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {statsHistory.items.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Noch nichts aufgezeichnet – der Verlauf entsteht beim Prüfen
-                einer Installation.
-              </p>
-            ) : (
-              statsHistory.items.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-xl border border-border bg-muted p-3"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{entry.website.name}</p>
-                    <p className="truncate font-mono text-xs text-muted-foreground">
-                      {entry.website.domain}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                    <span className="text-sm">
-                      <span className="font-semibold">{entry.pageCount}</span>{" "}
-                      <span className="text-muted-foreground">Seiten</span>
-                      <span className="px-1.5 text-muted-foreground">·</span>
-                      <span className="font-semibold">
-                        {entry.userCount}
-                      </span>{" "}
-                      <span className="text-muted-foreground">Nutzer</span>
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {formatRelativeTime(entry.firstReportedAt)}
-                      {entry.lastReportedAt !== entry.firstReportedAt &&
-                        ` – bestätigt ${formatRelativeTime(entry.lastReportedAt)}`}
-                    </span>
-                  </div>
-                </div>
-              ))
-            )}
-            <PaginationControls
-              page={statsHistory.meta.page}
-              pageCount={statsHistory.meta.pageCount}
-              buildHref={(p) => {
-                const params = new URLSearchParams(searchParams.toString());
-                params.set("statsHistoryPage", String(p));
-                return `?${params.toString()}`;
-              }}
-            />
-          </CardContent>
-        </Card>
 
         <DeploymentModeDialog
           open={selfDialogOpen}
           onOpenChange={setSelfDialogOpen}
           settings={settings}
-        />
-        <WebsiteModeDialog
-          target={websiteDialogTarget}
-          onOpenChange={(open) => !open && setWebsiteDialogTarget(null)}
-          onSaved={() => {}}
         />
       </div>
     );

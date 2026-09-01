@@ -332,7 +332,6 @@ export function SettingsForm({
   mailTemplates,
   mailShells,
   websites,
-  statsWebsites,
   statsHistory,
   moduleSettings,
 }: {
@@ -348,7 +347,6 @@ export function SettingsForm({
   websites: WebsiteListResponse;
   /** Gleiche Liste wie `websites`, aber mit eigener Seite – die Karte
    * "Gemeldete Zählerstände" blättert unabhängig von "Mandanten". */
-  statsWebsites: WebsiteListResponse;
   statsHistory: WebsiteStatsHistoryResponse;
   moduleSettings: ModuleSettingsEntry[] | null;
 }) {
@@ -1472,7 +1470,6 @@ export function SettingsForm({
               <MasterClientCard
                 settings={settings}
                 websites={websites}
-                statsWebsites={statsWebsites}
                 statsHistory={statsHistory}
                 form={form}
               />

@@ -24,8 +24,6 @@ export default async function SettingsPage({
     jobsPage?: string;
     jobsRunsPage?: string;
     mandantenPage?: string;
-    statsPage?: string;
-    statsHistoryPage?: string;
   }>;
 }) {
   const {
@@ -34,20 +32,12 @@ export default async function SettingsPage({
     jobsPage: jobsPageParam,
     jobsRunsPage: jobsRunsPageParam,
     mandantenPage: mandantenPageParam,
-    statsPage: statsPageParam,
-    statsHistoryPage: statsHistoryPageParam,
   } = await searchParams;
   const webhooksPage = Number(webhooksPageParam) || 1;
   const protocolPage = Number(protocolPageParam) || 1;
   const jobsPage = Number(jobsPageParam) || 1;
   const jobsRunsPage = Number(jobsRunsPageParam) || 1;
   const mandantenPage = Number(mandantenPageParam) || 1;
-  // Eigener Parameter, obwohl "Mandanten" und "Gemeldete Zählerstände"
-  // dieselbe Website-Liste zeigen: sonst blättern die beiden Karten
-  // zwangsweise gemeinsam, was beim Zurücksetzen eines einzelnen
-  // Zählerstands verwirrt.
-  const statsPage = Number(statsPageParam) || 1;
-  const statsHistoryPage = Number(statsHistoryPageParam) || 1;
 
   const [settings, folders] = await Promise.all([
     getSettings(),
@@ -65,7 +55,6 @@ export default async function SettingsPage({
     mailTemplates,
     mailShells,
     websites,
-    statsWebsites,
     statsHistory,
     moduleSettings,
   ] = await Promise.all([
@@ -89,14 +78,11 @@ export default async function SettingsPage({
       page: mandantenPage,
       pageSize: settings?.defaultPageSize ?? 10,
     }),
-    getWebsites({
-      page: statsPage,
-      pageSize: settings?.defaultPageSize ?? 10,
-    }),
-    getWebsiteStatsHistory({
-      page: statsHistoryPage,
-      pageSize: settings?.defaultPageSize ?? 10,
-    }),
+    // Ohne eigene Seitenzahl: der Verlauf wird je Mandanten-Zeile
+    // angezeigt, nicht als eigene Liste. Die Obergrenze ist bewusst hoch
+    // gewählt – pro Website entstehen nur Einträge bei echten Änderungen
+    // und höchstens 50 (siehe WebsitesService.recordStatsReport()).
+    getWebsiteStatsHistory({ pageSize: 200 }),
     // 404 auf einer Client-Installation (`MasterOnlyGuard`) – dann `null`,
     // die "Module"-Sidebar-Sektion wird dort ohnehin nicht angezeigt.
     getModuleSettings(),
@@ -159,12 +145,6 @@ export default async function SettingsPage({
       mailShells={mailShells ?? []}
       websites={
         websites ?? {
-          items: [],
-          meta: { page: 1, pageSize: 10, total: 0, pageCount: 1 },
-        }
-      }
-      statsWebsites={
-        statsWebsites ?? {
           items: [],
           meta: { page: 1, pageSize: 10, total: 0, pageCount: 1 },
         }
