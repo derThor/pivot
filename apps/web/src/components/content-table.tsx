@@ -29,7 +29,15 @@ const statusClassName: Record<ContentStatus, string> = {
   ARCHIVED: "badge--blue border-0",
 };
 
-export function ContentTable({ entries }: { entries: ContentListItem[] }) {
+export function ContentTable({
+  entries,
+  // Bei aktivem Status-/Suchfilter wäre "Noch keine Inhalte vorhanden."
+  // schlicht falsch – es gibt Seiten, nur keine passenden (2026-09-01).
+  emptyMessage = "Noch keine Inhalte vorhanden.",
+}: {
+  entries: ContentListItem[];
+  emptyMessage?: string;
+}) {
   return (
     <div className="overflow-hidden rounded-xl bg-card shadow-sm">
       <Table>
@@ -50,7 +58,7 @@ export function ContentTable({ entries }: { entries: ContentListItem[] }) {
                 colSpan={6}
                 className="h-24 text-center text-muted-foreground"
               >
-                Noch keine Inhalte vorhanden.
+                {emptyMessage}
               </TableCell>
             </TableRow>
           ) : (

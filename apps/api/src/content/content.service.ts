@@ -98,8 +98,16 @@ export class ContentService {
       ...(status && { status }),
       ...(contentTypeId && { contentTypeId }),
       ...(categoryId && { categories: { some: { categoryId } } }),
+      // Titel ODER Slug (2026-09-01, mit der Suche in der Seiten-Filterleiste
+      // eingeführt): der Slug steht in der Tabelle direkt unter dem Titel und
+      // ist bei Seiten oft das, woran man sich erinnert ("/impressum") –
+      // dasselbe Prinzip wie im Papierkorb, der Titel + Untertitel
+      // durchsucht.
       ...(search && {
-        title: { contains: search, mode: 'insensitive' as const },
+        OR: [
+          { title: { contains: search, mode: 'insensitive' as const } },
+          { slug: { contains: search, mode: 'insensitive' as const } },
+        ],
       }),
     };
 

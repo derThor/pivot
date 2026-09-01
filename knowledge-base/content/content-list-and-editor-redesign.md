@@ -80,3 +80,65 @@ Kinder stapeln sich weiterhin über `auto-rows-min`. Fix: `className="flex
 flex-row items-center gap-3 border-b"` (das `border-b` sorgt zusätzlich
 automatisch für den passenden Trennstrich + Innenabstand, siehe
 `[.border-b]:pb-(--card-spacing)` in `CardHeader`).
+
+## Nachtrag 2026-09-01: Status-Filterleiste + Suche über der Tabelle
+
+Nutzervorgabe (mit Screenshot der Papierkorb-Filterleiste als Vorlage):
+*"baue das auch bei seiten ein. nur entsprechend für seiten. also alle,
+veröffentlicht, geplant, entwurf, archiv und eine suche"*.
+
+**Neue Komponente `content-filter-bar.tsx`** – 1:1 die Klassen der
+Papierkorb-Leiste aus `trash-view.tsx` (nicht die optisch ähnliche, aber
+im Detail abweichende `users-filter-bar.tsx`: dort steht der Zähler in
+derselben Textgröße direkt hinter dem Label, die Bildvorlage zeigt den
+kleinen, hellen Zähler des Papierkorbs):
+
+- Pill-Box `flex flex-wrap items-center gap-1 rounded-xl bg-secondary p-1`,
+  Pill `flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm
+  font-medium`, aktiv `bg-card text-foreground shadow-sm`, Zähler
+  `text-xs text-muted-foreground`.
+- Suchfeld `flex h-9 min-w-56 flex-1 items-center gap-2 rounded-xl border
+  border-border bg-card px-4 sm:flex-none` – das `flex-1` mit
+  `sm:flex-none` ist der Mobil-Teil: unter `sm` füllt die Suche die
+  zweite Zeile, ab `sm` steht sie in ihrer natürlichen Breite neben den
+  Pills, die ihrerseits umbrechen dürfen.
+- Fünf Filter: Alle / Veröffentlicht / Geplant / Entwurf / **Archiv**.
+  `ARCHIVED` war bisher über die Oberfläche gar nicht gezielt
+  auffindbar – es gibt dafür (anders als für die anderen drei) auch
+  keine Statistik-Kachel, die vier Kacheln bleiben unverändert.
+
+**Serverseitig gefiltert** (`page.tsx`), keine Client-Filterung:
+
+- URL-Parameter `status` und `q`; ein unbekannter `status`-Wert fällt
+  still auf "Alle" zurück, statt einen 400er aus der API zu provozieren.
+- Jede Filteränderung löscht `page` aus der URL – sonst landet man auf
+  einer Seite 3, die es im gefilterten Ergebnis nicht mehr gibt.
+- `PaginationControls.buildHref` baut die Query jetzt aus
+  `status`/`q`/`page` zusammen; das vorherige `?page=${p}` hätte den
+  Filter bei jedem Blättern stillschweigend verworfen.
+- **Zähler laufen ohne `search`**: Kacheln *und* Pill-Zähler zeigen immer
+  den Gesamtbestand, unabhängig von Filter/Suche – dieselbe, im
+  `TrashService.list()` dokumentierte Entscheidung ("Statistiken beziehen
+  sich immer auf ALLES").
+- `Seiten gesamt` kommt jetzt aus der **Summe der vier Status-Zähler**
+  statt aus `content.meta.total`: sobald ein Filter aktiv ist, ist
+  `meta.total` die Trefferzahl, nicht der Bestand. Die Summe ist exakt,
+  weil `ContentStatus` genau diese vier Werte hat – spart die fünfte
+  Zähl-Abfrage. Neu hinzugekommen ist nur der `ARCHIVED`-Zähler, damit
+  läuft das `Promise.all()` mit fünf statt vier Beinen.
+- `ContentTable` bekam ein optionales `emptyMessage` – bei aktivem Filter
+  "Keine Seiten passen zu diesem Filter." statt des falschen "Noch keine
+  Inhalte vorhanden.".
+
+**Backend**: `ContentService.findAll()` sucht jetzt in **Titel ODER Slug**
+(vorher nur Titel). Der Slug steht in der Tabelle direkt unter dem Titel
+und ist bei Seiten oft das, woran man sich erinnert ("/impressum") –
+dasselbe Prinzip wie im Papierkorb, der Titel + Untertitel durchsucht.
+Wirkt auch auf die anderen Aufrufer von `findAll({search})` (Kategorien-
+Seite), dort als reine Erweiterung.
+
+**Kein Debounce** auf dem Suchfeld: `router.push` pro Tastendruck, exakt
+wie in `trash-view.tsx` und `users-filter-bar.tsx`. Bewusst konsistent
+gehalten statt hier als Einzelfall ein abweichendes Verhalten
+einzuführen; falls das bei größeren Beständen spürbar wird, gehört ein
+Debounce an alle drei Stellen gleichzeitig.
