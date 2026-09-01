@@ -74,7 +74,8 @@ const SETTINGS_FIELD_LABELS: Record<string, string> = {
   notifyFailedLogins: 'Benachrichtigung „Auffällige Fehlversuche“',
   notifyPendingPasswordChanges: 'Benachrichtigung „Anstehende Passwortwechsel“',
   notifyCompanyIncomplete: 'Benachrichtigung „Unvollständige Firmendaten“',
-  notifyLegalDocuments: 'Benachrichtigung „Veraltete/fehlende Rechtstexte“',
+  notifyLegalDocuments:
+    'Benachrichtigung „Rechtstexte brauchen Aufmerksamkeit“',
   notifyDeletionRequests: 'Benachrichtigung „Offene Betroffenenanfragen“',
   notifyTrashExpiring: 'Benachrichtigung „Papierkorb-Einträge laufen ab“',
   notificationRecipientEmail: 'Benachrichtigungsempfänger',
@@ -164,6 +165,10 @@ export function describeAuditAction(action: string, metadata: unknown): string {
     }
     case 'user.impersonate':
       return 'Sitzung durch Administrator übernommen';
+    case 'website.stats_history_reset': {
+      const count = metaStr(meta.deletedReports);
+      return `Gemeldete Zählerstände zurückgesetzt${count ? ` (${count} Einträge gelöscht)` : ''}`;
+    }
     case 'company.field_updated': {
       const fieldLabel =
         COMPANY_FIELD_LABELS[metaStr(meta.field)] ?? metaStr(meta.field);

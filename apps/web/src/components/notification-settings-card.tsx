@@ -67,8 +67,9 @@ const ROWS: { key: NotifyKey; label: string; description: string }[] = [
   },
   {
     key: "notifyLegalDocuments",
-    label: "Veraltete/fehlende Rechtstexte",
-    description: "Weist auf veraltete oder fehlende Rechtstexte hin.",
+    label: "Rechtstexte brauchen Aufmerksamkeit",
+    description:
+      "Weist auf veraltete, fehlende und noch nicht veröffentlichte Rechtstexte hin.",
   },
   {
     key: "notifyDeletionRequests",

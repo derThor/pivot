@@ -40,6 +40,16 @@ type Candidate = {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// Nur für die Beschreibung der "nicht veröffentlicht"-Meldung – benennt den
+// konkreten Grund (Entwurf/geplant/archiviert), statt alle drei über einen
+// Kamm zu scheren. Gleiche Schreibweise wie in `trash.service.ts`.
+const CONTENT_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Entwurf',
+  PUBLISHED: 'veröffentlicht',
+  SCHEDULED: 'geplant',
+  ARCHIVED: 'archiviert',
+};
+
 // Ordnet eine gespeicherte Zeile (über ihren `dedupeKey`-Präfix) dem
 // `notify*`-Schalter zu, der sie erzeugt hat. Nötig, weil `sync()` nur
 // NEUE Zeilen anhand des aktuellen Schalterstands anlegt, bestehende
@@ -56,8 +66,20 @@ function settingKeyFor(dedupeKey: string): keyof AppSettings | null {
   if (dedupeKey === 'storage-quota') return 'notifyStorageQuota';
   if (dedupeKey.startsWith('webhook-failure:')) return 'notifyWebhookFailures';
   if (dedupeKey === 'trash-expiring') return 'notifyTrashExpiring';
+  // Beide Website-Anomalien hängen am selben Schalter. Der erste
+  // (`website-anomaly:`) fehlte hier bisher – dadurch blieb eine schon
+  // erzeugte Zeile stehen, wenn die Kategorie später abgeschaltet wurde
+  // (derselbe Bug wie 2026-08-21 bei der Speicherwarnung).
+  if (
+    dedupeKey.startsWith('website-anomaly:') ||
+    dedupeKey.startsWith('website-stats-anomaly:')
+  ) {
+    return 'notifyWebsiteAnomaly';
+  }
   if (dedupeKey === 'company-incomplete') return 'notifyCompanyIncomplete';
   if (dedupeKey === 'legal-documents-stale') return 'notifyLegalDocuments';
+  if (dedupeKey === 'legal-documents-unpublished')
+    return 'notifyLegalDocuments';
   if (dedupeKey.startsWith('dsr-due:')) return 'notifyDeletionRequests';
   if (dedupeKey === 'pending-activations') return 'notifyPendingActivations';
   if (dedupeKey === 'failed-logins') return 'notifyFailedLogins';
@@ -184,6 +206,26 @@ export class NotificationsService {
           actionUrl: '/dashboard/websites',
         });
       }
+
+      // Plausibilitätsprüfung der von einer Installation selbst gemeldeten
+      // Kennzahlen (Nutzervorgabe, 2026-09-01) – ein unglaubwürdiger
+      // Einbruch ist ein Manipulationsverdacht, kein Beweis: die Meldung
+      // benennt deshalb nur den Sprung und überlässt die Bewertung dem
+      // Admin, der sie danach quittiert (setzt `statsAnomalyAt` zurück).
+      const statsAnomalies = await this.prisma.website.findMany({
+        where: { statsAnomalyAt: { not: null } },
+      });
+      for (const site of statsAnomalies) {
+        candidates.push({
+          category: 'system',
+          dedupeKey: `website-stats-anomaly:${site.id}`,
+          title: `Unglaubwürdiger Rückgang bei „${site.name}“`,
+          description: `${site.statsAnomalyMessage} – die Zahlen meldet die Installation selbst, ein solcher Einbruch kann echt oder manipuliert sein.`,
+          isUrgent: false,
+          actionLabel: 'Website öffnen',
+          actionUrl: '/dashboard/websites',
+        });
+      }
     }
 
     if (settings.notifyTrashExpiring && readableTrashTypes.length > 0) {
@@ -228,6 +270,36 @@ export class NotificationsService {
           dedupeKey: 'legal-documents-stale',
           title: `${stale.length} Rechtstext${stale.length === 1 ? '' : 'e'} veraltet oder fehlend`,
           description: stale.map((d) => d.title).join(', '),
+          isUrgent: false,
+          actionLabel: 'Rechtstexte öffnen',
+          actionUrl: '/dashboard/privacy',
+          requiredPermission: 'privacy:read',
+        });
+      }
+      // Zweite, eigenständige Meldung: ein erzeugter Rechtstext erfüllt
+      // seinen Zweck erst, wenn seine Seite öffentlich erreichbar ist – ein
+      // Entwurf (ebenso ein geplanter oder archivierter Stand) ist für
+      // Besucher dasselbe wie gar kein Text. Bewusst NICHT in
+      // 'legal-documents-stale' mit hineingezählt: dort ist die Abhilfe
+      // "neu erzeugen", hier "veröffentlichen" (Nutzer-Bugreport,
+      // 2026-09-01: "obwohl hier die dokumente überwiegend auf entwurf
+      // stehen, wird nur das fehlende in den benachrichtigungen angezeigt.
+      // das ist falsch"). Dokumente ganz ohne verknüpfte Seite deckt
+      // bereits der 'missing'-Zweig oben ab, deshalb `contentId != null`.
+      const unpublished = docs.filter(
+        (d) => d.contentId != null && d.contentStatus !== 'PUBLISHED',
+      );
+      if (unpublished.length > 0) {
+        candidates.push({
+          category: 'privacy',
+          dedupeKey: 'legal-documents-unpublished',
+          title: `${unpublished.length} Rechtstext${unpublished.length === 1 ? ' ist' : 'e sind'} nicht veröffentlicht`,
+          description: unpublished
+            .map(
+              (d) =>
+                `${d.title} (${CONTENT_STATUS_LABELS[d.contentStatus ?? ''] ?? 'unveröffentlicht'})`,
+            )
+            .join(', '),
           isUrgent: false,
           actionLabel: 'Rechtstexte öffnen',
           actionUrl: '/dashboard/privacy',

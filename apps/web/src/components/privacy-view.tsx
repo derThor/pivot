@@ -416,6 +416,35 @@ export function PrivacyView({
   const missingCount = legalDocuments.filter(
     (d) => d.status === "missing",
   ).length;
+  // Erzeugt, aber die verknüpfte Seite steht auf Entwurf/geplant/archiviert
+  // – für Besucher dasselbe wie kein Text, zählt deshalb genauso als
+  // "offen" (Nutzer-Bugreport, 2026-09-01). Siehe die gleichnamige
+  // Benachrichtigung in notifications.service.ts.
+  const unpublishedCount = legalDocuments.filter(
+    (d) => d.contentId != null && d.contentStatus !== "PUBLISHED",
+  ).length;
+  // Ein Dokument kann gleichzeitig veraltet UND unveröffentlicht sein –
+  // für Zähler/Kacheln daher die Dokumente zählen, nicht die Befunde
+  // addieren, sonst steht in der Kachel eine höhere Zahl als es
+  // Rechtstexte gibt.
+  const attentionCount = legalDocuments.filter(
+    (d) =>
+      d.status !== "current" ||
+      (d.contentId != null && d.contentStatus !== "PUBLISHED"),
+  ).length;
+  const legalAttentionDetail = [
+    missingCount > 0
+      ? `${missingCount} ${missingCount === 1 ? "fehlt" : "fehlen"} noch`
+      : null,
+    staleCount > 0
+      ? `${staleCount} ${staleCount === 1 ? "ist" : "sind"} veraltet (Firmendaten geändert)`
+      : null,
+    unpublishedCount > 0
+      ? `${unpublishedCount} ${unpublishedCount === 1 ? "ist" : "sind"} nicht veröffentlicht`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
   const openDeletionRequests = deletionRequests.filter(
     (r) => r.status === "open",
   );
@@ -609,8 +638,8 @@ export function PrivacyView({
         />
         <StatCard
           label="Rechtstexte offen"
-          value={String(staleCount + missingCount)}
-          sublabel="Veraltet oder fehlend"
+          value={String(attentionCount)}
+          sublabel="Veraltet, fehlend oder Entwurf"
         />
         <StatCard
           label="Vorfälle mit Risiko"
@@ -624,25 +653,21 @@ export function PrivacyView({
         />
       </div>
 
-      {(staleCount > 0 || missingCount > 0) && (
+      {attentionCount > 0 && (
         <div className="flex flex-col items-start gap-3 rounded-xl bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:gap-4">
           <span className="flex size-9 shrink-0 items-center justify-center badge--amber rounded-full">
             <AlertTriangle className="size-[18px]" />
           </span>
           <p className="flex-1 text-sm">
             <span className="font-semibold text-pivot-navy">
-              {staleCount + missingCount}{" "}
-              {staleCount + missingCount === 1
+              {attentionCount}{" "}
+              {attentionCount === 1
                 ? "Rechtstext braucht"
                 : "Rechtstexte brauchen"}{" "}
               Aufmerksamkeit.
             </span>{" "}
-            <span className="text-muted-foreground">
-              {missingCount > 0 && staleCount > 0
-                ? `${missingCount} ${missingCount === 1 ? "fehlt" : "fehlen"} noch, ${staleCount} ${staleCount === 1 ? "ist" : "sind"} veraltet.`
-                : missingCount > 0
-                  ? `${missingCount} ${missingCount === 1 ? "fehlt" : "fehlen"} noch.`
-                  : "Firmendaten haben sich seit der letzten Erzeugung geändert."}
+            <span className="break-words text-muted-foreground">
+              {legalAttentionDetail}.
             </span>
           </p>
           <Button
@@ -671,11 +696,7 @@ export function PrivacyView({
         <TabsList className="!h-auto w-fit max-w-full flex-wrap justify-start gap-1 !overflow-visible p-1">
           {(
             [
-              [
-                "rechtstexte",
-                "Rechtstexte",
-                `${staleCount + missingCount} offen`,
-              ],
+              ["rechtstexte", "Rechtstexte", `${attentionCount} offen`],
               [
                 "loeschanfragen",
                 "Anfragen",

@@ -84,7 +84,7 @@ const FIELD_LABELS: Record<string, string> = {
   notifyFailedLogins: 'Benachrichtigung „Auffällige Fehlversuche“',
   notifyPendingPasswordChanges: 'Benachrichtigung „Anstehende Passwortwechsel“',
   notifyCompanyIncomplete: 'Benachrichtigung „Unvollständige Firmendaten“',
-  notifyLegalDocuments: 'Benachrichtigung „Veraltete/fehlende Rechtstexte“',
+  notifyLegalDocuments: 'Benachrichtigung „Rechtstexte brauchen Aufmerksamkeit“',
   notifyDeletionRequests: 'Benachrichtigung „Offene Betroffenenanfragen“',
   notifyTrashExpiring: 'Benachrichtigung „Papierkorb-Einträge laufen ab“',
   notificationRecipientEmail: 'Benachrichtigungsempfänger',

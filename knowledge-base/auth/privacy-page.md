@@ -552,3 +552,23 @@ genau diese Liste.
 - Die 5 einfachen CRUD-Tabs sind funktional, aber ohne Bildvorlage
   entstanden – falls später eine Bildvorlage dafür kommt, eher als
   Neubau denken statt als Fein-Anpassung.
+
+## Nachtrag 2026-09-01: "Offen" zählt auch unveröffentlichte Rechtstexte
+
+Bis hierher galt ein Rechtstext als erledigt, sobald er *erzeugt* und
+gegenüber den Firmen-Stammdaten aktuell war (`status: 'current'`) – ob die
+verknüpfte Seite überhaupt veröffentlicht ist, blieb außen vor. Ein als
+Entwurf liegen gebliebenes Impressum war damit grün ("aktuell"), obwohl es
+für Besucher nicht existiert.
+
+Der zweite, davon unabhängige Zustand steckt in `contentStatus`
+(`Content.status`, wird in `LegalDocumentsService.findAll()` mitgeladen).
+Kachel "Rechtstexte offen", Tab-Untertitel und das Warnbanner zählen
+deshalb jetzt über `attentionCount` – Dokumente mit
+`status !== 'current'` **oder** verknüpfter, nicht veröffentlichter Seite;
+gezählt werden Dokumente, nicht Befunde, weil beides gleichzeitig zutreffen
+kann. Die passende Postfach-Meldung
+(`dedupeKey: 'legal-documents-unpublished'`) und die vollständige
+Begründung stehen in
+[toast-and-system-messages.md](../frontend/toast-and-system-messages.md),
+Update 2026-09-01.
