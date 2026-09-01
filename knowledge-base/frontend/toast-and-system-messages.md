@@ -653,3 +653,30 @@ unverändert daneben stehen.
 **Randnotiz**: `company-legal-banners.tsx` (`LegalDocumentsBanner`) hat
 dieselbe alte Zählung, ist aber seit dem Postfach-Umbau (2026-08-21)
 nirgends mehr importiert – toter Code, bewusst nicht mitgezogen.
+
+## Update 2026-09-01: Banner-Reste des Vor-Postfach-Zeitalters entfernt
+
+Nutzervorgabe: *"toter Code … entfernen, wenn geprüft, ob wirklich nicht
+mehr gebraucht"*. Die Prüfung förderte nicht eine, sondern **drei**
+verwaiste Dateien zutage – alle aus dem Zustands-Banner-Ansatz, den das
+persistierte Postfach (Update 2026-08-21) abgelöst hat:
+
+- `company-legal-banners.tsx` (`CompanyIncompleteBanner`,
+  `LegalDocumentsBanner`)
+- `deletion-requests-banner.tsx`
+- `user-notification-banners.tsx` (`UserNotificationBanners`)
+
+Keine davon wurde noch importiert; die einzigen Fundstellen ihrer Namen
+waren gegenseitige Verweise in Kommentaren ("Gleiches Muster wie …"),
+was beim ersten Hinsehen wie echte Nutzung aussieht. Wer hier aufräumt,
+sollte deshalb auf die tatsächlichen `import`-Zeilen prüfen, nicht auf
+Namensvorkommen.
+
+**Nicht entfernt**, weil weiterhin eingebunden: `storage-quota-banner`
+(Dashboard + Medien), `webhook-failure-banner` (Einstellungen),
+`account-lock-banner`/`impersonation-banner`/`email-verification-banner`
+(Dashboard-Layout), `preview-banner` (Vorschau-Seiten).
+
+Der historische Abschnitt "Update 2026-08-19" weiter oben beschreibt diese
+Komponenten noch – er bleibt als Entstehungsgeschichte stehen, der
+Endstand steht hier.
