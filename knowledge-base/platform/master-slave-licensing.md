@@ -1506,7 +1506,8 @@ Nutzervorgabe mit Screenshot **und mitgeliefertem CSS** ("stelle die
 mandanten so dar. der header dieser kachel css …"). Umgesetzt in
 `mandanten-view.tsx`, Werte 1:1 aus der Vorlage übernommen:
 
-- **Kopf**: `#132033`, `px-4 pt-9 pb-5`, darüber ein Motiv, darüber ein
+- **Kopf**: `#0e1827` (bis 2026-09-01 `#132033`, siehe Feinschliff unten),
+  `px-4 pt-9 pb-5`, darüber ein Motiv, darüber ein
   Scrim `linear-gradient(100deg, rgba(19,32,51,.74) → .40 → .08)`, damit
   Logo und Name links lesbar bleiben. Hover skaliert nur das Motiv
   (`scale(1.04)`, 500 ms) – der Hover hängt am `group` der ganzen Kachel,
@@ -1708,7 +1709,7 @@ bleiben die hellen Bögen rechts länger stehen.
 
 Gilt automatisch für **beide** Stellen, weil sie sich
 `MandantHeaderShell` teilen: die Übersichts-Kacheln und die erste Karte
-der Detailseite. Der Kopf-Grundton `#132033` bleibt in beiden Themes
+der Detailseite. Der Kopf-Grundton (`#0e1827`) bleibt in beiden Themes
 gleich – nur die Abdunkelung darüber unterscheidet sich.
 
 ## Update 2026-09-01: Seiten-/Nutzerzahl auf den Webseiten-Kacheln
@@ -1924,3 +1925,30 @@ Master/Client-Umschalter, gemeldeter Zählerstand mit eigenem
 
 Übrig bleiben auf der Master-Ansicht zwei Karten: "Diese Installation" und
 "Mandanten".
+
+### Nachtrag: Feinschliff am Master-Client-Bereich (2026-09-01, abends)
+
+Kleinteilige Nutzervorgaben nach dem Zusammenfassen der Karten – hier
+festgehalten, weil zwei davon bewusste Abweichungen von app-weiten
+Konventionen sind und sonst als Versehen "korrigiert" würden.
+
+- **Speichern-Knopf unter dem Modus-Umschalter**, nicht daneben. Daneben
+  drückte er den Umschalter in schmalen Spalten zusammen und las sich auf
+  gleicher Höhe wie ein dritter Teil davon statt wie dessen Aktion.
+- **Kopf-Grundton `#132033` → `#0e1827`** ("etwas dunkler"). Der
+  Light-Scrim in `globals.css` MUSS denselben Ton führen, sonst wirkt
+  seine linke, stärkste Stufe heller als der Grund darunter.
+- **Sperrvermerk-Box: dunkel → hell → wieder dunkel.** Endstand sind feste
+  Dark-Werte in BEIDEN Themes (`#3d2f10` auf `#6b5220`, Text
+  `#f8e6bd`, Textfeld im dunklen Formularstil), bewusst **ohne
+  `dark:`-Präfix**: der Untergrund folgt hier nicht dem Theme, eine helle
+  Fläche riss auf dem fast schwarzen Kartengrund ein Loch. Der
+  zwischenzeitliche Versuch mit theme-abhängigen Farben (und ein
+  abgedunkeltes `#fdf5da` als Kompromiss) ist überholt – im Code steht ein
+  entsprechender Hinweis, das nicht erneut umzustellen.
+
+**Eine Sackgasse zum Merken**: auf "in light modus nur hier etwas dunkler"
+wurde zuerst der *Kartengrund* theme-abhängig abgedunkelt statt der
+gemeinten *Sperrvermerk-Box* – der Screenshot zeigte beides. Die Änderung
+wurde per `git revert` zurückgenommen. Bei Farbwünschen auf dieser Seite
+lohnt die Rückfrage, welche der beiden Flächen gemeint ist.

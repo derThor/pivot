@@ -586,6 +586,9 @@ platzierten "2FA"-Spalte in der Benutzer-Tabelle.
       Kategorien einzeln ab-/anschaltbar, App-weiter `CacheService` +
       DB-Indizes für die zugehörigen Abfragen (siehe
       [backend-caching.md](../knowledge-base/tooling/backend-caching.md))
+- [x] Sidebar-Icons vereinheitlicht (2026-09-01): Haupt- und Unterebene
+      auf demselben Token, grau im Light-, grün im Dark-Modus. Details:
+      [design-refresh.md](../knowledge-base/frontend/design-refresh.md)
 - [x] Rechtstext-Benachrichtigung um den Veröffentlichungsstand
       erweitert (2026-09-01, Nutzer-Bugreport): erzeugte, aber als
       Entwurf liegen gebliebene Rechtstexte galten bisher als erledigt.
@@ -620,6 +623,10 @@ platzierten "2FA"-Spalte in der Benutzer-Tabelle.
 - [x] Warnschwellen einstellbar + Verlaufsansicht unter Einstellungen →
       Verbindungen → Master-Client (2026-09-01); verwaiste Banner-
       Komponenten aus der Zeit vor dem Postfach entfernt.
+- [x] Master-Client-Ansicht auf zwei Karten zusammengefasst
+      (2026-09-01): ein Klick auf eine Mandanten-Zeile klappt Modus-
+      Umschalter, Zählerstand und Verlauf dieser Installation auf,
+      `website-mode-dialog.tsx` dadurch abgelöst.
 - [x] Mandanten-Detailseite zweispaltig (2026-09-01): Webseiten und
       Module als rechte Sidebar, "Websites" app-weit zu "Webseiten"
       umbenannt.
