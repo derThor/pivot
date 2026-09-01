@@ -4,10 +4,11 @@ import type { MandantListItem } from "@/lib/api-server";
 // Kachel-/Seitenkopf eines Mandanten (Nutzervorgabe, 2026-09-01, CSS 1:1
 // mitgeliefert) – bewusst feste Hex-Werte statt Theme-Tokens: der Kopf ist
 // in beiden Themes dunkel, die Farben stammen unverändert aus der Vorlage.
-// 2026-09-01 abgedunkelt (vorher #132033, Nutzervorgabe "etwas dunkler").
-// Der Light-Scrim in globals.css MUSS denselben Ton tragen, sonst wirkt
-// seine linke, stärkste Stufe heller als der Grund darunter.
-export const HEADER_BG = "#0e1827";
+// Der Grundton des Kopfs steht als `.mandant-header-bg` in globals.css:
+// er ist seit 2026-09-01 theme-abhängig (im Light-Modus dunkler), und ein
+// Inline-Style kann keine `dark:`-Variante tragen. Der Light-Scrim dort
+// MUSS denselben Ton führen, sonst wirkt seine linke, stärkste Stufe
+// heller als der Grund darunter.
 export const HEADER_ACCENT = "#bce64d";
 
 /** Farbe der Initialen in der Logo-Kachel – folgt dem Status, damit sie
@@ -112,8 +113,7 @@ export function MandantHeaderShell({
 }) {
   return (
     <div
-      className={cn("relative overflow-hidden", className)}
-      style={{ background: HEADER_BG }}
+      className={cn("mandant-header-bg relative overflow-hidden", className)}
     >
       <TenantCover
         className={cn(
