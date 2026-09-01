@@ -11,6 +11,7 @@ import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@pivot/database';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import {
   decryptSecret,
   encryptSecret,
@@ -55,6 +56,22 @@ export const DEVELOPMENT_MODE_MAX_DAYS = 3;
 // LICENSE_CHECK_JOB_ID/WEBSITE_MONITOR_JOB_ID.
 export const DEVELOPMENT_MODE_AUTOLOCK_JOB_ID = 'development-mode-autolock';
 
+// Plausibilitätsprüfung der von einer Installation gemeldeten Kennzahlen
+// (Nutzervorgabe, 2026-09-01). Ein Rückgang gilt als unglaubwürdig, wenn er
+// BEIDE Schwellen reißt: relativ (die Hälfte weg) und absolut (mindestens
+// fünf Einheiten). Die absolute Schwelle verhindert Fehlalarme bei kleinen
+// Beständen – ein Testsystem, das von 2 auf 1 Nutzer geht, ist kein
+// Manipulationsverdacht. Bewusst nur RÜCKGÄNGE: ein Anstieg ist normales
+// Wachstum und wäre für eine Manipulation zum eigenen Vorteil auch der
+// falsche Weg. Feste Werte im Code statt einer Einstellung – erst wenn
+// sich zeigt, dass echte Installationen andere Schwellen brauchen, gehört
+// das in die Einstellungen.
+const STATS_ANOMALY_RELATIVE_DROP = 0.5;
+const STATS_ANOMALY_ABSOLUTE_DROP = 5;
+// Verlauf je Website begrenzen, damit häufiges Prüfen die Tabelle nicht
+// unbegrenzt wachsen lässt.
+const STATS_HISTORY_LIMIT = 50;
+
 function generateApiKey(): string {
   return randomBytes(32).toString('hex');
 }
@@ -74,12 +91,30 @@ const PUBLIC_SELECT = {
   lastWakeupOk: true,
   lastWakeupMessage: true,
   lastReportedVersion: true,
+  reportedPageCount: true,
+  reportedUserCount: true,
+  statsAnomalyAt: true,
+  statsAnomalyMessage: true,
   lastReportedLicenseStatus: true,
   lastCheckChecks: true,
   createdAt: true,
   updatedAt: true,
   mandantId: true,
-  mandant: { select: { id: true, name: true, logoUrl: true } },
+  // Module gehören am Mandanten, werden aber auch auf der
+  // Webseiten-Kachel angezeigt (Nutzervorgabe, 2026-09-01: "modul hier
+  // auch anzeigen") – nur die tatsächlich aktiven.
+  mandant: {
+    select: {
+      id: true,
+      name: true,
+      logoUrl: true,
+      modules: {
+        where: { enabled: true },
+        select: { moduleKey: true },
+        orderBy: { moduleKey: 'asc' },
+      },
+    },
+  },
 } as const;
 
 @Injectable()
@@ -89,6 +124,7 @@ export class WebsitesService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   /** Backfill für Installationen, die schon vor diesem Feature im
@@ -332,6 +368,7 @@ export class WebsitesService implements OnModuleInit {
     ok: boolean;
     message: string;
     version: string | null;
+    stats: { pages: number; users: number } | null;
     licenseStatus: string | null;
     checks: WebsiteCheckItem[];
   }> {
@@ -351,12 +388,180 @@ export class WebsitesService implements OnModuleInit {
         // Fehlschlag (Timeout, falscher Key) soll den zuletzt bekannten
         // Stand nicht auf "unbekannt" zurücksetzen.
         ...(result.version ? { lastReportedVersion: result.version } : {}),
+        // Wie bei der Version: nur überschreiben, wenn die Installation
+        // tatsächlich gezählt hat – ein Timeout soll die zuletzt bekannten
+        // Zahlen nicht löschen.
+        ...(result.stats
+          ? {
+              reportedPageCount: result.stats.pages,
+              reportedUserCount: result.stats.users,
+            }
+          : {}),
         ...(result.licenseStatus
           ? { lastReportedLicenseStatus: result.licenseStatus }
           : {}),
       },
     });
+    if (result.stats) {
+      await this.recordStatsReport(id, result.stats);
+    }
     return result;
+  }
+
+  /** Schreibt einen gemeldeten Kennzahlen-Bericht fort und prüft ihn gegen
+   * den vorherigen (Nutzervorgabe, 2026-09-01: "Verlauf der gemeldeten
+   * Zahlen speichern und bei unglaubwürdigen Sprüngen eine Systemnachricht
+   * auslösen"). Läuft für JEDEN erfolgreichen Wecken-Durchlauf, der
+   * `stats` mitgeliefert hat – also sowohl beim einzelnen "Prüfen" auf der
+   * Kachel als auch beim Sammel-Durchlauf oben auf der Seite.
+   *
+   * Wichtig zur Einordnung: das ERKENNT grobe Manipulation, es verhindert
+   * sie nicht. Die Zahlen bestimmt weiterhin die Client-Installation
+   * selbst (siehe Website.reportedPageCount im Schema); wer sie
+   * kontrolliert, kann auch einen langsamen, unauffälligen Rückgang
+   * melden. Der Nutzen liegt beim plumpen Fall ("über Nacht von 24 auf
+   * 3"), nicht bei einem entschlossenen Angreifer.
+   *
+   * Eine gesetzte Anomalie bleibt bewusst stehen, bis sie am Master
+   * quittiert wird (`dismissStatsAnomaly`): der eingebrochene Wert ist ab
+   * dem nächsten Bericht ja stabil, ein Neuberechnen würde die Meldung
+   * also sofort wieder verschwinden lassen und genau den Vorfall
+   * verschlucken, um den es geht. */
+  private async recordStatsReport(
+    websiteId: string,
+    stats: { pages: number; users: number },
+  ): Promise<void> {
+    const previous = await this.prisma.websiteStatsReport.findFirst({
+      where: { websiteId },
+      orderBy: { firstReportedAt: 'desc' },
+    });
+
+    // Unveränderte Meldung: nur festhalten, dass dieser Stand weiterhin
+    // gilt – kein zweiter Eintrag mit identischen Zahlen (Nutzervorgabe,
+    // 2026-09-01: "unnötigen Datenmüll vermeiden"). Damit entfällt auch
+    // die Anomalieprüfung, denn ohne Änderung gibt es keinen Sprung.
+    if (
+      previous &&
+      previous.pageCount === stats.pages &&
+      previous.userCount === stats.users
+    ) {
+      await this.prisma.websiteStatsReport.update({
+        where: { id: previous.id },
+        data: { lastReportedAt: new Date() },
+      });
+      return;
+    }
+
+    await this.prisma.websiteStatsReport.create({
+      data: {
+        websiteId,
+        pageCount: stats.pages,
+        userCount: stats.users,
+      },
+    });
+
+    // Verlauf beschneiden: alles jenseits der jüngsten N Einträge löschen.
+    const stale = await this.prisma.websiteStatsReport.findMany({
+      where: { websiteId },
+      orderBy: { firstReportedAt: 'desc' },
+      skip: STATS_HISTORY_LIMIT,
+      select: { id: true },
+    });
+    if (stale.length > 0) {
+      await this.prisma.websiteStatsReport.deleteMany({
+        where: { id: { in: stale.map((entry) => entry.id) } },
+      });
+    }
+
+    if (!previous) return;
+
+    const drops: string[] = [];
+    const check = (label: string, before: number, now: number) => {
+      const delta = before - now;
+      if (delta < STATS_ANOMALY_ABSOLUTE_DROP) return;
+      if (before === 0) return;
+      if (delta / before < STATS_ANOMALY_RELATIVE_DROP) return;
+      drops.push(`${label}: ${before} → ${now}`);
+    };
+    check('Nutzer', previous.userCount, stats.users);
+    check('Seiten', previous.pageCount, stats.pages);
+    if (drops.length === 0) return;
+
+    await this.prisma.website.update({
+      where: { id: websiteId },
+      data: {
+        statsAnomalyAt: new Date(),
+        statsAnomalyMessage: drops.join(', '),
+      },
+    });
+  }
+
+  /** Setzt die gesammelten Zählerstände app-weit zurück (Nutzervorgabe,
+   * 2026-09-01: "der zählerstand muss zurücksetzbar sein, so dass man dies
+   * löschen kann") – löscht den kompletten Verlauf, die zuletzt gemeldeten
+   * Zahlen und offene Anomalie-Hinweise für ALLE Websites.
+   *
+   * Ohne `websiteId` app-weit über alle Websites, mit `websiteId` nur für
+   * diese eine (Nutzervorgabe im Nachgang: "einzelnen zählerstand je
+   * mandanten unter einstellungen zurücksetzen button") – ein legitimer
+   * Rückgang betrifft in der Regel genau eine Installation, dann soll
+   * nicht der ganze Bestand mit zurückgesetzt werden müssen.
+   * Nach dem Zurücksetzen füllen sich die Zahlen beim nächsten "Prüfen"
+   * von selbst wieder; bis dahin entfällt die Zeile auf der Kachel.
+   * Auditiert, weil damit ein Manipulationsverdacht verschwinden kann und
+   * im Protokoll nachvollziehbar bleiben muss, wer das wann getan hat. */
+  async resetStatsHistory(actingUserId: string, websiteId?: string) {
+    // Einzelne Website: erst prüfen, ob es sie überhaupt gibt – sonst
+    // meldete der Aufruf stillschweigend Erfolg für eine ID, die nie
+    // existiert hat.
+    const website = websiteId
+      ? await this.prisma.website.findUnique({ where: { id: websiteId } })
+      : null;
+    if (websiteId && !website) {
+      throw new NotFoundException(`Website ${websiteId} nicht gefunden.`);
+    }
+
+    const scope = websiteId ? { websiteId } : {};
+    const deleted = await this.prisma.websiteStatsReport.deleteMany({
+      where: scope,
+    });
+    const cleared = await this.prisma.website.updateMany({
+      where: websiteId ? { id: websiteId } : {},
+      data: {
+        reportedPageCount: null,
+        reportedUserCount: null,
+        statsAnomalyAt: null,
+        statsAnomalyMessage: null,
+      },
+    });
+    await this.auditLog.record({
+      action: 'website.stats_history_reset',
+      entityType: 'Website',
+      entityId: websiteId ?? 'all',
+      userId: actingUserId,
+      metadata: {
+        deletedReports: deleted.count,
+        clearedWebsites: cleared.count,
+        ...(website ? { domain: website.domain } : {}),
+      },
+    });
+    return { deletedReports: deleted.count, clearedWebsites: cleared.count };
+  }
+
+  /** "Zur Kenntnis genommen" – setzt die Plausibilitäts-Anomalie zurück,
+   * womit auch die zugehörige Systemnachricht verschwindet. Bewusst eine
+   * ausdrückliche Handlung: die Meldung soll nicht von selbst verstummen,
+   * nur weil der eingebrochene Wert inzwischen stabil ist. */
+  async dismissStatsAnomaly(id: string) {
+    const website = await this.prisma.website.findUnique({ where: { id } });
+    if (!website) {
+      throw new NotFoundException(`Website ${id} nicht gefunden.`);
+    }
+    return this.prisma.website.update({
+      where: { id },
+      data: { statsAnomalyAt: null, statsAnomalyMessage: null },
+      select: PUBLIC_SELECT,
+    });
   }
 
   /** Nutzervorgabe, 2026-08-25: "gib in der Prüfung an, ob Version aktuell
@@ -377,6 +582,7 @@ export class WebsitesService implements OnModuleInit {
     ok: boolean;
     message: string;
     version: string | null;
+    stats: { pages: number; users: number } | null;
     licenseStatus: string | null;
     checks: WebsiteCheckItem[];
   }> {
@@ -392,6 +598,7 @@ export class WebsitesService implements OnModuleInit {
         ok: false,
         message: 'Kein API-Key hinterlegt.',
         version: null,
+        stats: null,
         licenseStatus: null,
         checks,
       };
@@ -426,6 +633,7 @@ export class WebsitesService implements OnModuleInit {
           message:
             'Der bei der Installation hinterlegte API-Key stimmt nicht mehr mit dem hier gespeicherten überein.',
           version: null,
+          stats: null,
           licenseStatus: null,
           checks,
         };
@@ -437,6 +645,7 @@ export class WebsitesService implements OnModuleInit {
           ok: false,
           message: `Installation antwortete mit HTTP ${res.status}.`,
           version: null,
+          stats: null,
           licenseStatus: null,
           checks,
         };
@@ -448,8 +657,18 @@ export class WebsitesService implements OnModuleInit {
           licenseStatus?: 'live' | 'development' | 'locked';
         };
         version?: string;
+        // Selbstauskunft der Installation über ihre Größe (siehe
+        // Website.reportedPageCount im Schema) – ältere Installationen
+        // ohne dieses Feld liefern schlicht nichts, dann bleibt der
+        // zuletzt bekannte Stand stehen.
+        stats?: { pages?: number; users?: number };
       } | null;
       const version = data?.version ?? null;
+      const stats =
+        typeof data?.stats?.pages === 'number' &&
+        typeof data?.stats?.users === 'number'
+          ? { pages: data.stats.pages, users: data.stats.users }
+          : null;
       const licenseStatus = data?.outcome?.licenseStatus ?? null;
       const currentVersion = getAppVersion();
 
@@ -501,6 +720,7 @@ export class WebsitesService implements OnModuleInit {
         ok,
         message: data?.outcome?.message ?? 'Installation wurde geweckt.',
         version,
+        stats,
         licenseStatus,
         checks,
       };
@@ -509,6 +729,7 @@ export class WebsitesService implements OnModuleInit {
         ok: false,
         message: 'Installation nicht erreichbar.',
         version: null,
+        stats: null,
         licenseStatus: null,
         checks,
       };
@@ -557,11 +778,20 @@ export class WebsitesService implements OnModuleInit {
             lastWakeupMessage: result.message,
             lastCheckChecks: result.checks as unknown as Prisma.InputJsonValue,
             ...(result.version ? { lastReportedVersion: result.version } : {}),
+            ...(result.stats
+              ? {
+                  reportedPageCount: result.stats.pages,
+                  reportedUserCount: result.stats.users,
+                }
+              : {}),
             ...(result.licenseStatus
               ? { lastReportedLicenseStatus: result.licenseStatus }
               : {}),
           },
         });
+        if (result.stats) {
+          await this.recordStatsReport(site.id, result.stats);
+        }
         return {
           id: site.id,
           name: site.name,

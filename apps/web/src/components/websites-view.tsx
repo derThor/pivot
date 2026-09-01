@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ExternalLink, Globe, Info, Pencil, RotateCcw } from "lucide-react";
+import {
+  Diamond,
+  ExternalLink,
+  Globe,
+  Info,
+  Pencil,
+  RotateCcw,
+  ShieldCheck,
+} from "lucide-react";
 
 import { toast } from "sonner";
 
@@ -36,6 +44,22 @@ function formatCheckTime(iso: string) {
     year: "numeric",
   });
 }
+
+// Gleiche Icon-/Farbzuordnung je Modul wie auf den Mandanten-Kacheln
+// (mandanten-view.tsx) – Module gehören am Mandanten, werden aber auch hier
+// gezeigt (Nutzervorgabe, 2026-09-01: "modul hier auch anzeigen").
+const MODULE_ICONS: Record<
+  string,
+  { icon: typeof Diamond; className: string }
+> = {
+  magicline: { icon: Diamond, className: "badge--blue" },
+  datenschutz: { icon: ShieldCheck, className: "badge--ink" },
+};
+
+const MODULE_LABELS: Record<string, string> = {
+  magicline: "Magicline",
+  datenschutz: "Datenschutz",
+};
 
 // Nutzer-Bugreport, 2026-08-26: "hier ist http drin, dennoch wird bei
 // öffnen die live seite aufgerufen" – der "Öffnen"-Button nutzte immer
@@ -78,6 +102,7 @@ export function WebsitesView({
   );
   const [isChecking, setIsChecking] = useState(false);
   const [wakingId, setWakingId] = useState<string | null>(null);
+  const [dismissingId, setDismissingId] = useState<string | null>(null);
   // ID statt ganzem Objekt (Nutzervorgabe, 2026-08-26: "Erneut prüfen"-
   // Button direkt im Popup) – so zeigt das Popup nach einer erneuten
   // Prüfung automatisch die frischen `items` an, statt an der alten
@@ -135,6 +160,27 @@ export function WebsitesView({
       router.refresh();
     } finally {
       setWakingId(null);
+    }
+  }
+
+  // "Zur Kenntnis genommen" – die Anomalie verschwindet erst durch diese
+  // ausdrückliche Handlung, nicht durch die nächste Prüfung (Nutzervorgabe,
+  // 2026-09-01; Begründung siehe WebsitesService.recordStatsReport()).
+  async function handleDismissAnomaly(website: WebsiteListItem) {
+    setDismissingId(website.id);
+    try {
+      const res = await fetch(
+        bff(`/api/websites/${website.id}/dismiss-stats-anomaly`),
+        { method: "POST" },
+      );
+      if (!res.ok) {
+        toast.error("Hinweis konnte nicht zurückgesetzt werden.");
+        return;
+      }
+      toastEdited("Hinweis zur Kenntnis genommen.");
+      router.refresh();
+    } finally {
+      setDismissingId(null);
     }
   }
 
@@ -256,6 +302,78 @@ export function WebsitesView({
                   >
                     <Info className="size-[18px]" />
                   </Button>
+                </div>
+              )}
+              {/* Plausibilitätsprüfung (Nutzervorgabe, 2026-09-01):
+                  unglaubwürdiger Einbruch der selbst gemeldeten Zahlen.
+                  Bewusst `warning`, nicht `error` – es ist ein Verdacht,
+                  kein Beweis: der Rückgang kann genauso gut echt sein. */}
+              {website.statsAnomalyAt && (
+                <SystemMessage
+                  variant="warning"
+                  title="Gemeldete Zahlen unglaubwürdig gefallen"
+                  titleClassName="text-sm"
+                  description={website.statsAnomalyMessage ?? undefined}
+                  actions={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="border-button-border"
+                      disabled={dismissingId === website.id}
+                      onClick={() => handleDismissAnomaly(website)}
+                    >
+                      {dismissingId === website.id
+                        ? "Setzt zurück…"
+                        : "Zur Kenntnis genommen"}
+                    </Button>
+                  }
+                />
+              )}
+              {/* Größe der Installation + gebuchte Module (Nutzervorgabe,
+                  2026-09-01). Die Zahlen sind Selbstauskünfte der
+                  Installation aus dem letzten "Prüfen" – deshalb erscheint
+                  die Zeile erst, wenn tatsächlich einmal geprüft wurde,
+                  statt "0 Seiten · 0 Nutzer" vorzutäuschen. Die Module
+                  stehen unabhängig davon, sie kommen aus der eigenen
+                  Datenbank des Masters. */}
+              {(website.reportedPageCount !== null ||
+                website.mandant.modules.length > 0) && (
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-border px-2.5 pt-3">
+                  {website.reportedPageCount !== null ? (
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-semibold text-foreground">
+                        {website.reportedPageCount}
+                      </span>{" "}
+                      Seiten
+                      <span className="px-1.5">·</span>
+                      <span className="font-semibold text-foreground">
+                        {website.reportedUserCount ?? 0}
+                      </span>{" "}
+                      Nutzer
+                    </p>
+                  ) : (
+                    <span />
+                  )}
+                  {website.mandant.modules.length > 0 && (
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {website.mandant.modules.map((entry) => {
+                        const config = MODULE_ICONS[entry.moduleKey];
+                        const Icon = config?.icon ?? Diamond;
+                        return (
+                          <span
+                            key={entry.moduleKey}
+                            title={
+                              MODULE_LABELS[entry.moduleKey] ?? entry.moduleKey
+                            }
+                            className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${config?.className ?? "badge--slate"}`}
+                          >
+                            <Icon className="size-4" />
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
               <div className="flex gap-2">

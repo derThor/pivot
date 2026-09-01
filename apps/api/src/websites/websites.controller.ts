@@ -16,6 +16,8 @@ import { UpdateWebsiteDto } from './dto/update-website.dto';
 import { QueryWebsiteDto } from './dto/query-website.dto';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
 import { getMasterPublicKeyBase64 } from './license-token.util';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 import { MasterOnlyGuard } from './master-only.guard';
 import { WebsiteMonitorService } from './website-monitor.service';
 
@@ -78,6 +80,17 @@ export class WebsitesController {
     return this.websitesService.update(id, dto);
   }
 
+  // Zählerstände app-weit zurücksetzen (Nutzervorgabe, 2026-09-01: "der
+  // zählerstand muss zurücksetzbar sein"). MUSS vor `@Delete(':id')`
+  // stehen: Nest prüft die Routen in Deklarationsreihenfolge, sonst würde
+  // "stats-history" als Website-ID gelesen und der Aufruf liefe ins
+  // Löschen einer Website.
+  @RequirePermission('settings:update')
+  @Delete('stats-history')
+  resetStatsHistory(@CurrentUser() user: JwtPayload) {
+    return this.websitesService.resetStatsHistory(user.sub);
+  }
+
   @RequirePermission('settings:update')
   @Delete(':id')
   remove(@Param('id') id: string) {
@@ -104,5 +117,27 @@ export class WebsitesController {
   @Post(':id/wakeup')
   wakeup(@Param('id') id: string) {
     return this.websitesService.wakeup(id);
+  }
+
+  // "Zur Kenntnis genommen" für die Plausibilitäts-Anomalie (Nutzervorgabe,
+  // 2026-09-01) – bewusst eine ausdrückliche Handlung, siehe
+  // WebsitesService.dismissStatsAnomaly(). Gleiches Recht wie das Prüfen
+  // selbst.
+  // Zählerstand nur dieser einen Website zurücksetzen (Nutzervorgabe,
+  // 2026-09-01). Kollidiert nicht mit `@Delete(':id')`: zwei Segmente
+  // statt einem.
+  @RequirePermission('settings:update')
+  @Delete(':id/stats-history')
+  resetWebsiteStatsHistory(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.websitesService.resetStatsHistory(user.sub, id);
+  }
+
+  @RequirePermission('settings:update')
+  @Post(':id/dismiss-stats-anomaly')
+  dismissStatsAnomaly(@Param('id') id: string) {
+    return this.websitesService.dismissStatsAnomaly(id);
   }
 }

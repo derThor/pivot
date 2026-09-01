@@ -586,6 +586,40 @@ platzierten "2FA"-Spalte in der Benutzer-Tabelle.
       Kategorien einzeln ab-/anschaltbar, App-weiter `CacheService` +
       DB-Indizes für die zugehörigen Abfragen (siehe
       [backend-caching.md](../knowledge-base/tooling/backend-caching.md))
+- [x] Rechtstext-Benachrichtigung um den Veröffentlichungsstand
+      erweitert (2026-09-01, Nutzer-Bugreport): erzeugte, aber als
+      Entwurf liegen gebliebene Rechtstexte galten bisher als erledigt.
+      Neue eigene Meldung "X Rechtstexte sind nicht veröffentlicht"
+      (`legal-documents-unpublished`, gleicher Schalter
+      `notifyLegalDocuments`), Datenschutz-Seite zählt sie in Kachel,
+      Tab-Untertitel und Warnbanner mit. Details:
+      [toast-and-system-messages.md](../knowledge-base/frontend/toast-and-system-messages.md)
+- [x] Seiten-Übersicht: Status-Filterleiste + Suche (2026-09-01,
+      Nutzervorgabe nach Papierkorb-Vorbild) – Pills Alle/Veröffentlicht/
+      Geplant/Entwurf/Archiv mit Zählern, serverseitig über `status`/`q`
+      gefiltert, Backend-Suche jetzt Titel ODER Slug. `ARCHIVED` war
+      vorher über die Oberfläche nicht gezielt auffindbar. Details:
+      [content-list-and-editor-redesign.md](../knowledge-base/content/content-list-and-editor-redesign.md)
+- [x] Mandanten-Kacheln neu (2026-09-01, Nutzervorgabe mit Screenshot
+      und mitgeliefertem CSS): dunkler Kopf mit Bögen-Motiv (Inline-SVG
+      statt Bilddatei), Statusstreifen, Logo-/Initialen-Kachel, Module
+      mit Label statt nur Icon; Detailseite auf denselben Kopf
+      umgestellt (gemeinsame `MandantHeaderShell`). Details:
+      [master-slave-licensing.md](../knowledge-base/platform/master-slave-licensing.md)
+- [x] Webseiten-Kacheln zeigen Seiten-/Nutzerzahl der Installation
+      (2026-09-01) – die Installation meldet sie in der Wecken-Antwort
+      mit, genau wie bisher schon ihre Version; dazu die am Mandanten
+      gebuchten Module als Icons. Selbstauskunft der Client-Seite, kein
+      Master-Zugriff auf deren Datenbank.
+- [x] Plausibilitätsprüfung der gemeldeten Zahlen (2026-09-01) –
+      Verlauf je Änderung, Warnung bei unglaubwürdigem Einbruch
+      (≥50 % UND ≥5 absolut), Quittieren auf der Kachel, Zurücksetzen je
+      Webseite oder app-weit unter Einstellungen → Master-Client.
+      Erkennt grobe Manipulation, verhindert sie nicht – die Zahl
+      bestimmt weiterhin die Client-Installation selbst.
+- [x] Mandanten-Detailseite zweispaltig (2026-09-01): Webseiten und
+      Module als rechte Sidebar, "Websites" app-weit zu "Webseiten"
+      umbenannt.
 
 ## Phase 3 – Plattform-Härtung
 

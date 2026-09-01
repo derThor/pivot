@@ -101,7 +101,15 @@ export class LicenseStateController {
     // eingeholt werden, so dass man den aktuellen Stand ermitteln kann" –
     // der Master liest das aus der Wecken-Antwort (WebsitesService.
     // performWakeup()) und persistiert es auf Website.lastReportedVersion.
-    return { triggered: true, outcome, version: getAppVersion() };
+    // `stats` auf demselben Weg wie `version` (Nutzervorgabe, 2026-09-01):
+    // der Master persistiert sie als `Website.reportedPageCount`/
+    // `reportedUserCount` und zeigt sie auf der Webseiten-Kachel.
+    return {
+      triggered: true,
+      outcome,
+      version: getAppVersion(),
+      stats: await this.licenseClient.getInstallationStats(),
+    };
   }
 
   /** Schritt 1 des Wiederherstellungs-Popups auf der Wartungsseite

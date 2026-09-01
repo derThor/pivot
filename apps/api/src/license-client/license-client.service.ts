@@ -276,6 +276,23 @@ export class LicenseClientService implements OnModuleInit {
    * solange noch nie über die UI ein Key gesetzt wurde (Erstinbetriebnahme
    * per `.env`, wie bisher). Gleicher Verschlüsselungs-Helfer wie das
    * SMTP-Passwort. */
+  /** Größe dieser Installation für die Wecken-Antwort an den Master
+   * (Nutzervorgabe, 2026-09-01: "kann ich die nutzerzahl abrufen über
+   * prüfen?"). Bewusst dieselben Filter wie die jeweilige Übersichtsseite
+   * hier vor Ort, damit die Zahl auf der Master-Kachel mit dem
+   * übereinstimmt, was jemand in dieser Installation selbst sieht:
+   * Seiten ohne Papierkorb-Einträge, Nutzer ohne gelöschte und ohne
+   * anonymisierte Konten. */
+  async getInstallationStats(): Promise<{ pages: number; users: number }> {
+    const [pages, users] = await Promise.all([
+      this.prisma.content.count({ where: { deletedAt: null } }),
+      this.prisma.user.count({
+        where: { deletedAt: null, anonymizedAt: null },
+      }),
+    ]);
+    return { pages, users };
+  }
+
   async getApiKey(): Promise<string | undefined> {
     const settings = await this.prisma.appSettings.findUnique({
       where: { id: 1 },

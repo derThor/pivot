@@ -16,6 +16,7 @@ import { toastEdited } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { DeploymentModeDialog } from "@/components/deployment-mode-dialog";
 import { LicenseApiKeyDialog } from "@/components/license-api-key-dialog";
 import { PaginationControls } from "@/components/pagination-controls";
@@ -57,9 +58,14 @@ const STATUS_LABEL: Record<string, string> = {
 export function MasterClientCard({
   settings,
   websites,
+  statsWebsites,
 }: {
   settings: AppSettings;
   websites: WebsiteListResponse;
+  /** Dieselbe Liste, aber mit eigener Seite (Query-Param `statsPage`) –
+   * die Zählerstände-Karte blättert unabhängig von "Mandanten", sonst
+   * würden beide Karten zwangsweise gemeinsam springen. */
+  statsWebsites: WebsiteListResponse;
 }) {
   const isMaster = settings.deploymentMode === "master";
   const router = useRouter();
@@ -162,6 +168,36 @@ export function MasterClientCard({
     </div>
   );
 
+  // Nutzervorgabe, 2026-09-01: "der zählerstand muss zurücksetzbar sein,
+  // so dass man dies löschen kann" – und im Nachgang "einzelnen
+  // zählerstand je mandanten". Ohne `websiteId` app-weit, mit nur für
+  // diese eine Webseite.
+  async function handleResetStatsHistory(websiteId?: string) {
+    const res = await fetch(
+      bff(
+        websiteId
+          ? `/api/websites/${websiteId}/stats-history`
+          : "/api/websites/stats-history",
+      ),
+      { method: "DELETE" },
+    );
+    if (!res.ok) {
+      toast.error("Zählerstände konnten nicht zurückgesetzt werden.");
+      return;
+    }
+    const data = (await res.json().catch(() => null)) as {
+      deletedReports?: number;
+    } | null;
+    toastEdited(
+      `Zählerstände zurückgesetzt${
+        data?.deletedReports
+          ? ` – ${data.deletedReports} Einträge gelöscht`
+          : ""
+      }.`,
+    );
+    router.refresh();
+  }
+
   if (isMaster) {
     return (
       <div className="flex flex-col gap-4">
@@ -228,19 +264,105 @@ export function MasterClientCard({
               );
             })}
           </CardContent>
-          {websites.meta.pageCount > 1 && (
-            <CardContent className="pt-0">
-              <PaginationControls
-                page={websites.meta.page}
-                pageCount={websites.meta.pageCount}
-                buildHref={(p) => {
-                  const params = new URLSearchParams(searchParams.toString());
-                  params.set("mandantenPage", String(p));
-                  return `?${params.toString()}`;
-                }}
-              />
-            </CardContent>
-          )}
+          {/* Immer sichtbar, auch bei einer einzigen Seite (Nutzervorgabe,
+              2026-09-01) – so wie auf den übrigen Listenseiten der App;
+              vorher war sie an `pageCount > 1` gebunden und damit im
+              Normalfall unsichtbar. */}
+          <CardContent className="pt-0">
+            <PaginationControls
+              page={websites.meta.page}
+              pageCount={websites.meta.pageCount}
+              buildHref={(p) => {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set("mandantenPage", String(p));
+                return `?${params.toString()}`;
+              }}
+            />
+          </CardContent>
+        </Card>
+        {/* Zählerstände (Nutzervorgabe, 2026-09-01). Bewusst eine eigene
+            Karte unter "Mandanten" statt eines Knopfs an jeder Zeile: das
+            Zurücksetzen wirkt app-weit, ein Knopf pro Mandant hätte eine
+            Genauigkeit vorgetäuscht, die es nicht gibt. */}
+        <Card className="rounded-xl shadow-sm">
+          <CardHeader>
+            <CardTitle>Gemeldete Zählerstände</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Seiten- und Nutzerzahlen melden die Installationen beim Prüfen
+              selbst. Der gespeicherte Verlauf dient der Plausibilitätsprüfung –
+              Zurücksetzen löscht ihn samt offener Hinweise für alle Webseiten.
+            </p>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {/* Je Webseite eine Zeile (Nutzervorgabe, 2026-09-01:
+                "einzelnen zählerstand je mandanten unter einstellungen
+                zurücksetzen button") – ein legitimer Rückgang betrifft in
+                der Regel genau eine Installation. Bewusst hier und nicht
+                in der Mandanten-Liste darüber: deren Zeilen sind selbst
+                `<button>`, ein zweiter Knopf darin wäre ungültiges HTML. */}
+            {statsWebsites.items.map((website) => (
+              <div
+                key={website.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted p-3"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{website.name}</p>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {website.reportedUserCount !== null
+                      ? `${website.reportedPageCount} Seiten · ${website.reportedUserCount} Nutzer`
+                      : "Noch nichts gemeldet"}
+                    {website.statsAnomalyAt ? " · Hinweis offen" : ""}
+                  </p>
+                </div>
+                <ConfirmDeleteDialog
+                  title={`Zählerstand von „${website.name}“ zurücksetzen?`}
+                  description="Löscht Verlauf, zuletzt gemeldete Zahlen und einen offenen Hinweis – nur für diese Webseite. Beim nächsten Prüfen füllen sich die Zahlen von selbst wieder."
+                  confirmLabel="Zurücksetzen"
+                  confirmingLabel="Setzt zurück…"
+                  onConfirm={() => handleResetStatsHistory(website.id)}
+                  trigger={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0 border-button-border"
+                    >
+                      <RotateCcw />
+                      Zurücksetzen
+                    </Button>
+                  }
+                />
+              </div>
+            ))}
+
+            <PaginationControls
+              page={statsWebsites.meta.page}
+              pageCount={statsWebsites.meta.pageCount}
+              buildHref={(p) => {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set("statsPage", String(p));
+                return `?${params.toString()}`;
+              }}
+            />
+
+            <ConfirmDeleteDialog
+              title="Alle Zählerstände zurücksetzen?"
+              description="Löscht den gespeicherten Verlauf, die zuletzt gemeldeten Zahlen und offene Hinweise zu unglaubwürdigen Rückgängen – für alle Webseiten. Beim nächsten Prüfen füllen sich die Zahlen von selbst wieder."
+              confirmLabel="Zurücksetzen"
+              confirmingLabel="Setzt zurück…"
+              onConfirm={() => handleResetStatsHistory()}
+              trigger={
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-fit border-button-border"
+                >
+                  <RotateCcw />
+                  Alle zurücksetzen
+                </Button>
+              }
+            />
+          </CardContent>
         </Card>
 
         <DeploymentModeDialog

@@ -1417,9 +1417,37 @@ model Website {
   // "Aufruf angekommen"). `lastWakeupAt` macht die Kachel-Anzeige explizit
   // als Momentaufnahme kenntlich statt einen dauerhaft aktuellen Live-
   // Status vorzutäuschen.
+  statsReports WebsiteStatsReport[]
+
   lastWakeupAt      DateTime?
   lastWakeupOk      Boolean?
   lastWakeupMessage String?
+
+  // Von der Installation beim "Prüfen"/"Wecken" selbst gemeldete Größe
+  // (Nutzervorgabe, 2026-09-01: "kann ich die nutzerzahl abrufen über
+  // prüfen? so dass ich diese in den webseite kacheln angezeigt bekomme").
+  // Kommt denselben Weg wie `lastReportedVersion`: der Master ruft
+  // `/api/license/wakeup` der Installation auf, die antwortet mit ihren
+  // eigenen Zählwerten. Damit sind es SELBSTAUSKÜNFTE der Slave-Seite –
+  // gut genug für eine Übersichtsanzeige, aber bewusst keine
+  // manipulationssichere Grundlage für Abrechnung o.ä. (der Master hat
+  // weiterhin keinen Zugriff auf die Client-Datenbank). `null`, solange
+  // nie erfolgreich geprüft wurde; ein fehlgeschlagener Lauf lässt den
+  // letzten bekannten Stand stehen, statt ihn auf "unbekannt"
+  // zurückzusetzen.
+  reportedPageCount Int?
+  reportedUserCount Int?
+
+  // Plausibilitätsprüfung der oben gemeldeten Selbstauskünfte
+  // (Nutzervorgabe, 2026-09-01, nach der Frage "ist das jetzt sicher vor
+  // manipulation?" – Antwort: nein, die Zahl bestimmt die Client-Seite
+  // selbst; das hier ERKENNT grobe Manipulation, verhindert sie nicht).
+  // Gesetzt, wenn ein gemeldeter Wert gegenüber dem vorherigen Bericht
+  // unglaubwürdig einbricht; bleibt danach stehen, bis jemand ihn am
+  // Master quittiert – sonst wäre ein einmaliger Sprung beim nächsten
+  // Prüfen wieder unsichtbar (der neue Wert ist dann ja stabil).
+  statsAnomalyAt      DateTime?
+  statsAnomalyMessage String?
 
   // Nutzervorgabe, 2026-08-25: "Entwicklermodus wird nach spätestens 3
   // Tagen automatisch gesperrt, bis zur Reaktivierung" – Zeitpunkt, seit
@@ -1469,6 +1497,39 @@ model Website {
   @@index([status])
   @@index([mandantId])
   @@map("websites")
+}
+
+// Verlauf der von einer Installation gemeldeten Kennzahlen (Nutzervorgabe,
+// 2026-09-01: "Verlauf der gemeldeten Zahlen speichern und bei
+// unglaubwürdigen Sprüngen eine Systemnachricht auslösen"). Dient zwei
+// Zwecken: Vergleichsbasis für die Plausibilitätsprüfung und
+// Nachvollziehbarkeit einer ausgelösten Meldung ("von 24 auf 3 am …").
+// Bewusst eine eigene Tabelle statt zweier "vorher"-Spalten an Website:
+// bei einer Manipulation ist der Verlauf davor die eigentlich
+// interessante Information.
+//
+// **Eine Zeile je ÄNDERUNG, nicht je Prüfung** (Nutzervorgabe,
+// 2026-09-01: "unnötigen Datenmüll vermeiden"): meldet eine Installation
+// dieselben Zahlen wie beim letzten Mal, wird nur `lastReportedAt` des
+// bestehenden Eintrags hochgesetzt. Eine stabile Installation, die
+// hundertmal geprüft wird, hat damit genau eine Zeile – und der Verlauf
+// liest sich als Liste echter Sprünge statt als Klick-Protokoll.
+// `firstReportedAt`/`lastReportedAt` sagen zusammen "dieser Stand galt
+// von … bis …". Zusätzlich auf die letzten 50 Einträge je Website
+// beschnitten (siehe WebsitesService).
+model WebsiteStatsReport {
+  id        String  @id @default(cuid())
+  websiteId String
+  website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  pageCount Int
+  userCount Int
+
+  firstReportedAt DateTime @default(now())
+  lastReportedAt  DateTime @default(now())
+
+  @@index([websiteId, firstReportedAt])
+  @@map("website_stats_reports")
 }
 
 // Mandantenfähigkeit (Nutzervorgabe, 2026-08-27): welche Module ein

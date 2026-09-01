@@ -324,6 +324,7 @@ export function SettingsForm({
   mailTemplates,
   mailShells,
   websites,
+  statsWebsites,
   moduleSettings,
 }: {
   settings: AppSettings;
@@ -336,6 +337,9 @@ export function SettingsForm({
   mailTemplates: MailTemplateListItem[];
   mailShells: MailShellListItem[];
   websites: WebsiteListResponse;
+  /** Gleiche Liste wie `websites`, aber mit eigener Seite – die Karte
+   * "Gemeldete Zählerstände" blättert unabhängig von "Mandanten". */
+  statsWebsites: WebsiteListResponse;
   moduleSettings: ModuleSettingsEntry[] | null;
 }) {
   const router = useRouter();
@@ -1453,7 +1457,11 @@ export function SettingsForm({
             )}
 
             {activeSection === "master-client" && (
-              <MasterClientCard settings={settings} websites={websites} />
+              <MasterClientCard
+                settings={settings}
+                websites={websites}
+                statsWebsites={statsWebsites}
+              />
             )}
 
             {activeSection === "module" && (

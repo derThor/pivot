@@ -93,6 +93,15 @@ function describeActivity(entry: ActivityLogEntry) {
         title: "Sitzung durch Administrator übernommen",
         category: `von ${actorName}`,
       };
+    case "website.stats_history_reset":
+      return {
+        title: `Gemeldete Zählerstände zurückgesetzt${
+          metadata.deletedReports
+            ? ` (${metadata.deletedReports} Einträge gelöscht)`
+            : ""
+        }`,
+        category: `Master-Client · von ${actorName}`,
+      };
     case "company.field_updated": {
       const fieldLabel =
         COMPANY_FIELD_LABELS[metadata.field as string] ??

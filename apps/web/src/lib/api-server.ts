@@ -1516,7 +1516,14 @@ export interface WebsiteListItem {
   // Mandantenfähigkeit, 2026-08-27 – jede Website gehört zu genau einem
   // Mandanten (siehe MandantListItem).
   mandantId: string;
-  mandant: { id: string; name: string; logoUrl: string | null };
+  mandant: {
+    id: string;
+    name: string;
+    logoUrl: string | null;
+    // Am Mandanten gebuchte, aktive Module – auf der Webseiten-Kachel als
+    // Icons rechts neben den Zahlen (Nutzervorgabe, 2026-09-01).
+    modules: { moduleKey: string }[];
+  };
   testUrl: string | null;
   lastCheckInAt: string | null;
   // Ergebnis des letzten "Wecken"-Diagnose-Durchlaufs (Nutzervorgabe,
@@ -1529,6 +1536,17 @@ export interface WebsiteListItem {
   // zuletzt beim "Wecken"/"Prüfen" eingeholt (Nutzervorgabe, 2026-08-25:
   // "damit man den aktuellen Stand ermitteln kann").
   lastReportedVersion: string | null;
+  // Von der Installation beim "Prüfen" selbst gemeldete Größe
+  // (Nutzervorgabe, 2026-09-01) – Selbstauskunft der Slave-Seite, kein
+  // Master-seitiger Datenbankzugriff; `null`, solange nie erfolgreich
+  // geprüft wurde.
+  reportedPageCount: number | null;
+  reportedUserCount: number | null;
+  // Plausibilitätsprüfung dieser Selbstauskünfte (2026-09-01): gesetzt,
+  // wenn ein gemeldeter Wert unglaubwürdig eingebrochen ist. Bleibt
+  // stehen, bis jemand ihn quittiert.
+  statsAnomalyAt: string | null;
+  statsAnomalyMessage: string | null;
   // Vom Client zuletzt selbst bestätigter Lizenzstatus (Nutzervorgabe,
   // 2026-08-25: "hier die entsprechenden Badges nehmen") – nur bei
   // erfolgreicher Prüfung gesetzt, sonst bleibt der letzte bekannte Stand.

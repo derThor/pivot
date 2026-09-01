@@ -575,3 +575,81 @@ neuen Vorfall (kein täglicher Digest).
   Log-Eintrag, erneutes Auftreten mailt wieder frisch. Testdaten
   (Notification-/EmailLog-Zeilen, SMTP-Testkonfiguration, Audit-Log)
   danach vollständig zurückgesetzt.
+
+## Update 2026-09-01: Unveröffentlichte Rechtstexte als eigene Meldung
+
+Nutzer-Bugreport (2026-09-01, mit Screenshot der Datenschutz-Seite neben
+dem Postfach): *"obwohl hier die dokumente überwiegend auf entwurf stehen,
+wird nur das fehlende in den benachrichtigungen angezeigt. das ist falsch.
+auch das muss angezeigt werden"*.
+
+**Ursache**: Der Rechtstexte-Kandidat filterte ausschließlich über
+`LegalDocument.status` (`current` | `stale` | `missing`). Dieses Feld
+beschreibt nur die *Aktualität des erzeugten Inhalts* gegenüber den
+Firmen-Stammdaten – der **Veröffentlichungsstand** der verknüpften Seite
+steckt in einem zweiten, davon unabhängigen Feld `contentStatus`
+(`DRAFT`/`SCHEDULED`/`PUBLISHED`/`ARCHIVED`, aus `Content.status`). Ein
+frisch erzeugtes Impressum, das als Entwurf liegen bleibt, war damit
+`status: 'current'` → grüner "aktuell"-Badge, keine Meldung, obwohl für
+Besucher exakt dasselbe gilt wie bei einem fehlenden Text.
+
+**Lösung**: eine **zweite, eigenständige** Kandidatenzeile in
+`NotificationsService.buildCandidates()`, `dedupeKey:
+'legal-documents-unpublished'`, Filter
+`d.contentId != null && d.contentStatus !== 'PUBLISHED'`:
+
+- *Nicht* in `legal-documents-stale` mit hineingezählt: dort ist die
+  Abhilfe "neu erzeugen", hier "veröffentlichen" – zwei verschiedene
+  Handlungen gehören in zwei Meldungen, sonst führt ein gemeinsamer
+  Zähler in die falsche Aktion. Ein Dokument darf bewusst in beiden
+  Meldungen auftauchen (veraltet *und* unveröffentlicht).
+- `contentId != null` schließt aus, dass ein Dokument ganz ohne Seite hier
+  doppelt gemeldet wird – dafür gibt es bereits den `missing`-Zweig.
+- Nicht nur `DRAFT`, sondern alles außer `PUBLISHED`: `SCHEDULED` ist noch
+  nicht live, `ARCHIVED` nicht mehr. Die Beschreibung benennt den
+  konkreten Grund je Dokument ("Impressum (Entwurf)") über eine lokale
+  `CONTENT_STATUS_LABELS`-Map, gleiche Schreibweise wie in
+  `trash.service.ts`.
+- **Kein neuer `notify*`-Schalter**: die Meldung hängt am bestehenden
+  `notifyLegalDocuments`. `settingKeyFor()` muss den neuen `dedupeKey`
+  deshalb ebenfalls darauf abbilden – sonst bliebe die Zeile beim
+  Ausschalten der Kategorie stehen (der Bug von 2026-08-21).
+
+**Frontend-Abgleich** (`privacy-view.tsx`) – Standing Rule aus dem Update
+2026-08-19 gilt in beide Richtungen, Seite und Postfach dürfen nicht
+auseinanderlaufen:
+
+- Neu `unpublishedCount` und `attentionCount`. `attentionCount` zählt
+  **Dokumente, nicht Befunde** (`status !== 'current' || nicht
+  veröffentlicht`) – ein Addieren der Einzelzähler hätte in der Kachel
+  eine höhere Zahl stehen lassen können, als es überhaupt Rechtstexte
+  gibt, weil ein Dokument beide Probleme gleichzeitig haben kann.
+- Kachel "Rechtstexte offen" und der Tab-Untertitel `… offen` nutzen
+  `attentionCount`, Sublabel jetzt "Veraltet, fehlend oder Entwurf".
+- Das Warnbanner setzt seinen Detailsatz aus bis zu drei Teilsätzen
+  zusammen (`legalAttentionDetail`) statt aus der vorherigen
+  Zweifach-Verschachtelung; der Grund für "veraltet" bleibt als Klammer
+  erhalten ("2 sind veraltet (Firmendaten geändert)"). `break-words`, weil
+  der Satz bei allen drei Teilen in schmalen Spalten sonst überläuft.
+- Der graue "Entwurf"-Badge in der Dokumentenliste bleibt unverändert –
+  er zeigt weiter den reinen Publikationsstand, der grüne "aktuell"-Badge
+  daneben weiter die Inhaltsaktualität. Beide Achsen bleiben getrennt
+  lesbar; die Bewertung "das ist offen" steht in Kachel/Banner/Postfach.
+
+**Schalter-Beschriftung** (AppSettings-Label an drei Stellen, siehe
+`settings-field-labels`-Muster): "Veraltete/fehlende Rechtstexte" →
+**"Rechtstexte brauchen Aufmerksamkeit"** in
+`notification-settings-card.tsx`, `settings.service.ts` (`FIELD_LABELS`),
+`describe-audit-action.ts` und `settings-change-labels.ts` – sonst stünde
+im Protokoll/CSV eine Beschriftung, die die Meldung nicht mehr abdeckt.
+
+**Live verifiziert** gegen den echten Datenbestand (3 Entwürfe, 1
+veröffentlicht, 1 fehlend): das Postfach zeigt jetzt zusätzlich
+"3 Rechtstexte sind nicht veröffentlicht – Allgemeine
+Geschäftsbedingungen (Entwurf), Cookie-Hinweis (Entwurf), Impressum
+(Entwurf)", die bestehende "1 Rechtstext veraltet oder fehlend" bleibt
+unverändert daneben stehen.
+
+**Randnotiz**: `company-legal-banners.tsx` (`LegalDocumentsBanner`) hat
+dieselbe alte Zählung, ist aber seit dem Postfach-Umbau (2026-08-21)
+nirgends mehr importiert – toter Code, bewusst nicht mitgezogen.

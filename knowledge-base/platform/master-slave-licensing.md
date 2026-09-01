@@ -1499,3 +1499,369 @@ Controllern und `NotificationsService`. Kein neuer Guard nötig, da
 `JobsService` kein HTTP-Controller ist (eigene `isEntitled()`-Prüfung
 direkt im Service, gleiche Denkweise wie `NotificationsService.
 hasModuleFeature()`).
+
+## Update 2026-09-01: Mandanten-Kacheln neu (Kopfbereich nach Vorlage)
+
+Nutzervorgabe mit Screenshot **und mitgeliefertem CSS** ("stelle die
+mandanten so dar. der header dieser kachel css …"). Umgesetzt in
+`mandanten-view.tsx`, Werte 1:1 aus der Vorlage übernommen:
+
+- **Kopf**: `#132033`, `px-4 pt-9 pb-5`, darüber ein Motiv, darüber ein
+  Scrim `linear-gradient(100deg, rgba(19,32,51,.74) → .40 → .08)`, damit
+  Logo und Name links lesbar bleiben. Hover skaliert nur das Motiv
+  (`scale(1.04)`, 500 ms) – der Hover hängt am `group` der ganzen Kachel,
+  nicht am Kopf, genau wie `.tenant-card:hover` in der Vorlage.
+- **Statusstreifen** unten, **6 px** (Nutzervorgabe direkt im
+  Anschluss: "die linien, die den status anzeigen sollen höher sein" –
+  die 3 px der Vorlage waren als einziger Statusträger im Kopf zu leicht
+  zu übersehen): `#bce64d` aktiv, `#f6cf7e` gesperrt,
+  `rgba(255,255,255,.45)` inaktiv – die `.22` der Vorlage waren auf dem
+  dunklen Kopf kaum vom Hintergrund zu unterscheiden (Nutzervorgabe:
+  "inaktiv balken in light heller machen"; bewusst in beiden Themes
+  derselbe Wert, der Kopf ist immer gleich dunkel). Bei nicht-aktiven Mandanten läuft das
+  Motiv zusätzlich auf `opacity: .78`.
+- **Logo-/Initialen-Kachel** 48×48, `rounded-xl` (=12 px), Inset-Ring
+  `rgba(255,255,255,.16)`; ohne Logo `rgba(255,255,255,.10)` + Initialen
+  in `#bce64d`, mit Logo weißer Grund. Initialen = erster Buchstabe des
+  ersten und des letzten Wortes ("Kanzlei Nord" → "KN"), bei einem
+  einzelnen Wort dessen erste zwei Zeichen – sonst stünde da nur ein
+  Buchstabe.
+- **Name** 15.5 px/700/weiß, **Domain** darunter monospace 11 px in
+  `white/55`.
+
+**Bewusst feste Hex-Werte statt Theme-Tokens**: der Kopf ist in beiden
+Themes dunkel, die Farben kommen unverändert aus der Vorlage. Der Rest
+der Kachel (Body, Badges, Trennlinie) bleibt token-basiert und damit
+theme-fähig.
+
+**`tenant_cover_2.png` → Inline-SVG**: das Bögen-Motiv der Vorlage ist
+als `<TenantCover>` nachgebaut – neun konzentrische Kreise, deren
+Zentrum auf der **unteren rechten Ecke** liegt (`cx 300 / cy 116` bei
+einer viewBox von 320×116). Die Kachel schneidet damit aus jedem Ring den
+oberen Viertelkreis heraus, die Linien wirken sichtbar rund; ein erster
+Versuch mit dem Zentrum rechts auf halber Höhe ließ sie flach nach links
+auslaufen und wurde verworfen (Nutzervorgabe: "es soll so halb rund
+aussehen wie hier … also die grünen linien"). Jeder **zweite** Ring ist
+lime `rgba(188,230,77,…)` und trägt das Motiv, dazwischen liegen feine
+weiß-transparente Ringe; die Deckkraft nimmt nach außen ab.
+`preserveAspectRatio` steht auf `xMaxYMax slice`, damit genau diese
+Ecke der Ankerpunkt bleibt – mit dem üblichen `xMidYMid` würde sie bei
+breiteren Kacheln weggeschnitten und die engen inneren Bögen wären weg.
+Weitere Gründe für SVG statt Bilddatei: keine
+Asset-Datei, die mitgepflegt und ausgeliefert werden muss, scharf auf
+jeder Pixeldichte und in jeder Kachelbreite. Soll später doch eine echte
+Bilddatei rein, tritt sie an dieselbe Stelle – Positionierung, Scrim und
+Hover-Zoom bleiben unverändert.
+
+**Body** (unter dem Kopf): Status-Badge + Standort mit `MapPin` in einer
+Zeile, darunter – per `mt-auto` immer am Kachelboden, damit die Karten im
+Raster gleich hoch schließen – die gebuchten Module als Icon-Box **mit
+Label**. Die Labels kommen neu aus `getMandantModuleCatalog()`, das die
+Übersichtsseite bisher nicht geladen hat (die Liste selbst kennt nur
+`moduleKey`); der Aufruf hängt im bestehenden `Promise.all()` mit drin.
+
+**Zwei Abweichungen von der Vorlage**, beide bewusst:
+
+- Der `ChevronRight` rechts im alten Kopf ist ersatzlos weg (die ganze
+  Kachel ist weiterhin ein Link).
+- Die "N Websites"-Badge erscheint **nur noch ab zwei Websites**: im Kopf
+  steht nur die erste Domain, bei mehreren wäre die Kachel sonst
+  stillschweigend unvollständig. Bei genau einer Website (der Fall im
+  Screenshot) fällt sie wie dort weg.
+
+## Update 2026-09-01: Detailseite bekommt denselben Kopf
+
+Nutzervorgabe direkt im Anschluss an das Kachel-Redesign: *"passe die
+detailseite an"*.
+
+Der Kopf ist dafür in eine **gemeinsame Komponente**
+`components/mandant-header.tsx` gewandert – vorher lag er komplett in
+`mandanten-view.tsx`, und die Detailseite hatte einen ganz anderen
+Verlauf (`linear-gradient(135deg, #3c4d24 → #16202b → #0a0e16)`), der
+mit der Vorlage nichts mehr zu tun hatte:
+
+- `MandantHeaderShell` kapselt Hintergrund, Motiv, Scrim und
+  Statusstreifen und rendert die Inhalte darüber. Die **Innenabstände
+  kommen über `className` von außen**, weil die Kachel enger sitzt
+  (`px-4 pt-9 pb-5`) als der Seitenkopf (`p-6`).
+- Wichtig beim Befüllen: die Flex-Regeln gehören in ein eigenes Kind, NICHT
+  an die Shell – deren direktes Kind ist ein einzelnes `relative`-`div`
+  über den absolut positionierten Ebenen, ein `flex` an der Shell würde
+  also nur dieses eine Element ausrichten.
+- Mitexportiert werden `HEADER_ACCENT` (für die Initialen-Kachel) und
+  `initialsOf()`.
+- Der Hover-Zoom hängt an einem `group` weiter oben: auf der Übersicht
+  trägt die ganze Kachel diese Klasse (wie `.tenant-card:hover` in der
+  Vorlage), auf der Detailseite gibt es keine – dort steht das Motiv
+  still, was für eine nicht anklickbare Fläche auch richtig ist.
+
+**Der Statusstreifen der Detailseite folgt dem im Formular GEWÄHLTEN
+Status** (`status`-State), nicht dem gespeicherten `mandant.status`: das
+Umschalten der "Mitgliedschaft" weiter unten wird so sofort oben
+sichtbar, auch bevor gespeichert wurde.
+
+Textseitig übernimmt die Detailseite die Kachel-Typografie: Name fett auf
+`leading-[1.15]`, Domain darunter in Monospace/`white/55`. Der Standort
+stand vorher als `", 22763 Hamburg"` hinter der Domain in derselben
+Zeile – jetzt eine eigene Zeile mit `MapPin`, wie im Kachel-Body.
+
+## Update 2026-09-01: Sperrvermerk auf der Kachel
+
+Nutzervorgabe: *"füge den sperrvermerk in einem alert rechts neben dem
+status badge ein, so das trotzdem alle kacheln gleich hoch sind"*.
+
+- **Kompakter Chip statt `SystemMessage`-Box**: Farben exakt die
+  `warning`-Variante aus `ui/system-message.tsx` (Light UND Dark:
+  `#fde68a`/`#fffbeb`/`#78350f`, Icon `#b45309`), aber einzeilig mit
+  `px-2 py-0.5` – die volle Box hätte die Kachelhöhe gesprengt. Damit
+  bleibt die app-weite Farbkonvention für Warnhinweise gewahrt, ohne die
+  Kachel zu sprengen.
+- **Statuszeile mit `flex-wrap` + `basis-48` am Chip** (korrigiert
+  nach Nutzer-Bugreport am selben Tag: "mobil optimieren. wenn
+  sperrvermerk oder andere texte zu lang, bricht es falsch um"). Der
+  erste Versuch verbot den Umbruch (`flex-nowrap`), aus Sorge um die
+  Kachelhöhe – Folge war, dass der Chip auf schmalen Kacheln bis auf sein
+  Icon zusammengepresst wurde und der Standort als "49088 Osnabr…"
+  abbrach. **Die Sorge war unbegründet**: die Kacheln einer Rasterzeile
+  sind ohnehin gleich hoch (Grid streckt sie, der Kachel-Body ist
+  `flex-1`, die Modulzeile hängt an `mt-auto`), eine umbrechende
+  Statuszeile schiebt also nur den Innenraum. Jetzt: Badge und
+  Websites-Zähler `shrink-0`, Chip `flex-1 basis-48` – bleiben neben
+  Badge und Standort keine 12rem übrig, rutscht er in eine eigene Zeile
+  und nimmt dort die volle Breite. Der vollständige Vermerk hängt weiter
+  im `title`.
+- **Modul-Einträge `shrink-0 max-w-full`**: ein Modul rutscht bei
+  Platzmangel komplett in die nächste Zeile, statt sein Label
+  anzuschneiden; `truncate` greift erst, wenn ein einzelnes Label breiter
+  als die Kachel ist.
+- **Nur bei `status === "locked"`**: im Bestand gibt es Mandanten mit
+  einem `lockReason` aus früheren Sperren, die inzwischen wieder aktiv
+  oder inaktiv sind – deren alter Vermerk darf nicht auftauchen. (Die
+  Detailseite sendet `lockReason` konsequenterweise nur mit, solange
+  "Gesperrt" gewählt ist, räumt das Feld beim Entsperren aber nicht auf.)
+- **Gesperrt ohne Vermerk**: der Chip bleibt stehen und sagt kursiv "Kein
+  Sperrvermerk hinterlegt". Die Detailseite verlangt bei "Gesperrt"
+  ausdrücklich einen Vermerk ("Zugang gesperrt, Sperrvermerk
+  erforderlich") – ein stummes Nichts würde diesen offenen Punkt in der
+  Übersicht verschlucken. Genau dieser Fall lag beim ersten gesperrten
+  Testmandanten vor.
+
+## Update 2026-09-01: Erste Karte der Detailseite komplett auf dem Motiv
+
+Nutzervorgabe nach Bildvorlage: *"stell unter mandanten detailseite die
+erste kachel so dar. nimm bei aktiv das logo grün wie auf dem bild"*.
+Vorher lag nur der Kopf auf dem dunklen Motiv, darunter kam eine normale
+weiße `CardContent`-Fläche – jetzt trägt `MandantHeaderShell` die
+**ganze** Karte inklusive Formular (`rounded-xl p-6 pb-8`), die
+`Card`-Hülle entfällt dort.
+
+- **Formularfelder auf dunklem Grund**: zwei lokale Konstanten
+  `DARK_LABEL` (`text-xs uppercase text-white/60`, wie die
+  SegmentedPicker-Labels der Vorlage) und `DARK_INPUT`
+  (`border-white/15 bg-white/5 text-white`). Bewusst keine neue
+  `dark`-Variante an `Input`/`Label`: das ist die einzige Stelle der App
+  mit einem *dauerhaft* dunklen Formulargrund – die Komponenten sind sonst
+  theme-gesteuert, eine Variante hätte den Eindruck erweckt, das sei ein
+  allgemeines Angebot.
+- **`SegmentedPicker` bekam `variant="onDark"`**: hellt Rahmen, Grund und
+  die inaktiven Beschriftungen auf. Die aktive Pille bleibt unverändert,
+  sie trägt über `activeClassName` weiterhin die Statusfarbe
+  (grün/orange/rot laut Vorgabe vom 2026-08-27) – die Bildvorlage zeigt
+  dort zwar ein kräftigeres Lime, aber nur den Aktiv-Fall; die
+  Farbunterscheidung der drei Zustände wiegt schwerer als der exakte
+  Grünton.
+- **Sperrvermerk-Box und Fehlermeldung** nutzen jetzt fest die
+  Dark-Werte der `warning`- bzw. `error`-Variante aus
+  `ui/system-message.tsx` statt der theme-abhängigen: der Untergrund ist
+  hier immer dunkel, die hellen Light-Werte wären ein Fremdkörper.
+- **Meta-Zeile** unter dem Namen fasst Domain, Ort und Website-Zahl in
+  einer Monospace-Zeile zusammen (Bildvorlage) statt sie wie zuvor
+  untereinander zu stapeln.
+
+**Logo-Kachel mit Initialen**: `MandantLogoField` zeigt ohne
+hochgeladenes Logo jetzt die Initialen statt eines nackten "+" – dieselbe
+Kachel wie auf den Übersichts-Kacheln, weiterhin klickbar; das "+"
+erscheint beim Überfahren. Farbe der Initialen kommt aus der neuen,
+gemeinsam genutzten Map `STATUS_ACCENT` in `mandant-header.tsx`
+(aktiv = Lime, gesperrt = `#f6cf7e`, inaktiv = `white/75`). Sie gilt
+**auch auf den Übersichts-Kacheln**, die vorher immer Lime zeigten –
+sonst hätte ein gesperrter Mandant in der Liste ein grünes und auf der
+Detailseite ein amberfarbenes Kürzel. Bewusst eine eigene Map neben
+`STATUS_BAR_COLOR`: der Streifen ist eine Fläche und verträgt das blasse
+`white/45` für "inaktiv", Text in derselben Deckkraft wäre kaum lesbar.
+
+## Update 2026-09-01: Eigener Scrim-Verlauf für den Dark-Modus
+
+Nutzervorgabe mit fertigem CSS: *"nimm diese hintergundfarbe für dark bei
+kacheln bg"* –
+`linear-gradient(100deg, rgb(5 9 16 / 74%) 0%, rgb(4 13 25 / 40%) 78%,
+rgb(6 15 29 / 13%) 100%)`.
+
+Der Scrim ist deshalb vom Inline-`style` in eine Klasse
+`.mandant-header-scrim` in `globals.css` gewandert: **ein
+`style`-Attribut kann keine `dark:`-Variante tragen**, und die beiden
+Themes bekommen hier bewusst unterschiedliche Verläufe. Light behält den
+ursprünglichen Verlauf aus der ersten Vorlage
+(`rgba(19,32,51,…)`, Mittelpunkt bei 48%), Dark zieht den Kopf tiefer
+(fast schwarze Blautöne) und verschiebt den Mittelpunkt auf 78% – dadurch
+bleiben die hellen Bögen rechts länger stehen.
+
+Gilt automatisch für **beide** Stellen, weil sie sich
+`MandantHeaderShell` teilen: die Übersichts-Kacheln und die erste Karte
+der Detailseite. Der Kopf-Grundton `#132033` bleibt in beiden Themes
+gleich – nur die Abdunkelung darüber unterscheidet sich.
+
+## Update 2026-09-01: Seiten-/Nutzerzahl auf den Webseiten-Kacheln
+
+Nutzerfrage: *"kann ich die nutzerzahl abrufen über prüfen? so dass ich
+diese in den webseite kacheln angezeigt bekomme"* – **ja**, und zwar über
+denselben Weg, den `lastReportedVersion` schon nutzt.
+
+**Kein neuer Mechanismus nötig**: beim "Prüfen"/"Wecken" ruft der Master
+`POST {baseUrl}/api/license/wakeup` der Installation auf, die bereits mit
+`{ triggered, outcome, version }` antwortet. Dort kommt jetzt
+`stats: { pages, users }` dazu:
+
+- Slave-Seite: `LicenseClientService.getInstallationStats()` zählt
+  `content` (ohne Papierkorb) und `user` (ohne gelöschte und ohne
+  anonymisierte) – **bewusst dieselben Filter wie die jeweilige
+  Übersichtsseite vor Ort**, damit die Zahl auf der Master-Kachel mit dem
+  übereinstimmt, was jemand in dieser Installation selbst sieht.
+- Master-Seite: neue Spalten `Website.reportedPageCount` /
+  `reportedUserCount`, gefüllt in `wakeup()` **und** in
+  `checkAll()` ("Prüfen" oben auf der Seite). Wie bei der Version nur
+  überschreiben, wenn tatsächlich etwas gemeldet wurde – ein Timeout darf
+  die zuletzt bekannten Zahlen nicht löschen.
+- Ältere Installationen ohne das Feld liefern schlicht kein `stats`; die
+  Spalten bleiben dann `null` und die Zeile auf der Kachel entfällt,
+  statt "0 Seiten · 0 Nutzer" vorzutäuschen.
+
+**Wichtige Einordnung**: das sind **Selbstauskünfte der Slave-Seite**. Der
+Master hat weiterhin keinen Zugriff auf die Client-Datenbank (Pull-Modell,
+siehe oben) – gut genug für eine Übersichtsanzeige, aber bewusst keine
+manipulationssichere Grundlage für Abrechnung o.ä. Steht so auch im
+Schema-Kommentar.
+
+Damit ist die Entscheidung von 2026-08-27 ("Seiten-/Nutzerzahlen aus dem
+Mockup weglassen fürs Erste – der Master hat keinen Einblick in die
+Inhalte einer Client-Installation") **teilweise revidiert**: nicht durch
+Einblick, sondern durch eine gemeldete Kennzahl.
+
+**Module auf der Webseiten-Kachel** (*"modul hier auch anzeigen"*): Module
+sind am **Mandanten** gebucht, nicht an der Website – `PUBLIC_SELECT` in
+`websites.service.ts` lädt deshalb `mandant.modules` (nur
+`enabled: true`) mit. Icons und Farben sind dieselben wie auf den
+Mandanten-Kacheln, mit `title` für den Modulnamen. Sie stehen in einer
+gemeinsamen Fußzeile mit den Zahlen (Zahlen links, Module rechts) und
+erscheinen unabhängig davon, ob je geprüft wurde – sie kommen aus der
+eigenen Datenbank des Masters.
+
+**Live end-to-end verifiziert** (2026-09-01), nachdem der
+`C:gitstrasev`-Checkout auf den aktuellen Stand gezogen wurde: ein
+"Prüfen" auf der Webseiten-Kachel liefert `reportedPageCount = 0`,
+`reportedUserCount = 2` und `lastWakeupOk = true` – exakt die Werte, die
+eine direkte Abfrage der strasev-Datenbank ergibt. Zuvor war mit dem alten
+Checkout auch der Fallback bestätigt (keine `stats` in der Antwort →
+Spalten bleiben `null`, die Zeile auf der Kachel entfällt).
+
+**Stolperstein bei der Slave-Aktualisierung**: mit dem `basePath: "/admin"`
+(eingeführt 2026-08-31, siehe deployment.md) ist die BFF-Route der
+Installation von `/api/license/wakeup` nach `/admin/api/license/wakeup`
+gewandert. `Website.testUrl` muss deshalb auf `…:3010/admin` zeigen
+statt auf `…:3010/` – sonst läuft der Master ins 404 und die Prüfung
+schlägt fehl, ohne dass der Grund am Master sichtbar wäre. Bei einer
+echten Installation hinter dem Reverse Proxy stellt sich die Frage nicht
+(dort liegt alles unter einer Domain), sie betrifft nur lokale
+Test-Setups mit direkten Ports.
+
+## Update 2026-09-01: Plausibilitätsprüfung der gemeldeten Zählerstände
+
+Auf die Frage *"ist das jetzt sicher vor manipulation?"* lautet die ehrliche
+Antwort **nein** – die Zahlen bestimmt die Client-Installation selbst
+(siehe Update oben). Abgesichert ist nur die *Verbindung* (der Master ruft
+die hinterlegte Domain auf und weist sich mit dem Website-API-Key aus), nicht
+die *Zahl*. Wer die Installation kontrolliert, kann beliebige Werte melden;
+TLS oder Signaturen ändern daran nichts, weil das Problem nicht der
+Transport ist, sondern dass die Quelle selbst die Zahl bestimmt. Die
+Asymmetrie ist gewollt: was der Master anordnet (Lizenz-Token), ist
+Ed25519-signiert und fälschungssicher – was der Client berichtet
+(Version, Zählerstände), ist Vertrauenssache.
+
+Als Kompromiss auf Nutzerwunsch gebaut: eine Plausibilitätsprüfung, die
+**grobe Manipulation erkennt, sie aber nicht verhindert**.
+
+**Verlauf** (`WebsiteStatsReport`): **eine Zeile je ÄNDERUNG, nicht je
+Prüfung** (Nutzervorgabe: "unnötigen Datenmüll vermeiden"). Meldet eine
+Installation dieselben Zahlen wie zuletzt, wird nur `lastReportedAt` des
+bestehenden Eintrags hochgesetzt – ein `UPDATE` statt eines `INSERT`. Eine
+stabile Installation, die hundertmal geprüft wird, hat damit genau eine
+Zeile, und der Verlauf liest sich als Liste echter Sprünge statt als
+Klick-Protokoll. `firstReportedAt`/`lastReportedAt` sagen zusammen "dieser
+Stand galt von … bis …". Zusätzlich auf 50 Einträge je Website beschnitten.
+
+**Schwelle**: ein Rückgang gilt als unglaubwürdig, wenn er BEIDE Grenzen
+reißt – relativ mindestens die Hälfte UND absolut mindestens 5. Die
+absolute Grenze verhindert Fehlalarme bei kleinen Beständen (2 → 1 Nutzer
+ist kein Verdacht). Bewusst nur Rückgänge: ein Anstieg ist normales
+Wachstum und für eine Manipulation zum eigenen Vorteil der falsche Weg.
+Feste Werte im Code, keine Einstellung – erst wenn echte Installationen
+andere Schwellen brauchen, gehört das in die Einstellungen.
+
+**Die Meldung bleibt stehen, bis sie quittiert wird** (`statsAnomalyAt`,
+Button "Zur Kenntnis genommen" auf der Webseiten-Kachel). Das ist der
+entscheidende Punkt: der eingebrochene Wert ist ab dem nächsten Bericht
+stabil – eine Neuberechnung bei jedem Prüfen würde den Vorfall sofort
+wieder verschlucken. Dargestellt als `SystemMessage variant="warning"`,
+nicht `error`: es ist ein Verdacht, kein Beweis, der Rückgang kann echt
+sein. Im Postfach hängt sie am bestehenden Schalter
+`notifyWebsiteAnomaly`.
+
+**Dabei behobener Altbug**: `settingKeyFor()` in
+`notifications.service.ts` kannte den schon länger bestehenden
+`website-anomaly:`-Schlüssel gar nicht – eine bereits erzeugte Zeile blieb
+stehen, wenn die Kategorie später abgeschaltet wurde (derselbe Fehler wie
+2026-08-21 bei der Speicherwarnung). Jetzt bilden beide Website-Anomalien
+auf `notifyWebsiteAnomaly` ab.
+
+**Zurücksetzen** (Nutzervorgabe: "der zählerstand muss zurücksetzbar sein"
+und im Nachgang "einzelnen zählerstand je mandanten"): eigene Karte
+"Gemeldete Zählerstände" unter Einstellungen → Verbindungen →
+Master-Client, unterhalb von "Mandanten". Je Webseite eine Zeile mit den
+aktuellen Zahlen und einem eigenen "Zurücksetzen", darunter "Alle
+zurücksetzen". `DELETE /websites/stats-history` (app-weit) bzw.
+`DELETE /websites/:id/stats-history` (einzeln) löschen Verlauf, zuletzt
+gemeldete Zahlen und offene Hinweise.
+
+- Die app-weite Route MUSS im Controller **vor** `@Delete(':id')` stehen –
+  Nest matcht in Deklarationsreihenfolge, sonst würde "stats-history" als
+  Website-ID gelesen und der Aufruf liefe ins Löschen einer Website.
+- Bewusst in dieser Karte und nicht als Knopf an den Zeilen der
+  Mandanten-Liste darüber: deren Zeilen sind selbst `<button>`, ein
+  zweiter Knopf darin wäre ungültiges HTML.
+- **Auditiert** (`website.stats_history_reset`, mit Beschreibung in
+  `describe-audit-action.ts` und Fall in `user-activity-timeline.tsx`):
+  mit dem Zurücksetzen kann ein Manipulationsverdacht verschwinden, es muss
+  nachvollziehbar bleiben, wer das wann getan hat.
+
+**Live verifiziert**: mit einem künstlichen Vorstand (12 Seiten / 24
+Nutzer) im Verlauf meldete strasev beim Prüfen 0/2 – erkannt und
+gespeichert als "Nutzer: 24 → 2, Seiten: 12 → 0".
+
+### Nachtrag: Pagination in beiden Karten (2026-09-01)
+
+Nutzervorgabe: *"unter einstellungen - verbindungen - master-client soll
+bei der mandantenkachel und gemeldete zählerstände pagination rein"*.
+
+- **"Mandanten"** hatte bereits eine Pagination, sie hing aber an
+  `pageCount > 1` und war im Normalfall (eine Webseite) unsichtbar. Die
+  Bedingung ist raus – jetzt immer sichtbar, wie auf den übrigen
+  Listenseiten der App.
+- **"Gemeldete Zählerstände"** bekam eine eigene, mit **eigenem
+  Query-Parameter `statsPage`** und einer **zweiten `getWebsites()`-
+  Abfrage** in `settings/page.tsx`. Beide Karten zeigen dieselbe Liste –
+  mit einem gemeinsamen Parameter würden sie zwangsweise gemeinsam
+  blättern, was beim Zurücksetzen eines einzelnen Zählerstands verwirrt.
+  Reiht sich in das dort schon bestehende Muster ein (`webhooksPage`,
+  `protocolPage`, `jobsPage`, `jobsRunsPage`, `mandantenPage`), das
+  genau dafür da ist, dass sich die Paginierungen der Abschnitte nicht
+  gegenseitig überschreiben.

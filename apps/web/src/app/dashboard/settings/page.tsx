@@ -23,6 +23,7 @@ export default async function SettingsPage({
     jobsPage?: string;
     jobsRunsPage?: string;
     mandantenPage?: string;
+    statsPage?: string;
   }>;
 }) {
   const {
@@ -31,12 +32,18 @@ export default async function SettingsPage({
     jobsPage: jobsPageParam,
     jobsRunsPage: jobsRunsPageParam,
     mandantenPage: mandantenPageParam,
+    statsPage: statsPageParam,
   } = await searchParams;
   const webhooksPage = Number(webhooksPageParam) || 1;
   const protocolPage = Number(protocolPageParam) || 1;
   const jobsPage = Number(jobsPageParam) || 1;
   const jobsRunsPage = Number(jobsRunsPageParam) || 1;
   const mandantenPage = Number(mandantenPageParam) || 1;
+  // Eigener Parameter, obwohl "Mandanten" und "Gemeldete Zählerstände"
+  // dieselbe Website-Liste zeigen: sonst blättern die beiden Karten
+  // zwangsweise gemeinsam, was beim Zurücksetzen eines einzelnen
+  // Zählerstands verwirrt.
+  const statsPage = Number(statsPageParam) || 1;
 
   const [settings, folders] = await Promise.all([
     getSettings(),
@@ -54,6 +61,7 @@ export default async function SettingsPage({
     mailTemplates,
     mailShells,
     websites,
+    statsWebsites,
     moduleSettings,
   ] = await Promise.all([
     getWebhooks({
@@ -74,6 +82,10 @@ export default async function SettingsPage({
     getMailShells(),
     getWebsites({
       page: mandantenPage,
+      pageSize: settings?.defaultPageSize ?? 10,
+    }),
+    getWebsites({
+      page: statsPage,
       pageSize: settings?.defaultPageSize ?? 10,
     }),
     // 404 auf einer Client-Installation (`MasterOnlyGuard`) – dann `null`,
@@ -138,6 +150,12 @@ export default async function SettingsPage({
       mailShells={mailShells ?? []}
       websites={
         websites ?? {
+          items: [],
+          meta: { page: 1, pageSize: 10, total: 0, pageCount: 1 },
+        }
+      }
+      statsWebsites={
+        statsWebsites ?? {
           items: [],
           meta: { page: 1, pageSize: 10, total: 0, pageCount: 1 },
         }
