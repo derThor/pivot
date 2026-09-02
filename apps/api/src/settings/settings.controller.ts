@@ -204,6 +204,20 @@ export class SettingsController {
     return this.settingsService.exportSettingsJson();
   }
 
+  /** "Vollständiger Inhaltsexport" (Nutzervorgabe, 2026-09-02:
+   * "umsetzen"). Enthält Formular-Einsendungen und damit personenbezogene
+   * Daten – deshalb `settings:read` (in dieser App die Pivot-Rolle) und ein
+   * Protokoll-Eintrag: dass jemand den gesamten Inhalt herausgezogen hat,
+   * muss nachvollziehbar bleiben. */
+  @ApiBearerAuth()
+  @RequirePermission('settings:read')
+  @Get('content-export')
+  async exportContent(@CurrentUser() user: JwtPayload) {
+    const data = await this.settingsService.exportContent();
+    await this.settingsService.recordContentExport(user.sub, data.counts);
+    return data;
+  }
+
   // CSV-Export der Protokoll-Historie (Nutzervorgabe, 2026-08-22: "füge
   // export hinzu"). Vor `changes/:id` in der Datei nicht relevant, da
   // beides statische bzw. eindeutig unterscheidbare Pfade sind.

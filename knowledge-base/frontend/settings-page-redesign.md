@@ -441,3 +441,32 @@ Betrieb, Jobs, Administration.
 **Perspektive:** der SMTP-Versand liegt weiterhin unter Integrationen →
 Dienste. Fachlich gehört er in diese Gruppe; das Verschieben wäre ein
 eigener Schritt, weil die Dienste-Karte mehrere Dienste bündelt.
+
+## Update 2026-09-02: "Vollständiger Inhaltsexport" ist echt
+
+Die dritte Zeile in "Export & Sicherung" war seit 2026-08-22 ausgegraut
+mit der Begründung, Formular-Einsendungen seien kein reales Feature dieser
+App. Seit dem Formulare-Feature stimmt das nicht mehr – Nutzervorgabe
+2026-09-02: "umsetzen".
+
+`GET /settings/content-export` liefert die redaktionellen Inhalte dieser
+Installation als ein JSON: Seiten inkl. Bausteinen und SEO, Kategorien,
+Tags, Menüs, globale Module (Galerien/FAQs), Formulare **mit ihren
+Einsendungen** und Medien-Metadaten. Dazu ein `meta`-Block mit Zeitpunkt
+und einer ausdrücklichen `excludes`-Liste sowie `counts` je Bereich.
+
+**Bewusst nicht enthalten** – und das steht im Export selbst, damit es
+niemand raten muss, der ihn später in die Hand bekommt:
+
+- die Mediendateien (nur Metadaten; ein ZIP wäre ein eigenes Feature)
+- Benutzerkonten und Sitzungen
+- Einstellungen (haben ihren eigenen Export direkt daneben)
+- Papierkorb-Einträge – ein Export ist eine Momentaufnahme dessen, was die
+  Installation zeigt
+
+**Personenbezogene Daten:** die Einsendungen enthalten sie. Deshalb
+verlangt die Route `settings:read` (in dieser App die Pivot-Rolle) und der
+Aufruf wird protokolliert (`settings.content_exported`, deutsche
+Beschriftung ergänzt) – mitsamt den Stückzahlen, damit im Protokoll steht,
+wie viel herausgegangen ist, nicht nur dass exportiert wurde. Der
+Hinweistext in der Zeile sagt beides offen.

@@ -108,6 +108,7 @@ const SETTINGS_FIELD_LABELS: Record<string, string> = {
 
 const SETTINGS_ACTION_LABELS: Record<string, string> = {
   'settings.job_runs_deleted': 'Job-Lauf-Historie gelöscht',
+  'settings.content_exported': 'Vollständiger Inhaltsexport erstellt',
 };
 
 function humanizeSettingsField(field: string): string {

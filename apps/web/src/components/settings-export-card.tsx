@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Download } from "lucide-react";
 
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { bff } from "@/lib/bff";
@@ -46,13 +48,15 @@ function ExportRow({
  * Export-Button rechts). "Zugriffsprotokoll (CSV)" (der Änderungs-Export
  * aus SettingsProtocolCard, hierher verschoben statt im Karten-Header,
  * siehe Nutzerkorrektur zum selben Zeitpunkt) und "Einstellungen als JSON"
- * (Nutzervorgabe, 2026-08-22: "umsetzen") sind echt – "Vollständiger
- * Inhaltsexport" bleibt bewusst deaktiviert, da Formular-Einsendungen kein
- * reales Feature dieser App sind (kein erfundener Inhalt, siehe
- * PROCESS.md-Prinzip). */
+ * (Nutzervorgabe, 2026-08-22: "umsetzen") sind echt. "Vollständiger
+ * Inhaltsexport" war bis 2026-09-02 ausgegraut mit der Begründung,
+ * Formular-Einsendungen seien kein reales Feature – seit dem
+ * Formulare-Feature stimmt das nicht mehr, der Export ist jetzt echt
+ * (Nutzervorgabe: "umsetzen"). */
 export function SettingsExportCard({ hasChanges }: { hasChanges: boolean }) {
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingJson, setIsExportingJson] = useState(false);
+  const [isExportingContent, setIsExportingContent] = useState(false);
 
   async function handleExportChanges() {
     setIsExporting(true);
@@ -94,6 +98,29 @@ export function SettingsExportCard({ hasChanges }: { hasChanges: boolean }) {
     }
   }
 
+  async function handleExportContent() {
+    setIsExportingContent(true);
+    try {
+      const res = await fetch(bff("/api/settings/content-export"));
+      if (!res.ok) {
+        toast.error("Inhaltsexport fehlgeschlagen.");
+        return;
+      }
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `inhalte-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsExportingContent(false);
+    }
+  }
+
   return (
     <Card className="rounded-xl shadow-sm">
       <CardHeader>
@@ -108,8 +135,9 @@ export function SettingsExportCard({ hasChanges }: { hasChanges: boolean }) {
         />
         <ExportRow
           title="Vollständiger Inhaltsexport"
-          note="Ist aktuell nicht geplant, da Formular-Einsendungen kein reales Feature dieser App sind."
-          disabled
+          note="Seiten, Kategorien, Tags, Menüs, Galerien/FAQs, Formulare mit Einsendungen und Medien-Metadaten als JSON. Enthält personenbezogene Daten und wird protokolliert."
+          onExport={handleExportContent}
+          isExporting={isExportingContent}
         />
         <ExportRow
           title="Zugriffsprotokoll (CSV)"

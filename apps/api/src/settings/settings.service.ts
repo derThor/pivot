@@ -518,6 +518,127 @@ export class SettingsService {
   // 2026-08-22: "füge export hinzu") – gleiches BOM-/Escaping-Muster wie
   // PrivacyService.generateReportCsv() (siehe dortiger Kommentar zu
   // Excel/Windows-Mojibake ohne BOM).
+  /** "Vollständiger Inhaltsexport" (Nutzervorgabe, 2026-09-02:
+   * "umsetzen"). Der Eintrag war bis dahin ausgegraut mit der Begründung,
+   * Formular-Einsendungen seien kein reales Feature – seit dem
+   * Formulare-Feature stimmt das nicht mehr.
+   *
+   * Umfasst die redaktionellen Inhalte dieser Installation als ein JSON:
+   * Seiten inkl. Bausteinen und SEO, Kategorien, Tags, Menüs, globale
+   * Module (Galerien/FAQs), Formulare mit ihren Einsendungen und die
+   * Medien-METADATEN.
+   *
+   * Bewusst NICHT enthalten: die Mediendateien selbst (das wäre ein ZIP
+   * und ein eigenes Feature), Benutzerkonten samt Passwort-Hashes,
+   * Sitzungen und alles aus AppSettings – Einstellungen haben ihren
+   * eigenen Export daneben, und Zugangsdaten gehören in keinen.
+   *
+   * Papierkorb-Einträge (`deletedAt`) bleiben draußen: ein Export ist eine
+   * Momentaufnahme dessen, was die Installation zeigt.
+   *
+   * ACHTUNG: die Einsendungen enthalten personenbezogene Daten. Deshalb
+   * verlangt die Route `settings:read` (in dieser App die Pivot-Rolle) und
+   * der Aufruf landet im Protokoll – siehe Controller. */
+  async exportContent() {
+    const notDeleted = { deletedAt: null };
+    const [
+      content,
+      categories,
+      tags,
+      navigations,
+      globalModules,
+      forms,
+      media,
+    ] = await Promise.all([
+      this.prisma.content.findMany({
+        where: notDeleted,
+        orderBy: { createdAt: 'asc' },
+        include: {
+          contentType: { select: { slug: true, name: true } },
+          categories: { select: { category: { select: { slug: true } } } },
+          tags: { select: { tag: { select: { slug: true } } } },
+        },
+      }),
+      this.prisma.category.findMany({
+        where: notDeleted,
+        orderBy: { name: 'asc' },
+      }),
+      this.prisma.tag.findMany({
+        where: notDeleted,
+        orderBy: { name: 'asc' },
+      }),
+      this.prisma.navigation.findMany({
+        orderBy: { name: 'asc' },
+        include: { items: { orderBy: { sortOrder: 'asc' } } },
+      }),
+      this.prisma.globalModule.findMany({
+        where: notDeleted,
+        orderBy: { name: 'asc' },
+        include: { moduleType: { select: { slug: true, name: true } } },
+      }),
+      this.prisma.form.findMany({
+        where: notDeleted,
+        orderBy: { name: 'asc' },
+        include: { submissions: { orderBy: { createdAt: 'asc' } } },
+      }),
+      this.prisma.media.findMany({
+        where: notDeleted,
+        orderBy: { createdAt: 'asc' },
+      }),
+    ]);
+
+    return {
+      meta: {
+        exportedAt: new Date().toISOString(),
+        // Was der Export NICHT enthält, steht mit im Export – wer ihn
+        // später in die Hand bekommt, soll das nicht raten müssen.
+        excludes: [
+          'Mediendateien (nur Metadaten)',
+          'Benutzerkonten und Sitzungen',
+          'Einstellungen (eigener Export)',
+          'Papierkorb-Einträge',
+        ],
+      },
+      counts: {
+        content: content.length,
+        categories: categories.length,
+        tags: tags.length,
+        navigations: navigations.length,
+        globalModules: globalModules.length,
+        forms: forms.length,
+        formSubmissions: forms.reduce((n, f) => n + f.submissions.length, 0),
+        media: media.length,
+      },
+      content: content.map(({ categories: cats, tags: tgs, ...rest }) => ({
+        ...rest,
+        categories: cats.map((c) => c.category.slug),
+        tags: tgs.map((t) => t.tag.slug),
+      })),
+      categories,
+      tags,
+      navigations,
+      globalModules,
+      forms,
+      media,
+    };
+  }
+
+  /** Protokolliert den Inhaltsexport (siehe Controller-Kommentar) –
+   * bewusst mit den Stückzahlen, damit im Protokoll steht, WIE VIEL
+   * herausgegangen ist, nicht nur DASS exportiert wurde. */
+  async recordContentExport(
+    userId: string,
+    counts: Record<string, number>,
+  ): Promise<void> {
+    await this.auditLog.record({
+      action: 'settings.content_exported',
+      entityType: SETTINGS_ENTITY_TYPE,
+      entityId: SETTINGS_ENTITY_ID,
+      userId,
+      metadata: counts,
+    });
+  }
+
   async exportSettingsChangesCsv(): Promise<string> {
     const rows = await this.auditLog.findAllForEntity(
       [SETTINGS_ENTITY_TYPE],
