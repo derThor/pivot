@@ -122,7 +122,7 @@ type TabId =
   | "vorfaelle"
   | "dsb"
   | "nutzer"
-  | "formulare";
+  | "aufbewahrung";
 
 /** Generische "fällig zur Löschung"-Review-Liste (Nutzervorgabe,
  * 2026-08-18: Werte speichern + Liste mit Einzel-/Alles-löschen statt
@@ -251,7 +251,7 @@ export function PrivacyView({
     "vorfaelle",
     "dsb",
     "nutzer",
-    "formulare",
+    "aufbewahrung",
   ];
   // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): pro Reiter
   // (de)aktivierbar, `enabledFeatures === null` = unbeschränkt.
@@ -732,11 +732,9 @@ export function PrivacyView({
                 `${deactivatedAccountsDue.length} zu entfernen`,
               ],
               [
-                "formulare",
-                "Formulare",
-                formSubmissionDeleteAfterReadDays == null
-                  ? "kein automatisches Löschen"
-                  : `Löschung ${formSubmissionDeleteAfterReadDays} Tage nach Lesen`,
+                "aufbewahrung",
+                "Aufbewahrung",
+                `${accessLogDue.length + deactivatedAccountsDue.length} zur Prüfung`,
               ],
             ] as const
           )
@@ -914,193 +912,6 @@ export function PrivacyView({
                     Kein Rechtsrat — die Prüfung deckt nur die Vollständigkeit
                     der Felder ab.
                   </p>
-                </CardContent>
-              </Card>
-
-              <Card className="rounded-xl shadow-sm">
-                <CardHeader>
-                  <CardTitle>Aufbewahrung</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Nach Ablauf wird die Wiederherstellung gesperrt — endgültig
-                    gelöscht wird erst nach manueller Bestätigung, nie
-                    automatisch.
-                  </p>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                  <SegmentedPicker
-                    label="Formular-Einsendungen"
-                    value={retentionFormSubmissionsDays ?? -1}
-                    onChange={(v) =>
-                      setRetentionFormSubmissionsDays(v === -1 ? null : v)
-                    }
-                    options={[
-                      { label: "30 Tage", value: 30 },
-                      { label: "90 Tage", value: 90 },
-                      { label: "1 Jahr", value: 365 },
-                      { label: "unbegrenzt", value: -1 },
-                    ]}
-                  />
-                  <p className="-mt-2 text-xs text-muted-foreground">
-                    Gerechnet ab Eingang. Markiert abgelaufene Einsendungen in
-                    der Liste, löscht aber nichts — automatisches Löschen nach
-                    dem Lesen steht im Reiter „Formulare“.
-                  </p>
-
-                  <SegmentedPicker
-                    label="Zugriffsprotokoll (Monate)"
-                    value={retentionAccessLogMonths}
-                    onChange={setRetentionAccessLogMonths}
-                    options={[
-                      { label: "3 Monate", value: 3 },
-                      { label: "6 Monate", value: 6 },
-                      { label: "12 Monate", value: 12 },
-                      { label: "24 Monate", value: 24 },
-                    ]}
-                  />
-                  <p className="-mt-2 text-xs text-muted-foreground">
-                    Nach Ablauf erscheint der Eintrag unten zur manuellen
-                    Löschung. Zusätzlich räumt die Aufbewahrungsfrist unter
-                    Einstellungen → Jobs den kompletten Aktivitäten-Verlauf
-                    automatisch auf – bei kürzerer Frist dort verschwindet ein
-                    Eintrag ggf. schon vorher.
-                  </p>
-                  <RetentionDueList
-                    title="Fällig zur Löschung"
-                    emptyLabel="Nichts fällig."
-                    items={accessLogDue.map((e) => ({
-                      id: e.id,
-                      label: e.action,
-                      date: formatDate(e.createdAt),
-                    }))}
-                    onDeleteOne={async (id) => {
-                      await fetch(
-                        bff(`/api/privacy/retention/access-log/${id}`),
-                        {
-                          method: "DELETE",
-                        },
-                      );
-                      setAccessLogDue((prev) =>
-                        prev.filter((e) => e.id !== id),
-                      );
-                      toastDeleted("Eintrag wurde gelöscht.");
-                    }}
-                    onDeleteAll={async () => {
-                      await fetch(bff("/api/privacy/retention/access-log"), {
-                        method: "DELETE",
-                      });
-                      setAccessLogDue([]);
-                      toastDeleted("Einträge wurden gelöscht.");
-                    }}
-                  />
-
-                  <SegmentedPicker
-                    label="Deaktivierte Konten (Monate)"
-                    value={retentionDeactivatedAccountsMonths}
-                    onChange={setRetentionDeactivatedAccountsMonths}
-                    options={[
-                      { label: "3 Monate", value: 3 },
-                      { label: "6 Monate", value: 6 },
-                      { label: "12 Monate", value: 12 },
-                      { label: "24 Monate", value: 24 },
-                    ]}
-                  />
-                  <p className="-mt-2 text-xs text-muted-foreground">
-                    Nach Ablauf wird der Eintrag gesperrt und kann nicht mehr
-                    wiederhergestellt werden – keine automatische Löschung.
-                    Fällige Konten stehen im Tab „Benutzer“.
-                  </p>
-
-                  <SegmentedPicker
-                    label="Papierkorb (Tage)"
-                    value={retentionTrashDays}
-                    onChange={setRetentionTrashDays}
-                    options={[
-                      { label: "7 Tage", value: 7 },
-                      { label: "30 Tage", value: 30 },
-                      { label: "90 Tage", value: 90 },
-                      { label: "180 Tage", value: 180 },
-                    ]}
-                  />
-                  <p className="-mt-2 text-xs text-muted-foreground">
-                    Nach Ablauf wird der Eintrag im Papierkorb gesperrt und kann
-                    nicht mehr wiederhergestellt werden – keine automatische
-                    Löschung.
-                  </p>
-                  <RetentionDueList
-                    title="Fällig zur endgültigen Löschung"
-                    emptyLabel="Papierkorb ist leer."
-                    items={[
-                      ...trashDue.content.map((i) => ({
-                        ...i,
-                        type: "content" as const,
-                      })),
-                      ...trashDue.media.map((i) => ({
-                        ...i,
-                        type: "media" as const,
-                      })),
-                      ...trashDue.categories.map((i) => ({
-                        ...i,
-                        type: "categories" as const,
-                      })),
-                      ...trashDue.tags.map((i) => ({
-                        ...i,
-                        type: "tags" as const,
-                      })),
-                    ].map((i) => ({
-                      id: `${i.type}:${i.id}`,
-                      label: i.label,
-                      date: formatDate(i.deletedAt),
-                    }))}
-                    onDeleteOne={async (compositeId) => {
-                      const [type, id] = compositeId.split(":");
-                      await fetch(bff(`/api/${type}/${id}/permanent`), {
-                        method: "DELETE",
-                      });
-                      setTrashDue((prev) => ({
-                        ...prev,
-                        [type]: (
-                          prev[type as keyof RetentionTrashDue] as {
-                            id: string;
-                          }[]
-                        ).filter((i) => i.id !== id),
-                      }));
-                      toastDeleted("Eintrag wurde endgültig gelöscht.");
-                    }}
-                    onDeleteAll={async () => {
-                      const all = [
-                        ...trashDue.content.map((i) => ({
-                          type: "content",
-                          id: i.id,
-                        })),
-                        ...trashDue.media.map((i) => ({
-                          type: "media",
-                          id: i.id,
-                        })),
-                        ...trashDue.categories.map((i) => ({
-                          type: "categories",
-                          id: i.id,
-                        })),
-                        ...trashDue.tags.map((i) => ({
-                          type: "tags",
-                          id: i.id,
-                        })),
-                      ];
-                      await Promise.all(
-                        all.map((i) =>
-                          fetch(bff(`/api/${i.type}/${i.id}/permanent`), {
-                            method: "DELETE",
-                          }),
-                        ),
-                      );
-                      setTrashDue({
-                        content: [],
-                        media: [],
-                        categories: [],
-                        tags: [],
-                      });
-                      toastDeleted("Papierkorb wurde geleert.");
-                    }}
-                  />
                 </CardContent>
               </Card>
             </div>
@@ -1743,23 +1554,56 @@ export function PrivacyView({
             )}
           </div>
         </TabsContent>
-        {/* Nutzerentscheidung, 2026-09-02: eigener Reiter statt einer
-            weiteren Zeile in der Karte "Aufbewahrung" – dadurch über das
-            Modul-Feature "formulare" einzeln ab-/anschaltbar (Mandant →
-            Module → Datenschutz). */}
-        <TabsContent value="formulare">
-          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
-            <div className="flex flex-col gap-4 lg:col-span-2">
-              <Card className="rounded-xl shadow-sm">
+
+        {/* Nutzervorgabe, 2026-09-02: EIN Reiter statt zweier, und die
+            Themen nebeneinander über die volle Breite. Vorher lagen alle
+            vier Fristen in einer langen Karte im Reiter Rechtstexte, mit
+            der Einsendungs-Löschung in einem eigenen Reiter daneben –
+            zusammenhanglos untereinander und mit leerem Drittel rechts. */}
+        <TabsContent value="aufbewahrung">
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-muted-foreground">
+              Nach Ablauf wird die Wiederherstellung gesperrt — endgültig
+              gelöscht wird erst nach manueller Bestätigung über die Listen
+              unten. Einzige Ausnahme: gelesene Einsendungen, die tatsächlich
+              automatisch gelöscht werden.
+            </p>
+            {/* Mehrspaltiger Fluss statt Grid (Nutzervorgabe, 2026-09-02:
+                "wie in der Galerie umbrechen ohne leeren Raum"): ein
+                `grid-cols-2` macht jede Zeile so hoch wie ihre höchste
+                Karte und lässt unter der kürzeren ein Loch. CSS-Spalten
+                verteilen die Karten stattdessen ausbalanciert, ohne
+                Lücke. Bewusst NICHT das JS-Masonry aus
+                media-explorer.tsx – das schätzt Höhen aus Bild-Seiten-
+                verhältnissen und passt für Karten unbekannter Höhe nicht. */}
+            <div className="columns-1 gap-4 lg:columns-2">
+              <Card className="mb-4 break-inside-avoid rounded-xl shadow-sm">
                 <CardHeader>
                   <CardTitle>Formular-Einsendungen</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Einsendungen enthalten in aller Regel personenbezogene
-                    Daten. Diese Frist ist die einzige der App, die tatsächlich
-                    automatisch löscht.
+                    Enthalten in aller Regel personenbezogene Daten.
                   </p>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
+                  <SegmentedPicker
+                    label="Formular-Einsendungen"
+                    value={retentionFormSubmissionsDays ?? -1}
+                    onChange={(v) =>
+                      setRetentionFormSubmissionsDays(v === -1 ? null : v)
+                    }
+                    options={[
+                      { label: "30 Tage", value: 30 },
+                      { label: "90 Tage", value: 90 },
+                      { label: "1 Jahr", value: 365 },
+                      { label: "unbegrenzt", value: -1 },
+                    ]}
+                  />
+                  <p className="-mt-2 text-xs text-muted-foreground">
+                    Gerechnet ab Eingang. Markiert abgelaufene Einsendungen in
+                    der Liste, löscht aber nichts — automatisches Löschen nach
+                    dem Lesen steht im Reiter „Formulare“.
+                  </p>
+
                   <SegmentedPicker
                     label="Nach dem Lesen automatisch löschen"
                     value={formSubmissionDeleteAfterReadDays ?? -1}
@@ -1784,14 +1628,189 @@ export function PrivacyView({
                     title="Löscht endgültig, nicht in den Papierkorb."
                     description="Anders als bei allen übrigen Aufbewahrungsfristen gibt es hier keine Wiederherstellung und keine manuelle Bestätigung. Der tägliche Job „Gelesene Einsendungen löschen“ erledigt das."
                   />
-
-                  <Separator />
-                  <p className="text-xs text-muted-foreground">
-                    Die Eingangs-Frist (Richtwert ohne automatische Löschung)
-                    steht weiterhin unter Rechtstexte → Aufbewahrung. Ob die
-                    IP-Adresse des Absenders gespeichert wird, steht dort
-                    ebenfalls.
+                </CardContent>
+              </Card>
+              <Card className="mb-4 break-inside-avoid rounded-xl shadow-sm">
+                <CardHeader>
+                  <CardTitle>Zugriffsprotokoll</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Wer wann was im Backend getan hat.
                   </p>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <SegmentedPicker
+                    label="Zugriffsprotokoll (Monate)"
+                    value={retentionAccessLogMonths}
+                    onChange={setRetentionAccessLogMonths}
+                    options={[
+                      { label: "3 Monate", value: 3 },
+                      { label: "6 Monate", value: 6 },
+                      { label: "12 Monate", value: 12 },
+                      { label: "24 Monate", value: 24 },
+                    ]}
+                  />
+                  <p className="-mt-2 text-xs text-muted-foreground">
+                    Nach Ablauf erscheint der Eintrag unten zur manuellen
+                    Löschung. Zusätzlich räumt die Aufbewahrungsfrist unter
+                    Einstellungen → Jobs den kompletten Aktivitäten-Verlauf
+                    automatisch auf – bei kürzerer Frist dort verschwindet ein
+                    Eintrag ggf. schon vorher.
+                  </p>
+                  <RetentionDueList
+                    title="Fällig zur Löschung"
+                    emptyLabel="Nichts fällig."
+                    items={accessLogDue.map((e) => ({
+                      id: e.id,
+                      label: e.action,
+                      date: formatDate(e.createdAt),
+                    }))}
+                    onDeleteOne={async (id) => {
+                      await fetch(
+                        bff(`/api/privacy/retention/access-log/${id}`),
+                        {
+                          method: "DELETE",
+                        },
+                      );
+                      setAccessLogDue((prev) =>
+                        prev.filter((e) => e.id !== id),
+                      );
+                      toastDeleted("Eintrag wurde gelöscht.");
+                    }}
+                    onDeleteAll={async () => {
+                      await fetch(bff("/api/privacy/retention/access-log"), {
+                        method: "DELETE",
+                      });
+                      setAccessLogDue([]);
+                      toastDeleted("Einträge wurden gelöscht.");
+                    }}
+                  />
+                </CardContent>
+              </Card>
+              <Card className="mb-4 break-inside-avoid rounded-xl shadow-sm">
+                <CardHeader>
+                  <CardTitle>Deaktivierte Konten</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Abgeschaltete Benutzerkonten samt ihrer Daten.
+                  </p>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <SegmentedPicker
+                    label="Deaktivierte Konten (Monate)"
+                    value={retentionDeactivatedAccountsMonths}
+                    onChange={setRetentionDeactivatedAccountsMonths}
+                    options={[
+                      { label: "3 Monate", value: 3 },
+                      { label: "6 Monate", value: 6 },
+                      { label: "12 Monate", value: 12 },
+                      { label: "24 Monate", value: 24 },
+                    ]}
+                  />
+                  <p className="-mt-2 text-xs text-muted-foreground">
+                    Nach Ablauf wird der Eintrag gesperrt und kann nicht mehr
+                    wiederhergestellt werden – keine automatische Löschung.
+                    Fällige Konten stehen im Tab „Benutzer“.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="mb-4 break-inside-avoid rounded-xl shadow-sm">
+                <CardHeader>
+                  <CardTitle>Papierkorb</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Gelöschte Seiten, Medien, Kategorien und Tags.
+                  </p>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <SegmentedPicker
+                    label="Papierkorb (Tage)"
+                    value={retentionTrashDays}
+                    onChange={setRetentionTrashDays}
+                    options={[
+                      { label: "7 Tage", value: 7 },
+                      { label: "30 Tage", value: 30 },
+                      { label: "90 Tage", value: 90 },
+                      { label: "180 Tage", value: 180 },
+                    ]}
+                  />
+                  <p className="-mt-2 text-xs text-muted-foreground">
+                    Nach Ablauf wird der Eintrag im Papierkorb gesperrt und kann
+                    nicht mehr wiederhergestellt werden – keine automatische
+                    Löschung.
+                  </p>
+                  <RetentionDueList
+                    title="Fällig zur endgültigen Löschung"
+                    emptyLabel="Papierkorb ist leer."
+                    items={[
+                      ...trashDue.content.map((i) => ({
+                        ...i,
+                        type: "content" as const,
+                      })),
+                      ...trashDue.media.map((i) => ({
+                        ...i,
+                        type: "media" as const,
+                      })),
+                      ...trashDue.categories.map((i) => ({
+                        ...i,
+                        type: "categories" as const,
+                      })),
+                      ...trashDue.tags.map((i) => ({
+                        ...i,
+                        type: "tags" as const,
+                      })),
+                    ].map((i) => ({
+                      id: `${i.type}:${i.id}`,
+                      label: i.label,
+                      date: formatDate(i.deletedAt),
+                    }))}
+                    onDeleteOne={async (compositeId) => {
+                      const [type, id] = compositeId.split(":");
+                      await fetch(bff(`/api/${type}/${id}/permanent`), {
+                        method: "DELETE",
+                      });
+                      setTrashDue((prev) => ({
+                        ...prev,
+                        [type]: (
+                          prev[type as keyof RetentionTrashDue] as {
+                            id: string;
+                          }[]
+                        ).filter((i) => i.id !== id),
+                      }));
+                      toastDeleted("Eintrag wurde endgültig gelöscht.");
+                    }}
+                    onDeleteAll={async () => {
+                      const all = [
+                        ...trashDue.content.map((i) => ({
+                          type: "content",
+                          id: i.id,
+                        })),
+                        ...trashDue.media.map((i) => ({
+                          type: "media",
+                          id: i.id,
+                        })),
+                        ...trashDue.categories.map((i) => ({
+                          type: "categories",
+                          id: i.id,
+                        })),
+                        ...trashDue.tags.map((i) => ({
+                          type: "tags",
+                          id: i.id,
+                        })),
+                      ];
+                      await Promise.all(
+                        all.map((i) =>
+                          fetch(bff(`/api/${i.type}/${i.id}/permanent`), {
+                            method: "DELETE",
+                          }),
+                        ),
+                      );
+                      setTrashDue({
+                        content: [],
+                        media: [],
+                        categories: [],
+                        tags: [],
+                      });
+                      toastDeleted("Papierkorb wurde geleert.");
+                    }}
+                  />
                 </CardContent>
               </Card>
             </div>

@@ -47,19 +47,10 @@ export const MODULE_CATALOG: ModuleCatalogEntry[] = [
       { key: 'vorfaelle', label: 'Vorfälle' },
       { key: 'dsb', label: 'Datenschutzbeauftragter' },
       { key: 'nutzer', label: 'Benutzer' },
-      // ACHTUNG: das hier ist ein FEATURE des Datenschutz-Moduls, kein
-      // eigenes Modul "Formulare". Ein solches wird es nicht geben
-      // (Nutzerentscheidung, 2026-09-02: "formulare wird nie ein eigenes
-      // modul") – Formulare gehören zur Grundausstattung jeder
-      // Installation. Dieses Feature gated nur die Aufbewahrung der
-      // Einsendungen im Datenschutz, nicht die Formulare selbst.
-      //
-      // Nutzervorgabe, 2026-09-02: eigener Reiter für die
-      // Aufbewahrung von Formular-Einsendungen. Über diesen Schlüssel
-      // hängt auch die Systemmeldung "Einsendungen werden bald
-      // gelöscht" – sie erscheint nur, wenn der Mandant das Feature
-      // aktiv hat (Mandant → Module → Datenschutz).
-      { key: 'formulare', label: 'Formulare' },
+      // Nutzervorgabe, 2026-09-02: Aufbewahrungsfristen als eigener
+      // Reiter (vorher eine Karte am Ende der Rechtstexte).
+      { key: 'aufbewahrung', label: 'Aufbewahrung' },
+
     ],
     // Master betreibt selbst /dashboard/privacy und nutzt diese Reiter
     // für die eigene Installation.
