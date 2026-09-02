@@ -21,6 +21,7 @@ type NotifyKey =
   | "notifyPendingPasswordChanges"
   | "notifyCompanyIncomplete"
   | "notifyLegalDocuments"
+  | "notifyUnreadSubmissions"
   | "notifyDeletionRequests"
   | "notifyTrashExpiring";
 
@@ -82,6 +83,12 @@ const ROWS: { key: NotifyKey; label: string; description: string }[] = [
     label: "Papierkorb-Einträge laufen ab",
     description:
       "Warnt, wenn Papierkorb-Einträge bald für die Wiederherstellung gesperrt werden.",
+  },
+  {
+    key: "notifyUnreadSubmissions",
+    label: "Einsendungen liegen ungelesen",
+    description:
+      "Meldet Formular-Einsendungen, die länger als die eingestellte Frist ungelesen sind, und solche, die bald automatisch gelöscht werden. Fristen: Einstellungen → Mailing → Einsendungen bzw. Datenschutz → Formulare.",
   },
 ];
 

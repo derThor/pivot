@@ -121,7 +121,8 @@ type TabId =
   | "auftragsverarbeiter"
   | "vorfaelle"
   | "dsb"
-  | "nutzer";
+  | "nutzer"
+  | "formulare";
 
 /** Generische "fällig zur Löschung"-Review-Liste (Nutzervorgabe,
  * 2026-08-18: Werte speichern + Liste mit Einzel-/Alles-löschen statt
@@ -250,6 +251,7 @@ export function PrivacyView({
     "vorfaelle",
     "dsb",
     "nutzer",
+    "formulare",
   ];
   // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28): pro Reiter
   // (de)aktivierbar, `enabledFeatures === null` = unbeschränkt.
@@ -403,6 +405,10 @@ export function PrivacyView({
   const [dsbFormStoreSubmissionIp, setDsbFormStoreSubmissionIp] = useState(
     settings.dsbFormStoreSubmissionIp,
   );
+  const [
+    formSubmissionDeleteAfterReadDays,
+    setFormSubmissionDeleteAfterReadDays,
+  ] = useState(settings.formSubmissionDeleteAfterReadDays);
   const [subjectAccessRequestOpen, setSubjectAccessRequestOpen] =
     useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -557,6 +563,8 @@ export function PrivacyView({
             retentionTrashDays,
             dsbFormSelfServiceDisclosure,
             dsbFormStoreSubmissionIp,
+            formSubmissionDeleteAfterReadDays:
+              formSubmissionDeleteAfterReadDays ?? null,
           }),
         }),
       ];
@@ -723,6 +731,13 @@ export function PrivacyView({
                 "Benutzer",
                 `${deactivatedAccountsDue.length} zu entfernen`,
               ],
+              [
+                "formulare",
+                "Formulare",
+                formSubmissionDeleteAfterReadDays == null
+                  ? "kein automatisches Löschen"
+                  : `Löschung ${formSubmissionDeleteAfterReadDays} Tage nach Lesen`,
+              ],
             ] as const
           )
             .filter(([id]) => TAB_IDS.includes(id as TabId))
@@ -839,19 +854,16 @@ export function PrivacyView({
                 <CardContent className="flex flex-col gap-3">
                   <SwitchRow
                     label="Selbstauskunft im Formular-Footer anbieten"
+                    description="Noch ohne Wirkung — es gibt keinen Formular-Footer, der den Schalter auswertet."
                     checked={dsbFormSelfServiceDisclosure}
                     onCheckedChange={setDsbFormSelfServiceDisclosure}
                   />
                   <SwitchRow
                     label="IP-Adressen bei Einsendungen speichern"
-                    description="Nur für Spam-Abwehr, 7 Tage"
+                    description="Aus = die IP wird beim Absenden gar nicht erst gespeichert."
                     checked={dsbFormStoreSubmissionIp}
                     onCheckedChange={setDsbFormStoreSubmissionIp}
                   />
-                  <p className="-mt-1 text-xs text-muted-foreground">
-                    Kein Formular-Modul vorhanden — beide Schalter werden für
-                    ein späteres Formular-Feature vorgehalten.
-                  </p>
                   <Separator className="my-1" />
                   <div className="flex flex-wrap gap-2">
                     <Button
@@ -929,8 +941,9 @@ export function PrivacyView({
                     ]}
                   />
                   <p className="-mt-2 text-xs text-muted-foreground">
-                    Kein Formular-Modul vorhanden — Wert wird für ein späteres
-                    Formular-Feature vorgehalten.
+                    Gerechnet ab Eingang. Markiert abgelaufene Einsendungen in
+                    der Liste, löscht aber nichts — automatisches Löschen nach
+                    dem Lesen steht im Reiter „Formulare“.
                   </p>
 
                   <SegmentedPicker
@@ -1728,6 +1741,60 @@ export function PrivacyView({
                 ))}
               </div>
             )}
+          </div>
+        </TabsContent>
+        {/* Nutzerentscheidung, 2026-09-02: eigener Reiter statt einer
+            weiteren Zeile in der Karte "Aufbewahrung" – dadurch über das
+            Modul-Feature "formulare" einzeln ab-/anschaltbar (Mandant →
+            Module → Datenschutz). */}
+        <TabsContent value="formulare">
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+            <div className="flex flex-col gap-4 lg:col-span-2">
+              <Card className="rounded-xl shadow-sm">
+                <CardHeader>
+                  <CardTitle>Formular-Einsendungen</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Einsendungen enthalten in aller Regel personenbezogene
+                    Daten. Diese Frist ist die einzige der App, die tatsächlich
+                    automatisch löscht.
+                  </p>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <SegmentedPicker
+                    label="Nach dem Lesen automatisch löschen"
+                    value={formSubmissionDeleteAfterReadDays ?? -1}
+                    onChange={(v) =>
+                      setFormSubmissionDeleteAfterReadDays(v === -1 ? null : v)
+                    }
+                    options={[
+                      { label: "7 Tage", value: 7 },
+                      { label: "30 Tage", value: 30 },
+                      { label: "90 Tage", value: 90 },
+                      { label: "nie", value: -1 },
+                    ]}
+                  />
+                  <p className="-mt-2 text-xs text-muted-foreground">
+                    Gemessen ab dem Zeitpunkt des Lesens, nicht ab Eingang. Wird
+                    eine Einsendung wieder auf ungelesen gesetzt, beginnt die
+                    Frist neu.
+                  </p>
+
+                  <SystemMessage
+                    variant="warning"
+                    title="Löscht endgültig, nicht in den Papierkorb."
+                    description="Anders als bei allen übrigen Aufbewahrungsfristen gibt es hier keine Wiederherstellung und keine manuelle Bestätigung. Der tägliche Job „Gelesene Einsendungen löschen“ erledigt das."
+                  />
+
+                  <Separator />
+                  <p className="text-xs text-muted-foreground">
+                    Die Eingangs-Frist (Richtwert ohne automatische Löschung)
+                    steht weiterhin unter Rechtstexte → Aufbewahrung. Ob die
+                    IP-Adresse des Absenders gespeichert wird, steht dort
+                    ebenfalls.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
       </Tabs>

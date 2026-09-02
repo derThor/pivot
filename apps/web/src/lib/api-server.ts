@@ -240,7 +240,6 @@ export interface NavigationItemNode {
     id: string;
     name: string;
     slug: string;
-    archivePublished: boolean;
   } | null;
   /** Darstellung der Übersichtsseite – nur bei Kategorie-Ziel relevant. */
   categoryLayout: "LIST" | "BLOCKS";
@@ -604,10 +603,6 @@ function taxonomyQuery(params?: { page?: number; pageSize?: number }) {
 export interface CategoryListItem extends TaxonomyItem {
   color: string | null;
   contentCount: number;
-  /** Ob die öffentliche Übersichtsseite dieser Kategorie erreichbar ist – der
-   * Menüpunkt-Dialog warnt damit, dass ein Kategorie-Ziel sonst ins Leere
-   * läuft (siehe navigation-item-dialog.tsx). */
-  archivePublished: boolean;
 }
 
 export interface CategoryListResponse {
@@ -827,10 +822,19 @@ export interface AppSettings {
   retentionTrashDays: number;
   dsbFormSelfServiceDisclosure: boolean;
   dsbFormStoreSubmissionIp: boolean;
+  // Formular-Einsendungen (2026-09-02). Die Löschfrist gehört zum
+  // Datenschutz-Modul (Reiter "Formulare"), die übrigen drei zu
+  // Einstellungen → Mailing → Einsendungen.
+  formSubmissionDeleteAfterReadDays: number | null;
+  formSubmissionNotifyOnNew: boolean;
+  formSubmissionRecipientEmail: string | null;
+  formSubmissionConfirmationDefault: boolean;
+  formSubmissionUnreadReminderDays: number | null;
   dsrAutoAcknowledgeReceipt: boolean;
   dsrDeadlineReminderEnabled: boolean;
   notifyDeletionRequests: boolean;
   notifyTrashExpiring: boolean;
+  notifyUnreadSubmissions: boolean;
   // Schwellen der Zählerstand-Plausibilitätsprüfung (2026-09-01),
   // einstellbar unter Einstellungen → Verbindungen → Master-Client.
   statsAnomalyRelativeDropPercent: number;
@@ -1021,6 +1025,7 @@ export type PrivacySettings = Pick<
   | "retentionTrashDays"
   | "dsbFormSelfServiceDisclosure"
   | "dsbFormStoreSubmissionIp"
+  | "formSubmissionDeleteAfterReadDays"
   | "dsrAutoAcknowledgeReceipt"
   | "dsrDeadlineReminderEnabled"
   | "sccTemplateMediaId"

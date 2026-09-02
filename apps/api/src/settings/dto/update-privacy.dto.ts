@@ -12,6 +12,17 @@ import { IsBoolean, IsInt, IsOptional, Min } from 'class-validator';
 // Pivot-Einführung nicht mehr hat, obwohl `privacy:read` vollständig
 // vorhanden ist).
 export class UpdatePrivacyDto {
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Tage nach dem LESEN, nach denen eine Einsendung endgültig gelöscht ' +
+      'wird; leer = nie. Einzige Frist, die wirklich automatisch löscht.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  formSubmissionDeleteAfterReadDays?: number | null;
+
   @ApiPropertyOptional({ nullable: true })
   @IsOptional()
   @IsInt()

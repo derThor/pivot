@@ -489,6 +489,65 @@ export class UpdateSettingsDto {
   @IsBoolean()
   dsbFormStoreSubmissionIp?: boolean;
 
+  // Einstellungen → Mailing → Reiter "Einsendungen" (Nutzervorgabe,
+  // 2026-09-02).
+  @ApiPropertyOptional({
+    description:
+      'Ob bei einer neuen Formular-Einsendung überhaupt eine Admin-Mail ' +
+      'verschickt wird.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  formSubmissionNotifyOnNew?: boolean;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Eigener Empfänger für Formular-Benachrichtigungen; leer = Rückfall ' +
+      'auf notificationRecipientEmail. Ein am Formular gesetzter Empfänger ' +
+      'hat weiterhin Vorrang.',
+  })
+  @IsOptional()
+  @IsEmail()
+  formSubmissionRecipientEmail?: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Vorbelegung von Form.sendConfirmation für NEU angelegte Formulare.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  formSubmissionConfirmationDefault?: boolean;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Erinnerung, wenn Einsendungen so viele Tage ungelesen liegen; ' +
+      'leer = keine Erinnerung.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  formSubmissionUnreadReminderDays?: number | null;
+
+  @ApiPropertyOptional({
+    description: 'Systemmeldung für lange ungelesene Einsendungen.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  notifyUnreadSubmissions?: boolean;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Tage nach dem Lesen bis zur endgültigen Löschung; leer = nie. ' +
+      'Gehört fachlich zum Datenschutz-Modul (siehe UpdatePrivacyDto).',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  formSubmissionDeleteAfterReadDays?: number | null;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()

@@ -66,6 +66,12 @@ function settingKeyFor(dedupeKey: string): keyof AppSettings | null {
   if (dedupeKey === 'storage-quota') return 'notifyStorageQuota';
   if (dedupeKey.startsWith('webhook-failure:')) return 'notifyWebhookFailures';
   if (dedupeKey === 'trash-expiring') return 'notifyTrashExpiring';
+  if (
+    dedupeKey === 'submissions-unread' ||
+    dedupeKey === 'submissions-due-deletion'
+  ) {
+    return 'notifyUnreadSubmissions';
+  }
   // Beide Website-Anomalien hängen am selben Schalter. Der erste
   // (`website-anomaly:`) fehlte hier bisher – dadurch blieb eine schon
   // erzeugte Zeile stehen, wenn die Kategorie später abgeschaltet wurde
@@ -240,6 +246,65 @@ export class NotificationsService {
           actionLabel: 'Papierkorb ansehen',
           actionUrl: '/dashboard/trash',
         });
+      }
+    }
+
+    // Formular-Einsendungen (Nutzervorgabe, 2026-09-02). Zwei Meldungen an
+    // EINEM Schalter: liegen bleiben und bald gelöscht werden sind
+    // dieselbe Sorge, nur aus zwei Richtungen.
+    if (settings.notifyUnreadSubmissions) {
+      const unreadDays = settings.formSubmissionUnreadReminderDays;
+      if (unreadDays != null) {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - unreadDays);
+        const unread = await this.prisma.formSubmission.count({
+          where: { isRead: false, createdAt: { lt: cutoff } },
+        });
+        if (unread > 0) {
+          candidates.push({
+            category: 'system',
+            dedupeKey: 'submissions-unread',
+            title: `${unread} Einsendung${unread === 1 ? '' : 'en'} seit über ${unreadDays} Tagen ungelesen`,
+            description:
+              'Formular-Einsendungen warten auf Bearbeitung im Postfach.',
+            isUrgent: false,
+            actionLabel: 'Einsendungen öffnen',
+            actionUrl: '/dashboard/forms/submissions',
+          });
+        }
+      }
+
+      // Die Löschmeldung hängt am Datenschutz-Modul (Nutzervorgabe,
+      // 2026-09-02: "Systembenachrichtigung für zu löschende einsendungen
+      // nur, wenn datenschutzmodul vorhanden") – der Schalter dafür sitzt
+      // beim Mandanten unter Module → Datenschutz → Formulare.
+      const deleteDays = settings.formSubmissionDeleteAfterReadDays;
+      if (
+        deleteDays != null &&
+        (await this.hasModuleFeature('datenschutz', 'formulare'))
+      ) {
+        // Warnfenster: die letzten 3 Tage vor der endgültigen Löschung.
+        const dueFrom = new Date();
+        dueFrom.setDate(dueFrom.getDate() - deleteDays);
+        const dueUntil = new Date(dueFrom);
+        dueUntil.setDate(dueUntil.getDate() + 3);
+        const due = await this.prisma.formSubmission.count({
+          where: {
+            isRead: true,
+            readAt: { not: null, gte: dueFrom, lt: dueUntil },
+          },
+        });
+        if (due > 0) {
+          candidates.push({
+            category: 'privacy',
+            dedupeKey: 'submissions-due-deletion',
+            title: `${due} Einsendung${due === 1 ? '' : 'en'} ${due === 1 ? 'wird' : 'werden'} in den nächsten Tagen gelöscht`,
+            description: `Endgültige Löschung ${deleteDays} Tage nach dem Lesen (Datenschutz → Formulare).`,
+            isUrgent: false,
+            actionLabel: 'Einsendungen öffnen',
+            actionUrl: '/dashboard/forms/submissions',
+          });
+        }
       }
     }
 

@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { SwitchRow } from "@/components/switch-row";
+import { SegmentedPicker } from "@/components/segmented-picker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -800,14 +801,156 @@ function ShellDetail({
  * (siehe MailerService.listMailTemplates()). Erweitert 2026-08-30 um
  * individuelle HTML-Vorlagen + mehrere E-Mail-Hüllen pro Installation
  * (siehe knowledge-base/content/forms.md, Konzeptabschnitt). */
+/** Reiter "Einsendungen" (Nutzervorgabe, 2026-09-02). Bis dahin gab es
+ * global gar keine Einstellungen zu Formular-Einsendungen: die Admin-Mail
+ * ging immer raus, sobald irgendein Empfänger auflösbar war, und die
+ * Bestätigungsmail musste an jedem Formular einzeln gesetzt werden.
+ *
+ * Schalter speichern sofort (gleiches Muster wie
+ * notification-settings-card.tsx), Textfeld und Frist über den
+ * Speichern-Knopf – ein Tastendruck soll nicht jedes Mal ein PATCH
+ * auslösen. */
+function SubmissionSettings({
+  settings,
+  onSaved,
+}: {
+  settings: {
+    formSubmissionNotifyOnNew: boolean;
+    formSubmissionRecipientEmail: string | null;
+    formSubmissionConfirmationDefault: boolean;
+    formSubmissionUnreadReminderDays: number | null;
+    notificationRecipientEmail: string | null;
+  };
+  onSaved: () => void;
+}) {
+  const [notifyOnNew, setNotifyOnNew] = useState(
+    settings.formSubmissionNotifyOnNew,
+  );
+  const [confirmationDefault, setConfirmationDefault] = useState(
+    settings.formSubmissionConfirmationDefault,
+  );
+  const [recipient, setRecipient] = useState(
+    settings.formSubmissionRecipientEmail ?? "",
+  );
+  const [reminderDays, setReminderDays] = useState(
+    settings.formSubmissionUnreadReminderDays ?? -1,
+  );
+  const [isSaving, setIsSaving] = useState(false);
+
+  async function patch(body: Record<string, unknown>) {
+    await fetch(bff("/api/settings"), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    onSaved();
+  }
+
+  async function handleSave() {
+    setIsSaving(true);
+    try {
+      await patch({
+        formSubmissionRecipientEmail: recipient.trim() || null,
+        formSubmissionUnreadReminderDays:
+          reminderDays === -1 ? null : reminderDays,
+      });
+      toastEdited("Einstellungen zu Einsendungen wurden gespeichert.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  const fallback =
+    settings.notificationRecipientEmail ??
+    "kein allgemeiner Empfänger hinterlegt";
+
+  return (
+    <div className="flex max-w-2xl flex-col gap-4">
+      <SwitchRow
+        label="Benachrichtigung bei neuer Einsendung"
+        description="Verschickt eine Mail, sobald ein Formular abgeschickt wurde."
+        checked={notifyOnNew}
+        onCheckedChange={(next) => {
+          setNotifyOnNew(next);
+          void patch({ formSubmissionNotifyOnNew: next });
+        }}
+      />
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="submission-recipient">Empfänger</Label>
+        <Input
+          id="submission-recipient"
+          type="email"
+          value={recipient}
+          onChange={(e) => setRecipient(e.target.value)}
+          placeholder={fallback}
+          disabled={!notifyOnNew}
+        />
+        <p className="text-xs text-muted-foreground">
+          Leer lassen, um den allgemeinen Benachrichtigungsempfänger zu
+          verwenden ({fallback}). Ein am Formular selbst hinterlegter Empfänger
+          hat immer Vorrang.
+        </p>
+      </div>
+
+      <SwitchRow
+        label="Bestätigungsmail an Absender"
+        description="Vorbelegung für NEU angelegte Formulare – bestehende bleiben unverändert."
+        checked={confirmationDefault}
+        onCheckedChange={(next) => {
+          setConfirmationDefault(next);
+          void patch({ formSubmissionConfirmationDefault: next });
+        }}
+      />
+
+      <div className="flex flex-col gap-1.5">
+        <SegmentedPicker
+          label="Erinnerung bei ungelesenen Einsendungen"
+          value={reminderDays}
+          onChange={setReminderDays}
+          options={[
+            { label: "3 Tage", value: 3 },
+            { label: "7 Tage", value: 7 },
+            { label: "14 Tage", value: 14 },
+            { label: "aus", value: -1 },
+          ]}
+        />
+        <p className="text-xs text-muted-foreground">
+          Meldung im Postfach, wenn Einsendungen so lange ungelesen liegen.
+          Ab-/anschaltbar unter Einstellungen → Benachrichtigungen.
+        </p>
+      </div>
+
+      <div>
+        <Button type="button" onClick={handleSave} disabled={isSaving}>
+          {isSaving ? "Speichert…" : "Speichern"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function MailingSettingsCard({
   templates,
   shells,
   company,
+  submissionSettings,
 }: {
   templates: MailTemplateListItem[];
   shells: MailShellListItem[];
   company: CompanyInfo;
+  /** Einstellungen des Reiters "Einsendungen" (Nutzervorgabe,
+   * 2026-09-02). Bewusst nur diese vier Felder statt der ganzen
+   * AppSettings – die Karte soll nicht von allem abhängen, was sonst
+   * noch in den Einstellungen liegt. */
+  submissionSettings: {
+    formSubmissionNotifyOnNew: boolean;
+    formSubmissionRecipientEmail: string | null;
+    formSubmissionConfirmationDefault: boolean;
+    formSubmissionUnreadReminderDays: number | null;
+    /** Nur als Hinweis, wohin es ohne eigenen Empfänger geht. */
+    notificationRecipientEmail: string | null;
+  };
 }) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState(templates[0]?.id ?? null);
@@ -836,6 +979,7 @@ export function MailingSettingsCard({
           <TabsList className="!h-auto w-fit justify-start gap-1 !overflow-visible p-1">
             <TabsTrigger value="templates">Vorlagen</TabsTrigger>
             <TabsTrigger value="shells">E-Mail-Templates</TabsTrigger>
+            <TabsTrigger value="submissions">Einsendungen</TabsTrigger>
           </TabsList>
 
           <TabsContent value="templates" className="pt-4">
@@ -948,6 +1092,13 @@ export function MailingSettingsCard({
                 )}
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="submissions" className="pt-4">
+            <SubmissionSettings
+              settings={submissionSettings}
+              onSaved={() => router.refresh()}
+            />
           </TabsContent>
         </Tabs>
       </CardContent>

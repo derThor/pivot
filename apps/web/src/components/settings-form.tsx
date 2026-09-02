@@ -1575,6 +1575,17 @@ export function SettingsForm({
                   logoUrl: settings.companyLogoUrl,
                   logoUrlDark: settings.companyLogoUrlDark,
                 }}
+                submissionSettings={{
+                  formSubmissionNotifyOnNew: settings.formSubmissionNotifyOnNew,
+                  formSubmissionRecipientEmail:
+                    settings.formSubmissionRecipientEmail,
+                  formSubmissionConfirmationDefault:
+                    settings.formSubmissionConfirmationDefault,
+                  formSubmissionUnreadReminderDays:
+                    settings.formSubmissionUnreadReminderDays,
+                  notificationRecipientEmail:
+                    settings.notificationRecipientEmail,
+                }}
               />
             )}
 

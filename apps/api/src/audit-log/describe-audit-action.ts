@@ -78,6 +78,15 @@ const SETTINGS_FIELD_LABELS: Record<string, string> = {
     'Benachrichtigung „Rechtstexte brauchen Aufmerksamkeit“',
   notifyDeletionRequests: 'Benachrichtigung „Offene Betroffenenanfragen“',
   notifyTrashExpiring: 'Benachrichtigung „Papierkorb-Einträge laufen ab“',
+  formSubmissionDeleteAfterReadDays: 'Einsendungen: Löschung nach Lesen (Tage)',
+  formSubmissionNotifyOnNew:
+    'Einsendungen: Benachrichtigung bei neuer Einsendung',
+  formSubmissionRecipientEmail: 'Einsendungen: Empfänger',
+  formSubmissionConfirmationDefault:
+    'Einsendungen: Bestätigungsmail als Standard',
+  formSubmissionUnreadReminderDays:
+    'Einsendungen: Erinnerung bei ungelesenen (Tage)',
+  notifyUnreadSubmissions: 'Benachrichtigung „Einsendungen liegen ungelesen“',
   statsAnomalyRelativeDropPercent: 'Zählerstand-Warnschwelle (relativ)',
   statsAnomalyAbsoluteDrop: 'Zählerstand-Warnschwelle (absolut)',
   notificationRecipientEmail: 'Benachrichtigungsempfänger',

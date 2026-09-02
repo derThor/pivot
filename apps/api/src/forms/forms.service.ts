@@ -133,13 +133,23 @@ export class FormsService {
 
   async create(dto: CreateFormDto) {
     await this.assertSlugAvailable(dto.slug);
+    // Vorbelegung aus Einstellungen → Mailing → Einsendungen
+    // (Nutzervorgabe, 2026-09-02). Greift nur, wenn das Formular selbst
+    // nichts mitschickt – bestehende Formulare bleiben unberührt.
+    const settings = await this.prisma.appSettings.findUnique({
+      where: { id: 1 },
+      select: { formSubmissionConfirmationDefault: true },
+    });
     return this.prisma.form.create({
       data: {
         name: dto.name,
         slug: dto.slug,
         fields: dto.fields as unknown as Prisma.InputJsonValue,
         emailFieldId: dto.emailFieldId,
-        sendConfirmation: dto.sendConfirmation ?? false,
+        sendConfirmation:
+          dto.sendConfirmation ??
+          settings?.formSubmissionConfirmationDefault ??
+          false,
         submitButtonText: dto.submitButtonText,
         submitButtonAlign: dto.submitButtonAlign,
         redirectUrl: dto.redirectUrl,
@@ -274,7 +284,13 @@ export class FormsService {
     }
     return this.prisma.formSubmission.update({
       where: { id: submissionId },
-      data: { isRead },
+      data: {
+        isRead,
+        // Bezugspunkt der automatischen Löschung. Beim Zurücksetzen auf
+        // ungelesen bewusst wieder geleert, damit die Frist neu beginnt
+        // statt weiterzulaufen (siehe schema.prisma).
+        readAt: isRead ? (submission.readAt ?? new Date()) : null,
+      },
     });
   }
 
@@ -348,6 +364,8 @@ export class FormsService {
       select: {
         dsbFormStoreSubmissionIp: true,
         notificationRecipientEmail: true,
+        formSubmissionNotifyOnNew: true,
+        formSubmissionRecipientEmail: true,
       },
     });
 
@@ -366,9 +384,17 @@ export class FormsService {
         formId_formKind: { formId: form.id, formKind: 'admin_notification' },
       },
     });
+    // Empfänger-Reihenfolge (Nutzervorgabe, 2026-09-02): der am Formular
+    // hinterlegte Empfänger gewinnt, danach der eigene Formular-Empfänger
+    // aus Einstellungen → Mailing → Einsendungen, zuletzt wie bisher der
+    // allgemeine Benachrichtigungsempfänger.
     const adminTo =
-      adminTemplate?.recipientTo || settings?.notificationRecipientEmail;
-    if (adminTo) {
+      adminTemplate?.recipientTo ||
+      settings?.formSubmissionRecipientEmail ||
+      settings?.notificationRecipientEmail;
+    // Globaler Aus-Schalter – vorher ging die Mail immer raus, sobald
+    // irgendein Empfänger auflösbar war.
+    if (settings?.formSubmissionNotifyOnNew !== false && adminTo) {
       await this.mailer.sendFormAdminNotification(
         { id: form.id, name: form.name },
         adminTo,

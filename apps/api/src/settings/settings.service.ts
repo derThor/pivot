@@ -84,9 +84,19 @@ const FIELD_LABELS: Record<string, string> = {
   notifyFailedLogins: 'Benachrichtigung „Auffällige Fehlversuche“',
   notifyPendingPasswordChanges: 'Benachrichtigung „Anstehende Passwortwechsel“',
   notifyCompanyIncomplete: 'Benachrichtigung „Unvollständige Firmendaten“',
-  notifyLegalDocuments: 'Benachrichtigung „Rechtstexte brauchen Aufmerksamkeit“',
+  notifyLegalDocuments:
+    'Benachrichtigung „Rechtstexte brauchen Aufmerksamkeit“',
   notifyDeletionRequests: 'Benachrichtigung „Offene Betroffenenanfragen“',
   notifyTrashExpiring: 'Benachrichtigung „Papierkorb-Einträge laufen ab“',
+  formSubmissionDeleteAfterReadDays: 'Einsendungen: Löschung nach Lesen (Tage)',
+  formSubmissionNotifyOnNew:
+    'Einsendungen: Benachrichtigung bei neuer Einsendung',
+  formSubmissionRecipientEmail: 'Einsendungen: Empfänger',
+  formSubmissionConfirmationDefault:
+    'Einsendungen: Bestätigungsmail als Standard',
+  formSubmissionUnreadReminderDays:
+    'Einsendungen: Erinnerung bei ungelesenen (Tage)',
+  notifyUnreadSubmissions: 'Benachrichtigung „Einsendungen liegen ungelesen“',
   statsAnomalyRelativeDropPercent: 'Zählerstand-Warnschwelle (relativ)',
   statsAnomalyAbsoluteDrop: 'Zählerstand-Warnschwelle (absolut)',
   notificationRecipientEmail: 'Benachrichtigungsempfänger',
@@ -160,6 +170,7 @@ export const PRIVACY_FIELD_KEYS = [
   'retentionTrashDays',
   'dsbFormSelfServiceDisclosure',
   'dsbFormStoreSubmissionIp',
+  'formSubmissionDeleteAfterReadDays',
   'dsrAutoAcknowledgeReceipt',
   'dsrDeadlineReminderEnabled',
   'sccTemplateMediaId',
@@ -356,6 +367,8 @@ export class SettingsService {
       retentionTrashDays: settings.retentionTrashDays,
       dsbFormSelfServiceDisclosure: settings.dsbFormSelfServiceDisclosure,
       dsbFormStoreSubmissionIp: settings.dsbFormStoreSubmissionIp,
+      formSubmissionDeleteAfterReadDays:
+        settings.formSubmissionDeleteAfterReadDays,
       dsrAutoAcknowledgeReceipt: settings.dsrAutoAcknowledgeReceipt,
       dsrDeadlineReminderEnabled: settings.dsrDeadlineReminderEnabled,
       notifyDeletionRequests: settings.notifyDeletionRequests,

@@ -34,7 +34,8 @@ import { UpdateJobDto } from './dto/update-job.dto';
 // Aufgaben" auf. Rein lesbare Historie.
 const READ_ONLY_JOB_TITLES: Record<string, string> = {
   [LICENSE_CHECK_JOB_ID]: 'Lizenzprüfung (Client)',
-  [WEBSITE_MONITOR_JOB_ID]: 'Live-Überwachung gesperrter Websites (Master)',
+  [WEBSITE_MONITOR_JOB_ID]:
+    'Prüft, ob gesperrte Websites trotzdem erreichbar sind (Master)',
   [DEVELOPMENT_MODE_AUTOLOCK_JOB_ID]:
     'Automatische Sperre nach 3 Tagen Entwicklungsmodus (Master)',
 };
@@ -104,6 +105,29 @@ export class JobsService implements OnModuleInit {
       defaultCronExpression: '0 0 1 * *',
       run: () => this.dpoReport.sendMonthlyReport(),
       requiresModuleFeature: { moduleKey: 'datenschutz', featureKey: 'dsb' },
+    },
+    {
+      id: 'form-submission-cleanup',
+      title: 'Gelesene Einsendungen löschen',
+      description:
+        'Löscht Formular-Einsendungen endgültig, die vor der eingestellten Frist gelesen wurden (Datenschutz → Formulare).',
+      defaultCronExpression: '0 2 * * *',
+      run: () => this.cleanupReadFormSubmissions(),
+      // Nutzervorgabe, 2026-09-02: gehört zum Datenschutz-Modul und läuft
+      // nur, wenn der Mandant das Feature "Formulare" aktiv hat
+      // (Mandant → Module → Datenschutz).
+      requiresModuleFeature: {
+        moduleKey: 'datenschutz',
+        featureKey: 'formulare',
+      },
+    },
+    {
+      id: 'form-submission-unread-reminder',
+      title: 'Erinnerung an ungelesene Einsendungen',
+      description:
+        'Meldet Formular-Einsendungen, die länger als die eingestellte Frist ungelesen liegen (Einstellungen → Mailing → Einsendungen).',
+      defaultCronExpression: '0 7 * * *',
+      run: () => this.remindUnreadFormSubmissions(),
     },
     {
       id: 'job-run-cleanup',
@@ -482,6 +506,52 @@ export class JobsService implements OnModuleInit {
     return count > 0
       ? `${count} Audit-Log-Eintrag/Einträge älter als ${settings.activityLogRetentionDays} Tage gelöscht.`
       : 'Keine fälligen Audit-Log-Einträge.';
+  }
+
+  /** Löscht gelesene Einsendungen nach Ablauf der eingestellten Frist.
+   *
+   * Die EINZIGE Frist dieser App, die tatsächlich automatisch löscht –
+   * alle übrigen Aufbewahrungsfristen sperren nur die Wiederherstellung
+   * und warten auf eine manuelle Bestätigung (Nutzervorgabe 2026-09-02,
+   * bewusste Abweichung; siehe schema.prisma). Deshalb hart an
+   * `readAt` gebunden: nur was nachweislich gelesen wurde, verfällt.
+   */
+  private async cleanupReadFormSubmissions(): Promise<string> {
+    const settings = await this.settings.get();
+    const days = settings.formSubmissionDeleteAfterReadDays;
+    if (days == null) {
+      return 'Automatisches Löschen ist ausgeschaltet.';
+    }
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    const { count } = await this.prisma.formSubmission.deleteMany({
+      where: { isRead: true, readAt: { not: null, lt: cutoff } },
+    });
+    return count > 0
+      ? `${count} gelesene Einsendung(en) älter als ${days} Tage gelöscht.`
+      : 'Keine fälligen Einsendungen.';
+  }
+
+  /** Meldet zu lange ungelesene Einsendungen. Die Meldung selbst baut
+   * `notifications` aus derselben Zahl – hier wird nur protokolliert,
+   * damit der Lauf im Job-Protokoll sichtbar ist. */
+  private async remindUnreadFormSubmissions(): Promise<string> {
+    const settings = await this.settings.get();
+    const days = settings.formSubmissionUnreadReminderDays;
+    if (days == null) {
+      return 'Keine Erinnerung eingestellt.';
+    }
+    if (!settings.notifyUnreadSubmissions) {
+      return 'Meldung für ungelesene Einsendungen ist abgeschaltet.';
+    }
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    const count = await this.prisma.formSubmission.count({
+      where: { isRead: false, createdAt: { lt: cutoff } },
+    });
+    return count > 0
+      ? `${count} Einsendung(en) liegen länger als ${days} Tage ungelesen.`
+      : 'Keine ungelesenen Einsendungen über der Frist.';
   }
 
   /** "Letztes Protokoll"-Dialog – auf einen Job gefiltert. */
