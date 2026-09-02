@@ -222,6 +222,53 @@ das auf, in dieser Reihenfolge:
 2. sonst der älteste Menüpunkt, der auf die Kategorie zeigt,
 3. sonst `LIST` (Übersichtsseite direkt aufgerufen, kein Menüpunkt).
 
+### Nachtrag: der Menüpunkt IST die Veröffentlichung
+
+Zunächst musste zusätzlich zum Menüpunkt der Schalter
+"Übersichtsseite veröffentlichen" (`Category.archivePublished`) gesetzt
+werden; der Menüpunkt-Dialog warnte, solange er aus war. In der Praxis
+war das eine Stelle zu viel – Nutzerrückmeldung: *"das macht kein sinn,
+wenn unter menü kategorie liste ausgewählt wurde"* und dann *"die
+zusätzliche einstellung in der kategorie wird nicht gebraucht"*.
+
+**Neue Regel:** die Übersichtsseite einer Kategorie ist genau dann
+öffentlich, wenn ein Menüpunkt auf sie zeigt. `getCategory()` zählt dafür
+die `NavigationItem`s mit dieser `categoryId`, statt ein Flag zu lesen.
+Der Schalter auf der Kategorien-Seite und die Warnung im Menüpunkt-Dialog
+sind entfallen; `getNavigation()` blendet Kategorie-Punkte nur noch aus,
+wenn die Kategorie im Papierkorb liegt.
+
+**`Category.archivePublished` steht noch in der Datenbank**, wird aber
+nirgends mehr ausgewertet. Bewusst nicht mitentfernt: eine Spalte zu
+löschen hieße Schema-Änderung auf allen Installationen für null
+funktionalen Gewinn. Wer sie später aufräumt, muss auch
+`CreateCategoryDto`/`UpdateCategoryDto` und `CategoryDetail` mitnehmen.
+
+**Live verifiziert:** `xfhxfhg` (ein Menüpunkt zeigt darauf) liefert
+`layout: "LIST"`, `sadfadsgh` und `xcvbv` (kein Menüpunkt) liefern
+`category: null`.
+
+### Bekannte Grenze: eine Kategorie, eine URL
+
+Die Darstellung sitzt am Menüpunkt, damit dieselbe Kategorie an zwei
+Stellen unterschiedlich aussehen kann (ausdrücklicher Nutzerwunsch:
+*"wenn ich ein und die selbe kategorie habe, möchte ich die vielleicht als
+liste darstellen woanders aber als block"*). **Das löst die aktuelle
+Umsetzung nicht:** beide Menüpunkte verlinken auf `/{kategorie}` – es gibt
+nur eine URL, und die Seite weiß nicht, worüber jemand gekommen ist.
+`resolveArchiveLayout()` wählt deshalb einen Menüpunkt aus (Hauptmenü
+zuerst, sonst der älteste); der zweite bleibt wirkungslos.
+
+Zwei diskutierte Wege, beide noch nicht gebaut:
+
+- **Darstellung in der URL** (`/{kategorie}?ansicht=bloecke`), klein, aber
+  eine technisch wirkende Zweit-URL; `canonical` müsste auf die schlichte
+  Adresse zeigen.
+- **Baustein "Kategorie-Liste"** im Seiten-Designer: zwei normale Seiten
+  (`/blog`, `/aktuelles`) binden dieselbe Kategorie unterschiedlich ein,
+  das Menü zeigt auf diese Seiten. Saubere URLs, beliebig viele Varianten
+  – dafür fiele das Kategorie-Menüziel mittelfristig weg.
+
 ### Kategorie-Endpunkt jetzt nullable
 
 Der offene Punkt "Kategorie-Übersichts-Endpunkt auf nullable Antwort

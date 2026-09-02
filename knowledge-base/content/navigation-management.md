@@ -589,3 +589,19 @@ Label war ein anderer Begriff. Das Datenbankfeld heißt weiterhin
 `Category.archivePublished` – eine Spaltenumbenennung hätte eine
 Schema-Änderung auf allen Installationen erzwungen, ohne irgendetwas zu
 verbessern.
+
+
+## Update 2026-09-02 (2): Der Menüpunkt ersetzt den Veröffentlichen-Schalter
+
+Kurz nach dem Bau zurückgenommen: die Kategorie brauchte zusätzlich zum
+Menüpunkt noch den Schalter "Übersichtsseite veröffentlichen", und der
+Dialog warnte, solange er aus war. Nutzerrückmeldung dazu: *"das macht
+kein sinn, wenn unter menü kategorie liste ausgewählt wurde"*, dann *"die
+zusätzliche einstellung in der kategorie wird nicht gebraucht"*.
+
+Der Schalter, die Warnung im Menüpunkt-Dialog und `archivePublished` aus
+`itemSelect` sind entfallen. Ein Menüpunkt auf eine Kategorie ist seitdem
+selbst die Veröffentlichung ihrer Übersichtsseite – Details und die
+verbleibende Grenze (eine Kategorie hat nur EINE URL, zwei Menüpunkte auf
+dieselbe Kategorie können deshalb nicht unterschiedlich aussehen) stehen
+in [public-website.md](../frontend/public-website.md).

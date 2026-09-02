@@ -964,3 +964,93 @@ Abschnitt "Navigation zeigt nur noch, wofür man das Recht hat".
 - E-Mail-Templates (Hüllen) sind weiterhin ungegatet (kein
   Modul-Entitlement) – gilt seit 2026-08-30 für alle Mails, nicht nur
   individuelle.
+
+## Update 2026-09-02 (2): Einstellungen zu Einsendungen
+
+Nutzervorgabe: ein eigener Reiter unter Einstellungen → Mailing für
+Einsendungen, dazu im Datenschutz eine Frist, nach der gelesene
+Einsendungen automatisch gelöscht werden.
+
+Vorab geprüft, was der Absende-Vorgang bis dahin tat – damit die neuen
+Einstellungen nichts doppeln: Die Admin-Mail ging an
+`MailTemplate.recipientTo` des Formulars, sonst still an den allgemeinen
+`notificationRecipientEmail`. Bestätigungsmail und E-Mail-Feld sind **pro
+Formular** eingestellt. **Global gab es gar nichts.**
+
+### Mailing → Reiter "Einsendungen"
+
+| Einstellung | Wirkung |
+| --- | --- |
+| `formSubmissionNotifyOnNew` | Globaler Aus-Schalter. Vorher ging die Mail immer raus, sobald irgendein Empfänger auflösbar war. |
+| `formSubmissionRecipientEmail` | Eigener Empfänger. Neue Reihenfolge: Formular-Empfänger → dieser → allgemeiner Benachrichtigungsempfänger. |
+| `formSubmissionConfirmationDefault` | Vorbelegung von `Form.sendConfirmation` für NEU angelegte Formulare; bestehende bleiben unberührt. |
+| `formSubmissionUnreadReminderDays` | Schwelle für die Erinnerung; `null` = aus. |
+
+Schalter speichern sofort (Muster: `notification-settings-card.tsx`),
+Textfeld und Frist über den Speichern-Knopf – ein Tastendruck soll nicht
+jedes Mal ein PATCH auslösen.
+
+### Datenschutz → neuer Reiter "Formulare"
+
+Nutzerentscheidung gegen die empfohlene Variante (Zeile in der
+vorhandenen Karte "Aufbewahrung"): ein **eigener Reiter**, damit er über
+ein Modul-Feature einzeln ab-/anschaltbar ist. Dafür kam
+`{ key: 'formulare' }` in den `datenschutz`-Eintrag des Modul-Katalogs –
+der Schalter dazu sitzt beim Mandanten unter Module → Datenschutz.
+
+`formSubmissionDeleteAfterReadDays` ist die **einzige Frist dieser App,
+die tatsächlich automatisch löscht**. Alle übrigen Aufbewahrungsfristen
+sperren nur die Wiederherstellung und warten auf eine manuelle
+Bestätigung – das steht so auch im Schema und in der Karte selbst als
+Warnung.
+
+**Warum `FormSubmission.readAt` dazukam:** `isRead` sagt DASS gelesen
+wurde, nicht WANN. Ohne Zeitstempel wäre "X Tage nach dem Lesen" nicht
+messbar. Beim Zurücksetzen auf ungelesen wird das Feld wieder geleert,
+damit die Frist neu beginnt statt weiterzulaufen.
+
+### Zwei Cron-Jobs
+
+- `form-submission-cleanup` (täglich 2 Uhr) löscht endgültig. Trägt
+  `requiresModuleFeature: { datenschutz, formulare }` – ohne Modul läuft er
+  nicht und erscheint gar nicht erst unter Geplante Aufgaben.
+- `form-submission-unread-reminder` (täglich 7 Uhr) protokolliert die Zahl
+  der liegengebliebenen Einsendungen. Bewusst **nicht** modulgebunden:
+  Formulare sind kein Modul (Nutzerentscheidung, siehe unten).
+
+### Benachrichtigungen
+
+Eine neue Kategorie `notifyUnreadSubmissions` in
+`notification-settings-card.tsx` (vorher 10), an der **zwei** Meldungen
+hängen – liegen bleiben und bald gelöscht werden sind dieselbe Sorge aus
+zwei Richtungen:
+
+- `submissions-unread` – ungelesen über der Frist.
+- `submissions-due-deletion` – wird in den nächsten 3 Tagen gelöscht.
+  Diese Meldung prüft zusätzlich `hasModuleFeature('datenschutz',
+  'formulare')` (Nutzervorgabe: *"Systembenachrichtigung für zu löschende
+  einsendungen nur, wenn datenschutzmodul vorhanden"*).
+
+Beide laufen über `NotificationsService` und erscheinen damit im zentralen
+Postfach, nicht nur lokal – wie es die stehende Regel verlangt.
+
+### Bewusst NICHT gebaut
+
+- **Formulare als eigenes Modul.** Nutzerentscheidung, 2026-09-02, und
+  zwar endgültig: *"formulare wird nie ein eigenes modul"*. Formulare
+  gehören zur Grundausstattung jeder Installation. Bitte nicht erneut
+  vorschlagen und keinen `formulare`-Eintrag im Modul-Katalog anlegen.
+
+  Nicht zu verwechseln mit dem Modul-FEATURE `datenschutz/formulare`: das
+  gibt es und es bleibt. Es gated nicht die Formulare selbst, sondern nur
+  den Datenschutz-Reiter zur Aufbewahrung der Einsendungen – also die
+  personenbezogenen Daten darin, nicht die Funktion.
+
+### Zu beachten beim Ausrollen
+
+Ein neuer Feature-Key im Katalog schaltet sich **nicht** von selbst frei:
+`MandantModule.enabledFeatures` und `ModuleSettings.enabledFeatures` werden
+nur beim Buchen mit allen Keys befüllt. Bestehende Buchungen (hier: Master
+selbst, "Strasev UG", "dgfhfgdg") kennen `formulare` deshalb nicht und
+müssen es einmal aktiv setzen – Master unter Einstellungen → Module,
+Mandanten unter Mandant → Module → Datenschutz.
