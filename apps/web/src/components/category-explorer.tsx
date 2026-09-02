@@ -649,9 +649,6 @@ function CategorySettingsForm({
   const [description, setDescription] = useState(category.description ?? "");
   const [color, setColor] = useState(category.color);
   const [rssEnabled, setRssEnabled] = useState(category.rssEnabled);
-  const [archivePublished, setArchivePublished] = useState(
-    category.archivePublished,
-  );
   const [showFeaturedLarge, setShowFeaturedLarge] = useState(
     category.showFeaturedLarge,
   );
@@ -679,7 +676,6 @@ function CategorySettingsForm({
           description: description || undefined,
           color,
           rssEnabled,
-          archivePublished,
           showFeaturedLarge,
           sortOrder,
           postsPerPage,
@@ -823,12 +819,6 @@ function CategorySettingsForm({
             />
           </div>
         )}
-        <SwitchRow
-          label="Übersichtsseite veröffentlichen"
-          description="Zeigt eine öffentliche Seite mit allen veröffentlichten Seiten dieser Kategorie untereinander."
-          checked={archivePublished}
-          onCheckedChange={setArchivePublished}
-        />
         <SwitchRow
           label="Aufmacher groß darstellen"
           description="Als Aufmacher markierte Beiträge werden hervorgehoben angezeigt."

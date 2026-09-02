@@ -153,7 +153,7 @@ export class PublicContentService {
               },
             },
             category: {
-              select: { slug: true, archivePublished: true, deletedAt: true },
+              select: { slug: true, deletedAt: true },
             },
           },
         },
@@ -164,16 +164,13 @@ export class PublicContentService {
     }
 
     // Menüpunkte, die ins Leere führen würden, tauchen im öffentlichen Menü
-    // gar nicht erst auf: unveröffentlichte Inhalte (bisher schon) und seit
-    // 2026-09-02 auch Kategorien, deren Übersichtsseite nicht veröffentlicht
-    // oder die im Papierkorb ist. Im Backend bleibt der Punkt sichtbar –
-    // dort warnt der Dialog stattdessen (Nutzerentscheidung: warnen statt
-    // still mitzusetzen).
+    // gar nicht erst auf: Inhalte, die nicht veröffentlicht sind, und
+    // Kategorien im Papierkorb. Ein Menüpunkt auf eine lebende Kategorie
+    // ist dagegen immer sichtbar – er IST seit 2026-09-02 die
+    // Veröffentlichung ihrer Übersichtsseite (siehe getCategory()).
     const visible = navigation.items.filter((item) => {
       if (item.content) return item.content.status === ContentStatus.PUBLISHED;
-      if (item.category) {
-        return item.category.archivePublished && !item.category.deletedAt;
-      }
+      if (item.category) return !item.category.deletedAt;
       return true;
     });
     const byParent = new Map<string | null, typeof visible>();
@@ -316,9 +313,19 @@ export class PublicContentService {
     return { content: { ...mapped, path: buildContentPath(mapped) } };
   }
 
-  /** Kategorie-Metadaten + paginierte veröffentlichte Beiträge – 404 wenn
-   * die Kategorie ihre Übersichtsseite nicht veröffentlicht hat
-   * (`archivePublished`), respektiert `sortOrder`/`postsPerPage`. */
+  /** Kategorie-Metadaten + paginierte veröffentlichte Beiträge.
+   *
+   * **Wann eine Übersichtsseite öffentlich ist:** sobald ein Menüpunkt auf
+   * die Kategorie zeigt – und sonst nicht (Nutzerentscheidung, 2026-09-02:
+   * "die zusätzliche Einstellung in der Kategorie wird nicht gebraucht").
+   * Vorher gab es dafür den Schalter `Category.archivePublished`, der
+   * zusätzlich zum Menüpunkt gesetzt werden musste; zwei Stellen für
+   * dieselbe Aussage, von denen man die zweite nicht fand.
+   *
+   * Das Feld `archivePublished` existiert noch in der Datenbank, wird aber
+   * nirgends mehr ausgewertet – siehe knowledge-base/frontend/public-website.md.
+   *
+   * Respektiert weiterhin `sortOrder`/`postsPerPage`. */
   async getCategory(slug: string, page: number) {
     const category = await this.prisma.category.findFirst({
       where: { slug, deletedAt: null },
@@ -332,14 +339,18 @@ export class PublicContentService {
         showFeaturedLarge: true,
         sortOrder: true,
         postsPerPage: true,
-        archivePublished: true,
       },
     });
+    const linkedFromMenu = category
+      ? (await this.prisma.navigationItem.count({
+          where: { categoryId: category.id },
+        })) > 0
+      : false;
     // Seit 2026-09-02 `{ category: null }` statt 404 – derselbe Grund wie
     // bei getHome()/getPage() (offener Roadmap-Punkt, jetzt erledigt):
     // Next.js cached fehlgeschlagene Antworten nicht und lieferte sonst
     // nach dem Zurückziehen einer Übersichtsseite weiter den alten Stand aus.
-    if (!category || !category.archivePublished) {
+    if (!category || !linkedFromMenu) {
       return {
         category: null,
         layout: null,

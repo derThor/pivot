@@ -25,12 +25,8 @@ const itemSelect = {
   content: { select: { id: true, title: true, slug: true, status: true } },
   categoryId: true,
   categoryLayout: true,
-  // `archivePublished` fährt bewusst mit: der Bearbeiten-Dialog warnt
-  // damit, dass ein Kategorie-Menüpunkt ins Leere läuft, solange die
-  // Übersichtsseite nicht veröffentlicht ist (Nutzerentscheidung, 2026-09-02:
-  // warnen statt still mitzusetzen).
   category: {
-    select: { id: true, name: true, slug: true, archivePublished: true },
+    select: { id: true, name: true, slug: true },
   },
 } as const;
 

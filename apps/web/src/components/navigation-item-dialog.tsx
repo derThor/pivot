@@ -33,7 +33,6 @@ import {
   ComboboxStatus,
 } from "@/components/ui/combobox";
 import { SegmentedPicker } from "@/components/segmented-picker";
-import { SystemMessage } from "@/components/ui/system-message";
 import type {
   CategoryListItem,
   ContentListItem,
@@ -263,7 +262,6 @@ export function NavigationItemDialog({
   const categoryLabels: Record<string, string> = Object.fromEntries(
     categoryItems.map((c) => [c.id, c.name]),
   );
-  const selectedCategory = categoryItems.find((c) => c.id === categoryId);
   const [contentTitle, setContentTitle] = useState(
     item?.contentId ? (contentTitleById[item.contentId] ?? "") : "",
   );
@@ -434,18 +432,6 @@ export function NavigationItemDialog({
                   {CATEGORY_LAYOUT_DESCRIPTION[categoryLayout]}
                 </p>
               </div>
-
-              {/* Warnen statt still mitzusetzen (Nutzerentscheidung,
-                  2026-09-02): ohne veröffentlichte Übersichtsseite liefert
-                  `/{slug}` eine 404 und der Menüpunkt wird auf der Website
-                  gar nicht erst angezeigt. */}
-              {selectedCategory && !selectedCategory.archivePublished && (
-                <SystemMessage
-                  variant="warning"
-                  title="Übersichtsseite dieser Kategorie ist nicht veröffentlicht."
-                  description="Der Menüpunkt wird auf der Website erst sichtbar, wenn du unter Kategorien → Übersicht & Feed die Übersichtsseite veröffentlichst."
-                />
-              )}
             </>
           ) : (
             <div className="flex flex-col gap-1.5">
