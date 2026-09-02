@@ -621,7 +621,6 @@ export interface CategoryDetail extends TaxonomyItem {
   contentCount: number;
   liveCount: number;
   rssEnabled: boolean;
-  archivePublished: boolean;
   showFeaturedLarge: boolean;
   sortOrder: CategorySortOrder;
   postsPerPage: number | null;
@@ -826,6 +825,7 @@ export interface AppSettings {
   // Datenschutz-Modul (Reiter "Formulare"), die übrigen drei zu
   // Einstellungen → Mailing → Einsendungen.
   formSubmissionDeleteAfterReadDays: number | null;
+  formSubmissionDeleteUnreadAfterDays: number | null;
   formSubmissionNotifyOnNew: boolean;
   formSubmissionRecipientEmail: string | null;
   formSubmissionConfirmationDefault: boolean;
@@ -1026,6 +1026,7 @@ export type PrivacySettings = Pick<
   | "dsbFormSelfServiceDisclosure"
   | "dsbFormStoreSubmissionIp"
   | "formSubmissionDeleteAfterReadDays"
+  | "formSubmissionDeleteUnreadAfterDays"
   | "dsrAutoAcknowledgeReceipt"
   | "dsrDeadlineReminderEnabled"
   | "sccTemplateMediaId"

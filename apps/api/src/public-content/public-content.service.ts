@@ -322,8 +322,8 @@ export class PublicContentService {
    * zusätzlich zum Menüpunkt gesetzt werden musste; zwei Stellen für
    * dieselbe Aussage, von denen man die zweite nicht fand.
    *
-   * Das Feld `archivePublished` existiert noch in der Datenbank, wird aber
-   * nirgends mehr ausgewertet – siehe knowledge-base/frontend/public-website.md.
+   * Der frühere Schalter `Category.archivePublished` ist am selben Tag
+   * ganz entfallen – siehe knowledge-base/frontend/public-website.md.
    *
    * Respektiert weiterhin `sortOrder`/`postsPerPage`. */
   async getCategory(slug: string, page: number) {

@@ -238,11 +238,11 @@ Der Schalter auf der Kategorien-Seite und die Warnung im Menüpunkt-Dialog
 sind entfallen; `getNavigation()` blendet Kategorie-Punkte nur noch aus,
 wenn die Kategorie im Papierkorb liegt.
 
-**`Category.archivePublished` steht noch in der Datenbank**, wird aber
-nirgends mehr ausgewertet. Bewusst nicht mitentfernt: eine Spalte zu
-löschen hieße Schema-Änderung auf allen Installationen für null
-funktionalen Gewinn. Wer sie später aufräumt, muss auch
-`CreateCategoryDto`/`UpdateCategoryDto` und `CategoryDetail` mitnehmen.
+**`Category.archivePublished` ist am selben Tag ganz entfallen** – erst
+blieb die Spalte als toter Rest stehen, auf Nutzerwunsch wurde sie dann
+mitsamt `CreateCategoryDto`/`UpdateCategoryDto` und `CategoryDetail`
+entfernt. Alle drei vorhandenen Kategorien standen ohnehin auf `false`,
+es ging also nichts verloren.
 
 **Live verifiziert:** `xfhxfhg` (ein Menüpunkt zeigt darauf) liefert
 `layout: "LIST"`, `sadfadsgh` und `xcvbv` (kein Menüpunkt) liefern
@@ -405,3 +405,18 @@ MIT Kategorie wäre `/undefined/slug` herausgekommen. Jetzt liefert
   markierter Startseite, danach wieder zurückgesetzt). Eine **freie** Seite
   (`/{slug}`) konnte weiterhin nicht geprüft werden: in der Dev-DB gibt es
   keinen veröffentlichten Inhalt ohne Kategorie.
+
+## Update 2026-09-02: Verwaiste Backend-Vorschauseite entfernt
+
+`/dashboard/content/[id]/preview` hatte nach der Umstellung des
+Vorschau-Knopfs auf die öffentliche Website keinen einzigen Verweis mehr.
+Entfernt. Die Komponente `content-preview-render.tsx` bleibt – sie wird
+weiterhin von der anonymen Vorschau (`/preview/[token]`) und von der
+Versionshistorie (`content-versions-explorer.tsx`) genutzt.
+
+**Stolperstein dabei:** `tsc --noEmit` schlug danach mit „Cannot find
+module '.../preview/page.js'" fehl. Ursache war nicht der Code, sondern
+`apps/web/.next/types/validator.ts` – ein Build-Artefakt vom 31.08., das
+der Dev-Server nicht mitpflegt und das der Type-Check trotzdem mit
+einliest. Löschen genügt (liegt in `.next`, also nicht im Git);
+`next build` erzeugt es korrekt neu.

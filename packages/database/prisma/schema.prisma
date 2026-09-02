@@ -253,26 +253,26 @@ model AppSettings {
   // BEIDE Schwellen reißt – der Prozentwert allein würde bei kleinen
   // Beständen ständig auslösen (2 → 1 Nutzer sind -50 %), der absolute
   // allein bei großen nie. Siehe WebsitesService.recordStatsReport().
-  statsAnomalyRelativeDropPercent    Int       @default(50)
-  statsAnomalyAbsoluteDrop           Int       @default(5)
+  statsAnomalyRelativeDropPercent     Int       @default(50)
+  statsAnomalyAbsoluteDrop            Int       @default(5)
   // Gemeinsame Empfänger-Adresse für alle Systembenachrichtigungen
   // (Nutzervorgabe, 2026-08-22: "wie stelle ich ein, das die
   // benachrichtigungen an eine bestimmte email gesendet werden" – eine
   // Adresse für alle Kategorien statt pro Kategorie einzeln, analog zum
   // DSB-Kontakt). null = keine E-Mail-Zustellung, nur die bestehenden
   // In-App-Banner/Glocke (siehe NotificationsService.sync()).
-  notificationRecipientEmail         String?
+  notificationRecipientEmail          String?
   // "Alle Jobs pausieren" auf dem neuen "Jobs"-Reiter (Nutzervorgabe,
   // 2026-08-22) – bewusst EIGENSTÄNDIG vom bestehenden
   // maintenanceModeEnabled (Nutzerentscheidung: kein gemeinsamer Schalter,
   // obwohl die Bildvorlage "Wartungsmodus" nennt). Kritische Jobs
   // (ScheduledJob.isCritical) ignorieren diesen Schalter.
-  jobsGloballyPaused                 Boolean   @default(false)
+  jobsGloballyPaused                  Boolean   @default(false)
   // "Job-Lauf-Historie aufräumen" (Nutzervorgabe, 2026-08-30: "bau das,
   // aber einstellbar unter einstellung- jobs") – `null` = unbegrenzt
   // aufbewahren (kein automatisches Löschen), gleiches Nullable-Muster
   // wie retentionFormSubmissionsDays.
-  jobRunRetentionDays                Int?      @default(90)
+  jobRunRetentionDays                 Int?      @default(90)
   // "Aktivitäten-Historie aufräumen" (Nutzervorgabe, 2026-08-30: "bitte
   // auch noch den aktivitäten history über sowas regeln") – räumt den
   // kompletten, geteilten `AuditLog` auf (Aktivität-Tab, Einstellungen-
@@ -286,12 +286,12 @@ model AppSettings {
   // Datenschutz-Frist – ein kürzerer automatischer Default würde
   // Zugriffsprotokoll-Einträge löschen, bevor sie dort je zur manuellen
   // Review anstehen.
-  activityLogRetentionDays           Int?      @default(365)
+  activityLogRetentionDays            Int?      @default(365)
   // Auftragsverarbeiter-Tab, Karte "Drittlandtransfer" (Nutzervorgabe,
   // 2026-08-20): admin-hochgeladene SCC-Vorlage (Standardvertragsklauseln)
   // zum Download – kein erfundenes Rechtsmuster im Repo, echte Datei nötig.
-  sccTemplateMediaId                 String?
-  sccTemplateMedia                   Media?    @relation(fields: [sccTemplateMediaId], references: [id])
+  sccTemplateMediaId                  String?
+  sccTemplateMedia                    Media?    @relation(fields: [sccTemplateMediaId], references: [id])
   // Einstellungen → Integrationen, Karte "Dienste" (Nutzervorgabe,
   // 2026-08-22: "email versand bauen ... als dienst", 1:1 nach
   // Bildvorlage "E-Mail-Versand (SMTP)"). smtpPasswordEncrypted nutzt
@@ -301,72 +301,72 @@ model AppSettings {
   // und erst nach erfolgreichem Verbindungstest neu gesetzt – daraus
   // leitet sich der "aktiv"/"offen"-Status in der UI ab, kein separates
   // Status-Feld nötig.
-  smtpHost                           String?
-  smtpPort                           Int?
-  smtpUsername                       String?
-  smtpPasswordEncrypted              String?
-  smtpFromAddress                    String?
-  smtpFromName                       String?
+  smtpHost                            String?
+  smtpPort                            Int?
+  smtpUsername                        String?
+  smtpPasswordEncrypted               String?
+  smtpFromAddress                     String?
+  smtpFromName                        String?
   // "none" | "starttls" | "ssl"
-  smtpSecure                         String    @default("starttls")
-  smtpVerifiedAt                     DateTime?
-  companyLogoUrl                     String?
+  smtpSecure                          String    @default("starttls")
+  smtpVerifiedAt                      DateTime?
+  companyLogoUrl                      String?
   // Zweite, optionale Logo-Variante für Dark-Mode-fähige Oberflächen/
   // Mail-Clients (Nutzervorgabe, 2026-08-30: "setze bei Darstellung logo
   // einmal ein logo für lightmodus und für darkmodus") – `companyLogoUrl`
   // bleibt unverändert die Light-/Standard-Variante, kein Rename nötig.
-  companyLogoUrlDark                 String?
-  companyName                        String?
-  companyStreet                      String?
-  companyPostalCode                  String?
-  companyCity                        String?
-  companyCountry                     String?
-  companyRepresentative              String?
-  companyEmail                       String?
-  companyPhone                       String?
-  companyRegisterCourt               String?
-  companyRegisterNumber              String?
-  companyVatId                       String?
+  companyLogoUrlDark                  String?
+  companyName                         String?
+  companyStreet                       String?
+  companyPostalCode                   String?
+  companyCity                         String?
+  companyCountry                      String?
+  companyRepresentative               String?
+  companyEmail                        String?
+  companyPhone                        String?
+  companyRegisterCourt                String?
+  companyRegisterNumber               String?
+  companyVatId                        String?
   // Firma-Seite (Nutzervorgabe, 2026-08-17, unter Verwaltung statt
   // Einstellungen) – ergänzt die bestehenden Firmenangaben um das in der
   // Bildvorlage gezeigte Feld "Aufsichtsbehörde" (z.B. Kammer bei
   // reglementierten Berufen).
-  companySupervisoryAuthority        String?
+  companySupervisoryAuthority         String?
   // Pflichtangaben-Check (Datenschutz → Rechtstexte, Nutzervorgabe
   // 2026-08-20, 1:1 nach Bildvorlage) – nach §36 VSBG vorgeschriebene
   // Streitschlichtungs-Angabe (Teilnahme an bzw. Verweis auf eine
   // Verbraucherschlichtungsstelle). "Berufsrechtliche Regelung" bewusst
   // NICHT ergänzt (Nutzervorgabe, gleicher Tag: "komplett weg") – nur für
   // reglementierte Berufe relevant, trifft auf diese Firma nicht zu.
-  companyDisputeResolution           String?
+  companyDisputeResolution            String?
   // Datenschutz-Seite (Nutzervorgabe, 2026-08-18, "Verwaltung → Datenschutz"
   // 1:1 nach Bildvorlage). Datenschutzbeauftragter: entweder eine externe
   // Person/Kanzlei (dpoIsExternal=true) oder intern benannt – reine
   // Kontaktfelder, keine eigene Rolle/Berechtigung.
-  dpoIsExternal                      Boolean   @default(true)
-  dpoName                            String?
-  dpoCompany                         String?
-  dpoEmail                           String?
-  dpoPhone                           String?
+  dpoIsExternal                       Boolean   @default(true)
+  dpoName                             String?
+  dpoCompany                          String?
+  dpoEmail                            String?
+  dpoPhone                            String?
   // Erweiterung "Datenschutzbeauftragter"-Tab (Nutzervorgabe, 2026-08-18,
   // 1:1 nach Bildvorlage). dpoSupervisoryAuthority ist bewusst ein eigenes
   // Feld statt companySupervisoryAuthority wiederzuverwenden: dort geht es
   // um berufsständische Kammern, hier um die für Datenschutz zuständige
   // Aufsichtsbehörde – zwei unterschiedliche reale Konzepte.
-  dpoAppointedAt                     DateTime?
-  dpoReportedAt                      DateTime?
-  dpoSupervisoryAuthority            String?
-  dpoLastContactAt                   DateTime?
+  dpoAppointedAt                      DateTime?
+  dpoReportedAt                       DateTime?
+  dpoSupervisoryAuthority             String?
+  dpoLastContactAt                    DateTime?
   // Wirkt sich auf die Rechtstexte-Generierung aus (Impressum/
   // Datenschutzerklärung bekommen einen DSB-Absatz, siehe
   // LegalDocumentsService) – kein reiner Anzeige-Schalter.
-  dpoListInLegalTexts                Boolean   @default(false)
+  dpoListInLegalTexts                 Boolean   @default(false)
   // Löst beim Anlegen eines Vorfalls eine Mail (Dev-Stub wie alle
   // System-Mails, siehe MailerService) an dpoEmail aus.
-  dpoNotifyOnIncident                Boolean   @default(false)
+  dpoNotifyOnIncident                 Boolean   @default(false)
   // Monatlicher Bericht per Cron (PrivacyReportSchedulerService), nutzt
   // denselben CSV-Generator wie der manuelle "Bericht erzeugen"-Button.
-  dpoMonthlyReportEnabled            Boolean   @default(false)
+  dpoMonthlyReportEnabled             Boolean   @default(false)
   // Aufbewahrungsfristen – reine Richtwerte, KEINE automatische
   // Hintergrund-Löschung (explizite Nutzervorgabe: Löschung immer manuell
   // über die Review-Listen auf der Datenschutz-Seite). null bei
@@ -374,10 +374,10 @@ model AppSettings {
   //
   // AUSNAHME seit 2026-09-02: formSubmissionDeleteAfterReadDays unten
   // löscht als einzige Frist tatsächlich automatisch (Nutzervorgabe).
-  retentionFormSubmissionsDays       Int?      @default(90)
-  retentionAccessLogMonths           Int       @default(12)
-  retentionDeactivatedAccountsMonths Int       @default(6)
-  retentionTrashDays                 Int       @default(30)
+  retentionFormSubmissionsDays        Int?      @default(90)
+  retentionAccessLogMonths            Int       @default(12)
+  retentionDeactivatedAccountsMonths  Int       @default(6)
+  retentionTrashDays                  Int       @default(30)
   // Betroffenenrechte-Kachel (Datenschutz → Rechtstexte, Art. 15/17 DSGVO,
   // Nutzervorgabe 2026-08-19).
   //
@@ -387,32 +387,40 @@ model AppSettings {
   // Formulare-Feature nicht mehr und ist 2026-09-02 korrigiert worden;
   // Formulare sind kein Modul und werden auch nie eins, siehe
   // websites/module-catalog.ts.)
-  dsbFormSelfServiceDisclosure       Boolean   @default(false)
+  dsbFormSelfServiceDisclosure        Boolean   @default(false)
   // Wirkt dagegen echt: FormsService.submit() speichert submitterIp nur,
   // wenn dieser Schalter an ist.
-  dsbFormStoreSubmissionIp           Boolean   @default(false)
+  dsbFormStoreSubmissionIp            Boolean   @default(false)
   // Datenschutz → Reiter "Formulare" (Nutzerentscheidung, 2026-09-02).
   // Anzahl Tage NACH dem Lesen, nach denen eine Einsendung endgültig
   // gelöscht wird; null = nie. Anders als alle übrigen Fristen oben wirkt
   // diese wirklich automatisch (täglicher Cron) – gemessen ab
   // FormSubmission.readAt, nicht ab Eingang.
-  formSubmissionDeleteAfterReadDays  Int?
+  formSubmissionDeleteAfterReadDays   Int?
+  // Gegenstück für NIE gelesene Einsendungen (Nutzervorgabe, 2026-09-02).
+  // Ohne diese Frist konnten sie unbegrenzt liegen bleiben – die
+  // datenschutzrechtlich unangenehmere Sorte, weil sie personenbezogene
+  // Daten enthalten, die nie jemand angesehen hat. Bewusst ab EINGANG
+  // gerechnet (es gibt kein readAt) und bewusst deutlich großzügiger als
+  // die Lese-Frist: was niemand gelesen hat, soll nicht nach wenigen
+  // Tagen verschwinden. null = nie.
+  formSubmissionDeleteUnreadAfterDays Int?
   // Einstellungen → Mailing → Reiter "Einsendungen" (Nutzervorgabe,
   // 2026-09-02). Bis dahin gab es global gar nichts: die Admin-Mail ging
   // immer raus, sobald irgendein Empfänger auflösbar war.
-  formSubmissionNotifyOnNew          Boolean   @default(true)
+  formSubmissionNotifyOnNew           Boolean   @default(true)
   // Eigener Empfänger für Formular-Benachrichtigungen. Leer = weiterhin
   // Rückfall auf notificationRecipientEmail (bisheriges Verhalten). Ein
   // am Formular gesetzter Empfänger (MailTemplate.recipientTo) hat
   // weiterhin Vorrang vor beidem.
-  formSubmissionRecipientEmail       String?
+  formSubmissionRecipientEmail        String?
   // Vorbelegung von Form.sendConfirmation für NEU angelegte Formulare –
   // ändert nichts an bestehenden.
-  formSubmissionConfirmationDefault  Boolean   @default(false)
+  formSubmissionConfirmationDefault   Boolean   @default(false)
   // Erinnerung, wenn Einsendungen so viele Tage ungelesen liegen;
   // null = keine Erinnerung. Siehe notifyUnreadSubmissions.
-  formSubmissionUnreadReminderDays   Int?
-  updatedAt                          DateTime  @updatedAt
+  formSubmissionUnreadReminderDays    Int?
+  updatedAt                           DateTime  @updatedAt
 
   @@map("app_settings")
 }
@@ -1112,12 +1120,15 @@ model Category {
   // – echte, persistierte Einstellungen für die noch zu bauende
   // öffentliche Website ("Frontend" in Nutzer-Terminologie, nicht zu
   // verwechseln mit apps/web, das der Nutzer "Backend"/Administration
-  // nennt). `archivePublished`/`showFeaturedLarge` haben aktuell noch
-  // KEINEN Konsumenten (die öffentliche Website existiert noch nicht),
-  // sind aber bewusst echte Felder statt Mockup-Attrappen, da der Nutzer
-  // das Vorziehen dieser Einstellung explizit angeordnet hat.
+  // nennt). `showFeaturedLarge` steuert die Aufmacher-Kachel im
+  // Kategorie-Archiv (siehe PublicContentService.getCategory()).
+  //
+  // `archivePublished` ist am 2026-09-02 entfallen: seit die
+  // Übersichtsseite genau dann öffentlich ist, wenn ein Menüpunkt auf sie
+  // zeigt, war der Schalter eine zweite Stelle für dieselbe Aussage und
+  // wurde nirgends mehr ausgewertet (Nutzerentscheidung: "die zusätzliche
+  // einstellung in der kategorie wird nicht gebraucht").
   rssEnabled        Boolean           @default(false)
-  archivePublished  Boolean           @default(false)
   showFeaturedLarge Boolean           @default(false)
   // Sortierung/Seitengröße wirken auf die eigene Beiträge-Tabelle dieser
   // Kategorie im Dashboard (Nutzerentscheidung nach Rückfrage – im

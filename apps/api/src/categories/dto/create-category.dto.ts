@@ -42,11 +42,6 @@ export class CreateCategoryDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()
-  archivePublished?: boolean;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsBoolean()
   showFeaturedLarge?: boolean;
 
   @ApiPropertyOptional({ enum: CategorySortOrder })
