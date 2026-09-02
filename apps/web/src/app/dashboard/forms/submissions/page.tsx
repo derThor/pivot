@@ -1,6 +1,6 @@
 import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
-import { SubmissionsTable } from "@/components/submissions-table";
+import { SubmissionsExplorer } from "@/components/submissions-explorer";
 import { getAllFormSubmissions, getPrivacySettings } from "@/lib/api-server";
 
 export default async function AllFormSubmissionsPage({
@@ -25,7 +25,7 @@ export default async function AllFormSubmissionsPage({
     <div className="flex flex-col gap-6">
       <PageHeader title="Einsendungen" />
       <PageContent plain>
-        <SubmissionsTable
+        <SubmissionsExplorer
           items={result?.items ?? []}
           meta={{
             page: result?.meta.page ?? 1,

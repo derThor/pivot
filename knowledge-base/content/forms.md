@@ -160,7 +160,8 @@ seine Einsendungen und Vorlagen automatisch mit.
 **Frontend:**
 - `apps/web/src/app/dashboard/forms/**` (Übersicht, Editor, Einsendungen)
 - `apps/web/src/components/forms-view.tsx`, `form-editor.tsx`,
-  `form-create-dialog.tsx`, `form-row-actions.tsx`, `submissions-table.tsx`
+  `form-create-dialog.tsx`, `form-row-actions.tsx`,
+  `submissions-explorer.tsx` (seit 2026-09-02, ersetzt `submissions-table.tsx`)
 - `apps/web/src/components/mailing-settings-card.tsx`,
   `apps/web/src/components/settings-form.tsx` (neuer Mailing-Reiter)
 - `apps/web/src/components/module-field-input.tsx` (Feldtyp `"form"`,
@@ -783,6 +784,171 @@ nutzbar").
   Ecken-Beschneidung stattdessen pro Kindelement einzeln lösen
   (`rounded-t-lg`/`rounded-b-lg` statt einem `overflow-hidden`-Elternteil
   – gleiches Muster wie beim Rich-Text-Editor-Toolbar).
+
+## Update 2026-09-02: Einsendungen im Detail lesbar (Liste+Detail statt Kurzfassung)
+
+Nutzerfrage: *"unter formulare einsendungen muss im detail gelesen werden
+können. wie machen wir das genau? als popup?"* – bis dahin zeigte
+`submissions-table.tsx` in der Spalte "Inhalt" nur `summarize()`, also die
+**ersten zwei** Feldwerte mit `·` verkettet. Alles andere (Nachrichtentext,
+restliche Felder, `submitterIp`) war gespeichert, aber nirgends lesbar.
+
+**Entscheidung gegen das Popup** (Nutzerauswahl nach Gegenüberstellung der
+drei Varianten Panel/Popup/eigene Detailseite):
+
+- Liste+Detail ist hier das Hausmuster für genau diese Datenform
+  (eingehender Vorgang, den man liest und abarbeitet): Betroffenenanfragen,
+  Vorfälle, Kategorien, Versionshistorie, Auftragsverarbeiter.
+- Die Medien-Bibliothek war bereits **bewusst vom Popup weg** zur
+  Detail-Seitenleiste umgebaut worden (siehe
+  [media-library-redesign.md](../media/media-library-redesign.md)) – ein
+  Popup wäre ein Rückschritt hinter diese Entscheidung gewesen.
+- Einsendungen enthalten beliebig lange Freitexte. Genau dort greift der
+  dokumentierte Dialog-Scroll-Stolperstein; ein Panel wächst dagegen
+  einfach mit.
+
+`submissions-table.tsx` → **`submissions-explorer.tsx`** (Datei ersetzt,
+alte gelöscht). Die Zweispalten-Aufteilung stammt von
+`data-subject-requests-panel.tsx` (`grid grid-cols-1 items-start gap-4`,
+Endstand `lg:grid-cols-5` mit 3:2, siehe Nachtrag), die Liste darin ist
+die **app-weite Standard-Tabelle** aus `ui/table.tsx` – nicht das
+Zeilen-Markup des DSR-Panels (siehe Nachtrag, Punkt 1).
+`PaginationControls` bleibt unverändert Geschwister **außerhalb** der
+Karte. Beide Seiten teilen die Komponente weiterhin (pro Formular
+`showForm=false` + `fields`, app-weit `showForm=true`).
+
+### Wie die Werte im Detail aufgelöst werden
+
+Reihenfolge und Beschriftung kommen aus der **Formular-Definition**
+(`Form.fields`), nicht aus den Schlüsseln des `values`-JSON – sonst stünde
+dort die technische Feld-Id statt "Ihre Nachricht", in zufälliger
+Reihenfolge. Drei Sonderfälle, die dabei auffielen:
+
+- **`type: "section"`** wird übersprungen: rein darstellende Überschrift
+  im Formular, hat gar keinen Eingabewert (siehe `form-field.types.ts`).
+- **Verwaiste Werte** (Schlüssel in `values`, zu dem es keine
+  Felddefinition mehr gibt) hängen mit ihrer rohen Id am Ende dran. Wird
+  ein Feld später aus dem Formular entfernt, bleiben schon eingegangene
+  Antworten dadurch lesbar, statt stillschweigend zu verschwinden.
+- **Umbruch statt Abschneiden**: `textarea`-Felder und alle Werte über 40
+  Zeichen bekommen das Label über sich und den Wert als eigene Zeile
+  (`whitespace-pre-wrap break-words`). Die sonst übliche rechtsbündige
+  `truncate`-Zeile hätte eine Nachricht in der schmalen Seitenspalte
+  unlesbar gemacht.
+
+### Öffnen markiert als gelesen
+
+Nutzerentscheidung: Öffnen setzt `isRead=true` (wie in einem Postfach),
+damit der "unbearbeitet"-Zähler in der Formulare-Übersicht ohne Extraklick
+stimmt. Zurück auf ungelesen geht weiterhin manuell über den Button im
+Detail-Panel.
+
+Der Explorer startete deshalb zunächst **ohne Vorauswahl** – die Sorge war,
+dass eine automatisch geöffnete erste Zeile bei jedem Seitenaufruf die
+oberste Einsendung als gelesen abhakt. Auf Nutzervorgabe noch am selben Tag
+umgestellt auf "erste Zeile immer ausgewählt"; die Sorge selbst bleibt
+berechtigt und ist dort anders gelöst (die Vorauswahl markiert nicht als
+gelesen) – siehe Nachtrag unten.
+
+### Datenschutz-Bezüge (Checkliste)
+
+- **`submitterIp`** wird nur angezeigt, wenn tatsächlich befüllt – das ist
+  genau dann der Fall, wenn `AppSettings.dsbFormStoreSubmissionIp` beim
+  Eingang aktiv war. Bei deaktivierter Einstellung erscheint die Zeile gar
+  nicht, statt ein leeres "–" zu zeigen.
+- **`retentionFormSubmissionsDays`** wertet der Explorer wie zuvor als
+  "Abgelaufen"-Badge aus, jetzt zusätzlich als Hinweiszeile
+  "Aufbewahrungsfrist abgelaufen" im Detail. Löschen bleibt bewusst
+  manuell.
+- Einstellungen/Benachrichtigungen: keine neue Kategorie nötig, es kommt
+  keine neue Seiten-Warnung dazu.
+
+### Bewusst nicht gebaut
+
+- **Kein Deep-Link** (`?submission=<id>`): Einsendungen tauchen in der
+  globalen Suche nicht auf (siehe
+  [global-search.md](./global-search.md) – Inhalte, Vorschau-Links,
+  Kategorien, Tags, Medien, Benutzer, Rollen), es gäbe also keinen echten
+  Aufrufer. Die Auswahl lebt rein im Komponenten-State, genau wie im
+  Betroffenenanfragen-Panel.
+
+### Nachtrag 2026-09-02: Standard-Listenkopf, Vorauswahl, breiteres Detail, Sidebar-Unterpunkt
+
+Vier Korrekturen direkt nach dem ersten Wurf – alle auf Nutzerhinweis:
+
+**1. Zurück auf die Standard-Tabelle.** Der erste Entwurf hatte den
+Listenkopf 1:1 vom Betroffenenanfragen-Panel übernommen (eigene
+`px-4 py-3`-Leiste mit "EINSENDUNGEN · 1" links und einem Hinweistext
+rechts). Nutzerhinweis mit Screenshot: *"genauso gestalten wie alle
+anderen listen. hier gibt es einen standard für heaser usw. der header ist
+zu klein in der höhe, schrift passt komplett nicht."* – richtig ist der
+app-weite Listen-Standard aus `ui/table.tsx`: `TableHeader`/`TableHead`
+(`px-8 py-5`, `text-xs font-medium uppercase tracking-wide`) im
+`overflow-hidden rounded-xl bg-card shadow-sm`-Rahmen, exakt wie
+`forms-view.tsx` daneben. **Lehre:** die Liste+Detail-Aufteilung vom
+DSR-Panel zu übernehmen heißt NICHT, auch dessen Zeilen-Markup zu
+übernehmen – das Panel sitzt in einem Tab und hat einen eigenen Kopf, eine
+Listenseite nimmt die Standard-Tabelle.
+
+Damit einher gingen zwei Folgeänderungen:
+
+- Zeilenauswahl über `data-state="selected"` – die Hervorhebung bringt
+  `ui/table.tsx` (`data-[state=selected]:bg-muted`) schon mit, statt einer
+  selbst erfundenen Farbe.
+- Löschen über `RowActionButtons` + EIN gemeinsamer, gesteuerter
+  `ConfirmDeleteDialog` (Muster: `webhooks-manager.tsx`) statt eines
+  eigenen Dialogs pro Zeile. Die Aktionen-Zelle stoppt die Klick-
+  Weitergabe (`stopPropagation`), sonst würde Löschen die Zeile zusätzlich
+  öffnen und als gelesen markieren.
+
+**2. Erste Zeile ist beim Aufruf ausgewählt** (Nutzervorgabe: *"erstes
+element beim aufruf von einsendungen immer auswählen, wenn vorhanden"*) –
+kehrt die ursprüngliche Entscheidung um. Umgesetzt ohne Effekt, als
+Fallback in der Ableitung:
+
+```ts
+const selected = items.find((s) => s.id === selectedId) ?? items[0] ?? null;
+```
+
+Das deckt drei Fälle in einer Zeile ab: erster Aufruf, Seitenwechsel (die
+gemerkte Id liegt auf der vorigen Seite) und Löschen der offenen
+Einsendung.
+
+**Wichtige Feinheit:** die automatische Vorauswahl markiert **nicht** als
+gelesen – das passiert weiterhin nur in `select()`, also bei einem echten
+Klick. Sonst würde das bloße Öffnen der Seite die neueste Einsendung
+abhaken und den "unbearbeitet"-Zähler leerlaufen lassen. Die Folge ist
+sichtbar und beabsichtigt: die vorausgewählte Zeile kann offen sein und
+trotzdem noch ihren Ungelesen-Punkt tragen.
+
+**3. Rechte Spalte breiter** (Nutzervorgabe: *"spalte rechts bei
+einsendungen breiter machen"*): `lg:grid-cols-5` mit `lg:col-span-3` für
+die Liste und `lg:col-span-2` fürs Detail, also 3:2 statt des sonst
+üblichen `grid-cols-3`+`col-span-2` (siehe Sidebar-Breiten-Konvention im
+[design-refresh.md](../frontend/design-refresh.md)). Begründete Ausnahme:
+das Detail zeigt hier ALLE Feldwerte inklusive Freitext, ein Drittel
+Breite war dafür zu schmal.
+
+**4. "Einsendungen" als Sidebar-Unterpunkt** unter Formulare
+(`children`-Muster wie Seiten → FAQs/Galerien/Vorschau-Links,
+Icon `Inbox`).
+
+Dabei fiel auf, dass `app-sidebar.tsx` bis dahin **nur die Top-Level-Items**
+nach `permission` filterte – Unterpunkte erbten stillschweigend die
+Sichtbarkeit ihres Elternpunkts. Für die bestehenden Kinder war das
+folgenlos (keins trug ein eigenes Recht), für Einsendungen nicht:
+`form-submissions:read` ist ein **eigenes** Recht neben `forms:read` – eine
+Rolle darf Formulare bearbeiten dürfen, ohne die personenbezogenen
+Einsendungen lesen zu dürfen. Ohne Fix hätte die Sidebar auf eine Seite
+verlinkt, die dann 403 liefert.
+
+Daraus wurde auf Nutzervorgabe ("wenn ich kein recht habe, darf das auch
+nicht in der sidebar auftauchen") ein Durchgang durch die **gesamte**
+Navigation – inklusive sieben weiterer, bis dahin völlig ungeschützter
+Menüpunkte und einer Sonderregel für den Papierkorb. Vollständig
+beschrieben in
+[frontend-shadcn-base-ui.md](../frontend/frontend-shadcn-base-ui.md),
+Abschnitt "Navigation zeigt nur noch, wofür man das Recht hat".
 
 ## Offene Punkte / mögliche Folgearbeiten
 

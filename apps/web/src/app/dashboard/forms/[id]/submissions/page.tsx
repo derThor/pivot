@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
-import { SubmissionsTable } from "@/components/submissions-table";
+import { SubmissionsExplorer } from "@/components/submissions-explorer";
 import {
   getForm,
   getFormSubmissions,
@@ -35,7 +35,7 @@ export default async function FormSubmissionsPage({
     <div className="flex flex-col gap-6">
       <PageHeader title={`Einsendungen – ${form.name}`} />
       <PageContent plain>
-        <SubmissionsTable
+        <SubmissionsExplorer
           items={result?.items ?? []}
           meta={{
             page: result?.meta.page ?? 1,
