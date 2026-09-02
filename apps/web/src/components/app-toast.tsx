@@ -140,6 +140,23 @@ export function toastSent(description = "Die E-Mail wurde versendet.") {
   ));
 }
 
+// Für Lizenz-/Erreichbarkeitsprüfungen (Nutzer-Bugreport, 2026-09-02:
+// "erfolgreich bearbeitet ist falsch hier. das kommt, wenn ich bei
+// webseiten prüfen klicke") – eine Prüfung ändert nichts, "Erfolgreich
+// bearbeitet" war schlicht die falsche Aussage. Gleiche Begründung wie
+// bei toastSent() darüber. Grüner Haken statt Stift, weil das Ergebnis
+// eine Feststellung ist, keine Änderung.
+export function toastChecked(description = "Die Prüfung war erfolgreich.") {
+  toast.custom((id) => (
+    <ActionToast
+      id={id}
+      variant="created"
+      title="Prüfung erfolgreich"
+      description={description}
+    />
+  ));
+}
+
 export function toastDeleted(description = "Der Eintrag wurde entfernt.") {
   toast.custom((id) => (
     <ActionToast

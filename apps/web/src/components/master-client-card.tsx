@@ -12,7 +12,7 @@ import {
 
 import { toast } from "sonner";
 
-import { toastEdited } from "@/components/app-toast";
+import { toastChecked, toastEdited } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { UseFormReturn } from "react-hook-form";
@@ -186,7 +186,7 @@ export function MasterClientCard({
           data && "status" in data
             ? (STATUS_LABEL[data.status] ?? data.status)
             : "unbekannt";
-        toastEdited(`Geprüft – Status: ${label} (soeben bestätigt).`);
+        toastChecked(`Status: ${label} (soeben bestätigt).`);
       }
       router.refresh();
     } finally {

@@ -14,7 +14,7 @@ import {
 
 import { toast } from "sonner";
 
-import { toastEdited } from "@/components/app-toast";
+import { toastChecked, toastEdited } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
@@ -129,7 +129,7 @@ export function WebsitesView({
       }
       const failed = data.results.filter((r) => !r.ok);
       if (failed.length === 0) {
-        toastEdited(
+        toastChecked(
           `${data.results.length} Installation(en) geprüft – alle in Ordnung.`,
         );
       } else {
@@ -153,7 +153,7 @@ export function WebsitesView({
       const data = await res.json().catch(() => null);
       const message = data?.message ?? "Installation nicht erreichbar.";
       if (data?.ok) {
-        toastEdited(message);
+        toastChecked(message);
       } else {
         toast.error(message);
       }
