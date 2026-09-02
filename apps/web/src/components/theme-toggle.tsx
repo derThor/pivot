@@ -5,8 +5,30 @@ import { Moon, Sun } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+/** Alter Speicherort. Wird seit 2026-09-02 nur noch EINMAL gelesen, um
+ * bestehende Nutzer ins Cookie zu übernehmen – geschrieben wird er nicht
+ * mehr (siehe `migrate` unten). */
 const STORAGE_KEY = "pivot-theme";
+
+/** Maßgeblicher Speicherort seit 2026-09-02. Ein Cookie reist bei jedem
+ * Seitenaufruf mit, das Root-Layout kann `data-pivot-theme` deshalb
+ * serverseitig ins HTML schreiben – das frühere Blocking-Script im
+ * `<head>` entfällt damit ersatzlos (siehe layout.tsx). Gleiches Muster
+ * und dieselben Cookie-Optionen wie beim Eingeklappt-Zustand der Sidebar
+ * (`sidebar_state` in ui/sidebar.tsx). */
+const COOKIE_NAME = "pivot_theme";
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 const THEME_ATTR = "data-pivot-theme";
+
+function writeThemeCookie(value: "dark" | "light") {
+  document.cookie = `${COOKIE_NAME}=${value}; path=/; max-age=${COOKIE_MAX_AGE}`;
+}
+
+function hasThemeCookie() {
+  return document.cookie
+    .split("; ")
+    .some((entry) => entry.startsWith(`${COOKIE_NAME}=`));
+}
 
 /** Dark-Mode-Umschalter in der Topbar (Nutzervorgabe, 2026-08-25) – exakte
  * Geometrie nach Vorgabe: Track 82×36px, Knopf 28px, Positionen
@@ -22,13 +44,36 @@ export function ThemeToggle({ className }: { className?: string }) {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    // Muss synchron NACH dem Mount aus dem DOM lesen statt aus einem
-    // lazy useState-Initializer: Server und der erste Client-Render
-    // müssen identisch "light" zeigen (kein `document` beim SSR), sonst
-    // Hydration-Mismatch. Das Blocking-Script in layout.tsx hat das
-    // Attribut zu diesem Zeitpunkt schon korrekt gesetzt.
+    const root = document.documentElement;
+
+    // Einmalige Übernahme für Nutzer, die ihr Theme noch im localStorage
+    // haben und noch kein Cookie besitzen. Kostet bei genau diesem einen
+    // Seitenaufruf einen sichtbaren Wechsel von hell nach dunkel – ab dem
+    // nächsten liefert der Server das Attribut schon mit. Bewusst kein
+    // Blocking-Script mehr, um das zu vermeiden: genau das war die
+    // Ursache der React-Warnung "Encountered a script tag while
+    // rendering React component".
+    if (!hasThemeCookie()) {
+      const stored = (() => {
+        try {
+          return localStorage.getItem(STORAGE_KEY);
+        } catch {
+          return null;
+        }
+      })();
+      if (stored === "dark" || stored === "light") {
+        writeThemeCookie(stored);
+        if (stored === "dark") root.setAttribute(THEME_ATTR, "dark");
+        else root.removeAttribute(THEME_ATTR);
+      }
+    }
+
+    // Quelle der Wahrheit bleibt das Attribut auf <html> – es kommt jetzt
+    // serverseitig aus dem Cookie. React wird nur EINMAL nach dem Mount
+    // daraus synchronisiert, damit Server- und Client-Erst-Render
+    // identisch bleiben (kein Hydration-Mismatch).
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsDark(document.documentElement.getAttribute(THEME_ATTR) === "dark");
+    setIsDark(root.getAttribute(THEME_ATTR) === "dark");
   }, []);
 
   function toggle() {
@@ -39,7 +84,7 @@ export function ThemeToggle({ className }: { className?: string }) {
     } else {
       document.documentElement.removeAttribute(THEME_ATTR);
     }
-    localStorage.setItem(STORAGE_KEY, next ? "dark" : "light");
+    writeThemeCookie(next ? "dark" : "light");
   }
 
   return (

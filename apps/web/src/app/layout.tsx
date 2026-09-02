@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Kumbh_Sans, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,30 +20,35 @@ export const metadata: Metadata = {
   description: "Modernes Headless CMS – NestJS + Next.js + shadcn/ui",
 };
 
-export default function RootLayout({
+/** Nutzervorgabe, 2026-08-25: "Umschalten darf nicht flackern: Attribut vor
+ * dem ersten Paint setzen".
+ *
+ * Bis 2026-09-02 löste das ein blockierendes Inline-Script im `<head>`, das
+ * `data-pivot-theme` aus dem `localStorage` setzte – der Server konnte den
+ * ja nicht kennen. React beanstandete dieses `<script>` beim Client-Render
+ * ("Encountered a script tag while rendering React component").
+ *
+ * Jetzt liegt das Theme in einem Cookie (siehe theme-toggle.tsx). Cookies
+ * reisen bei jedem Aufruf mit, das Attribut steht also schon im
+ * ausgelieferten HTML – kein Script, kein Flackern, ein Schritt weniger.
+ * Gleiches Muster wie beim Eingeklappt-Zustand der Sidebar
+ * (`sidebar_state`, siehe dashboard/layout.tsx). */
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const theme = (await cookies()).get("pivot_theme")?.value;
+
   return (
     <html
       lang="de"
       className={`${kumbhSans.variable} ${geistMono.variable} h-full antialiased`}
+      {...(theme === "dark" && { "data-pivot-theme": "dark" })}
+      // Bleibt trotz serverseitigem Theme: Browser-Erweiterungen hängen
+      // gern eigene Attribute an <html>, die es beim SSR nicht gab.
       suppressHydrationWarning
     >
-      <head>
-        {/* Nutzervorgabe, 2026-08-25: "Umschalten darf nicht flackern:
-         * Attribut vor dem ersten Paint setzen" – blockierendes Inline-
-         * Script als erstes Element in <head>, läuft synchron vor jedem
-         * Rendering. `suppressHydrationWarning` auf <html> oben, weil das
-         * serverseitige Markup dieses Attribut naturgemäß nie kennt. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html:
-              "try{if(localStorage.getItem('pivot-theme')==='dark'){document.documentElement.setAttribute('data-pivot-theme','dark');}}catch(e){}",
-          }}
-        />
-      </head>
       <body className="min-h-full flex flex-col overflow-x-hidden">
         {/* Nutzervorgabe, 2026-08-25: Pivot-Logo im Dark Mode umfärben –
          * "im dunklen das grün als schrift, und grün das badge hintergrund
