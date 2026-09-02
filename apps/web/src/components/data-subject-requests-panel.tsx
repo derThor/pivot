@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Info, Plus, Trash2 } from "lucide-react";
 
-import { toastDeleted, toastEdited } from "@/components/app-toast";
+import { toastDeleted, toastEdited, toastSent } from "@/components/app-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -228,7 +228,7 @@ export function DataSubjectRequestsPanel({
         );
         return;
       }
-      toastEdited(
+      toastSent(
         `Rückfrage wurde an ${followUpTarget.requesterEmail} gesendet.`,
       );
       setFollowUpTarget(null);

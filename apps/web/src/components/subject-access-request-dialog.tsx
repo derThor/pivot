@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { toastEdited } from "@/components/app-toast";
+import { toastSent } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -68,7 +68,7 @@ export function SubjectAccessRequestDialog({
         );
         return;
       }
-      toastEdited(
+      toastSent(
         selectedUser
           ? `Auskunft wurde an ${selectedUser.email} versendet.`
           : "Auskunft wurde versendet.",

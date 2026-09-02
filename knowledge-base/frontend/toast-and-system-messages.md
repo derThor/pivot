@@ -680,3 +680,25 @@ Namensvorkommen.
 Der historische Abschnitt "Update 2026-08-19" weiter oben beschreibt diese
 Komponenten noch – er bleibt als Entstehungsgeschichte stehen, der
 Endstand steht hier.
+
+## Update 2026-09-02 (2): Zwei weitere falsche „Erfolgreich bearbeitet"
+
+Nutzer-Bugreport zum Versenden einer Auskunft: *„hier wurde eine Auskunft
+gesendet. text falsch"* – der Toast meldete „Erfolgreich bearbeitet"
+über dem Text „Auskunft wurde an … versendet."
+
+Dieselbe Ursache wie am 2026-08-30 bei den Testmails und am selben Tag bei
+den Prüfungen: `toastEdited()` als Standardgriff, obwohl es nichts zu
+bearbeiten gab. `toastSent()` existierte bereits, zwei Aufrufer waren
+beim damaligen Durchgang übersehen worden:
+
+- Auskunft an einen Betroffenen (`subject-access-request-dialog.tsx`)
+- Rückfrage zu einer Anfrage (`data-subject-requests-panel.tsx`)
+
+Bewusst **nicht** umgestellt: „… wurde als erledigt markiert." im selben
+Panel – das ist eine echte Änderung.
+
+**Merkregel für neue Aufrufer:** die Variante richtet sich danach, was
+tatsächlich passiert ist, nicht danach, welcher Toast gerade zur Hand ist.
+Verschickt = `toastSent()`, festgestellt = `toastChecked()`, geändert =
+`toastEdited()`.

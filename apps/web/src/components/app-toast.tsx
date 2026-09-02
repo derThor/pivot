@@ -126,7 +126,9 @@ export function toastEdited(
   ));
 }
 
-// Für Testmails/Ähnliches (Nutzervorgabe, 2026-08-30: "soll email
+// Für alles, was tatsächlich eine E-Mail verschickt: Testmails,
+// Auskunft an einen Betroffenen, Rückfrage zu einer Anfrage
+// (Nutzervorgabe, 2026-08-30: "soll email
 // erfolgreich gesendet ... in dem toast stehen" – toastEdited() zeigte
 // dafür bisher missverständlich "Erfolgreich bearbeitet").
 export function toastSent(description = "Die E-Mail wurde versendet.") {
