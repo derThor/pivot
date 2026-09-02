@@ -27,6 +27,7 @@ import { DeploymentModeDialog } from "@/components/deployment-mode-dialog";
 import { LicenseApiKeyDialog } from "@/components/license-api-key-dialog";
 import { PaginationControls } from "@/components/pagination-controls";
 import { SegmentedPicker } from "@/components/segmented-picker";
+import { SystemMessage } from "@/components/ui/system-message";
 import { DEPLOYMENT_MODE_BADGE } from "@/lib/deployment-mode-badge";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import { WEBSITE_STATUS_BADGE } from "@/lib/website-status";
@@ -34,6 +35,7 @@ import { bff } from "@/lib/bff";
 import type {
   AppSettings,
   LicenseRecheckResult,
+  LicenseState,
   WebsiteListItem,
   WebsiteListResponse,
   WebsiteStatsHistoryResponse,
@@ -134,8 +136,12 @@ export function MasterClientCard({
   websites,
   statsHistory,
   form,
+  licenseState,
 }: {
   settings: AppSettings;
+  /** Nur auf einer Client-Installation ausgewertet: zeigt an, ob der
+   * letzte Verbindungsversuch zum Master abgelehnt wurde (2026-09-02). */
+  licenseState: LicenseState | null;
   websites: WebsiteListResponse;
   /** Verlauf der gemeldeten Zählerstände über ALLE Websites – die
    * aufgeklappte Zeile filtert sich ihren Teil selbst heraus. */
@@ -588,6 +594,25 @@ export function MasterClientCard({
         </Button>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
+        {/* Nutzer-Bugreport, 2026-09-02: "der lizenzschlüssel ist falsch
+            aber client hat positives feedback?". Der Client lief mit
+            abgelehntem Schlüssel weiter und zeigte nirgends etwas an –
+            das Signal (letzter VERSUCH neuer als letzter ERFOLG) gab es
+            schon, nur sah es niemand. */}
+        {licenseState &&
+          "keySuspect" in licenseState &&
+          licenseState.keySuspect && (
+            <SystemMessage
+              variant="error"
+              title="Verbindung zur Lizenzverwaltung abgelehnt"
+              description={`Der Schlüssel wurde beim letzten Versuch nicht akzeptiert. Letzter erfolgreicher Abgleich: ${
+                "lastCheckInAt" in licenseState && licenseState.lastCheckInAt
+                  ? new Date(licenseState.lastCheckInAt).toLocaleString("de-DE")
+                  : "nie"
+              }. Ohne gültigen Schlüssel sperrt sich diese Installation nach Ablauf des Tokens – bei abgelehntem Schlüssel bereits 2 Tage danach statt der sonst üblichen 7.`}
+            />
+          )}
+
         {selfRow}
 
         {websites.items.map((website) => {

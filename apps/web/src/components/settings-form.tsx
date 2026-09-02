@@ -58,6 +58,7 @@ import { bff } from "@/lib/bff";
 import type {
   AppSettings,
   JobRunsResponse,
+  LicenseState,
   MailShellListItem,
   MailTemplateListItem,
   ModuleSettingsEntry,
@@ -334,6 +335,7 @@ export function SettingsForm({
   websites,
   statsHistory,
   moduleSettings,
+  licenseState,
 }: {
   settings: AppSettings;
   logoFolderId: string | null;
@@ -349,6 +351,9 @@ export function SettingsForm({
    * "Gemeldete Zählerstände" blättert unabhängig von "Mandanten". */
   statsHistory: WebsiteStatsHistoryResponse;
   moduleSettings: ModuleSettingsEntry[] | null;
+  /** Für den Warnhinweis auf einer Client-Installation, deren Schlüssel
+   * beim letzten Versuch abgelehnt wurde (2026-09-02). */
+  licenseState: LicenseState | null;
 }) {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<SectionId>("access");
@@ -1472,6 +1477,7 @@ export function SettingsForm({
                 websites={websites}
                 statsHistory={statsHistory}
                 form={form}
+                licenseState={licenseState}
               />
             )}
 

@@ -308,6 +308,34 @@ export class NotificationsService {
       }
     }
 
+    // Lizenz-Verbindung des Clients (Nutzer-Bugreport, 2026-09-02: "der
+    // lizenzschlüssel ist falsch aber client hat positives feedback?").
+    // Bewusst OHNE Eintrag in `settingKeyFor()` und damit nicht
+    // abschaltbar: eine Installation, die den Kontakt zum Master verloren
+    // hat, sperrt sich in wenigen Tagen selbst – diese Meldung ist die
+    // einzige Vorwarnung und darf nicht wegklickbar sein.
+    const license = await this.licenseClient.getEffectiveStatus();
+    if (
+      license.mode === 'slave' &&
+      'keySuspect' in license &&
+      license.keySuspect &&
+      license.status !== 'locked'
+    ) {
+      const lastOk =
+        'lastCheckInAt' in license && license.lastCheckInAt
+          ? license.lastCheckInAt.toLocaleString('de-DE')
+          : 'nie';
+      candidates.push({
+        category: 'system',
+        dedupeKey: 'license-key-rejected',
+        title: 'Verbindung zur Lizenzverwaltung abgelehnt',
+        description: `Der Schlüssel wurde beim letzten Versuch nicht akzeptiert. Letzter erfolgreicher Abgleich: ${lastOk}. Ohne gültigen Schlüssel sperrt sich diese Installation nach Ablauf des Tokens.`,
+        isUrgent: true,
+        actionLabel: 'Master-Client öffnen',
+        actionUrl: '/dashboard/settings?section=master-client',
+      });
+    }
+
     if (settings.notifyCompanyIncomplete) {
       const missing = COMPANY_FIELD_KEYS.filter((k) => !settings[k]).length;
       if (missing > 0) {

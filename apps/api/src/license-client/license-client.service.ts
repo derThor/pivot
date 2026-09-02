@@ -47,6 +47,14 @@ const DUMMY_PASSWORD_HASH =
 // ein vorübergehend nicht erreichbarer Master je sofort sperrt).
 const GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000;
 
+// Verkürzte Karenz, wenn der Schlüssel nachweislich abgelehnt wurde
+// (Nutzerentscheidung, 2026-09-02). Die vollen 7 Tage sind für den Fall
+// gedacht, dass der Master vorübergehend nicht erreichbar ist – wurde der
+// Zugang dagegen aktiv entzogen, ist das kein Netzwerkproblem, das sich
+// von selbst erledigt. Greift ausschließlich bei `keySuspect`, also wenn
+// der letzte VERSUCH neuer ist als der letzte ERFOLG.
+const KEY_SUSPECT_GRACE_PERIOD_MS = 2 * 24 * 60 * 60 * 1000;
+
 // Toleranz für die Uhrzeit-Manipulationserkennung – kleine, legitime
 // Zeitkorrekturen (NTP-Drift) sollen nicht sofort als Rückwärtssprung
 // gewertet werden.
@@ -102,6 +110,16 @@ export type EffectiveLicenseStatus =
       status: 'live';
       modules: string[];
       moduleFeatures: Record<string, string[]>;
+      // Seit 2026-09-02 auch im laufenden Betrieb sichtbar, nicht mehr nur
+      // im `locked`-Fall: der letzte Verbindungsversuch wurde abgelehnt
+      // (Schlüssel passt nicht), die Installation läuft aber noch auf dem
+      // zuletzt gültigen Token. Ohne dieses Feld sah eine Installation mit
+      // kaputtem Schlüssel bis zu 21 Tage lang kerngesund aus
+      // (Nutzer-Bugreport: "der lizenzschlüssel ist falsch aber client hat
+      // positives feedback?").
+      keySuspect: boolean;
+      lastCheckInAt: Date | null;
+      lastCheckAttemptAt: Date | null;
     }
   | {
       mode: 'slave';
@@ -114,6 +132,9 @@ export type EffectiveLicenseStatus =
       autoLockAt: Date | null;
       modules: string[];
       moduleFeatures: Record<string, string[]>;
+      keySuspect: boolean;
+      lastCheckInAt: Date | null;
+      lastCheckAttemptAt: Date | null;
     }
   | {
       mode: 'slave';
@@ -121,6 +142,9 @@ export type EffectiveLicenseStatus =
       expiresAt: Date;
       modules: string[];
       moduleFeatures: Record<string, string[]>;
+      keySuspect: boolean;
+      lastCheckInAt: Date | null;
+      lastCheckAttemptAt: Date | null;
     }
   | ({
       mode: 'slave';
@@ -172,7 +196,18 @@ export class LicenseClientService implements OnModuleInit {
   async onModuleInit() {
     if (!(await this.isSlaveMode())) return;
     const state = await this.getState();
-    if (!state?.lastCheckInAt) {
+    // Frische Installation: nicht eine volle Woche auf die erste Prüfung
+    // warten. Seit 2026-09-02 zusätzlich dann, wenn der letzte VERSUCH
+    // neuer ist als der letzte ERFOLG – dann stimmte zuletzt etwas nicht
+    // (typischerweise der Schlüssel), und ein Neustart ist der beste
+    // Zeitpunkt, das noch einmal zu prüfen, statt bis zum wöchentlichen
+    // Cron blind weiterzulaufen.
+    const lastAttemptFailed = !!(
+      state?.lastCheckAttemptAt &&
+      (!state.lastCheckInAt ||
+        state.lastCheckAttemptAt.getTime() > state.lastCheckInAt.getTime())
+    );
+    if (!state?.lastCheckInAt || lastAttemptFailed) {
       await this.performCheck();
     }
   }
@@ -206,7 +241,18 @@ export class LicenseClientService implements OnModuleInit {
    * ausgehenden Abgleich – ein falscher Bearer ist also genauso aussage-
    * kräftig wie ein fehlgeschlagener eigener Versuch. */
   async recordFailedWakeupAttempt() {
-    await this.recordAttempt(new Date());
+    const now = new Date();
+    await this.recordAttempt(now);
+    // Zusätzlich als fehlgeschlagener Lauf sichtbar machen (Nutzer-
+    // Bugreport, 2026-09-02: "der lizenzschlüssel ist falsch aber client
+    // hat positives feedback?"). Vorher landete ein abgelehnter Weckruf
+    // NUR in `lastCheckAttemptAt` – in "Letzte Läufe" stand deshalb
+    // weiterhin nur der letzte, längst überholte Erfolg.
+    await this.recordJobRun(now, {
+      status: 'error',
+      message:
+        'Weck-Aufruf vom Master abgelehnt: Schlüssel stimmt nicht überein.',
+    });
   }
 
   private getState() {
@@ -481,6 +527,9 @@ export class LicenseClientService implements OnModuleInit {
         autoLockAt,
         modules: state.modules,
         moduleFeatures: state.moduleFeatures as Record<string, string[]>,
+        keySuspect,
+        lastCheckInAt: state.lastCheckInAt,
+        lastCheckAttemptAt: state.lastCheckAttemptAt,
       };
     }
     if (state.status === 'locked') {
@@ -510,10 +559,15 @@ export class LicenseClientService implements OnModuleInit {
         status: 'live',
         modules: state.modules,
         moduleFeatures,
+        keySuspect,
+        lastCheckInAt: state.lastCheckInAt,
+        lastCheckAttemptAt: state.lastCheckAttemptAt,
       };
     }
 
-    const graceDeadline = state.expiresAt.getTime() + GRACE_PERIOD_MS;
+    const graceDeadline =
+      state.expiresAt.getTime() +
+      (keySuspect ? KEY_SUSPECT_GRACE_PERIOD_MS : GRACE_PERIOD_MS);
     if (effectiveNow.getTime() <= graceDeadline) {
       return {
         mode: 'slave',
@@ -521,6 +575,9 @@ export class LicenseClientService implements OnModuleInit {
         expiresAt: state.expiresAt,
         modules: state.modules,
         moduleFeatures,
+        keySuspect,
+        lastCheckInAt: state.lastCheckInAt,
+        lastCheckAttemptAt: state.lastCheckAttemptAt,
       };
     }
     return {

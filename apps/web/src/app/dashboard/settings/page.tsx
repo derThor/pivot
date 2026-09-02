@@ -6,6 +6,7 @@ import {
   getMailShells,
   getMailTemplates,
   getMediaFolders,
+  getLicenseState,
   getModuleSettings,
   getSettings,
   getSettingsChanges,
@@ -57,6 +58,7 @@ export default async function SettingsPage({
     websites,
     statsHistory,
     moduleSettings,
+    licenseState,
   ] = await Promise.all([
     getWebhooks({
       page: webhooksPage,
@@ -86,6 +88,7 @@ export default async function SettingsPage({
     // 404 auf einer Client-Installation (`MasterOnlyGuard`) – dann `null`,
     // die "Module"-Sidebar-Sektion wird dort ohnehin nicht angezeigt.
     getModuleSettings(),
+    getLicenseState(),
   ]);
   // Nach Namen filtern statt nur `isSystem`: seit dem "Avatare"-Systemordner
   // (Profilfoto-Upload, 2026-08-17) gibt es mehr als einen isSystem-Ordner.
@@ -113,6 +116,7 @@ export default async function SettingsPage({
   return (
     <SettingsForm
       settings={settings}
+      licenseState={licenseState}
       logoFolderId={logoFolderId}
       webhooks={webhooks}
       settingsChanges={settingsChanges}

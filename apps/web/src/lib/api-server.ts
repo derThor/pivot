@@ -1071,6 +1071,13 @@ export type LicenseState =
       status: "live";
       modules: string[];
       moduleFeatures: Record<string, string[]>;
+      // Seit 2026-09-02 auch im laufenden Betrieb: der letzte
+      // Verbindungsversuch zum Master wurde abgelehnt (Schlüssel passt
+      // nicht), die Installation läuft aber noch auf dem zuletzt gültigen
+      // Token. Siehe Warnhinweis in master-client-card.tsx.
+      keySuspect: boolean;
+      lastCheckInAt: string | null;
+      lastCheckAttemptAt: string | null;
     }
   | {
       mode: "slave";
@@ -1082,6 +1089,13 @@ export type LicenseState =
       autoLockAt: string | null;
       modules: string[];
       moduleFeatures: Record<string, string[]>;
+      // Seit 2026-09-02 auch im laufenden Betrieb: der letzte
+      // Verbindungsversuch zum Master wurde abgelehnt (Schlüssel passt
+      // nicht), die Installation läuft aber noch auf dem zuletzt gültigen
+      // Token. Siehe Warnhinweis in master-client-card.tsx.
+      keySuspect: boolean;
+      lastCheckInAt: string | null;
+      lastCheckAttemptAt: string | null;
     }
   | {
       mode: "slave";
@@ -1089,6 +1103,13 @@ export type LicenseState =
       expiresAt: string;
       modules: string[];
       moduleFeatures: Record<string, string[]>;
+      // Seit 2026-09-02 auch im laufenden Betrieb: der letzte
+      // Verbindungsversuch zum Master wurde abgelehnt (Schlüssel passt
+      // nicht), die Installation läuft aber noch auf dem zuletzt gültigen
+      // Token. Siehe Warnhinweis in master-client-card.tsx.
+      keySuspect: boolean;
+      lastCheckInAt: string | null;
+      lastCheckAttemptAt: string | null;
     }
   | ({
       mode: "slave";

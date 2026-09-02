@@ -1990,3 +1990,79 @@ Passend zur Sackgasse im Abschnitt davor: die Rückfrage "welche Fläche ist
 gemeint?" war diesmal unnötig, weil der Screenshot den Statusbereich zeigte
 und der Text ausdrücklich *"der status"* sagte – die beiden Kandidaten
 (Badge oben, Picker unten) tragen ohnehin dieselbe Farbquelle.
+
+## Update 2026-09-02: Ein abgelehnter Schlüssel war auf dem Client unsichtbar
+
+Nutzer-Bugreport mit zwei Screenshots nebeneinander: das Master-Popup
+meldete für strasev.de „API-Zugang: Schlüssel ungültig" (1 von 4
+Prüfungen bestanden), während der Client unter „Letzte Läufe" einen
+grünen „Lizenzprüfung (Client) – Status: development." zeigte.
+*„der lizenzschlüssel ist falsch aber client hat positives feedback?"*
+
+### Was tatsächlich passiert war
+
+Die Daten in `LicenseState` zeigten es eindeutig:
+
+```
+lastCheckInAt       10:15:55   ← letzter ERFOLGREICHER Abgleich
+lastCheckAttemptAt  13:58:12   ← letzter VERSUCH
+```
+
+Der Versuch war neuer als der Erfolg, also gescheitert. Er kam vom
+Master-Weckruf mit dem nicht mehr passenden Schlüssel, den
+`LicenseStateController.wakeup()` per `timingSafeEqual` ablehnt. Drei
+Gründe, warum der Client trotzdem gesund aussah:
+
+1. **Sein letzter eigener Abgleich war wirklich erfolgreich** (10:15, als
+   der Key noch passte). Das Token galt bis 16.09., also lieferte
+   `getEffectiveStatus()` weiter `development`.
+2. **Der abgelehnte Weckruf schrieb keinen `JobRun`.** Nur `performCheck()`
+   legt Läufe an; `recordFailedWakeupAttempt()` aktualisierte ausschließlich
+   `lastCheckAttemptAt`. In „Letzte Läufe" stand deshalb weiter der alte
+   Erfolg.
+3. **Sein nächster eigener Abgleich wäre erst Montag** (`0 0 * * 1`).
+
+Das Signal `keySuspect` (Versuch neuer als Erfolg) gab es schon – es wurde
+aber **nur im `locked`-Zweig** von `getEffectiveStatus()` zurückgegeben,
+also erst, wenn es ohnehin zu spät ist.
+
+### Was geändert wurde
+
+- **`keySuspect` wird jetzt in allen laufenden Zuständen mitgeliefert**
+  (`live`/`development`/`pending`), zusammen mit `lastCheckInAt` und
+  `lastCheckAttemptAt`.
+- **Systemmeldung** „Verbindung zur Lizenzverwaltung abgelehnt",
+  `isUrgent`, bewusst **ohne** Eintrag in `settingKeyFor()` und damit
+  nicht abschaltbar – eine Installation, die den Kontakt verloren hat,
+  sperrt sich in wenigen Tagen selbst, das ist die einzige Vorwarnung.
+- **Sichtbarer Hinweis** unter Einstellungen → Master-Client auf dem
+  Client (rote `SystemMessage` über der eigenen Kachel), inklusive des
+  Zeitpunkts des letzten erfolgreichen Abgleichs.
+- **Der abgelehnte Weckruf schreibt jetzt einen fehlgeschlagenen `JobRun`**
+  und taucht damit rot in „Letzte Läufe" auf.
+- **Nach einem Neustart wird erneut geprüft**, wenn der letzte Versuch
+  scheiterte. `onModuleInit()` prüfte bisher nur, wenn noch NIE erfolgreich
+  abgeglichen wurde.
+
+### Verkürzte Karenz bei abgelehntem Schlüssel
+
+Nutzerfrage dazu: *„was passiert, wenn nichts neu gestartet wird? kann
+diese app dann ewig so laufen?"* – Nein. `getEffectiveStatus()` rechnet
+bei **jeder Anfrage** aus dem gespeicherten Zustand; ohne Cron, ohne
+Neustart. Nach `TOKEN_VALIDITY_MS` (14 Tage) läuft das Token ab, dann
+greift die Karenz, danach `locked`. Ein Zurückstellen der Systemuhr hilft
+nicht (`lastObservedAt`, siehe Uhrzeit-Manipulationsschutz).
+
+Neu ist eine zweite, kürzere Karenz (Nutzerentscheidung nach
+Gegenüberstellung):
+
+```
+GRACE_PERIOD_MS             = 7 Tage   (Master vorübergehend nicht erreichbar)
+KEY_SUSPECT_GRACE_PERIOD_MS = 2 Tage   (Schlüssel nachweislich abgelehnt)
+```
+
+Begründung: Die vollen 7 Tage sind für ein Netzwerkproblem gedacht, das
+sich von selbst erledigt. Wurde der Zugang aktiv entzogen, ist das kein
+solcher Fall. Die verworfene Alternative war, zusätzlich die 14 Tage zu
+verkürzen – das hätte alle Installationen getroffen, auch die mit gültigem
+Schlüssel, und die Abhängigkeit von der Erreichbarkeit des Masters erhöht.
