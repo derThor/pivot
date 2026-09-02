@@ -25,6 +25,7 @@ import {
   MessageSquare,
   Trash2,
   ClipboardList,
+  Inbox,
   Server,
   Globe,
   Blocks,
@@ -113,11 +114,62 @@ const navIconChipClass =
 const navSubActiveClass =
   "h-auto w-full gap-2 overflow-hidden rounded-xl pl-10 pr-4 py-2 text-sm transition-[gap,padding] duration-200 ease-linear data-active:bg-primary data-active:font-semibold data-active:text-primary-foreground data-active:hover:text-primary-foreground [&>svg]:text-sidebar-foreground/70 dark:[&>svg]:text-sidebar-accent-foreground data-active:[&>svg]:text-primary-foreground";
 
+// Der Papierkorb (`/dashboard/trash`) hat kein eigenes Recht: eine Route
+// deckt dort sieben Ressourcen ab und `TrashController.findAll()` zeigt
+// jedem nur die Typen, für die er `:read` hat – erst wenn KEINER davon
+// vorhanden ist, antwortet er 403. Der Menüpunkt folgt genau dieser Regel
+// (siehe `anyPermission`). Die Liste spiegelt `TRASH_TYPES` aus
+// `apps/api/src/trash/trash.types.ts` – ändert sie sich dort, muss sie
+// hier mitgezogen werden.
+const TRASH_READ_PERMISSIONS = [
+  "content:read",
+  "media:read",
+  "categories:read",
+  "tags:read",
+  "gallery:read",
+  "faq:read",
+  "forms:read",
+] as const;
+
+/** Sichtbarkeitsregel für einen Menüpunkt oder Unterpunkt: `permission`
+ * verlangt genau dieses Recht, `anyPermission` mindestens eines aus der
+ * Liste (bisher nur der Papierkorb), keins von beidem heißt "für alle
+ * sichtbar, die überhaupt ins Dashboard dürfen" (z.B. das Dashboard
+ * selbst).
+ *
+ * Gemeinsam genutzt von Sidebar UND Befehlspalette, damit ein Eintrag
+ * nicht an der einen Stelle versteckt und an der anderen auffindbar ist. */
+// `title`/`url` stehen nur der Vollständigkeit halber in der Signatur:
+// beide Rechte-Felder sind optional, und TypeScript weist einen Typ, der
+// AUSSCHLIESSLICH optionale Felder hat, sonst für jedes Objekt ohne eins
+// davon zurück ("weak type detection") – also z.B. für den Dashboard-
+// Eintrag, der gar kein Recht braucht.
+export function hasNavAccess(
+  entry: {
+    title: string;
+    url: string;
+    permission?: string;
+    anyPermission?: readonly string[];
+  },
+  permissions: string[],
+): boolean {
+  if (entry.permission) return permissions.includes(entry.permission);
+  if (entry.anyPermission)
+    return entry.anyPermission.some((p) => permissions.includes(p));
+  return true;
+}
+
 // Exportiert, damit `dashboard-breadcrumbs.tsx` dieselbe Gruppen-/Item-
 // Struktur wiederverwenden kann – eine einzige Quelle für "welche Seite
 // gehört zu welchem Menüpunkt/welcher Gruppe" statt sie zweimal zu
 // pflegen (Sidebar-Aktiv-Status und Breadcrumbs würden sonst leicht
 // auseinanderlaufen).
+//
+// `permission`/`anyPermission` sind für die SICHTBARKEIT zuständig, nicht
+// für die Absicherung – die liegt beim jeweiligen API-Endpunkt
+// (`@RequirePermission`, bzw. manuelle Prüfung bei Papierkorb/globalen
+// Modulen). Jeder Eintrag, dessen Seite ein Recht verlangt, muss es hier
+// tragen, sonst verlinkt die Sidebar auf einen 403.
 export const navGroups = [
   {
     label: "Übersicht",
@@ -134,7 +186,12 @@ export const navGroups = [
         icon: Building2,
         permission: "settings:read",
         children: [
-          { title: "Webseiten", url: "/dashboard/websites", icon: Globe },
+          {
+            title: "Webseiten",
+            url: "/dashboard/websites",
+            icon: Globe,
+            permission: "settings:read",
+          },
         ],
       },
       {
@@ -153,17 +210,25 @@ export const navGroups = [
         title: "Seiten",
         url: "/dashboard/content",
         icon: FileText,
+        permission: "content:read",
         children: [
-          { title: "FAQs", url: "/dashboard/content/faqs", icon: HelpCircle },
+          {
+            title: "FAQs",
+            url: "/dashboard/content/faqs",
+            icon: HelpCircle,
+            permission: "faq:read",
+          },
           {
             title: "Galerien",
             url: "/dashboard/content/galleries",
             icon: Images,
+            permission: "gallery:read",
           },
           {
             title: "Vorschau-Links",
             url: "/dashboard/content/preview-links",
             icon: Link2,
+            permission: "preview-links:read",
           },
         ],
       },
@@ -171,14 +236,36 @@ export const navGroups = [
         title: "Medien",
         url: "/dashboard/media",
         icon: ImageIcon,
+        permission: "media:read",
       },
-      { title: "Kategorien", url: "/dashboard/categories", icon: FolderTree },
-      { title: "Tags", url: "/dashboard/tags", icon: Tags },
+      {
+        title: "Kategorien",
+        url: "/dashboard/categories",
+        icon: FolderTree,
+        permission: "categories:read",
+      },
+      {
+        title: "Tags",
+        url: "/dashboard/tags",
+        icon: Tags,
+        permission: "tags:read",
+      },
       {
         title: "Formulare",
         url: "/dashboard/forms",
         icon: ClipboardList,
         permission: "forms:read",
+        children: [
+          {
+            title: "Einsendungen",
+            url: "/dashboard/forms/submissions",
+            icon: Inbox,
+            // Eigenes Recht, NICHT das `forms:read` des Elternpunkts – eine
+            // Rolle darf Formulare bearbeiten dürfen, ohne die (personen-
+            // bezogenen) Einsendungen lesen zu dürfen.
+            permission: "form-submissions:read",
+          },
+        ],
       },
       {
         title: "Menüs",
@@ -186,7 +273,12 @@ export const navGroups = [
         icon: Compass,
         permission: "navigation:read",
       },
-      { title: "Papierkorb", url: "/dashboard/trash", icon: Trash2 },
+      {
+        title: "Papierkorb",
+        url: "/dashboard/trash",
+        icon: Trash2,
+        anyPermission: TRASH_READ_PERMISSIONS,
+      },
     ],
   },
   {
@@ -323,10 +415,28 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
     .map((group) => ({
       ...group,
       originalItemCount: group.items.length as number,
-      items: group.items.filter(
-        (item) =>
-          !("permission" in item) || permissions.includes(item.permission),
-      ),
+      // Unterpunkte werden mitgefiltert und tragen ihr EIGENES Recht
+      // (seit 2026-09-02) – vorher erbten sie stillschweigend die
+      // Sichtbarkeit ihres Elternpunkts und konnten so auf eine Seite
+      // verlinken, die dann 403 liefert.
+      //
+      // Bewusst hierarchisch: ist der Elternpunkt nicht erlaubt, sind auch
+      // seine Unterpunkte weg (sie werden im Baum unter ihm gerendert).
+      // Fehlt jemandem also `content:read`, sieht er auch FAQs/Galerien
+      // nicht mehr, selbst mit `faq:read` – das versteckt im Zweifel zu
+      // viel statt zu wenig und ist damit die sichere Richtung.
+      items: group.items
+        .filter((item) => hasNavAccess(item, permissions))
+        .map((item) =>
+          "children" in item
+            ? {
+                ...item,
+                children: item.children.filter((child) =>
+                  hasNavAccess(child, permissions),
+                ),
+              }
+            : item,
+        ),
     }))
     .filter((group) => group.originalItemCount === 0 || group.items.length > 0);
   const canViewSettings = permissions.includes("settings:read");

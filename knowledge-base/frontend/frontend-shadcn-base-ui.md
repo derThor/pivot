@@ -211,3 +211,117 @@ auf `/dashboard/system-messages` (`notifications-view.tsx`), ebenfalls
 ergänzt. Die drei weiteren Treffer (`company`, `privacy`, `settings`)
 sind reine "keine Berechtigung"-Zustände in der jeweiligen `page.tsx` –
 die echten Ansichten dieser Seiten haben ihre Breadcrumbs.
+
+## Stolperstein (2026-09-02): `bff()` gehört NICHT in ein `<Link>`
+
+`bff("/api/…")` setzt den `basePath` (`/admin`) davor, damit rohe
+`fetch()`/`<a href>`-Aufrufe im Browser die BFF-Routen treffen. Next.js'
+`<Link>` setzt den `basePath` aber **selbst** davor – beides zusammen
+ergibt `/admin/admin/api/…` und damit eine 404.
+
+Einmal live passiert beim Frontend-Vorschau-Knopf. Details und das
+Erkennungsmerkmal im Dev-Log (getroffene Route wird OHNE basePath
+protokolliert, verfehlte MIT) stehen in
+[public-website.md](./public-website.md).
+
+Faustregel: `bff()` für `fetch`, `sendBeacon` und rohe `<a href>`; für
+`<Link>`, `useRouter()` und `next/image` den Pfad OHNE Präfix übergeben.
+
+## Update 2026-09-02: Navigation zeigt nur noch, wofür man das Recht hat
+
+Anlass war zunächst nur "Einsendungen" als Unterpunkt unter "Formulare"
+(siehe [forms.md](../content/forms.md)). Dabei fiel auf, dass die
+Rechteprüfung der Navigation an zwei Stellen unvollständig war;
+Nutzervorgabe daraufhin: *"wenn ich kein recht habe, darf das auch nicht in
+der sidebar auftauchen"*.
+
+### Lücke 1: Unterpunkte wurden gar nicht geprüft
+
+`visibleNavGroups` in `app-sidebar.tsx` filterte **nur die Top-Level-Items**
+nach `permission` – die `children` eines Items wurden unbesehen
+durchgereicht und erbten damit stillschweigend die Sichtbarkeit ihres
+Elternpunkts. Für die bis dahin vier Unterpunkte war das folgenlos (keiner
+trug ein eigenes Recht), für Einsendungen nicht: `form-submissions:read`
+ist ein **eigenes** Recht neben `forms:read`.
+
+### Lücke 2: Sieben Menüpunkte trugen überhaupt kein Recht
+
+Beim Nachziehen zeigte der Abgleich gegen die `@RequirePermission`-
+Dekoratoren der API, dass die halbe Gruppe "Webseite" ungeschützt war –
+diese Einträge waren für jeden sichtbar, der überhaupt ins Dashboard
+durfte, und führten ohne das passende Recht auf einen 403:
+
+| Menüpunkt | Recht |
+| --- | --- |
+| Seiten | `content:read` |
+| ↳ FAQs | `faq:read` |
+| ↳ Galerien | `gallery:read` |
+| ↳ Vorschau-Links | `preview-links:read` |
+| Medien | `media:read` |
+| Kategorien | `categories:read` |
+| Tags | `tags:read` |
+| ↳ Webseiten (unter Mandanten) | `settings:read` |
+
+### Der Papierkorb brauchte eine eigene Regel
+
+`/dashboard/trash` hat **kein** eigenes Recht: eine Route deckt dort sieben
+Ressourcen ab, und `TrashController.findAll()` zeigt jedem nur die Typen,
+für die er `:read` besitzt – erst wenn KEINER davon vorhanden ist, kommt
+403. Ein einzelnes `permission` hätte das falsch abgebildet. Dafür gibt es
+jetzt `anyPermission: readonly string[]` ("mindestens eines davon"), gefüllt
+mit `TRASH_READ_PERMISSIONS` – der Spiegel von `TRASH_TYPES` aus
+`apps/api/src/trash/trash.types.ts`. **Ändert sich die Liste dort, muss sie
+hier mitgezogen werden** (bewusste Dopplung über die Package-Grenze, gleiche
+Konvention wie beim Rechte-Katalog, siehe
+[rbac-rework.md](../auth/rbac-rework.md)).
+
+Beide Felder wertet die gemeinsame, exportierte Funktion `hasNavAccess()`
+aus. Ihre Signatur führt `title`/`url` mit, obwohl sie beide nicht braucht:
+ein Typ mit ausschließlich optionalen Feldern greift wegen TypeScripts
+"weak type detection" für jedes Objekt ohne eins davon nicht – also
+ausgerechnet für den Dashboard-Eintrag, der gar kein Recht verlangt.
+
+### Befehlspalette zog nach
+
+`command-palette.tsx` filterte zwar schon nach `permission`, hatte die
+Prüfung aber als eigene Kopie – und listete Unterpunkte **gar nicht**. Sie
+nutzt jetzt dasselbe `hasNavAccess()` und nimmt Unterpunkte mit auf (jeweils
+einzeln geprüft), damit ein in der Sidebar versteckter Eintrag nicht über
+Strg-K doch auffindbar ist.
+
+### Bewusst hierarchisch
+
+Ist ein Elternpunkt nicht erlaubt, verschwinden auch seine Unterpunkte – sie
+werden im Baum unter ihm gerendert. Wer also `faq:read`, aber kein
+`content:read` hat, sieht auch FAQs nicht mehr. Das versteckt im Zweifel zu
+viel statt zu wenig und ist damit die sichere Richtung; verwaiste
+Unterpunkte auf die oberste Ebene zu heben wäre ein Umbau des Renderings.
+
+### Wichtig: Sichtbarkeit ist keine Absicherung
+
+`permission`/`anyPermission` steuern nur, was in der Navigation erscheint.
+Die eigentliche Absicherung liegt beim API-Endpunkt. Bei zwei der oben
+ergänzten Einträge klafft die noch:
+
+- **FAQs und Galerien**: `GlobalModulesController.findAll()` ist bewusst
+  `@Public()`, damit die anonyme Vorschau-Seite (`/preview/[token]`) die
+  Werte live auflösen kann. `faq:read`/`gallery:read` werden dadurch beim
+  **Lesen** nirgends erzwungen (Mutationen prüfen sie sehr wohl, manuell
+  über den aufgelösten Modul-Typ). Der Menüpunkt ist jetzt versteckt, die
+  Seite bliebe bei direktem Aufruf der URL aber lesbar. **Am selben Tag
+  geschlossen** – siehe
+  [faq-and-gallery-dedicated-pages.md](../content/faq-and-gallery-dedicated-pages.md),
+  "Galerien/FAQs sind jetzt wirklich abgesichert": Admin-Route
+  authentifiziert + rechtegefiltert, die öffentliche Ausgabe läuft über
+  die neue `/public/global-modules`.
+
+`ALL_ITEM_URLS` (Datenquelle fürs Aktiv-Matching) bleibt bewusst
+**ungefiltert**: dort geht es nur darum, welcher Menüpunkt zu einem Pfad
+gehört, nicht darum, wer ihn sehen darf.
+
+Das Präfix-Matching (`findBestMatchingUrl`, dritter Stolperstein oben)
+brauchte für den neuen Unterpunkt nichts: `/dashboard/forms/submissions` ist
+länger als `/dashboard/forms` und gewinnt daher auf der Sammelseite, während
+die pro-Formular-Ansicht `/dashboard/forms/<id>/submissions` korrekt beim
+Elternpunkt "Formulare" landet – sie beginnt nicht mit
+`/dashboard/forms/submissions/`.

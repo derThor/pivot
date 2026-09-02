@@ -7,7 +7,7 @@ import { LogOut, Plus, Search, Settings, UserCog } from "lucide-react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { navGroups } from "@/components/app-sidebar";
+import { hasNavAccess, navGroups } from "@/components/app-sidebar";
 import {
   searchResultHref,
   searchTypeMeta,
@@ -144,12 +144,19 @@ export function CommandPalette({
     router.refresh();
   }
 
+  // Dieselbe Sichtbarkeitsregel wie in der Sidebar (`hasNavAccess`) – ein
+  // Eintrag, der dort mangels Recht versteckt ist, darf hier nicht doch
+  // auffindbar sein. Unterpunkte kommen seit 2026-09-02 mit in die Palette
+  // (vorher fehlten sie ganz), jeweils mit eigener Rechteprüfung.
   const navItems: PaletteItem[] = navGroups.flatMap((group) =>
     group.items
-      .filter(
-        (item) =>
-          !("permission" in item) || permissions.includes(item.permission),
-      )
+      .filter((item) => hasNavAccess(item, permissions))
+      .flatMap((item) => [
+        item,
+        ...("children" in item
+          ? item.children.filter((child) => hasNavAccess(child, permissions))
+          : []),
+      ])
       .map((item) => ({
         id: `nav-${item.url}`,
         icon: item.icon,
