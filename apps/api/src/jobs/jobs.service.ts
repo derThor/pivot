@@ -108,9 +108,9 @@ export class JobsService implements OnModuleInit {
     },
     {
       id: 'form-submission-cleanup',
-      title: 'Gelesene Einsendungen löschen',
+      title: 'Fällige Einsendungen löschen',
       description:
-        'Löscht Formular-Einsendungen endgültig, die vor der eingestellten Frist gelesen wurden (Datenschutz → Formulare).',
+        'Löscht Formular-Einsendungen endgültig: gelesene nach der Lese-Frist, nie gelesene nach der Eingangs-Frist (Datenschutz → Aufbewahrung).',
       defaultCronExpression: '0 2 * * *',
       run: () => this.cleanupReadFormSubmissions(),
       // Nutzervorgabe, 2026-09-02: gehört zum Datenschutz-Modul und läuft
@@ -518,18 +518,47 @@ export class JobsService implements OnModuleInit {
    */
   private async cleanupReadFormSubmissions(): Promise<string> {
     const settings = await this.settings.get();
-    const days = settings.formSubmissionDeleteAfterReadDays;
-    if (days == null) {
+    const readDays = settings.formSubmissionDeleteAfterReadDays;
+    const unreadDays = settings.formSubmissionDeleteUnreadAfterDays;
+    if (readDays == null && unreadDays == null) {
       return 'Automatisches Löschen ist ausgeschaltet.';
     }
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - days);
-    const { count } = await this.prisma.formSubmission.deleteMany({
-      where: { isRead: true, readAt: { not: null, lt: cutoff } },
-    });
-    return count > 0
-      ? `${count} gelesene Einsendung(en) älter als ${days} Tage gelöscht.`
-      : 'Keine fälligen Einsendungen.';
+
+    const cutoffFor = (days: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() - days);
+      return d;
+    };
+
+    // Zwei getrennte Fristen (Nutzervorgabe, 2026-09-02): gelesene ab
+    // `readAt`, nie gelesene ab `createdAt` – für ungelesene gibt es
+    // keinen Lesezeitpunkt, und sie sollen bewusst deutlich länger
+    // liegen dürfen, weil sie nie jemand zur Kenntnis genommen hat.
+    let read = 0;
+    if (readDays != null) {
+      const res = await this.prisma.formSubmission.deleteMany({
+        where: { isRead: true, readAt: { not: null, lt: cutoffFor(readDays) } },
+      });
+      read = res.count;
+    }
+    let unread = 0;
+    if (unreadDays != null) {
+      const res = await this.prisma.formSubmission.deleteMany({
+        where: { isRead: false, createdAt: { lt: cutoffFor(unreadDays) } },
+      });
+      unread = res.count;
+    }
+
+    const parts: string[] = [];
+    if (readDays != null) {
+      parts.push(`${read} gelesene (älter als ${readDays} Tage)`);
+    }
+    if (unreadDays != null) {
+      parts.push(`${unread} ungelesene (älter als ${unreadDays} Tage)`);
+    }
+    return read + unread > 0
+      ? `Gelöscht: ${parts.join(', ')}.`
+      : `Keine fälligen Einsendungen (${parts.join(', ')}).`;
   }
 
   /** Meldet zu lange ungelesene Einsendungen. Die Meldung selbst baut

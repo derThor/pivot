@@ -548,6 +548,17 @@ export class UpdateSettingsDto {
   @Min(1)
   formSubmissionDeleteAfterReadDays?: number | null;
 
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Tage ab EINGANG, nach denen eine nie gelesene Einsendung endgültig ' +
+      'gelöscht wird; leer = nie. Bewusst großzügiger als die Lese-Frist.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  formSubmissionDeleteUnreadAfterDays?: number | null;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()

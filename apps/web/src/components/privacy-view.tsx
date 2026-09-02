@@ -409,6 +409,10 @@ export function PrivacyView({
     formSubmissionDeleteAfterReadDays,
     setFormSubmissionDeleteAfterReadDays,
   ] = useState(settings.formSubmissionDeleteAfterReadDays);
+  const [
+    formSubmissionDeleteUnreadAfterDays,
+    setFormSubmissionDeleteUnreadAfterDays,
+  ] = useState(settings.formSubmissionDeleteUnreadAfterDays);
   const [subjectAccessRequestOpen, setSubjectAccessRequestOpen] =
     useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -565,6 +569,8 @@ export function PrivacyView({
             dsbFormStoreSubmissionIp,
             formSubmissionDeleteAfterReadDays:
               formSubmissionDeleteAfterReadDays ?? null,
+            formSubmissionDeleteUnreadAfterDays:
+              formSubmissionDeleteUnreadAfterDays ?? null,
           }),
         }),
       ];
@@ -1621,6 +1627,27 @@ export function PrivacyView({
                     Gemessen ab dem Zeitpunkt des Lesens, nicht ab Eingang. Wird
                     eine Einsendung wieder auf ungelesen gesetzt, beginnt die
                     Frist neu.
+                  </p>
+
+                  <SegmentedPicker
+                    label="Nie gelesene löschen"
+                    value={formSubmissionDeleteUnreadAfterDays ?? -1}
+                    onChange={(v) =>
+                      setFormSubmissionDeleteUnreadAfterDays(
+                        v === -1 ? null : v,
+                      )
+                    }
+                    options={[
+                      { label: "90 Tage", value: 90 },
+                      { label: "180 Tage", value: 180 },
+                      { label: "1 Jahr", value: 365 },
+                      { label: "nie", value: -1 },
+                    ]}
+                  />
+                  <p className="-mt-2 text-xs text-muted-foreground">
+                    Gemessen ab Eingang — für nie gelesene Einsendungen gibt es
+                    keinen Lesezeitpunkt. Bewusst großzügiger: was niemand
+                    angesehen hat, soll nicht nach wenigen Tagen verschwinden.
                   </p>
 
                   <SystemMessage

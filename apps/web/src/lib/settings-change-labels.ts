@@ -56,6 +56,8 @@ export const SETTINGS_FIELD_LABELS: Record<string, string> = {
   notifyDeletionRequests: "Benachrichtigung „Offene Betroffenenanfragen“",
   notifyTrashExpiring: "Benachrichtigung „Papierkorb-Einträge laufen ab“",
   formSubmissionDeleteAfterReadDays: "Einsendungen: Löschung nach Lesen (Tage)",
+  formSubmissionDeleteUnreadAfterDays:
+    "Einsendungen: Löschung ungelesener (Tage)",
   formSubmissionNotifyOnNew:
     "Einsendungen: Benachrichtigung bei neuer Einsendung",
   formSubmissionRecipientEmail: "Einsendungen: Empfänger",

@@ -1054,3 +1054,37 @@ nur beim Buchen mit allen Keys befüllt. Bestehende Buchungen (hier: Master
 selbst, "Strasev UG", "dgfhfgdg") kennen `formulare` deshalb nicht und
 müssen es einmal aktiv setzen – Master unter Einstellungen → Module,
 Mandanten unter Mandant → Module → Datenschutz.
+
+## Update 2026-09-02 (3): Auch ungelesene Einsendungen verfallen
+
+Beim Nachfragen aufgefallen (*„wenn kein rechtsmodul, wann werden
+ungelesene nachrichten automatisch geleert?"*) und im Code bestätigt: Die
+Löschbedingung war `isRead: true` – **ungelesene Einsendungen wurden nie
+automatisch gelöscht**, mit Modul so wenig wie ohne. Sie konnten unbegrenzt
+liegen bleiben, obwohl sie personenbezogene Daten enthalten, die nie jemand
+angesehen hat – datenschutzrechtlich die unangenehmere Sorte.
+
+Neu: `AppSettings.formSubmissionDeleteUnreadAfterDays` als zweiter Regler
+in derselben Karte (Datenschutz → Aufbewahrung → Formular-Einsendungen).
+
+**Warum zwei getrennte Fristen statt einer:**
+
+| | Bezugspunkt | Vorgaben | Warum |
+| --- | --- | --- | --- |
+| gelesen | `readAt` | 7 / 30 / 90 Tage | Wurde bearbeitet, kann weg |
+| nie gelesen | `createdAt` | 90 / 180 / 365 Tage | Es gibt keinen Lesezeitpunkt – und was niemand angesehen hat, soll nicht nach wenigen Tagen verschwinden |
+
+Die verworfenen Alternativen: die vorhandene Eingangs-Frist
+(`retentionFormSubmissionsDays`) scharf zu schalten hätte das Verhalten
+einer bestehenden Einstellung geändert; es beim Erinnerungs-Hinweis zu
+belassen hätte die Lücke offen gelassen.
+
+`form-submission-cleanup` arbeitet beide Fristen ab und meldet sie
+getrennt („Gelöscht: 3 gelesene (älter als 30 Tage), 1 ungelesene (älter
+als 180 Tage)."). Der Job heißt seitdem „Fällige Einsendungen löschen"
+statt „Gelesene Einsendungen löschen".
+
+Die Vorwarnung im Postfach zählt jetzt beide Gruppen und nennt die
+ungelesenen ausdrücklich – sie sind der Teil, den man am ehesten übersehen
+hat. Ihr Modul-Feature heißt seit dem Zusammenlegen der Reiter
+`datenschutz/aufbewahrung` (vorher kurzzeitig `formulare`).

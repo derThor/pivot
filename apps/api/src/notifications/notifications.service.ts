@@ -279,27 +279,42 @@ export class NotificationsService {
       // nur, wenn datenschutzmodul vorhanden") – der Schalter dafür sitzt
       // beim Mandanten unter Module → Datenschutz → Formulare.
       const deleteDays = settings.formSubmissionDeleteAfterReadDays;
+      const deleteUnreadDays = settings.formSubmissionDeleteUnreadAfterDays;
       if (
-        deleteDays != null &&
-        (await this.hasModuleFeature('datenschutz', 'formulare'))
+        (deleteDays != null || deleteUnreadDays != null) &&
+        (await this.hasModuleFeature('datenschutz', 'aufbewahrung'))
       ) {
-        // Warnfenster: die letzten 3 Tage vor der endgültigen Löschung.
-        const dueFrom = new Date();
-        dueFrom.setDate(dueFrom.getDate() - deleteDays);
-        const dueUntil = new Date(dueFrom);
-        dueUntil.setDate(dueUntil.getDate() + 3);
-        const due = await this.prisma.formSubmission.count({
-          where: {
-            isRead: true,
-            readAt: { not: null, gte: dueFrom, lt: dueUntil },
-          },
-        });
+        // Warnfenster: die letzten 3 Tage vor der endgültigen Löschung –
+        // für beide Fristen, gelesene ab readAt, ungelesene ab createdAt.
+        const window = (days: number) => {
+          const from = new Date();
+          from.setDate(from.getDate() - days);
+          const until = new Date(from);
+          until.setDate(until.getDate() + 3);
+          return { gte: from, lt: until };
+        };
+        const [dueRead, dueUnread] = await Promise.all([
+          deleteDays != null
+            ? this.prisma.formSubmission.count({
+                where: {
+                  isRead: true,
+                  readAt: { not: null, ...window(deleteDays) },
+                },
+              })
+            : Promise.resolve(0),
+          deleteUnreadDays != null
+            ? this.prisma.formSubmission.count({
+                where: { isRead: false, createdAt: window(deleteUnreadDays) },
+              })
+            : Promise.resolve(0),
+        ]);
+        const due = dueRead + dueUnread;
         if (due > 0) {
           candidates.push({
             category: 'privacy',
             dedupeKey: 'submissions-due-deletion',
             title: `${due} Einsendung${due === 1 ? '' : 'en'} ${due === 1 ? 'wird' : 'werden'} in den nächsten Tagen gelöscht`,
-            description: `Endgültige Löschung ${deleteDays} Tage nach dem Lesen (Datenschutz → Formulare).`,
+            description: `Endgültige Löschung laut den Fristen unter Datenschutz → Aufbewahrung${dueUnread > 0 ? ` – darunter ${dueUnread} nie gelesen` : ''}.`,
             isUrgent: false,
             actionLabel: 'Einsendungen öffnen',
             actionUrl: '/dashboard/forms/submissions',

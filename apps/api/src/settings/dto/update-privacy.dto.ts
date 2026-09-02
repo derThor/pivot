@@ -15,6 +15,17 @@ export class UpdatePrivacyDto {
   @ApiPropertyOptional({
     nullable: true,
     description:
+      'Tage ab EINGANG, nach denen eine nie gelesene Einsendung endgültig ' +
+      'gelöscht wird; leer = nie. Bewusst großzügiger als die Lese-Frist.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  formSubmissionDeleteUnreadAfterDays?: number | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
       'Tage nach dem LESEN, nach denen eine Einsendung endgültig gelöscht ' +
       'wird; leer = nie. Einzige Frist, die wirklich automatisch löscht.',
   })
