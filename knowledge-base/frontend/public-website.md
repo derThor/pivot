@@ -420,3 +420,19 @@ module '.../preview/page.js'" fehl. Ursache war nicht der Code, sondern
 der Dev-Server nicht mitpflegt und das der Type-Check trotzdem mit
 einliest. Löschen genügt (liegt in `.next`, also nicht im Git);
 `next build` erzeugt es korrekt neu.
+
+## Update 2026-09-02: Formulare auf der Website
+
+Formular-Bausteine wurden auf öffentlichen Seiten bis dahin **still gar
+nicht gerendert** – `ContentBlocks` übergab kein `renderForm`. Seitdem
+gibt es `public-form.tsx` (eigener Renderer mit nativen Elementen, weil
+`apps/site` bewusst kein shadcn/ui hat) und darunter optional den
+Selbstauskunft-Footer.
+
+Neu dabei auch das erste Mal Proxy-Routen unter `apps/site/src/app/api/`:
+die API lässt per `CORS_ORIGIN` nur eine Herkunft zu, ein direkter
+Browser-Aufruf von der Website aus scheitert. Wer hier weitere
+API-Aufrufe aus dem Browser braucht, geht denselben Weg.
+
+Vollständige Beschreibung in
+[forms.md](../content/forms.md#update-2026-09-02-4-formulare-erscheinen-endlich-auf-der-website).

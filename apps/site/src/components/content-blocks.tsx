@@ -16,6 +16,7 @@ import {
   type BlockLayoutValue,
   type GlobalModule,
 } from "@pivot/blocks";
+import { PublicForm } from "@/components/public-form";
 import type { ModuleType } from "@/lib/api";
 
 interface ModuleInstance {
@@ -43,10 +44,12 @@ function isModuleInstanceArray(value: unknown): value is ModuleInstance[] {
  * Bewusst dieselbe Logik wie die Redakteurs-Vorschau in apps/web
  * (`content-preview-render.tsx`) – beide nutzen `@pivot/blocks`, damit
  * Vorschau und echte Website nicht auseinanderlaufen. Unterschiede zur
- * Vorschau: kein Status-Badge, kein Titel (den setzt die Seite selbst),
- * und Formular-Bausteine werden noch nicht gerendert (kein `renderForm`
- * – die öffentliche Formular-Übermittlung ist noch nicht gebaut, siehe
- * knowledge-base/frontend/public-website.md, "Offene Punkte"). */
+ * Vorschau: kein Status-Badge und kein Titel (den setzt die Seite selbst).
+ *
+ * Formular-Bausteine rendern seit 2026-09-02 auch hier (`renderForm`) –
+ * vorher fielen sie auf einer veröffentlichten Seite still weg, während
+ * sie in der Backend-Vorschau sichtbar waren. Das Absenden läuft über
+ * eigene Proxy-Routen dieser App, siehe app/api/forms/. */
 export function ContentBlocks({
   data,
   moduleTypes,
@@ -114,6 +117,9 @@ export function ContentBlocks({
                               interactive
                               gallerySettings={toGallerySettings(
                                 resolved.settings,
+                              )}
+                              renderForm={(id) => (
+                                <PublicForm key={id} formId={id} />
                               )}
                             />
                           ))}
