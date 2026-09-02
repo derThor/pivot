@@ -152,6 +152,14 @@ export class WebsitesService implements OnModuleInit {
    * aus, siehe dortiger Kommentar) statt eines rohen `updateMany()`. */
   @Cron('0 3 * * *')
   async autoLockStaleDevelopmentSites() {
+    // Master-Only, siehe gleichlautende Prüfung in
+    // WebsiteMonitorService.checkLockedWebsites(): ein Cron durchläuft
+    // keine Guards, der Job lief dadurch auch auf Client-Installationen.
+    const settings = await this.prisma.appSettings.findUnique({
+      where: { id: 1 },
+      select: { deploymentMode: true },
+    });
+    if ((settings?.deploymentMode ?? 'master') !== 'master') return;
     const startedAt = new Date();
     const cutoff = new Date(
       startedAt.getTime() - DEVELOPMENT_MODE_MAX_DAYS * 24 * 60 * 60 * 1000,

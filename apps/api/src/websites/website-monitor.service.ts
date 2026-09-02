@@ -32,8 +32,24 @@ export class WebsiteMonitorService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Master-Only, aber anders als die Controller-Routen NICHT über
+   * `MasterOnlyGuard` – ein Cron durchläuft keine Guards. Ohne diese
+   * Prüfung lief der Job auch auf jeder Client-Installation und schrieb
+   * dort "Letzte Läufe"-Einträge eines Master-Jobs, der dort nie etwas zu
+   * tun haben kann (Nutzer-Bugreport, 2026-09-02: "das bekomme ich auf dem
+   * client"). Bewusst VOR dem `scheduledJob.upsert()` – sonst bliebe die
+   * Job-Zeile auf dem Client stehen. */
+  private async isMaster(): Promise<boolean> {
+    const settings = await this.prisma.appSettings.findUnique({
+      where: { id: 1 },
+      select: { deploymentMode: true },
+    });
+    return (settings?.deploymentMode ?? 'master') === 'master';
+  }
+
   @Cron(CronExpression.EVERY_30_MINUTES)
   async checkLockedWebsites() {
+    if (!(await this.isMaster())) return;
     const startedAt = new Date();
     const lockedSites = await this.prisma.website.findMany({
       where: { status: 'locked' },
@@ -64,8 +80,12 @@ export class WebsiteMonitorService {
         status: 'success',
         message:
           lockedSites.length === 0
-            ? 'Keine gesperrten Websites zu prüfen.'
-            : `${lockedSites.length} gesperrte Website(s) geprüft, ${anomalyCount} Anomalie(n).`,
+            ? 'Aktuell ist keine Website gesperrt.'
+            : `${lockedSites.length} gesperrte Website(s) geprüft — ${
+                anomalyCount === 0
+                  ? 'keine Auffälligkeit'
+                  : `${anomalyCount} trotz Sperre erreichbar`
+              }.`,
       },
     });
   }
