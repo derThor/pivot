@@ -857,18 +857,22 @@ Architektur, Entscheidungen und Stolpersteine:
       Menü-Verwaltung); `GET /public/home` + `/` in `apps/site`
       (2026-08-31, Details in
       [navigation-management.md](../knowledge-base/content/navigation-management.md))
-- [ ] **Schritt 4** – Kategorie-Archiv `/{kategorie}` (Aufmacher-Kachel,
-      Pagination) und Beitragsseite `/{kategorie}/{slug}`
+- [x] **Schritt 4** – Kategorie-Archiv `/{kategorie}` (Aufmacher-Kachel,
+      Pagination) und Beitragsseite `/{kategorie}/{slug}` (2026-09-02);
+      Kategorien sind seitdem auch als Menüziel wählbar
+      (`NavigationItem.categoryId`) mit zwei Darstellungen (Liste/Blöcke),
+      und der Vorschau-Knopf der Seiten-Liste öffnet die echte Website
+      über einen kurzlebigen Vorschau-Token
 - [ ] **Schritt 5** – Hauptmenü im Header (`AppSettings.mainNavigationId`
       hat noch **kein Eingabefeld** in den Einstellungen), RSS-`<link>`
       bei `rssEnabled`, abschließender SEO-Feinschliff
 - [ ] Formular-Bausteine auf öffentlichen Seiten (brauchen einen
       BFF-Proxy in `apps/site`; bis dahin werden sie dort nicht
       gerendert)
-- [ ] Kategorie-Archiv-Endpunkt auf nullable Antwort umstellen (die
-      Inhalts-Endpunkte antworten seit 2026-08-31 mit `{ content: null }`
-      statt 404, weil Next.js fehlgeschlagene Antworten nicht cached und
-      sonst dauerhaft veraltete Seiten ausliefert)
+- [x] Kategorie-Archiv-Endpunkt auf nullable Antwort umgestellt
+      (2026-09-02, zusammen mit Schritt 4) – die Inhalts-Endpunkte tun das
+      seit 2026-08-31, weil Next.js fehlgeschlagene Antworten nicht cached
+      und sonst dauerhaft veraltete Seiten ausliefert
 - [ ] Mehrsprachigkeit/Locale-Routing (`Content.locale` existiert, ist
       aber nicht ans Routing angebunden)
 - [ ] Eigene visuelle Gestaltung des Frontends (aktuell bewusst minimal)
