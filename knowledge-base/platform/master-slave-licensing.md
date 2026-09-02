@@ -1952,3 +1952,41 @@ wurde zuerst der *Kartengrund* theme-abhängig abgedunkelt statt der
 gemeinten *Sperrvermerk-Box* – der Screenshot zeigte beides. Die Änderung
 wurde per `git revert` zurückgenommen. Bei Farbwünschen auf dieser Seite
 lohnt die Rückfrage, welche der beiden Flächen gemeint ist.
+
+## Update 2026-09-02: Status-Badges auf der Kopfkarte in beiden Themes dunkel
+
+Nutzervorgabe (mit Screenshot der Detailseite): *"der status soll auch in
+light die gleiche farbgebung wie in dark haben, da der hintergund zu
+duinkel ist. aber nur hier"*. Dieselbe Ursache wie beim Sperrvermerk-Kasten
+einen Tag zuvor: `MandantHeaderShell` trägt einen **festen** dunklen Grund
+(`HEADER_BG = #0e1827`), folgt also nicht dem Theme – die Light-Werte der
+`badge--*`-Klassen (blasse Pastellflächen wie `#dcfce7`) leuchteten dort
+als Loch im fast schwarzen Kopf.
+
+**Umgesetzt als auf den Kopf begrenzter CSS-Override**, nicht per neuer
+Ad-hoc-Farbe und nicht durch Änderung der globalen Klassen:
+
+- `MandantHeaderShell` trägt jetzt zusätzlich die reine Aufhänger-Klasse
+  `mandant-header-shell`.
+- In `globals.css` stehen darunter `badge--green/amber/red/slate` mit
+  exakt denselben Werten wie ihre `[data-pivot-theme="dark"]`-Fassungen.
+  Bewusst als Kopie statt geteilter Custom-Properties: die globalen
+  Klassen bleiben unangetastet und app-weit gültig.
+
+**Warum das automatisch beide Statusträger erwischt:** der Badge in der
+Kopfzeile UND die aktive Pille des `SegmentedPicker`s darunter beziehen
+ihre Farbe aus denselben `badge--*`-Klassen (der Picker über
+`option.activeClassName`, siehe Kommentar in `segmented-picker.tsx`). Eine
+Änderung an einer Stelle genügt daher für beide.
+
+**Warum "nur hier" tatsächlich eingehalten ist:** `MandantHeaderShell`
+wird auch von den Kacheln der Mandanten-Übersicht genutzt – die zeigen in
+ihrem Kopf aber ausschließlich Logo, Name und Domain, **keine Badges**.
+Der Override greift damit faktisch nur auf der Detailseite. Wird dort
+später doch ein Badge in den Kopf gesetzt, bekommt er automatisch die
+richtigen Farben; das ist gewollt.
+
+Passend zur Sackgasse im Abschnitt davor: die Rückfrage "welche Fläche ist
+gemeint?" war diesmal unnötig, weil der Screenshot den Statusbereich zeigte
+und der Text ausdrücklich *"der status"* sagte – die beiden Kandidaten
+(Badge oben, Picker unten) tragen ohnehin dieselbe Farbquelle.

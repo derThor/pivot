@@ -379,6 +379,44 @@
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
 }
 
+/* Die Mandant-Kopfkarte (`MandantHeaderShell`) ist in BEIDEN Themes dunkel
+   (fester `HEADER_BG`, siehe mandant-header.tsx) – die Light-Werte der
+   `badge--*`-Klassen rissen dort als blasse Flächen ein Loch in den
+   dunklen Grund (Nutzervorgabe, 2026-09-02: "der status soll auch in light
+   die gleiche farbgebung wie in dark haben, da der hintergrund zu dunkel
+   ist. aber nur hier"). Deshalb hier in beiden Themes die Dark-Werte,
+   bewusst als Kopie statt als geteilte Custom-Properties: die Klassen
+   oben bleiben unangetastet und app-weit gültig.
+
+   Gleiche Begründung wie beim Sperrvermerk-Kasten in
+   mandant-detail-view.tsx, der aus demselben Grund fest dunkel ist.
+
+   Trifft den Status-Badge in der Kopfzeile UND die aktive Pille des
+   `SegmentedPicker`s darunter (bekommt über `activeClassName` dieselben
+   `badge--*`-Klassen). Die Kacheln der Mandanten-Übersicht nutzen
+   denselben Shell, zeigen darin aber keine Badges – der Override bleibt
+   damit tatsächlich auf die Detailseite beschränkt. */
+.mandant-header-shell .badge--green {
+  background: #1e4634;
+  color: #8df0b4;
+  box-shadow: inset 0 0 0 1px #2f6a4d;
+}
+.mandant-header-shell .badge--amber {
+  background: #4a3813;
+  color: #f6cf7e;
+  box-shadow: inset 0 0 0 1px #6b5220;
+}
+.mandant-header-shell .badge--red {
+  background: #3d1d1d;
+  color: #f9d7d7;
+  box-shadow: inset 0 0 0 1px #6b3030;
+}
+.mandant-header-shell .badge--slate {
+  background: #333d4b;
+  color: #c3ccd8;
+  box-shadow: inset 0 0 0 1px #475466;
+}
+
 .badge--admin {
   background: #132033;
   color: #ffffff;

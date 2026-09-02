@@ -112,7 +112,10 @@ export function MandantHeaderShell({
 }) {
   return (
     <div
-      className={cn("relative overflow-hidden", className)}
+      // `mandant-header-shell` ist reiner CSS-Aufhänger: der Kopf ist in
+      // beiden Themes dunkel, deshalb tragen die `badge--*`-Klassen
+      // darin immer ihre Dark-Werte (siehe globals.css).
+      className={cn("mandant-header-shell relative overflow-hidden", className)}
       style={{ background: HEADER_BG }}
     >
       <TenantCover
