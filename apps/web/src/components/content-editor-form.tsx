@@ -717,23 +717,43 @@ export function ContentEditorForm({
   }
 
   // "Vorschau öffnen": speichert wie der normale Submit, bleibt aber auf
-  // der Bearbeiten-Seite und öffnet die interne, authentifizierte Vorschau
-  // (`/dashboard/content/[id]/preview`) in neuem Tab – kein Freigabe-Link,
-  // keine zeitliche Begrenzung. Freigabe-Links für Außenstehende erstellt
+  // der Bearbeiten-Seite und öffnet die Seite in der ÖFFENTLICHEN WEBSITE
+  // in einem neuen Tab (Nutzervorgabe, 2026-09-02) – dieselbe BFF-Route
+  // wie der Augen-Knopf in der Seiten-Liste, also derselbe kurzlebige
+  // Vorschau-Token, dessen Ausstellen `preview-links:create` verlangt.
+  //
+  // Vorher zeigte der Knopf auf die interne Vorschau
+  // `/dashboard/content/[id]/preview` – und zwar über ein rohes
+  // `window.open()` OHNE `bff()`, ihm fehlte also zusätzlich der
+  // `/admin`-Basispfad (siehe lib/bff.ts: rohe Browser-Navigationen
+  // brauchen ihn, anders als `<Link>`/`useRouter()`).
+  //
+  // Teilbare Freigabe-Links für Außenstehende erstellt weiterhin
   // ausschließlich `PreviewLinksDialog` (siehe preview-links-dialog.tsx).
   const [isOpeningPreview, setIsOpeningPreview] = useState(false);
 
   async function handleOpenPreview() {
+    // Tab SYNCHRON im Klick öffnen und erst danach befüllen: ein
+    // `window.open()` nach dem `await` auf das Speichern gilt dem Browser
+    // nicht mehr als Nutzeraktion und wird vom Popup-Blocker abgefangen.
+    const tab = window.open("", "_blank");
+    let opened = false;
     await form.handleSubmit(async (values) => {
       setIsOpeningPreview(true);
       try {
         const id = await saveContent(values);
         if (!id) return;
-        window.open(`/dashboard/content/${id}/preview`, "_blank");
+        const url = bff(`/api/content/${id}/frontend-preview`);
+        if (tab) tab.location.href = url;
+        else window.open(url, "_blank");
+        opened = true;
       } finally {
         setIsOpeningPreview(false);
       }
     })();
+    // Validierung fehlgeschlagen oder Speichern abgebrochen – dann bleibt
+    // sonst ein leerer Tab stehen.
+    if (!opened) tab?.close();
   }
 
   return (

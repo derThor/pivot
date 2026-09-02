@@ -65,8 +65,15 @@ import { asset, bff } from "@/lib/bff";
 // Icon sitzen statt über die volle Spaltenbreite zu laufen (`size-11` +
 // `mx-auto` + `p-0` überschreiben `w-full`/Padding gezielt nur im
 // `collapsible=icon`-Zustand).
+// `data-active:hover:bg-primary` ist kein Schmuck, sondern nötig: ohne
+// ihn gewinnt beim Hovern über einem AKTIVEN Punkt die gedämpfte
+// `hover:bg-sidebar-accent`-Fläche aus `ui/sidebar.tsx`, während
+// `data-active:hover:text-primary-foreground` die Schrift auf dem für die
+// Lime-Pille gedachten dunklen Ton festhält – im Dark-Modus ergab das
+// dunkle Schrift auf dunklem Oliv (Nutzer-Bugreport, 2026-09-02). Die
+// aktive Pille behält jetzt beim Hovern ihr Aussehen.
 const navActiveClass =
-  "h-auto w-full gap-3 overflow-hidden rounded-xl pl-3 pr-4 py-2.5 transition-[gap,padding] duration-200 ease-linear group-data-[collapsible=icon]:size-11 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:p-0 data-active:bg-primary data-active:font-semibold data-active:text-primary-foreground data-active:hover:text-primary-foreground";
+  "h-auto w-full gap-3 overflow-hidden rounded-xl pl-3 pr-4 py-2.5 transition-[gap,padding] duration-200 ease-linear group-data-[collapsible=icon]:size-11 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:p-0 data-active:bg-primary data-active:font-semibold data-active:text-primary-foreground data-active:hover:bg-primary data-active:hover:text-primary-foreground";
 
 // Footer-Einträge (Einstellungen/Abmelden) liegen direkt im gepolsterten
 // SidebarFooter (hat bereits eigenes `p-2`, siehe ui/sidebar.tsx) –
@@ -74,7 +81,7 @@ const navActiveClass =
 // mehr nötig, da das Rechteck ohnehin innerhalb des Footer-Innenabstands
 // sitzt.
 const navFooterActiveClass =
-  "h-auto w-full gap-3 overflow-hidden rounded-xl px-3 py-2.5 transition-[gap,padding] duration-200 ease-linear group-data-[collapsible=icon]:size-11 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:p-0 data-active:bg-primary data-active:font-semibold data-active:text-primary-foreground data-active:hover:text-primary-foreground";
+  "h-auto w-full gap-3 overflow-hidden rounded-xl px-3 py-2.5 transition-[gap,padding] duration-200 ease-linear group-data-[collapsible=icon]:size-11 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:p-0 data-active:bg-primary data-active:font-semibold data-active:text-primary-foreground data-active:hover:bg-primary data-active:hover:text-primary-foreground";
 
 const navLabelClass =
   "overflow-hidden whitespace-nowrap transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0";
@@ -112,7 +119,7 @@ const navIconChipClass =
 // `data-active`-Fall ist dabei nicht optional: ein graues Icon auf der
 // Lime-Pille wäre kaum lesbar.
 const navSubActiveClass =
-  "h-auto w-full gap-2 overflow-hidden rounded-xl pl-10 pr-4 py-2 text-sm transition-[gap,padding] duration-200 ease-linear data-active:bg-primary data-active:font-semibold data-active:text-primary-foreground data-active:hover:text-primary-foreground [&>svg]:text-sidebar-foreground/70 dark:[&>svg]:text-sidebar-accent-foreground data-active:[&>svg]:text-primary-foreground";
+  "h-auto w-full gap-2 overflow-hidden rounded-xl pl-10 pr-4 py-2 text-sm transition-[gap,padding] duration-200 ease-linear data-active:bg-primary data-active:font-semibold data-active:text-primary-foreground data-active:hover:bg-primary data-active:hover:text-primary-foreground [&>svg]:text-sidebar-foreground/70 dark:[&>svg]:text-sidebar-accent-foreground data-active:[&>svg]:text-primary-foreground";
 
 // Der Papierkorb (`/dashboard/trash`) hat kein eigenes Recht: eine Route
 // deckt dort sieben Ressourcen ab und `TrashController.findAll()` zeigt
