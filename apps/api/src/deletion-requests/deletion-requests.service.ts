@@ -26,6 +26,12 @@ const REQUEST_TYPE_LABELS: Record<string, string> = {
 
 const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
 
+/** `DeletionRequest.source` für Anfragen aus dem Selbstauskunft-Footer
+ * der öffentlichen Website. Als Konstante, weil der NotificationsService
+ * genau darauf filtert – ein abweichender Freitext würde den Hinweis
+ * lautlos verstummen lassen. */
+export const PUBLIC_FORM_DSR_SOURCE = 'Selbstauskunft (Formular)';
+
 @Injectable()
 export class DeletionRequestsService {
   constructor(
@@ -85,10 +91,9 @@ export class DeletionRequestsService {
         dsrId,
         // DSGVO Art. 12(3): Antwortfrist von einem Monat, sofern keine
         // eigene Frist angegeben wurde.
-        dueAt:
-          dto.dueAt ? new Date(dto.dueAt) : (
-            new Date(Date.now() + ONE_MONTH_MS)
-          ),
+        dueAt: dto.dueAt
+          ? new Date(dto.dueAt)
+          : new Date(Date.now() + ONE_MONTH_MS),
       },
     });
     await this.sendAcknowledgementIfEnabled(row);
@@ -113,7 +118,9 @@ export class DeletionRequestsService {
       data: {
         dsrId,
         type: dto.type ?? 'access',
-        requesterName: [user.firstName, user.lastName].filter(Boolean).join(' '),
+        requesterName: [user.firstName, user.lastName]
+          .filter(Boolean)
+          .join(' '),
         requesterEmail: user.email,
         reason: dto.reason,
         source: 'Selbstauskunft (Mein Konto)',
@@ -123,6 +130,37 @@ export class DeletionRequestsService {
     });
     await this.sendAcknowledgementIfEnabled(row);
     return row;
+  }
+
+  /** Auskunftsanfrage aus dem Formular-Footer der öffentlichen Website
+   * (Nutzervorgabe, 2026-09-02) – von einem ANONYMEN Besucher, der kein
+   * Konto hat und deshalb `createSelfService()` nicht nutzen kann.
+   *
+   * Legt ausschließlich die Anfrage an. Es werden **keine Daten
+   * herausgegeben** und auch nicht verraten, ob es zu der Adresse
+   * überhaupt etwas gibt – sonst wäre das ein Auskunftskanal ohne
+   * Identitätsprüfung, über den jeder abfragen könnte, wer hier Kunde
+   * ist. Die Identität prüft der Betreiber beim Bearbeiten, wie bei jeder
+   * anderen Anfrage auch.
+   *
+   * Bewusst KEIN `linkedUserId`: die Verknüpfung mit einem Konto entsteht
+   * erst über den geprüften E-Mail-Abgleich beim "Datenauszug erstellen"
+   * im Backend. */
+  async createFromPublicForm(email: string, note?: string) {
+    const dsrId = await this.generateDsrId();
+    const row = await this.prisma.deletionRequest.create({
+      data: {
+        dsrId,
+        type: 'access',
+        requesterName: email,
+        requesterEmail: email,
+        reason: note,
+        source: PUBLIC_FORM_DSR_SOURCE,
+        dueAt: new Date(Date.now() + ONE_MONTH_MS),
+      },
+    });
+    await this.sendAcknowledgementIfEnabled(row);
+    return { ok: true as const, dsrId: row.dsrId };
   }
 
   private async sendAcknowledgementIfEnabled(row: {
@@ -144,9 +182,9 @@ export class DeletionRequestsService {
     // "abgelehnt" wechselt und noch kein Zeitpunkt gesetzt ist – kein
     // manuelles Datumsfeld für einen ohnehin ableitbaren Wert.
     const completedAt =
-      (dto.status === 'completed' || dto.status === 'rejected') ?
-        new Date()
-      : undefined;
+      dto.status === 'completed' || dto.status === 'rejected'
+        ? new Date()
+        : undefined;
     return this.prisma.deletionRequest.update({
       where: { id },
       data: {
@@ -263,7 +301,9 @@ export class DeletionRequestsService {
       ['Quelle', row.source ?? ''],
       [
         'Betroffene Datensätze',
-        row.affectedRecordsCount != null ? String(row.affectedRecordsCount) : '',
+        row.affectedRecordsCount != null
+          ? String(row.affectedRecordsCount)
+          : '',
       ],
       ['Status', row.status],
       ['Eingang', row.createdAt.toISOString()],

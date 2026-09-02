@@ -13,6 +13,7 @@ import { TRASH_TYPES, type TrashType } from '../trash/trash.types';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 import type { AppSettings } from '@pivot/database';
 import { LicenseClientService } from '../license-client/license-client.service';
+import { PUBLIC_FORM_DSR_SOURCE } from '../deletion-requests/deletion-requests.service';
 
 export type NotificationCategory =
   'system' | 'security' | 'privacy' | 'accounts';
@@ -420,6 +421,30 @@ export class NotificationsService {
       settings.notifyDeletionRequests &&
       (await this.hasModuleFeature('datenschutz', 'loeschanfragen'))
     ) {
+      // Anfragen aus dem Selbstauskunft-Footer der Website
+      // (Nutzervorgabe, 2026-09-02) kommen von außen und ohne Vorwarnung
+      // herein. Ohne diesen Hinweis fielen sie erst zwei Tage vor
+      // Fristende auf – bei einem Monat Frist also fast vier Wochen zu
+      // spät. Bewusst kein eigener Schalter: gleiche Kategorie, gleiches
+      // Recht, gleicher An/Aus-Hebel wie die Fristen-Warnung darunter.
+      // Der Hinweis verschwindet, sobald jemand die Anfrage aus "offen"
+      // herausbewegt.
+      const fromWebsite = await this.prisma.deletionRequest.findMany({
+        where: { status: 'open', source: PUBLIC_FORM_DSR_SOURCE },
+      });
+      for (const r of fromWebsite) {
+        candidates.push({
+          category: 'privacy',
+          dedupeKey: `dsr-new:${r.id}`,
+          title: `Neue Auskunftsanfrage ${r.dsrId} über die Website`,
+          description: `${r.requesterEmail} hat über den Selbstauskunft-Link eine Auskunft angefordert.`,
+          isUrgent: false,
+          actionLabel: 'Anfrage bearbeiten',
+          actionUrl: '/dashboard/privacy?tab=loeschanfragen',
+          requiredPermission: 'privacy:read',
+        });
+      }
+
       const dueSoon = await this.prisma.deletionRequest.findMany({
         where: {
           status: { in: ['open', 'in_progress'] },

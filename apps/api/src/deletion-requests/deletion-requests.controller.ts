@@ -12,11 +12,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { DeletionRequestsService } from './deletion-requests.service';
 import { CreateDeletionRequestDto } from './dto/create-deletion-request.dto';
 import { UpdateDeletionRequestDto } from './dto/update-deletion-request.dto';
 import { SendFollowUpDto } from './dto/send-follow-up.dto';
 import { CreateSelfServiceRequestDto } from './dto/create-self-service-request.dto';
+import { CreatePublicRequestDto } from './dto/create-public-request.dto';
+import { Public } from '../auth/decorators/public.decorator';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
@@ -55,6 +58,26 @@ export class DeletionRequestsController {
   @Post()
   create(@Body() dto: CreateDeletionRequestDto) {
     return this.deletionRequestsService.create(dto);
+  }
+
+  /** Selbstauskunft aus dem Formular-Footer der öffentlichen Website
+   * (Nutzervorgabe, 2026-09-02). Anders als `self-service` ohne Login –
+   * ein Website-Besucher hat kein Konto, und ein Betroffenenrecht darf
+   * nicht davon abhängen, ob man hier Kunde ist.
+   *
+   * Die Antwort ist bewusst immer dieselbe und enthält keinerlei Daten
+   * (siehe `createFromPublicForm()`). Eng gedrosselt: der Endpunkt ist
+   * offen, legt Datenbankzeilen an und verschickt eventuell eine
+   * Bestätigungsmail – ohne Deckel wäre er ein Spam-Werkzeug. Gleiche
+   * Größenordnung wie die Login-Routen (auth.controller.ts). */
+  @Public()
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @Post('public')
+  createFromPublicForm(@Body() dto: CreatePublicRequestDto) {
+    return this.deletionRequestsService.createFromPublicForm(
+      dto.email,
+      dto.note,
+    );
   }
 
   // Bewusst KEIN @RequirePermission: Selbstauskunft/-löschung aus dem

@@ -313,7 +313,16 @@ export class FormsService {
     if (!form || form.deletedAt || form.status !== 'published') {
       throw new NotFoundException(`Formular ${id} ist nicht verfügbar.`);
     }
+    // Ob das Formular unter dem Absenden-Knopf eine Selbstauskunft
+    // anbietet, entscheidet die Datenschutz-Einstellung – und damit die
+    // API, nicht der Renderer. So kann keine Oberfläche den Schalter
+    // versehentlich übergehen (Nutzervorgabe, 2026-09-02).
+    const settings = await this.prisma.appSettings.findUnique({
+      where: { id: 1 },
+      select: { dsbFormSelfServiceDisclosure: true },
+    });
     return {
+      selfServiceDisclosure: settings?.dsbFormSelfServiceDisclosure ?? false,
       id: form.id,
       name: form.name,
       slug: form.slug,

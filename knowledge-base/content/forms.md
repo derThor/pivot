@@ -1088,3 +1088,69 @@ Die Vorwarnung im Postfach zählt jetzt beide Gruppen und nennt die
 ungelesenen ausdrücklich – sie sind der Teil, den man am ehesten übersehen
 hat. Ihr Modul-Feature heißt seit dem Zusammenlegen der Reiter
 `datenschutz/aufbewahrung` (vorher kurzzeitig `formulare`).
+
+## Update 2026-09-02 (4): Formulare erscheinen endlich auf der Website
+
+Lange als „geht schon" geführt, war es nicht: `ContentBlocks` in
+`apps/site` übergab kein `renderForm`, ein Formular-Baustein fiel auf
+einer veröffentlichten Seite deshalb **still weg** – im Backend sichtbar,
+auf der Website nicht. Empirisch geprüft an `/dddd`: kein `<form>`, kein
+`<input>`, kein „Absenden" im ausgelieferten HTML.
+
+**Eigener Renderer statt Wiederverwendung.** `apps/site/src/components/
+public-form.tsx` bildet den Editor-Renderer nach, benutzt aber native
+Elemente: die Website hat bewusst kein shadcn/ui (siehe
+[public-website.md](../frontend/public-website.md)). Feldtypen und
+Verhalten sind identisch, damit Redaktions-Vorschau und Website nicht
+auseinanderlaufen. Zwei bewusste Abweichungen:
+
+- Kein „wird geladen"-Platzhalter und **keine Fehlerkiste** – mit
+  „Formular nicht gefunden" kann ein Besucher nichts anfangen; ist etwas
+  nicht in Ordnung, erscheint an der Stelle einfach nichts.
+- `file` bleibt der ehrliche Hinweis auf fehlendes Upload-Handling, kein
+  vorgetäuschtes Feld.
+
+**Zwei Proxy-Routen, kein Direktaufruf.** Die API lässt per `CORS_ORIGIN`
+genau eine Herkunft zu (die Administration); ein `fetch` aus dem Browser
+der Website scheiterte am CORS-Check. Deshalb
+`app/api/forms/public/[id]` (Definition) und `app/api/forms/[slug]/submit`
+(Absenden). Die Absende-Route reicht `x-forwarded-for`/`x-real-ip` durch –
+sonst hätte die API die IP des Next.js-Servers gespeichert statt der des
+Besuchers, was die Einstellung „IP-Adressen bei Einsendungen speichern"
+sinnlos gemacht hätte. Geprüft: mit Schalter aus keine IP, mit Schalter an
+die durchgereichte Besucher-IP.
+
+## Update 2026-09-02 (5): Selbstauskunft im Formular-Footer
+
+Der Schalter *„Selbstauskunft im Formular-Footer anbieten"* existierte
+seit dem Datenschutz-Ausbau, war aber folgenlos – die Beschreibung sagte
+das auch offen („Noch ohne Wirkung"). Mit dem Renderer oben gab es
+erstmals einen Footer, der ihn auswerten kann.
+
+Sichtbar wird eine unauffällige Zeile unter dem Absenden-Knopf; der Klick
+öffnet ein Popup mit genau zwei Feldern (E-Mail, optionale Anmerkung).
+Absenden legt über `POST /deletion-requests/public` eine Anfrage vom Typ
+**Auskunft** mit Quelle „Selbstauskunft (Formular)" an, die unter
+Datenschutz → Anfragen landet.
+
+**Was ausdrücklich nicht passiert: es werden keine Daten herausgegeben** –
+auch nicht die Aussage, ob zu der Adresse überhaupt etwas vorliegt. Das
+wäre selbst schon eine Auskunft, und niemand hat sich an dieser Stelle
+ausgewiesen; der Endpunkt wäre sonst ein Abfragewerkzeug dafür, wer hier
+Kunde ist. Die Antwort ist immer dieselbe neutrale Bestätigung, die
+Identitätsprüfung passiert beim Bearbeiten im Backend.
+
+**Entscheidungen im Detail:**
+
+| Frage | Entscheidung | Warum |
+| --- | --- | --- |
+| Wer kennt den Schalter? | Die API hängt `selfServiceDisclosure` an `GET /forms/public/:id` | Keine Oberfläche kann den Datenschutz-Schalter versehentlich übergehen |
+| Drosselung | `@Throttle` 3/Minute, wie die Login-Routen | Offener Endpunkt, der Datenbankzeilen anlegt und ggf. eine Bestätigungsmail verschickt |
+| Besucher-IP an die API? | **Nein** (anders als beim Absenden) | Eine Betroffenenanfrage ist der letzte Ort, an dem eine IP mehr gespeichert werden soll als nötig; die Drosselung greift dann für die Website gemeinsam |
+| `linkedUserId` | Bleibt leer | Die Verknüpfung mit einem Konto entsteht erst über den geprüften E-Mail-Abgleich beim „Datenauszug erstellen" |
+| `requesterName` | Die E-Mail-Adresse | Das Feld ist pflichtig, der Footer fragt bewusst keinen Namen ab – die Adresse ist die brauchbarere Anzeige in der Liste als ein Platzhalter |
+| Popup-Technik | Natives `<dialog>` + `showModal()` | Die Website hat kein UI-Kit; Fokusfalle, Escape und Hintergrund kommen so von selbst |
+
+Der Schalter steht unter **Datenschutz → Betroffenenrechte** und ist
+standardmäßig **aus**; seine Beschreibung nennt jetzt die tatsächliche
+Wirkung statt des alten „ohne Wirkung"-Hinweises.

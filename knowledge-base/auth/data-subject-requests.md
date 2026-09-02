@@ -367,3 +367,28 @@ anderen Sitzungen beenden" aufgeräumt.
 - `apps/web/src/app/dashboard/account/page.tsx` (`getMyDeletionRequests()`)
 - `apps/web/src/app/api/deletion-requests/[id]/{data-extract,complete,follow-up}/route.ts`
   (neu)
+
+## Update 2026-09-02: Anfragen von der öffentlichen Website
+
+Zweiter Eingangskanal neben „Mein Konto": ein Selbstauskunft-Link unter
+jedem Formular auf der Website. Details, Abwägungen und die Tabelle der
+Einzelentscheidungen stehen in
+[forms.md](../content/forms.md#update-2026-09-02-5-selbstauskunft-im-formular-footer).
+
+Für dieses Dokument die drei relevanten Punkte:
+
+- **`POST /deletion-requests/public`** ist `@Public()` – ein
+  Website-Besucher hat kein Konto, und ein Betroffenenrecht darf nicht
+  davon abhängen, ob man hier Kunde ist. Deshalb eng gedrosselt
+  (`@Throttle` 3/Minute).
+- **`createFromPublicForm()` gibt keine Daten heraus** und verrät auch
+  nicht, ob zu der Adresse etwas vorliegt. Die Identitätsprüfung passiert
+  unverändert beim Bearbeiten der Anfrage.
+- **`linkedUserId` bleibt leer.** Die Verknüpfung mit einem Konto entsteht
+  erst über den geprüften E-Mail-Abgleich beim „Datenauszug erstellen" –
+  anders als bei `createSelfService()`, wo der Login die Identität schon
+  belegt hat.
+
+Die Bestätigungsmail (`dsrAutoAcknowledgeReceipt`) verhält sich wie bei
+jeder anderen Anfrage; die Anfragen sind an `source: "Selbstauskunft
+(Formular)"` erkennbar.

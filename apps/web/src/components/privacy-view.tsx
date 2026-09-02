@@ -858,7 +858,7 @@ export function PrivacyView({
                 <CardContent className="flex flex-col gap-3">
                   <SwitchRow
                     label="Selbstauskunft im Formular-Footer anbieten"
-                    description="Noch ohne Wirkung — es gibt keinen Formular-Footer, der den Schalter auswertet."
+                    description="Zeigt unter jedem Formular auf der Website einen Link, über den Besucher eine Auskunft anfordern können. Die Anfrage landet unter Anfragen, es werden keine Daten automatisch herausgegeben."
                     checked={dsbFormSelfServiceDisclosure}
                     onCheckedChange={setDsbFormSelfServiceDisclosure}
                   />

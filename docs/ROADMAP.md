@@ -768,11 +768,18 @@ für Details. Zwei Folgevorhaben dabei zunächst vom Nutzer als
       jeder eingeloggte Nutzer; Name/E-Mail aus dem eigenen Konto,
       `linkedUserId` sofort gesetzt) + Karte "Meine Daten" in Mein
       Konto → Sicherheit (`self-service-request-card.tsx`).
-- [ ] Ein allgemeines Formular im (öffentlichen) Footer als Anfragequelle
-      – weiterhin offen; setzt entweder ein eigenes Formular-Modul
-      (siehe 2b.10) oder eine externe, das API konsumierende Website
-      voraus, da `apps/web` selbst keine öffentliche Website-
-      Auslieferung hat.
+- [x] Ein allgemeines Formular im (öffentlichen) Footer als Anfragequelle
+      – umgesetzt 2026-09-02, sobald `apps/site` Formulare wirklich
+      rendern konnte (siehe 4.0). Kein eigenes Modul nötig: der Footer
+      hängt unter jedem Formular auf der Website, sichtbar nur bei
+      Datenschutz → Betroffenenrechte → "Selbstauskunft im Formular-Footer
+      anbieten". `POST /deletion-requests/public` (`@Public()`, auf 3
+      Anfragen/Minute gedrosselt) legt eine Anfrage vom Typ *Auskunft* mit
+      Quelle "Selbstauskunft (Formular)" an – ohne `linkedUserId` und
+      **ohne jede Datenausgabe**: wer hier abfragt, hat sich nicht
+      ausgewiesen, und schon ein "zu dieser Adresse liegt nichts vor" wäre
+      eine Auskunft. Identitätsprüfung wie bei jeder anderen Anfrage beim
+      Bearbeiten.
 
 - [x] Audit-Log tatsächlich befüllen (aktuell nur Datenmodell) – längst
       weit darüber hinaus: `AuditLogService.record()` wird app-weit
@@ -866,9 +873,13 @@ Architektur, Entscheidungen und Stolpersteine:
 - [ ] **Schritt 5** – Hauptmenü im Header (`AppSettings.mainNavigationId`
       hat noch **kein Eingabefeld** in den Einstellungen), RSS-`<link>`
       bei `rssEnabled`, abschließender SEO-Feinschliff
-- [ ] Formular-Bausteine auf öffentlichen Seiten (brauchen einen
-      BFF-Proxy in `apps/site`; bis dahin werden sie dort nicht
-      gerendert)
+- [x] Formular-Bausteine auf öffentlichen Seiten (2026-09-02) – eigener
+      `PublicForm`-Renderer in `apps/site` (native Elemente, die Website
+      hat bewusst kein shadcn/ui) plus zwei Proxy-Routen, weil die API per
+      `CORS_ORIGIN` nur eine Herkunft zulässt; die Absende-Route reicht
+      `x-forwarded-for` durch, damit die Besucher-IP gespeichert wird und
+      nicht die des Servers. Vorher fiel ein Formular-Baustein auf einer
+      veröffentlichten Seite still weg.
 - [x] Kategorie-Archiv-Endpunkt auf nullable Antwort umgestellt
       (2026-09-02, zusammen mit Schritt 4) – die Inhalts-Endpunkte tun das
       seit 2026-08-31, weil Next.js fehlgeschlagene Antworten nicht cached
