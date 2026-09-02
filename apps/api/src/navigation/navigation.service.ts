@@ -23,6 +23,15 @@ const itemSelect = {
   parentId: true,
   contentId: true,
   content: { select: { id: true, title: true, slug: true, status: true } },
+  categoryId: true,
+  categoryLayout: true,
+  // `archivePublished` fährt bewusst mit: der Bearbeiten-Dialog warnt
+  // damit, dass ein Kategorie-Menüpunkt ins Leere läuft, solange die
+  // Übersichtsseite nicht veröffentlicht ist (Nutzerentscheidung, 2026-09-02:
+  // warnen statt still mitzusetzen).
+  category: {
+    select: { id: true, name: true, slug: true, archivePublished: true },
+  },
 } as const;
 
 @Injectable()
@@ -117,16 +126,30 @@ export class NavigationService {
     }
   }
 
+  // Seit 2026-09-02 drei mögliche Ziele (Inhalt / Kategorie-Archiv /
+  // externe URL) statt zwei – daher gezählt statt paarweise verglichen.
   private assertExactlyOneTarget(dto: {
     contentId?: string | null;
+    categoryId?: string | null;
     externalUrl?: string | null;
   }) {
-    const hasContent = Boolean(dto.contentId);
-    const hasExternal = Boolean(dto.externalUrl);
-    if (hasContent === hasExternal) {
+    const targets = [dto.contentId, dto.categoryId, dto.externalUrl].filter(
+      Boolean,
+    ).length;
+    if (targets !== 1) {
       throw new BadRequestException(
-        'Ein Navigationspunkt braucht genau ein Ziel: entweder einen Inhalt oder eine externe URL.',
+        'Ein Navigationspunkt braucht genau ein Ziel: einen Inhalt, eine Kategorie oder eine externe URL.',
       );
+    }
+  }
+
+  private async assertCategoryExists(categoryId: string) {
+    const exists = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+      select: { id: true, deletedAt: true },
+    });
+    if (!exists || exists.deletedAt) {
+      throw new BadRequestException('Ziel-Kategorie nicht gefunden.');
     }
   }
 
@@ -135,6 +158,9 @@ export class NavigationService {
     this.assertExactlyOneTarget(dto);
     if (dto.contentId) {
       await this.assertContentExists(dto.contentId);
+    }
+    if (dto.categoryId) {
+      await this.assertCategoryExists(dto.categoryId);
     }
     if (dto.parentId) {
       await this.assertItemInNavigation(navigationId, dto.parentId);
@@ -148,6 +174,8 @@ export class NavigationService {
         navigationId,
         label: dto.label,
         contentId: dto.contentId ?? null,
+        categoryId: dto.categoryId ?? null,
+        ...(dto.categoryLayout && { categoryLayout: dto.categoryLayout }),
         externalUrl: dto.externalUrl ?? null,
         parentId: dto.parentId ?? null,
         openInNewTab: dto.openInNewTab ?? false,
@@ -172,12 +200,18 @@ export class NavigationService {
       dto.contentId !== undefined ? dto.contentId : existing.contentId;
     const effectiveExternalUrl =
       dto.externalUrl !== undefined ? dto.externalUrl : existing.externalUrl;
+    const effectiveCategoryId =
+      dto.categoryId !== undefined ? dto.categoryId : existing.categoryId;
     this.assertExactlyOneTarget({
       contentId: effectiveContentId,
+      categoryId: effectiveCategoryId,
       externalUrl: effectiveExternalUrl,
     });
     if (dto.contentId) {
       await this.assertContentExists(dto.contentId);
+    }
+    if (dto.categoryId) {
+      await this.assertCategoryExists(dto.categoryId);
     }
     if (dto.parentId !== undefined && dto.parentId) {
       await this.assertItemInNavigation(navigationId, dto.parentId);
@@ -185,10 +219,12 @@ export class NavigationService {
     }
     // Startseite: genau ein Menüpunkt app-weit (Nutzervorgabe,
     // 2026-08-31). Ein externer Link kann keine Startseite sein – die
-    // Startseite muss einen echten Inhalt rendern.
+    // Startseite muss einen echten Inhalt rendern. Ein Kategorie-Archiv
+    // ebenfalls nicht: `getHome()` liefert genau EINEN Content, eine
+    // Übersichtsseite als Startseite wäre ein eigenes Feature.
     if (dto.isHomepage === true && !effectiveContentId) {
       throw new BadRequestException(
-        'Nur ein Menüpunkt mit Inhalts-Ziel kann die Startseite sein, kein externer Link.',
+        'Nur ein Menüpunkt mit Inhalts-Ziel kann die Startseite sein – weder ein externer Link noch eine Kategorie.',
       );
     }
     // Wird das Ziel eines Startseiten-Punktes auf einen externen Link
@@ -197,11 +233,17 @@ export class NavigationService {
     const losesHomepageByTarget =
       existing.isHomepage && dto.isHomepage !== true && !effectiveContentId;
 
+    // Die drei Ziele sind ein Entweder-oder: wird eines gesetzt, müssen die
+    // beiden anderen geleert werden. Ausschlaggebend ist der tatsächlich
+    // befüllte Wert, NICHT `!== undefined` – siehe Kommentar unten am
+    // `update()`-Aufruf.
     const targetData = dto.contentId
-      ? { contentId: dto.contentId, externalUrl: null }
-      : dto.externalUrl
-        ? { externalUrl: dto.externalUrl, contentId: null }
-        : {};
+      ? { contentId: dto.contentId, categoryId: null, externalUrl: null }
+      : dto.categoryId
+        ? { categoryId: dto.categoryId, contentId: null, externalUrl: null }
+        : dto.externalUrl
+          ? { externalUrl: dto.externalUrl, contentId: null, categoryId: null }
+          : {};
 
     const item = await this.prisma.$transaction(async (tx) => {
       if (dto.isHomepage === true) {
@@ -228,6 +270,9 @@ export class NavigationService {
           // gerade gesetzte Seite wieder (Fehlerbild: "nach dem Speichern
           // ist die hinterlegte Seite weg").
           ...targetData,
+          ...(dto.categoryLayout !== undefined && {
+            categoryLayout: dto.categoryLayout,
+          }),
           ...(dto.parentId !== undefined && { parentId: dto.parentId }),
           ...(dto.openInNewTab !== undefined && {
             openInNewTab: dto.openInNewTab,

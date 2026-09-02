@@ -800,7 +800,7 @@ function CategorySettingsForm({
 
       <div className="flex flex-col gap-5 rounded-xl bg-card p-6 shadow-sm">
         <div>
-          <h3 className="text-lg font-semibold">Archiv &amp; Feed</h3>
+          <h3 className="text-lg font-semibold">Übersicht &amp; Feed</h3>
           <p className="text-sm text-muted-foreground">
             Steuert, wie Beiträge dieser Kategorie später auf der öffentlichen
             Website ausgespielt werden.
@@ -824,8 +824,8 @@ function CategorySettingsForm({
           </div>
         )}
         <SwitchRow
-          label="Archivseite veröffentlichen"
-          description="Zeigt eine Übersichtsseite mit allen Beiträgen dieser Kategorie."
+          label="Übersichtsseite veröffentlichen"
+          description="Zeigt eine öffentliche Seite mit allen veröffentlichten Seiten dieser Kategorie untereinander."
           checked={archivePublished}
           onCheckedChange={setArchivePublished}
         />

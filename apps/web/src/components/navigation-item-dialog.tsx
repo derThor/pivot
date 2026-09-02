@@ -32,13 +32,42 @@ import {
   ComboboxList,
   ComboboxStatus,
 } from "@/components/ui/combobox";
-import type { ContentListItem, NavigationItemNode } from "@/lib/api-server";
+import { SegmentedPicker } from "@/components/segmented-picker";
+import { SystemMessage } from "@/components/ui/system-message";
+import type {
+  CategoryListItem,
+  ContentListItem,
+  NavigationItemNode,
+} from "@/lib/api-server";
 import { bff } from "@/lib/bff";
 
 const targetTypeOptions: Record<string, string> = {
   content: "Inhalt",
+  category: "Kategorie",
   external: "Externe URL",
 };
+
+/** Darstellung der Kategorie-Übersichtsseite – sitzt bewusst hier am
+ * Menüpunkt und nicht
+ * an der Kategorie (Nutzerentscheidung, 2026-09-02), damit dieselbe
+ * Kategorie in zwei Menüs unterschiedlich aussehen kann. */
+const CATEGORY_LAYOUT_OPTIONS = [
+  { value: "LIST" as const, label: "Liste" },
+  { value: "BLOCKS" as const, label: "Blöcke" },
+];
+
+const CATEGORY_LAYOUT_DESCRIPTION: Record<string, string> = {
+  LIST: "Kompakt: nur Titel und Datum je Seite.",
+  BLOCKS: "Karte je Seite mit Titelbild, Datum und Anreißtext.",
+};
+
+/** Welche Zielart der Dialog beim Öffnen zeigt. Ausschlaggebend ist das
+ * tatsächlich gesetzte Feld – `content` ist der Standard beim Anlegen. */
+function initialTargetType(item?: NavigationItemNode): string {
+  if (item?.categoryId) return "category";
+  if (item?.externalUrl) return "external";
+  return "content";
+}
 
 const MIN_QUERY_LENGTH = 3;
 
@@ -189,6 +218,7 @@ function ContentPicker({
 export function NavigationItemDialog({
   navigationId,
   contentItems,
+  categoryItems,
   parentId = null,
   item,
   trigger,
@@ -198,6 +228,7 @@ export function NavigationItemDialog({
 }: {
   navigationId: string;
   contentItems: ContentListItem[];
+  categoryItems: CategoryListItem[];
   parentId?: string | null;
   /** Vorhandener Eintrag zum Bearbeiten (PATCH) statt Anlegen (POST). */
   item?: NavigationItemNode;
@@ -212,10 +243,12 @@ export function NavigationItemDialog({
   const open = controlledOpen ?? internalOpen;
   const setOpen = controlledOnOpenChange ?? setInternalOpen;
   const [label, setLabel] = useState(item?.label ?? "");
-  const [targetType, setTargetType] = useState(
-    item?.externalUrl ? "external" : "content",
-  );
+  const [targetType, setTargetType] = useState(initialTargetType(item));
   const [contentId, setContentId] = useState(item?.contentId ?? "");
+  const [categoryId, setCategoryId] = useState(item?.categoryId ?? "");
+  const [categoryLayout, setCategoryLayout] = useState<"LIST" | "BLOCKS">(
+    item?.categoryLayout ?? "LIST",
+  );
   const [externalUrl, setExternalUrl] = useState(item?.externalUrl ?? "");
   const [openInNewTab, setOpenInNewTab] = useState(item?.openInNewTab ?? false);
   const [error, setError] = useState<string | null>(null);
@@ -224,17 +257,26 @@ export function NavigationItemDialog({
   const contentTitleById = Object.fromEntries(
     contentItems.map((c) => [c.id, c.title]),
   );
+  // `Select` erwartet zusätzlich zu den `SelectItem`s eine value→Label-Map
+  // für die Anzeige im geschlossenen Zustand (gleiches Muster wie
+  // `targetTypeOptions` darüber).
+  const categoryLabels: Record<string, string> = Object.fromEntries(
+    categoryItems.map((c) => [c.id, c.name]),
+  );
+  const selectedCategory = categoryItems.find((c) => c.id === categoryId);
   const [contentTitle, setContentTitle] = useState(
     item?.contentId ? (contentTitleById[item.contentId] ?? "") : "",
   );
 
   function resetForm() {
     setLabel(item?.label ?? "");
-    setTargetType(item?.externalUrl ? "external" : "content");
+    setTargetType(initialTargetType(item));
     setContentId(item?.contentId ?? "");
     setContentTitle(
       item?.contentId ? (contentTitleById[item.contentId] ?? "") : "",
     );
+    setCategoryId(item?.categoryId ?? "");
+    setCategoryLayout(item?.categoryLayout ?? "LIST");
     setExternalUrl(item?.externalUrl ?? "");
     setOpenInNewTab(item?.openInNewTab ?? false);
     setError(null);
@@ -256,9 +298,20 @@ export function NavigationItemDialog({
             label,
             openInNewTab,
             ...(!isEditing && { parentId }),
+            // Die drei Ziele schließen sich aus – die jeweils anderen
+            // werden explizit auf `null` gesetzt, sonst bliebe beim
+            // Umschalten das alte Ziel stehen (siehe Kommentar in
+            // NavigationService.updateItem()).
             ...(targetType === "content"
-              ? { contentId, externalUrl: null }
-              : { externalUrl, contentId: null }),
+              ? { contentId, categoryId: null, externalUrl: null }
+              : targetType === "category"
+                ? {
+                    categoryId,
+                    categoryLayout,
+                    contentId: null,
+                    externalUrl: null,
+                  }
+                : { externalUrl, contentId: null, categoryId: null }),
           }),
         },
       );
@@ -341,6 +394,59 @@ export function NavigationItemDialog({
                 }}
               />
             </div>
+          ) : targetType === "category" ? (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="nav-item-category" required>
+                  Kategorie
+                </Label>
+                <Select
+                  value={categoryId}
+                  onValueChange={(value) => setCategoryId(value ?? "")}
+                  items={categoryLabels}
+                >
+                  <SelectTrigger id="nav-item-category" className="w-full">
+                    <SelectValue placeholder="Kategorie wählen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoryItems.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Der Menüpunkt zeigt auf die Übersichtsseite der Kategorie –
+                  dort stehen alle veröffentlichten Seiten dieser Kategorie
+                  untereinander.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <SegmentedPicker
+                  label="Darstellung"
+                  options={CATEGORY_LAYOUT_OPTIONS}
+                  value={categoryLayout}
+                  onChange={setCategoryLayout}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {CATEGORY_LAYOUT_DESCRIPTION[categoryLayout]}
+                </p>
+              </div>
+
+              {/* Warnen statt still mitzusetzen (Nutzerentscheidung,
+                  2026-09-02): ohne veröffentlichte Übersichtsseite liefert
+                  `/{slug}` eine 404 und der Menüpunkt wird auf der Website
+                  gar nicht erst angezeigt. */}
+              {selectedCategory && !selectedCategory.archivePublished && (
+                <SystemMessage
+                  variant="warning"
+                  title="Übersichtsseite dieser Kategorie ist nicht veröffentlicht."
+                  description="Der Menüpunkt wird auf der Website erst sichtbar, wenn du unter Kategorien → Übersicht & Feed die Übersichtsseite veröffentlichst."
+                />
+              )}
+            </>
           ) : (
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="nav-item-url" required>

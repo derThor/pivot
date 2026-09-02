@@ -2,7 +2,7 @@ import { ContentPreviewRender } from "@/components/content-preview-render";
 import { PreviewBanner } from "@/components/preview-banner";
 import {
   getContentByPreviewToken,
-  getGlobalModules,
+  getPublicGlobalModules,
   getModuleTypes,
 } from "@/lib/api-server";
 
@@ -15,7 +15,7 @@ export default async function ContentPreviewPage({
   const [content, moduleTypes, globalModules] = await Promise.all([
     getContentByPreviewToken(token),
     getModuleTypes(),
-    getGlobalModules(),
+    getPublicGlobalModules(),
   ]);
 
   if (!content) {

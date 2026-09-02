@@ -2,6 +2,7 @@ import { Controller, Get, Header, Param, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from '../auth/decorators/public.decorator';
 import { PublicContentService } from './public-content.service';
+import { GlobalModulesService } from '../global-modules/global-modules.service';
 
 /** Content-Delivery-API für die öffentliche Website ("Frontend", siehe
  * knowledge-base/frontend/taxonomy-management.md, Update 2026-08-31 –
@@ -12,12 +13,33 @@ import { PublicContentService } from './public-content.service';
 @ApiTags('public-content')
 @Controller('public')
 export class PublicContentController {
-  constructor(private readonly publicContentService: PublicContentService) {}
+  constructor(
+    private readonly publicContentService: PublicContentService,
+    private readonly globalModulesService: GlobalModulesService,
+  ) {}
 
   @Public()
   @Get('site')
   getSite() {
     return this.publicContentService.getSite();
+  }
+
+  /** Globale Module (Galerien/FAQs) zum Auflösen der Bausteine in
+   * `Content.data.blocks`. Gehört hierher, weil die Ausgabe der Seiten im
+   * Frontend nicht von einer Anmeldung abhängen darf (Nutzervorgabe,
+   * 2026-09-02: "der inhalt muss bei seiten immer im frontend ausgegeben
+   * werden") – der gleichnamige Endpunkt unter `/global-modules` ist
+   * seitdem der ANGEMELDETE Admin-Zugriff und rechtegefiltert.
+   *
+   * Bewusst ohne Filter und ohne Pagination: es sind genau die Daten, die
+   * auf den veröffentlichten Seiten ohnehin für jeden sichtbar sind. Was
+   * hier nicht hingehört (Entwürfe, Papierkorb), fällt schon durch
+   * `deletedAt: null` in `findAll()` heraus. Verbraucher sind `apps/site`
+   * und die anonyme Vorschau-Seite `/preview/[token]` in `apps/web`. */
+  @Public()
+  @Get('global-modules')
+  getGlobalModules() {
+    return this.globalModulesService.findAll();
   }
 
   // Startseite: der Inhalt des Menüpunkts, der im Backend als Startseite
@@ -34,6 +56,15 @@ export class PublicContentController {
   @Get('navigation/:slug')
   getNavigation(@Param('slug') slug: string) {
     return this.publicContentService.getNavigation(slug);
+  }
+
+  // Vor `categories/:slug` unerheblich (anderer Pfad), aber bewusst bei den
+  // Inhalts-Routen einsortiert: liefert einen Inhalt in derselben Form wie
+  // `pages/:slug`, nur über einen Vorschau-Token statt über den Slug.
+  @Public()
+  @Get('preview/:token')
+  getPreview(@Param('token') token: string) {
+    return this.publicContentService.getPreview(token);
   }
 
   @Public()

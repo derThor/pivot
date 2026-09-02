@@ -3,6 +3,7 @@ import { NavigationExplorer } from "@/components/navigation-explorer";
 import { PageContent } from "@/components/page-content";
 import { PageHeader } from "@/components/page-header";
 import {
+  getCategories,
   getContentList,
   getNavigation,
   getNavigations,
@@ -14,9 +15,10 @@ export default async function NavigationPage({
   searchParams: Promise<{ menu?: string }>;
 }) {
   const { menu } = await searchParams;
-  const [navigations, content] = await Promise.all([
+  const [navigations, content, categories] = await Promise.all([
     getNavigations({ pageSize: 100 }),
     getContentList({ pageSize: 100 }),
+    getCategories({ pageSize: 100 }),
   ]);
 
   const menus = navigations?.items ?? [];
@@ -38,6 +40,7 @@ export default async function NavigationPage({
           selectedMenuId={selectedMenuId}
           navigation={navigation ?? null}
           contentItems={content?.items ?? []}
+          categoryItems={categories?.items ?? []}
         />
       </PageContent>
     </div>

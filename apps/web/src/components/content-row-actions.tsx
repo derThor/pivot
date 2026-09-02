@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye } from "lucide-react";
 
@@ -41,10 +40,26 @@ export function ContentRowActions({
             variant="outline"
             size="icon"
             className="rounded-lg border-button-border"
+            // Öffnet die Seite in der öffentlichen Website statt in der
+            // Backend-Vorschau (Nutzervorgabe, 2026-09-02). Die BFF-Route
+            // stellt dafür einen kurzlebigen Vorschau-Token aus – dessen
+            // Ausstellen verlangt `preview-links:create`, damit auch
+            // unveröffentlichte Seiten nicht für jeden sichtbar werden.
+            //
+            // Bewusst ein Link statt `window.open()` nach einem `fetch`:
+            // das würde der Popup-Blocker abfangen. Und bewusst ein rohes
+            // `<a>` mit `bff()` statt `<Link>` – `<Link>` setzt den
+            // `basePath` selbst davor, zusammen mit `bff()` wurde daraus
+            // `/admin/admin/api/…` und damit eine 404 (siehe Kommentar in
+            // lib/bff.ts, der genau davor warnt).
             render={
-              <Link href={`/dashboard/content/${id}/preview`} target="_blank" />
+              <a
+                href={bff(`/api/content/${id}/frontend-preview`)}
+                target="_blank"
+                rel="noopener"
+              />
             }
-            aria-label={`Vorschau von „${title}“ öffnen`}
+            aria-label={`„${title}“ im Frontend ansehen`}
           >
             <Eye />
           </Button>

@@ -171,3 +171,81 @@ Nicht per Browser getestet (kein Headless-Browser in dieser Session
 verfügbar) – nur Typecheck/Lint sauber. Die Scrollbar-/Thumbnails-
 Kompatibilitätsaussage stützt sich auf Quelltext-Analyse, nicht auf
 gemeldetes Nutzer-Feedback wie bei `LOOP_INCOMPATIBLE_EFFECTS`.
+
+## Update 2026-09-02: Galerien/FAQs sind jetzt wirklich abgesichert
+
+Nutzervorgabe: *"faqs und galerien auch absichern"* – Anlass war der
+Durchgang durch die Sidebar-Rechte (siehe
+[frontend-shadcn-base-ui.md](../frontend/frontend-shadcn-base-ui.md)), bei
+dem auffiel: `faq:read` und `gallery:read` standen zwar im Katalog und in
+der Rollen-UI, wurden beim **Lesen** aber nirgends erzwungen.
+
+`GlobalModulesController.findAll()` und `.findOne()` waren `@Public()` –
+mit der damals nachvollziehbaren Begründung, die anonyme Vorschau-Seite
+(`/preview/[token]`) müsse die Werte live auflösen können. Praktische
+Folge: **jeder, auch komplett anonym, konnte sämtliche Galerien und FAQs
+auslesen** (`curl http://…/v1/global-modules`). Den Menüpunkt zu
+verstecken half dagegen nichts – die URL blieb erreichbar.
+
+### Die Randbedingung, die das Design bestimmt hat
+
+Nutzervorgabe im selben Zug: *"der inhalt muss bei seiten immer im frontend
+ausgegeben werden. nicht die administration, sondern die Ausgabe an sich."*
+Die Ausgabe einer Seite darf also **nie** von einer Anmeldung abhängen –
+Galerien und FAQs sind Bausteine in `Content.data.blocks` und müssen auf
+der öffentlichen Website aufgelöst werden. Einfach ein Recht auf die
+bestehende Route zu setzen hätte genau das kaputt gemacht.
+
+### Lösung: zwei getrennte Wege auf dieselben Daten
+
+| Route | Zugang | Verbraucher |
+| --- | --- | --- |
+| `GET /public/global-modules` | `@Public()`, ungefiltert | `apps/site` (öffentliche Website), anonyme Vorschau-Seite `/preview/[token]` |
+| `GET /global-modules` | angemeldet, rechtegefiltert | alle Dashboard-Seiten |
+
+Die öffentliche Route liegt im `PublicContentController` – dort, wo die
+übrigen anonymen Endpunkte der Website schon wohnen (`/public/site`,
+`/public/pages/:slug`, …). `PublicContentModule` importiert dafür
+`GlobalModulesModule` (das seinen Service ohnehin exportiert), es gibt also
+keine zweite Abfrage-Implementierung.
+
+### Gefiltert statt 403
+
+Eine Route deckt hier mehrere Ressourcen ab (Galerie/FAQ, Fallback
+`settings`), ein statisches `@RequirePermission` scheidet also aus. Wie bei
+`TrashController.readableTypes()` ermittelt der Controller die lesbaren
+Ressourcen und der Service filtert das Ergebnis darauf
+(`accessWhere()` → `OR` über die Modul-Typ-Slugs). Wer gar nichts lesen
+darf, bekommt eine leere Liste statt 403 – der Block-Editor kann so die
+Modul-Typen weiter auflösen, die er lesen darf, statt komplett zu scheitern.
+
+`findOne()` prüft dagegen hart (`assertPermission`), da es genau ein Modul
+betrifft und dessen Ressource eindeutig auflösbar ist.
+
+### Beabsichtigte Nebenwirkung im Editor
+
+`getGlobalModules()` in `apps/web` läuft jetzt über `apiFetch` (mit Token)
+statt `publicApiFetch` – ebenso `getGlobalModule()` und
+`getGlobalModulesPaged()`. Wer also z.B. kein `faq:read` hat, bekommt einen
+eingebundenen FAQ-Baustein im Seiten-Editor nicht mehr aufgelöst. Das ist
+gewollt und betrifft ausdrücklich **nur die Administration** – die
+öffentliche Ausgabe derselben Seite bleibt vollständig, sie läuft über
+`getPublicGlobalModules()` bzw. `apps/site`.
+
+### Live verifiziert (anonym, ohne Token)
+
+```
+GET /v1/global-modules          → 401   (vorher: 200 mit allen Daten)
+GET /v1/global-modules/:id      → 401   (vorher: 200)
+GET /v1/public/global-modules   → 200   (Galerie-JSON, wie zuvor)
+GET /v1/module-types            → 200   (unverändert öffentlich, s.u.)
+http://localhost:3002/dddd      → 200   (veröffentlichte Seite rendert)
+```
+
+### Offen geblieben
+
+- **`/module-types` bleibt `@Public()`.** Das ist der Katalog der
+  Baustein-Vorlagen (Name/Icon/Feldschema), keine redaktionellen Inhalte,
+  und die Website braucht ihn zum Rendern genauso. `module-types:read`
+  existiert im Katalog, wird beim Lesen aber weiterhin nicht erzwungen –
+  bewusst nicht mit angefasst, da hier keine Nutzerdaten liegen.

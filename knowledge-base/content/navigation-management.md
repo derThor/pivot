@@ -536,3 +536,56 @@ gesetzt, das muss neu vergeben werden.
 mit der Dialog-Nutzlast aufgerufen (Seite bleibt verknüpft, Wechsel auf
 externen Link, Wechsel zurück) – ein HTTP-Test war ohne Login-Session nicht
 möglich.
+
+## Update 2026-09-02: Kategorie als drittes Menüziel
+
+Nutzervorgabe: *"kategorie soll in menü auswählbar sein. aktuell ist da
+seite und externe url. kategorien sollen auch rein. das funktioniert dann
+wie ein blog, wo alle aktiven seiten untereinander dargestellt werden
+sollen. einmal als option als liste und einmal wirklich als block mit allen
+seiten über pagination"*.
+
+`NavigationItem` hatte bis dahin **zwei** sich ausschließende Ziele
+(`contentId` XOR `externalUrl`), jetzt sind es drei – neu `categoryId`
+(zeigt auf die Übersichtsseite `/{category.slug}`) plus `categoryLayout`
+(`LIST`/`BLOCKS`). Betroffen davon:
+
+- `assertExactlyOneTarget()` **zählt** seitdem die gesetzten Ziele, statt
+  zwei Flags paarweise zu vergleichen.
+- `targetData` in `updateItem()` leert beim Umschalten die jeweils beiden
+  anderen Felder. Ausschlaggebend bleibt der tatsächlich befüllte Wert,
+  nicht `!== undefined` – siehe den bestehenden Kommentar dort zum Bug
+  "nach dem Speichern ist die hinterlegte Seite weg".
+- Eine Kategorie kann **nicht** Startseite sein (wie ein externer Link):
+  `getHome()` liefert genau einen Content, ein Archiv als Startseite wäre
+  ein eigenes Feature.
+
+Im Dialog kommt die Zielart "Kategorie (Übersichtsseite)" dazu, darunter ein
+`SegmentedPicker` für die Darstellung und – wenn die gewählte Kategorie
+ihre Übersichtsseite noch nicht veröffentlicht hat – eine `SystemMessage`
+(warnen statt `archivePublished` still mitzusetzen, Nutzerentscheidung).
+Dafür führt `itemSelect` die Kategorie inkl. `archivePublished` mit, und
+die Menü-Seite lädt zusätzlich `getCategories()`.
+
+**Warum die Darstellung am Menüpunkt und nicht an der Kategorie sitzt** –
+und was das kostet: siehe
+[public-website.md](../frontend/public-website.md), Abschnitt "Schritt 4".
+Kurz: dieselbe Kategorie darf in zwei Menüs unterschiedlich aussehen, dafür
+muss das Backend beim Rendern der Übersichtsseite auflösen, welcher Menüpunkt
+gilt (Hauptmenü zuerst).
+
+**Nebenbei behoben:** `PublicContentService.getNavigation()` baute den Link
+zu einem Inhalt fest als `/{slug}` – für einen Beitrag MIT Kategorie also
+auf eine 404-URL. Er nutzt jetzt `buildContentPath()` wie alle anderen
+Stellen. Kategorie-Menüpunkte, deren Übersichtsseite unveröffentlicht oder
+deren Kategorie im Papierkorb ist, blendet das öffentliche Menü aus.
+
+**Begriff:** Nutzerhinweis direkt nach dem Bau – *"und was soll das mit
+archivseite? das verstehe ich nicht. es ist kein archiv"*. Die Oberfläche
+sagt seitdem durchgängig **"Übersichtsseite"** (und die Karte auf der
+Kategorien-Seite "Übersicht & Feed" statt "Archiv & Feed"); der Schalter
+dort beschrieb sich ohnehin schon selbst als "Übersichtsseite", nur sein
+Label war ein anderer Begriff. Das Datenbankfeld heißt weiterhin
+`Category.archivePublished` – eine Spaltenumbenennung hätte eine
+Schema-Änderung auf allen Installationen erzwungen, ohne irgendetwas zu
+verbessern.

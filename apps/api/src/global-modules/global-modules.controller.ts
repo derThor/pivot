@@ -14,7 +14,6 @@ import { GlobalModulesService } from './global-modules.service';
 import { CreateGlobalModuleDto } from './dto/create-global-module.dto';
 import { UpdateGlobalModuleDto } from './dto/update-global-module.dto';
 import { QueryGlobalModuleDto } from './dto/query-global-module.dto';
-import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { FindPageDto } from '../common/dto/find-page.dto';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
@@ -25,10 +24,15 @@ import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 // referenzierten Modul-Typ ab. Da `@RequirePermission` nur ein statisches
 // Recht pro Route kennt, wird hier manuell geprüft (Rollen-&-Rechte-Neubau,
 // 2026-08-16, siehe knowledge-base/auth/rbac-rework.md), analog zum
-// bestehenden `unlock()`-Check in ContentController. Lesen bleibt
-// `@Public()`: die anonyme Vorschau-Seite (`/preview/[token]`) muss die
-// aktuellen Werte live auflösen können, exakt derselbe Grund wie bei
-// `ModuleTypesController`.
+// bestehenden `unlock()`-Check in ContentController.
+//
+// Bis 2026-09-02 war das LESEN hier `@Public()` – mit der Begründung, dass
+// die anonyme Vorschau-Seite (`/preview/[token]`) die Werte live auflösen
+// muss. Das machte Galerien/FAQs faktisch für jeden auslesbar. Der
+// anonyme Bedarf ist jetzt sauber getrennt: die öffentliche Website und
+// die Vorschau-Seite nutzen `GET /public/global-modules`
+// (`PublicContentController`), dieser Controller ist vollständig
+// authentifiziert.
 @ApiTags('global-modules')
 @ApiBearerAuth()
 @Controller('global-modules')
@@ -55,15 +59,36 @@ export class GlobalModulesController {
     }
   }
 
-  @Public()
-  @Get()
-  findAll(@Query() query: QueryGlobalModuleDto) {
-    return this.globalModulesService.findAll(query);
+  /** Die Ressourcen, die dieser Nutzer lesen darf – gleiche Idee wie
+   * `TrashController.readableTypes()`: eine Route deckt mehrere Ressourcen
+   * ab, also wird das Ergebnis gefiltert statt pauschal 403 zu werfen. */
+  private readableResources(user: JwtPayload): string[] {
+    return ['gallery', 'faq', 'settings'].filter((resource) =>
+      user.permissions.includes(this.toPermissionKey(resource, 'read')),
+    );
   }
 
-  @Public()
+  // NICHT `@Public()` (Änderung 2026-09-02): vorher konnte jeder – auch
+  // anonym – sämtliche Galerien und FAQs auslesen. Die öffentliche
+  // Website und die anonyme Vorschau-Seite holen sich die Daten seitdem
+  // über `GET /public/global-modules`; hier bleibt der Admin-Zugriff,
+  // gefiltert auf die lesbaren Ressourcen.
+  @Get()
+  findAll(
+    @Query() query: QueryGlobalModuleDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.globalModulesService.findAll(
+      query,
+      this.readableResources(user),
+    );
+  }
+
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    const resource =
+      await this.globalModulesService.resolveResourceForModule(id);
+    this.assertPermission(user, this.toPermissionKey(resource, 'read'));
     return this.globalModulesService.findOne(id);
   }
 

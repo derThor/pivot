@@ -127,13 +127,99 @@ export async function getPage(slug: string) {
   return res?.content ?? null;
 }
 
+/** Inhalt über einen Vorschau-Token (`?preview=…`) statt über den Slug –
+ * zeigt bewusst auch noch nicht veröffentlichte Stände.
+ *
+ * Zwei Abweichungen von den übrigen Aufrufen hier, beide beabsichtigt:
+ * `cache: "no-store"` statt der 60-Sekunden-Revalidierung (eine Vorschau
+ * muss den Stand von JETZT zeigen, sonst sieht man seine eigene Änderung
+ * bis zu einer Minute lang nicht), und ein 404 wird zu `null` – der Token
+ * kann abgelaufen oder zurückgezogen sein.
+ *
+ * Ausstellen darf den Token nur, wer im Backend `preview-links:create`
+ * besitzt (Nutzervorgabe, 2026-09-02: "da aber nur mit backendrecht bei
+ * vorschau"). */
+export async function getPreviewContent(token: string) {
+  const res = await fetch(
+    `${API_URL}/public/preview/${encodeURIComponent(token)}`,
+    { cache: "no-store" },
+  );
+  if (!res.ok) return null;
+  const body = (await res.json()) as { content: PublicContent | null };
+  return body.content;
+}
+
+/** Zusammenfassung eines Beitrags in der Archivliste (`contentSummarySelect`
+ * im Backend) – deutlich schlanker als `PublicContent`, insbesondere ohne
+ * `data`/Bausteine. */
+export interface PublicContentSummary {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  isFeatured: boolean;
+  publishedAt: string | null;
+  updatedAt: string;
+  locale: string;
+  ogImageUrl: string | null;
+  categories: CategoryRef[];
+  tags: TagRef[];
+}
+
+/** Darstellung der Archivseite – am Menüpunkt gesetzt, nicht an der
+ * Kategorie (Nutzerentscheidung, 2026-09-02); das Backend löst auf, welcher
+ * Menüpunkt gilt. */
+export type CategoryArchiveLayout = "LIST" | "BLOCKS";
+
+export interface PublicCategoryArchive {
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    color: string | null;
+    rssEnabled: boolean;
+  };
+  layout: CategoryArchiveLayout;
+  /** Nur befüllt, wenn die Kategorie `showFeaturedLarge` gesetzt hat. */
+  featured: PublicContentSummary | null;
+  items: PublicContentSummary[];
+  meta: { page: number; pageSize: number; total: number; pageCount: number };
+}
+
+/** Kategorie-Archiv (`/{kategorie}`). `null`, wenn es die Kategorie nicht
+ * gibt oder ihre Archivseite nicht veröffentlicht ist – seit 2026-09-02
+ * eine 200-Antwort mit `category: null` statt einer 404, aus demselben
+ * Cache-Grund wie bei den Inhalts-Endpunkten (siehe `getJson`). */
+export async function getCategoryArchive(slug: string, page: number) {
+  const res = await getJson<PublicCategoryArchive | { category: null }>(
+    `/public/categories/${encodeURIComponent(slug)}?page=${page}`,
+  );
+  if (!res || res.category === null) return null;
+  return res as PublicCategoryArchive;
+}
+
+/** Einzelner Beitrag innerhalb einer Kategorie (`/{kategorie}/{slug}`). */
+export async function getCategoryPost(categorySlug: string, slug: string) {
+  const res = await getJson<{ content: PublicContent | null }>(
+    `/public/categories/${encodeURIComponent(categorySlug)}/${encodeURIComponent(slug)}`,
+  );
+  return res?.content ?? null;
+}
+
 /** Modul-Typen und globale Module sind zum Auflösen von
- * `Content.data.blocks` nötig; beide Endpunkte sind bereits `@Public()`
- * (ursprünglich für die anonyme Vorschauseite in apps/web). */
+ * `Content.data.blocks` nötig – die Ausgabe einer Seite darf nie von einer
+ * Anmeldung abhängen.
+ *
+ * `/module-types` ist ein `@Public()`-Katalog (Baustein-Vorlagen, keine
+ * Nutzerdaten). Die globalen Module (Galerien/FAQs) liefen bis 2026-09-02
+ * über den inzwischen authentifizierten `/global-modules` und kommen
+ * seitdem über `/public/global-modules` – inhaltlich dasselbe, aber sauber
+ * getrennt vom rechtegefilterten Admin-Zugriff. */
 export async function getBlockContext() {
   const [moduleTypes, globalModules] = await Promise.all([
     getJson<ModuleType[]>("/module-types"),
-    getJson<GlobalModule[]>("/global-modules"),
+    getJson<GlobalModule[]>("/public/global-modules"),
   ]);
   return {
     moduleTypes: moduleTypes ?? [],

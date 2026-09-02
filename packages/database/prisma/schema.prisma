@@ -1096,6 +1096,9 @@ model Category {
   deletedById       String?
   deletedBy         User?             @relation("CategoryDeletedBy", fields: [deletedById], references: [id])
   contents          ContentCategory[]
+  // Menüpunkte, die auf das Archiv dieser Kategorie zeigen (seit
+  // 2026-09-02, siehe NavigationItem.categoryId).
+  navigationItems   NavigationItem[]
 
   @@map("categories")
 }
@@ -1181,13 +1184,47 @@ model NavigationItem {
   contentId String?
   content   Content? @relation(fields: [contentId], references: [id], onDelete: SetNull)
 
+  // Drittes mögliches Ziel neben Inhalt und externer URL (Nutzervorgabe,
+  // 2026-09-02: "kategorie soll in menü auswählbar sein ... das
+  // funktioniert dann wie ein blog"). Zeigt auf die Archivseite der
+  // Kategorie (`/{category.slug}`), die alle veröffentlichten Beiträge
+  // dieser Kategorie untereinander auflistet.
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  // Darstellung der Archivseite. Bewusst hier und NICHT an `Category`
+  // (Nutzerentscheidung, 2026-09-02, nach Rückfrage): dieselbe Kategorie
+  // darf in zwei Menüs unterschiedlich aussehen. Nur relevant, wenn
+  // `categoryId` gesetzt ist; bei den anderen Zielarten steht der
+  // Default und wird ignoriert.
+  //
+  // Folge dieser Wahl: die öffentliche URL ist nur `/{slug}` und kennt den
+  // Menüpunkt nicht – welche Darstellung greift, löst
+  // `PublicContentService.getCategory()` über den Menüpunkt auf, der auf
+  // die Kategorie zeigt (Hauptmenü zuerst, siehe dort).
+  categoryLayout CategoryArchiveLayout @default(LIST)
+
   parentId String?
   parent   NavigationItem?  @relation("NavigationItemHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
   children NavigationItem[] @relation("NavigationItemHierarchy")
 
   @@index([navigationId])
   @@index([parentId])
+  @@index([categoryId])
   @@map("navigation_items")
+}
+
+/**
+ * Darstellung einer Kategorie-Archivseite auf der öffentlichen Website
+ * (Nutzervorgabe, 2026-09-02). Beide Varianten blättern über
+ * `Category.postsPerPage`.
+ * - `LIST`: kompakt, nur Titel + Datum je Beitrag.
+ * - `BLOCKS`: Karte je Beitrag mit Titelbild (`Content.ogImageUrl`),
+ * Titel, Datum und Anreißtext (`Content.excerpt`).
+ */
+enum CategoryArchiveLayout {
+  LIST
+  BLOCKS
 }
 
 // ---------- Medien ----------

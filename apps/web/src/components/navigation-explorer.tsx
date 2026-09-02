@@ -37,6 +37,7 @@ import {
 import { cn, truncateMiddle } from "@/lib/utils";
 import { bff } from "@/lib/bff";
 import type {
+  CategoryListItem,
   ContentListItem,
   NavigationDetail,
   NavigationItemNode,
@@ -47,8 +48,12 @@ function flatten(nodes: NavigationItemNode[]): NavigationItemNode[] {
   return nodes.flatMap((node) => [node, ...flatten(node.children)]);
 }
 
+/** Anzeigepfad in der Menü-Liste. Kategorien zeigen auf ihre Übersichtsseite
+ * (`/{slug}`, seit 2026-09-02). */
 function entryPath(node: NavigationItemNode): string {
-  return node.content ? `/${node.content.slug}` : (node.externalUrl ?? "");
+  if (node.content) return `/${node.content.slug}`;
+  if (node.category) return `/${node.category.slug}`;
+  return node.externalUrl ?? "";
 }
 
 /** Menü-Übersicht + Einträge auf einer Seite (Nutzervorgabe, 2026-08-16,
@@ -64,11 +69,13 @@ export function NavigationExplorer({
   selectedMenuId,
   navigation,
   contentItems,
+  categoryItems,
 }: {
   menus: NavigationSummary[];
   selectedMenuId: string | null;
   navigation: NavigationDetail | null;
   contentItems: ContentListItem[];
+  categoryItems: CategoryListItem[];
 }) {
   const router = useRouter();
   const all = navigation ? flatten(navigation.items) : [];
@@ -520,6 +527,7 @@ export function NavigationExplorer({
             <NavigationItemDialog
               navigationId={navigation.id}
               contentItems={contentItems}
+              categoryItems={categoryItems}
               trigger={
                 <button
                   type="button"
@@ -556,6 +564,7 @@ export function NavigationExplorer({
         <NavigationItemDialog
           navigationId={navigation.id}
           contentItems={contentItems}
+          categoryItems={categoryItems}
           item={editItem}
           hideTrigger
           open={editItem !== null}
@@ -567,6 +576,7 @@ export function NavigationExplorer({
         <NavigationItemDialog
           navigationId={navigation.id}
           contentItems={contentItems}
+          categoryItems={categoryItems}
           parentId={addChildTarget.id}
           hideTrigger
           open={addChildTarget !== null}

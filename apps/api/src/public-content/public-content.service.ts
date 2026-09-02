@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ContentStatus } from '@pivot/database';
+import { CategoryArchiveLayout, ContentStatus } from '@pivot/database';
 import { PrismaService } from '../prisma/prisma.service';
 
 // v1 geht von genau einer Sprache pro Installation aus (siehe
@@ -31,6 +31,11 @@ const contentSummarySelect = {
   publishedAt: true,
   updatedAt: true,
   locale: true,
+  // Titelbild der Karten in der BLOCKS-Darstellung des Kategorie-Archivs
+  // (seit 2026-09-02). Bewusst das vorhandene OG-Bild aus dem SEO-Tab
+  // statt eines neuen Feldes: es ist das einzige echte "Bild dieser Seite"
+  // im Datenmodell und hat im Editor schon einen Direkt-Upload.
+  ogImageUrl: true,
   categories: {
     select: { category: { select: { id: true, name: true, slug: true } } },
   },
@@ -45,7 +50,6 @@ const contentFullSelect = {
   canonicalUrl: true,
   ogTitle: true,
   ogDescription: true,
-  ogImageUrl: true,
   twitterCard: true,
   robotsIndex: true,
   robotsFollow: true,
@@ -135,7 +139,22 @@ export class PublicContentService {
             openInNewTab: true,
             parentId: true,
             isHomepage: true,
-            content: { select: { slug: true, status: true } },
+            content: {
+              select: {
+                slug: true,
+                status: true,
+                // Für den korrekten Pfad: ein Beitrag mit Kategorie liegt
+                // unter `/{kategorie}/{slug}`, nicht unter `/{slug}`.
+                categories: {
+                  select: {
+                    category: { select: { id: true, name: true, slug: true } },
+                  },
+                },
+              },
+            },
+            category: {
+              select: { slug: true, archivePublished: true, deletedAt: true },
+            },
           },
         },
       },
@@ -144,10 +163,19 @@ export class PublicContentService {
       throw new NotFoundException(`Navigation "${slug}" nicht gefunden.`);
     }
 
-    const visible = navigation.items.filter(
-      (item) =>
-        !item.content || item.content.status === ContentStatus.PUBLISHED,
-    );
+    // Menüpunkte, die ins Leere führen würden, tauchen im öffentlichen Menü
+    // gar nicht erst auf: unveröffentlichte Inhalte (bisher schon) und seit
+    // 2026-09-02 auch Kategorien, deren Übersichtsseite nicht veröffentlicht
+    // oder die im Papierkorb ist. Im Backend bleibt der Punkt sichtbar –
+    // dort warnt der Dialog stattdessen (Nutzerentscheidung: warnen statt
+    // still mitzusetzen).
+    const visible = navigation.items.filter((item) => {
+      if (item.content) return item.content.status === ContentStatus.PUBLISHED;
+      if (item.category) {
+        return item.category.archivePublished && !item.category.deletedAt;
+      }
+      return true;
+    });
     const byParent = new Map<string | null, typeof visible>();
     for (const item of visible) {
       const key = item.parentId;
@@ -161,11 +189,19 @@ export class PublicContentService {
         externalUrl: item.externalUrl,
         openInNewTab: item.openInNewTab,
         // Der Startseiten-Punkt verlinkt auf `/`, nicht auf seinen Slug.
+        // Für Inhalte gilt sonst dasselbe Pfad-Schema wie überall
+        // (`buildContentPath`) – vorher stand hier fest `/{slug}`, was für
+        // einen Beitrag MIT Kategorie auf eine 404-URL zeigte.
         href: item.isHomepage
           ? '/'
           : item.content
-            ? `/${item.content.slug}`
-            : item.externalUrl,
+            ? buildContentPath({
+                slug: item.content.slug,
+                categories: item.content.categories.map((c) => c.category),
+              })
+            : item.category
+              ? `/${item.category.slug}`
+              : item.externalUrl,
         children: build(item.id),
       }));
 
@@ -245,8 +281,43 @@ export class PublicContentService {
     };
   }
 
+  /** Vorschau eines Inhalts auf der öffentlichen Website über einen
+   * signierten, zeitlich begrenzten Token (`ContentPreviewToken`).
+   *
+   * Nutzervorgabe, 2026-09-02: der Vorschau-Knopf in der Seiten-Liste soll
+   * die Seite im **Frontend** öffnen, "da aber nur mit backendrecht".
+   * Genau das leistet der Token: ausstellen darf ihn nur, wer
+   * `preview-links:create` besitzt (siehe
+   * `ContentController.createPreviewLink`) – die Route hier prüft ihn nur
+   * noch nach und braucht deshalb selbst keine Anmeldung, die es auf der
+   * öffentlichen Website ohnehin nicht gibt.
+   *
+   * Bewusst **ohne** Status-Filter: eine Vorschau soll gerade den noch
+   * nicht veröffentlichten Stand zeigen. Der Papierkorb bleibt außen vor.
+   *
+   * Gibt dieselbe Form zurück wie die übrigen Inhalts-Endpunkte
+   * (`{ content }` inkl. `path`), damit `apps/site` denselben Renderer
+   * benutzen kann – anders als das ältere `GET /content/preview/:token`,
+   * das die rohe Admin-Projektion liefert. */
+  async getPreview(token: string) {
+    const link = await this.prisma.contentPreviewToken.findUnique({
+      where: { token },
+      select: { contentId: true, expiresAt: true },
+    });
+    if (!link || link.expiresAt.getTime() < Date.now()) {
+      return { content: null };
+    }
+    const content = await this.prisma.content.findFirst({
+      where: { id: link.contentId, deletedAt: null },
+      select: contentFullSelect,
+    });
+    if (!content) return { content: null };
+    const mapped = mapRelations(content);
+    return { content: { ...mapped, path: buildContentPath(mapped) } };
+  }
+
   /** Kategorie-Metadaten + paginierte veröffentlichte Beiträge – 404 wenn
-   * die Kategorie ihre Archivseite nicht veröffentlicht hat
+   * die Kategorie ihre Übersichtsseite nicht veröffentlicht hat
    * (`archivePublished`), respektiert `sortOrder`/`postsPerPage`. */
   async getCategory(slug: string, page: number) {
     const category = await this.prisma.category.findFirst({
@@ -264,8 +335,18 @@ export class PublicContentService {
         archivePublished: true,
       },
     });
+    // Seit 2026-09-02 `{ category: null }` statt 404 – derselbe Grund wie
+    // bei getHome()/getPage() (offener Roadmap-Punkt, jetzt erledigt):
+    // Next.js cached fehlgeschlagene Antworten nicht und lieferte sonst
+    // nach dem Zurückziehen einer Übersichtsseite weiter den alten Stand aus.
     if (!category || !category.archivePublished) {
-      throw new NotFoundException(`Kategorie "${slug}" nicht gefunden.`);
+      return {
+        category: null,
+        layout: null,
+        featured: null,
+        items: [],
+        meta: null,
+      };
     }
 
     const pageSize =
@@ -308,10 +389,47 @@ export class PublicContentService {
         color: category.color,
         rssEnabled: category.rssEnabled,
       },
+      layout: await this.resolveArchiveLayout(category.id),
       featured: featured ? mapRelations(featured) : null,
       items: items.map((item) => mapRelations(item)),
       meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
     };
+  }
+
+  /** Welche Darstellung (Liste/Blöcke) die Übersichtsseite bekommt.
+   *
+   * Die Einstellung sitzt am MENÜPUNKT, nicht an der Kategorie
+   * (Nutzerentscheidung, 2026-09-02) – die öffentliche URL ist aber nur
+   * `/{slug}` und weiß nicht, über welchen Menüpunkt jemand gekommen ist.
+   * Deshalb wird hier nachgeschlagen, welcher Menüpunkt auf diese
+   * Kategorie zeigt.
+   *
+   * Reihenfolge, damit das Ergebnis bei mehreren Treffern stabil und
+   * nachvollziehbar bleibt: zuerst ein Punkt aus dem in den Einstellungen
+   * gewählten Hauptmenü (`AppSettings.mainNavigationId`) – das ist das
+   * Menü, das die Website tatsächlich anzeigt –, sonst der älteste
+   * Menüpunkt überhaupt. Zeigt gar kein Menüpunkt auf die Kategorie
+   * (Übersichtsseite direkt aufgerufen), gilt der Default `LIST`. */
+  private async resolveArchiveLayout(
+    categoryId: string,
+  ): Promise<CategoryArchiveLayout> {
+    const settings = await this.prisma.appSettings.findFirst({
+      select: { mainNavigationId: true },
+    });
+    if (settings?.mainNavigationId) {
+      const inMain = await this.prisma.navigationItem.findFirst({
+        where: { categoryId, navigationId: settings.mainNavigationId },
+        orderBy: { createdAt: 'asc' },
+        select: { categoryLayout: true },
+      });
+      if (inMain) return inMain.categoryLayout;
+    }
+    const anyItem = await this.prisma.navigationItem.findFirst({
+      where: { categoryId },
+      orderBy: { createdAt: 'asc' },
+      select: { categoryLayout: true },
+    });
+    return anyItem?.categoryLayout ?? CategoryArchiveLayout.LIST;
   }
 
   /** Einzelner Beitrag innerhalb einer Kategorie – URL-Schema

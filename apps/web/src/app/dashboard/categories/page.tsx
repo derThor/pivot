@@ -66,7 +66,7 @@ export default async function CategoriesPage({
           // folgt IMMER der globalen Seitengröße aus Einstellungen →
           // Darstellung, wie jede andere Listenseite auch – NICHT dem
           // Kategorie-eigenen `postsPerPage` ("Beiträge pro Seite" ist für
-          // die künftige öffentliche Archivseite gedacht, siehe
+          // die künftige öffentliche Übersichtsseite gedacht, siehe
           // knowledge-base/frontend/taxonomy-management.md, und darf die
           // Admin-Ansicht nicht überschreiben).
           pageSize: settings?.defaultPageSize ?? 10,

@@ -1,6 +1,8 @@
 import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
+import { CategoryArchiveLayout } from '@pivot/database';
 import {
   IsBoolean,
+  IsEnum,
   IsOptional,
   IsString,
   IsUrl,
@@ -15,7 +17,7 @@ export class CreateNavigationItemDto {
 
   @ApiPropertyOptional({
     description:
-      'Ziel-Inhalt (Seitenbaum). Genau eines von contentId/externalUrl muss gesetzt sein.',
+      'Ziel-Inhalt (Seitenbaum). Genau eines von contentId/categoryId/externalUrl muss gesetzt sein.',
   })
   @IsOptional()
   @IsString()
@@ -23,7 +25,28 @@ export class CreateNavigationItemDto {
 
   @ApiPropertyOptional({
     description:
-      'Externe Ziel-URL. Genau eines von contentId/externalUrl muss gesetzt sein.',
+      'Ziel-Kategorie: der Menüpunkt zeigt auf deren Übersichtsseite (/{slug}), ' +
+      'die alle veröffentlichten Beiträge der Kategorie auflistet. Genau ' +
+      'eines von contentId/categoryId/externalUrl muss gesetzt sein.',
+  })
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @ApiPropertyOptional({
+    enum: CategoryArchiveLayout,
+    description:
+      'Darstellung der Übersichtsseite (nur zusammen mit categoryId sinnvoll): ' +
+      'LIST = kompakt (Titel + Datum), BLOCKS = Karte mit Titelbild und ' +
+      'Anreißtext. Beide blättern über Category.postsPerPage.',
+  })
+  @IsOptional()
+  @IsEnum(CategoryArchiveLayout)
+  categoryLayout?: CategoryArchiveLayout;
+
+  @ApiPropertyOptional({
+    description:
+      'Externe Ziel-URL. Genau eines von contentId/categoryId/externalUrl muss gesetzt sein.',
   })
   @IsOptional()
   @IsUrl({ require_tld: false })

@@ -9,18 +9,53 @@ import { CreateGlobalModuleDto } from './dto/create-global-module.dto';
 import { UpdateGlobalModuleDto } from './dto/update-global-module.dto';
 import { QueryGlobalModuleDto } from './dto/query-global-module.dto';
 
+/** Modul-Typ-Slugs, die eine EIGENE Ressource im Rechte-Katalog haben –
+ * alle übrigen fallen auf `settings` zurück (siehe `resolveResource()`).
+ * Bewusst hier und nicht im Controller: die Zuordnung Slug→Ressource
+ * gehört an eine Stelle. */
+const OWN_RESOURCE_SLUGS = ['gallery', 'faq'] as const;
+
 @Injectable()
 export class GlobalModulesService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /** Übersetzt die lesbaren Ressourcen eines Nutzers in eine
+   * Modul-Typ-Bedingung. `null` = keine Einschränkung (nur für die
+   * öffentliche Ausgabe, siehe PublicContentController). Wer keine der
+   * Ressourcen lesen darf, bekommt eine Bedingung, die nie zutrifft –
+   * eine leere Liste statt eines 403, damit ein Block-Editor mit
+   * gemischten Modul-Typen weiterhin die erlaubten auflösen kann. */
+  private accessWhere(
+    readableResources: string[] | null,
+  ): Prisma.GlobalModuleWhereInput {
+    if (readableResources === null) return {};
+    const or: Prisma.GlobalModuleWhereInput[] = OWN_RESOURCE_SLUGS.filter(
+      (slug) => readableResources.includes(slug),
+    ).map((slug) => ({ moduleType: { slug } }));
+    if (readableResources.includes('settings')) {
+      or.push({ moduleType: { slug: { notIn: [...OWN_RESOURCE_SLUGS] } } });
+    }
+    return or.length === 0 ? { id: { in: [] } } : { OR: or };
+  }
 
   // Ohne `page` (Standardfall für Block-Editor/Content-Auflösung): flaches
   // Array wie bisher, optional nach `moduleTypeId` gefiltert. Mit `page`
   // (Galerien-/FAQ-Übersicht): paginiertes `{items, meta}`, siehe
   // QueryGlobalModuleDto.
-  findAll(query: QueryGlobalModuleDto = new QueryGlobalModuleDto()) {
+  //
+  // `readableResources` filtert zusätzlich auf das, was der Aufrufer lesen
+  // darf (`null` = ungefiltert, ausschließlich für die öffentliche
+  // Ausgabe). Vorher war diese Route komplett `@Public()`, wodurch sich
+  // Galerien/FAQs von jedem auslesen ließen – siehe
+  // knowledge-base/content/faq-and-gallery-dedicated-pages.md.
+  findAll(
+    query: QueryGlobalModuleDto = new QueryGlobalModuleDto(),
+    readableResources: string[] | null = null,
+  ) {
     const where = {
       deletedAt: null,
       ...(query.moduleTypeId && { moduleTypeId: query.moduleTypeId }),
+      ...this.accessWhere(readableResources),
     };
     const include = {
       moduleType: { select: { id: true, name: true, icon: true } },
@@ -188,7 +223,9 @@ export class GlobalModulesService {
       where: { deletedAt: { not: null } },
       orderBy: { deletedAt: 'desc' },
       include: {
-        moduleType: { select: { id: true, name: true, icon: true, slug: true } },
+        moduleType: {
+          select: { id: true, name: true, icon: true, slug: true },
+        },
         deletedBy: { select: { id: true, firstName: true, lastName: true } },
       },
     });

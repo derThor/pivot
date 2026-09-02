@@ -233,6 +233,17 @@ export interface NavigationItemNode {
     slug: string;
     status: ContentStatus;
   } | null;
+  /** Drittes Ziel neben Inhalt und externer URL (seit 2026-09-02): der
+   * Menüpunkt zeigt auf die Übersichtsseite dieser Kategorie. */
+  categoryId: string | null;
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+    archivePublished: boolean;
+  } | null;
+  /** Darstellung der Übersichtsseite – nur bei Kategorie-Ziel relevant. */
+  categoryLayout: "LIST" | "BLOCKS";
   sortOrder: number;
   parentId: string | null;
   children: NavigationItemNode[];
@@ -350,16 +361,29 @@ export function getModuleTypes() {
   return publicApiFetch<ModuleType[]>("/module-types");
 }
 
-// Öffentlicher Endpoint (siehe GlobalModulesController) – aus demselben
-// Grund wie `getModuleTypes()`: Block-Editor UND die anonyme Vorschau-Seite
-// müssen die aktuellen Werte eines eingebundenen globalen Moduls live
-// auflösen können.
+/** Globale Module für ANGEMELDETE Dashboard-Seiten (Block-Editor,
+ * Content-Vorschau/Versionen). Seit 2026-09-02 authentifiziert und
+ * serverseitig auf die lesbaren Ressourcen gefiltert – vorher lief das
+ * über einen `@Public()`-Endpunkt, über den sich Galerien/FAQs von jedem
+ * auslesen ließen.
+ *
+ * Folge im Editor: wer z.B. kein `faq:read` hat, bekommt eingebundene
+ * FAQ-Bausteine nicht mehr aufgelöst. Das ist beabsichtigt – die
+ * öffentliche AUSGABE der Seite ist davon nicht betroffen, sie läuft über
+ * `getPublicGlobalModules()`. */
 export function getGlobalModules() {
-  return publicApiFetch<GlobalModule[]>("/global-modules");
+  return apiFetch<GlobalModule[]>("/global-modules");
+}
+
+/** Dieselben Daten ohne Anmeldung – ausschließlich für die anonyme
+ * Vorschau-Seite `/preview/[token]`, die keine Session hat. Entspricht
+ * dem, was `apps/site` für die öffentliche Website nutzt. */
+export function getPublicGlobalModules() {
+  return publicApiFetch<GlobalModule[]>("/public/global-modules");
 }
 
 export function getGlobalModule(id: string) {
-  return publicApiFetch<GlobalModule>(`/global-modules/${id}`);
+  return apiFetch<GlobalModule>(`/global-modules/${id}`);
 }
 
 export interface GlobalModuleListResponse {
@@ -379,7 +403,7 @@ export function getGlobalModulesPaged(params: {
   const query = new URLSearchParams({ moduleTypeId: params.moduleTypeId });
   query.set("page", String(params.page ?? 1));
   if (params.pageSize) query.set("pageSize", String(params.pageSize));
-  return publicApiFetch<GlobalModuleListResponse>(
+  return apiFetch<GlobalModuleListResponse>(
     `/global-modules?${query.toString()}`,
   );
 }
@@ -580,6 +604,10 @@ function taxonomyQuery(params?: { page?: number; pageSize?: number }) {
 export interface CategoryListItem extends TaxonomyItem {
   color: string | null;
   contentCount: number;
+  /** Ob die öffentliche Übersichtsseite dieser Kategorie erreichbar ist – der
+   * Menüpunkt-Dialog warnt damit, dass ein Kategorie-Ziel sonst ins Leere
+   * läuft (siehe navigation-item-dialog.tsx). */
+  archivePublished: boolean;
 }
 
 export interface CategoryListResponse {

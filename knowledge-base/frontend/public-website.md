@@ -153,6 +153,186 @@ wirft weiterhin 404, wenn die Kategorie fehlt oder `archivePublished` aus ist �
 derselbe Effekt wäre dort zu erwarten. Wird mit Schritt 4 des Frontend-Plans
 mit umgestellt, sobald es diese Seite im Frontend überhaupt gibt.
 
+## Update 2026-09-02: Schritt 4 – Kategorie-Archiv und Beitragsseite
+
+Ausgelöst durch eine Fehlersuche, nicht durch einen Feature-Wunsch:
+`/datenschutz` und andere Seiten lieferten auf der Website 404. Ursache war
+kein Bug, sondern eine Lücke – `apps/site` hatte genau **zwei** Routen
+(`/` und `/[slug]`), für zweisegmentige Pfade gab es gar keine. Die
+Backend-Seite (`getCategory`, `getCategoryPost`, `buildContentPath`) war
+seit 2026-08-31 fertig und wies längst Pfade der Form
+`/{kategorie}/{slug}` aus, die niemand ausliefern konnte. **Jede Seite mit
+Kategorie war damit öffentlich unerreichbar.**
+
+Zur Fehlersuche gehörten zwei weitere Befunde, beide reine Datenlage:
+`/` war 404, weil die als Startseite markierte Seite auf `DRAFT` stand
+(`getHome()` verlangt `PUBLISHED`), und eine der beiden Kategorien der
+Testseite lag im Papierkorb.
+
+### Routen
+
+- `app/[slug]/page.tsx` löst jetzt **zwei** Fälle auf: erst freie Seite
+  (`getPage`), sonst Kategorie-Archiv (`getCategoryArchive`). Next.js
+  erlaubt auf einer Ebene nur ein dynamisches Segment, deshalb die
+  Laufzeit-Entscheidung statt zweier Routen. Bei einer Slug-Kollision
+  gewinnt bewusst die Seite.
+- `app/[slug]/[postSlug]/page.tsx` ist neu: die Beitragsseite. Das Backend
+  prüft die Kategorie-Zuordnung mit, ein Beitrag ist also nicht unter
+  jeder beliebigen Kategorie-URL erreichbar.
+
+### Kategorien als Menüziel
+
+Nutzervorgabe: *"kategorie soll in menü auswählbar sein. aktuell ist da
+seite und externe url … das funktioniert dann wie ein blog"*.
+`NavigationItem` hat dafür ein **drittes** Ziel bekommen (`categoryId`),
+`assertExactlyOneTarget()` zählt seitdem statt paarweise zu vergleichen.
+Eine Kategorie kann nicht Startseite sein – `getHome()` liefert genau
+einen Content, ein Archiv als Startseite wäre ein eigenes Feature.
+
+Im öffentlichen Menü werden Kategorie-Punkte **ausgeblendet**, deren
+Übersichtsseite nicht veröffentlicht oder deren Kategorie im Papierkorb ist –
+dieselbe Logik, die es für unveröffentlichte Inhalte schon gab. Im Backend
+bleibt der Punkt sichtbar und der Dialog warnt stattdessen
+(Nutzerentscheidung: warnen statt `archivePublished` still mitzusetzen).
+
+**Nebenbei behoben:** `getNavigation()` baute den Link zu einem Inhalt fest
+als `/{slug}` – für einen Beitrag MIT Kategorie also auf eine 404-URL. Er
+nutzt jetzt dasselbe `buildContentPath()` wie alle anderen Stellen.
+
+### Zwei Darstellungen, beide paginiert
+
+Nutzerentscheidung nach Rückfrage: `LIST` = kompakt (Titel + Datum),
+`BLOCKS` = Karte mit Titelbild, Datum und Anreißtext. **Beide** blättern
+über das bereits vorhandene `Category.postsPerPage`. Das Titelbild ist
+`Content.ogImageUrl` aus dem SEO-Tab – das einzige echte "Bild dieser
+Seite" im Datenmodell; fehlt es, entfällt der Bildbereich ersatzlos.
+
+Die Aufmacher-Kachel (`Category.showFeaturedLarge`) erscheint nur auf
+Seite 1 – auf Folgeseiten wäre sie eine Dublette.
+
+**Die Einstellung sitzt am Menüpunkt, nicht an der Kategorie**
+(Nutzerentscheidung, ausdrücklich gegen die empfohlene Variante): dieselbe
+Kategorie darf in zwei Menüs unterschiedlich aussehen. Daraus folgt ein
+Problem, das die Alternative nicht gehabt hätte – die öffentliche URL ist
+nur `/{slug}` und kennt den Menüpunkt nicht. `resolveArchiveLayout()` löst
+das auf, in dieser Reihenfolge:
+
+1. Menüpunkt im Hauptmenü (`AppSettings.mainNavigationId`) – das Menü, das
+   die Website tatsächlich anzeigt,
+2. sonst der älteste Menüpunkt, der auf die Kategorie zeigt,
+3. sonst `LIST` (Übersichtsseite direkt aufgerufen, kein Menüpunkt).
+
+### Kategorie-Endpunkt jetzt nullable
+
+Der offene Punkt "Kategorie-Übersichts-Endpunkt auf nullable Antwort
+umstellen" ist damit erledigt: `getCategory()` liefert
+`{ category: null, … }` statt einer 404, aus demselben Cache-Grund wie die
+Inhalts-Endpunkte (siehe Update 2026-08-31 oben).
+
+## Update 2026-09-02: Vorschau öffnet die echte Website
+
+Nutzervorgabe: *"wenn ich bei seiten auf vorschau klicke, soll die seite im
+frontend aufgerufen werden"* – und direkt danach die entscheidende
+Einschränkung: *"da aber nur mit backendrecht bei vorschau"*.
+
+Der Augen-Knopf in der Seiten-Liste zeigte bisher auf die Backend-Vorschau
+(`/dashboard/content/[id]/preview`). Er führt jetzt über die neue
+BFF-Route `GET /api/content/[id]/frontend-preview`, die
+
+1. per `POST /content/:id/preview-links` einen **einstündigen** Token
+   ausstellt (kurz, weil das ein Blick auf die eigene Seite ist und kein
+   teilbarer Freigabe-Link – dafür gibt es weiterhin Vorschau-Links mit 7
+   Tagen),
+2. den öffentlichen Pfad der Seite bildet (dieselbe Regel wie
+   `buildContentPath()`),
+3. auf `{website}/{pfad}?preview={token}` weiterleitet.
+
+**Da liegt die Absicherung:** die Website hat keine Anmeldung, der Token
+ist das Recht. Ausstellen darf ihn nur, wer `preview-links:create` besitzt
+– fehlt es, reicht die Route die Backend-Meldung unverändert durch. Ein
+Umweg über ein Cookie schied aus: `apps/site` ist eine eigene App ohne
+Auth, und Cookies gelten pro Host, nicht pro Port (siehe die
+Cookie-Kollision in
+[master-slave-licensing.md](../platform/master-slave-licensing.md)).
+
+Neu dafür: `GET /public/preview/:token` im `PublicContentController` –
+liefert dieselbe Form wie `pages/:slug` (inkl. `path`), bewusst **ohne**
+Status-Filter (eine Vorschau soll ja den unveröffentlichten Stand zeigen),
+aber ohne Papierkorb. Das ältere `GET /content/preview/:token` bleibt
+unangetastet; es liefert die rohe Admin-Projektion für die
+Backend-Vorschauseite.
+
+Auf der Website wertet `?preview=` beide Routen aus, holt den Inhalt mit
+`cache: "no-store"` (sonst sähe man seine eigene Änderung bis zu 60
+Sekunden lang nicht) und blendet eine `PreviewNotice`-Leiste ein, damit
+eine Vorschau nicht mit der echten Seite verwechselt wird.
+
+**Warum ein `<a target="_blank">` und kein `window.open()`:** die Route
+muss erst den Token holen, und ein `window.open()` nach einem `await`
+fängt der Popup-Blocker ab. Deshalb ist es eine GET-Route, die
+weiterleitet.
+
+**Ohne jede Konfiguration nutzbar** (Nutzerrückfrage, 2026-09-02: "kann
+man es so bauen, dass das frontend immer aufrufbar ist als vorschau für
+seiten? ohne eintragung in einstellung frontend?"). Die Basis-URL wird
+gestaffelt ermittelt, eine gepflegte Einstellung gewinnt aber immer:
+
+1. `AppSettings.publicBaseUrl` (Einstellungen → Frontend) – die einzige
+   Quelle, die die echte öffentliche Domain kennt.
+2. `SITE_URL` aus der Umgebung – für Deployments, die die Website unter
+   einer anderen Adresse betreiben als das Backend.
+3. Entwicklung: fest `http://localhost:3002`. Kein geratener Wert –
+   `apps/site` startet laut seiner package.json immer auf diesem Port.
+   Deckt den direkten Aufruf über Port 3000 genauso ab wie den über
+   `pnpm dev:proxy`.
+4. Produktion ohne alles: dieselbe Origin. Das trifft das Ein-Domain-
+   Layout; der `/admin`-Basispfad fällt automatisch weg, weil
+   `URL.origin` den Pfad nicht enthält.
+
+### Stolperstein: `<Link href={bff(...)}>` ergibt einen doppelten basePath
+
+Erster Klick auf den neuen Knopf lieferte **404** (Nutzer-Bugreport per
+Screenshot). Ursache war nicht die Route, sondern der Link davor: der
+Knopf war als `<Link href={bff("/api/…")}>` gebaut. `bff()` setzt
+`/admin` davor – und Next.js' `<Link>` setzt den `basePath` **noch
+einmal** davor. Der Browser rief also `/admin/admin/api/…` auf, was nach
+dem Strippen eines `/admin` auf keine Route mehr passte.
+
+`lib/bff.ts` warnt genau davor ("`<Link>`, `useRouter()` und
+`next/image` brauchen das **nicht**, die setzen den `basePath` selbst") –
+die Falle ist trotzdem leicht zu übersehen, weil alle anderen Aufrufe im
+Code `fetch(bff(...))` sind, wo `bff()` zwingend nötig ist.
+
+**Erkennungsmerkmal im Dev-Log:** eine getroffene Route wird ohne
+basePath protokolliert (`GET /api/…`), eine verfehlte MIT
+(`GET /admin/api/… 404`). Genau dieser Unterschied zwischen den eigenen
+`curl`-Tests und den Klicks des Nutzers hat den Fall aufgeklärt.
+
+**Fix:** rohes `<a href={bff(...)} target="_blank">` statt `<Link>`. Für
+eine Route, die auf eine andere Origin weiterleitet, ist eine echte
+Browser-Navigation ohnehin richtig.
+
+Beim selben Umbau ist ein zweiter, noch nicht sichtbar gewordener Fehler
+mit weggefallen: die Route baute den Ziel-Pfad zuerst selbst aus
+`GET /content/:id`. Dessen Admin-Projektion liefert Kategorien aber als
+Join-Zeilen (`{ category: { slug } }`, nicht `{ slug }`) – für jede Seite
+MIT Kategorie wäre `/undefined/slug` herausgekommen. Jetzt liefert
+`GET /public/preview/:token` den `path` gleich mit, gebildet von
+`buildContentPath()` wie überall sonst.
+
+### Live verifiziert
+
+```
+/public/preview/<ungültig>          → {"content":null}
+/api/content/x/frontend-preview     → 401 ohne Sitzung
+/gghhjfh            (DRAFT, ohne Token) → 404
+/gghhjfh?preview=<token>                → 200 + "Vorschau."-Leiste
+/xcvbv/gghhjfh?preview=<token>          → 200 (Beitragsroute)
+/sadfadsgh                              → Archiv, LIST und BLOCKS je nach Menüpunkt
+/sadfadsgh/datenschutz                  → 200 (vorher 404)
+/sadfadsgh/hfghdh-…                     → 200, Galerie-Baustein rendert (7 Bilder, Swiper)
+```
+
 ## Offene Punkte
 
 - ~~Startseite (`/`)~~ **gelöst am 2026-08-31**: die Startseite wird am

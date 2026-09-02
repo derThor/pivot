@@ -10,7 +10,7 @@ export class UpdateNavigationItemDto extends PartialType(
       'Markiert diesen Menüpunkt als Startseite der öffentlichen Website. ' +
       'App-weit kann immer nur genau ein Punkt die Startseite sein – beim ' +
       'Setzen wird der bisherige automatisch abgewählt. Nur für Menüpunkte ' +
-      'mit Inhalts-Ziel möglich, nicht für externe Links.',
+      'mit Inhalts-Ziel möglich – weder für externe Links noch für Kategorien.',
   })
   @IsOptional()
   @IsBoolean()
