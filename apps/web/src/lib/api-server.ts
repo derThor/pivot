@@ -243,6 +243,7 @@ export interface NavigationItemNode {
   } | null;
   /** Darstellung der Übersichtsseite – nur bei Kategorie-Ziel relevant. */
   categoryLayout: "LIST" | "BLOCKS";
+  appearance: "LINK" | "TEXT_BUTTON" | "ACCENT_BUTTON";
   sortOrder: number;
   parentId: string | null;
   children: NavigationItemNode[];
@@ -779,6 +780,9 @@ export interface AppSettings {
   defaultOgImageUrl: string | null;
   publicBaseUrl: string | null;
   mainNavigationId: string | null;
+  footerNavigationPrimaryId: string | null;
+  footerNavigationSecondaryId: string | null;
+  footerNote: string | null;
   notifyMaintenanceMode: boolean;
   notifyStorageQuota: boolean;
   notifyWebhookFailures: boolean;

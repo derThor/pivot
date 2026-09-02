@@ -870,9 +870,19 @@ Architektur, Entscheidungen und Stolpersteine:
       (`NavigationItem.categoryId`) mit zwei Darstellungen (Liste/Blöcke),
       und der Vorschau-Knopf der Seiten-Liste öffnet die echte Website
       über einen kurzlebigen Vorschau-Token
-- [ ] **Schritt 5** – Hauptmenü im Header (`AppSettings.mainNavigationId`
-      hat noch **kein Eingabefeld** in den Einstellungen), RSS-`<link>`
-      bei `rssEnabled`, abschließender SEO-Feinschliff
+- [x] **Schritt 5** – Hauptmenü im Header (2026-09-02): Auswahlfeld unter
+      Einstellungen → Frontend, dazu die beiden Footer-Menüs und die
+      Footer-Zusatzzeile. `mainNavigationId` war seit seiner Anlage nie
+      gesetzt, weil es kein Eingabefeld dafür gab.
+- [ ] RSS-`<link>` bei `rssEnabled` und abschließender SEO-Feinschliff
+      (Restpunkte aus Schritt 5)
+- [x] Header und Footer nach dem Entwurf des Nutzers ("Pivot Landing",
+      2026-09-02) – eigenes Design-System in `globals.css` (Off-White,
+      Lime-Akzent, Manrope + IBM Plex Mono über `next/font`), Logo aus dem
+      Website-Titel, Handlungsaufrufe als Menüpunkte mit
+      `NavigationItem.appearance`, Footer-Spalten aus zwei Navigationen
+      plus automatischer Rechtstext-Spalte. Details in
+      [public-website.md](../knowledge-base/frontend/public-website.md)
 - [x] Formular-Bausteine auf öffentlichen Seiten (2026-09-02) – eigener
       `PublicForm`-Renderer in `apps/site` (native Elemente, die Website
       hat bewusst kein shadcn/ui) plus zwei Proxy-Routen, weil die API per
@@ -886,7 +896,15 @@ Architektur, Entscheidungen und Stolpersteine:
       und sonst dauerhaft veraltete Seiten ausliefert
 - [ ] Mehrsprachigkeit/Locale-Routing (`Content.locale` existiert, ist
       aber nicht ans Routing angebunden)
-- [ ] Eigene visuelle Gestaltung des Frontends (aktuell bewusst minimal)
+- [x] Eigene visuelle Gestaltung des Frontends – Hülle steht (siehe oben);
+      offen bleibt die Gestaltung der INHALTE, siehe die beiden Punkte
+      darunter
+- [ ] Randlose Abschnitte über die volle Fensterbreite (Hero,
+      Branchen-Band): die Inhaltsbahn (1180px) liegt in der Hülle, nicht im
+      Baustein – das aufzubrechen ist ein eigener Schritt am Designer
+- [ ] Modultypen für die Landingpage-Abschnitte, die die vorhandenen zwölf
+      nicht abbilden: Feature-Kacheln mit Nummerierung, Branchen-Band,
+      Ablauf-Schritte, Preistabelle
 
 ### 4.0.1 – Betrieb unter einer Domain
 

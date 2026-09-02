@@ -18,7 +18,9 @@ export class ProcessingActivitiesService {
       where: { id },
     });
     if (!row) {
-      throw new NotFoundException(`Verarbeitungstätigkeit ${id} nicht gefunden.`);
+      throw new NotFoundException(
+        `Verarbeitungstätigkeit ${id} nicht gefunden.`,
+      );
     }
     return row;
   }

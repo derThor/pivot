@@ -209,8 +209,29 @@ model AppSettings {
   // Welche `Navigation` das Hauptmenü der öffentlichen Website ist –
   // ohne dieses Feld gäbe es keine Möglichkeit, "das" Menü unter
   // mehreren `Navigation`-Datensätzen zu identifizieren.
-  mainNavigationId               String?     @unique
-  mainNavigation                 Navigation? @relation(fields: [mainNavigationId], references: [id], onDelete: SetNull)
+  // Seit dem Footer (2026-09-02) verweist AppSettings DREIMAL auf
+  // Navigation, deshalb tragen alle drei Relationen jetzt einen Namen –
+  // Prisma kann sie sonst nicht auseinanderhalten. Dabei ist auch das
+  // frühere `@unique` gefallen: es hätte verboten, dieselbe Navigation
+  // gleichzeitig als Hauptmenü und als Footer-Spalte zu verwenden. Das
+  // ist eine sinnvolle Möglichkeit, und es gibt ohnehin nur eine
+  // AppSettings-Zeile.
+  mainNavigationId               String?
+  mainNavigation                 Navigation? @relation("MainNavigation", fields: [mainNavigationId], references: [id], onDelete: SetNull)
+  // Die beiden freien Linkspalten im Footer der öffentlichen Website
+  // (Nutzerentscheidung, 2026-09-02). Die Spaltenüberschrift ist der NAME
+  // der Navigation ("Produkt", "Unternehmen") – bewusst kein zusätzliches
+  // Titelfeld, das man doppelt pflegen müsste. Die dritte Spalte
+  // (Rechtliches) kommt automatisch aus `LegalDocument` und braucht
+  // deshalb keine Einstellung.
+  footerNavigationPrimaryId      String?
+  footerNavigationPrimary        Navigation? @relation("FooterNavigationPrimary", fields: [footerNavigationPrimaryId], references: [id], onDelete: SetNull)
+  footerNavigationSecondaryId    String?
+  footerNavigationSecondary      Navigation? @relation("FooterNavigationSecondary", fields: [footerNavigationSecondaryId], references: [id], onDelete: SetNull)
+  // Freie Zeile rechts in der Footer-Fußleiste, gegenüber dem Copyright
+  // (im Entwurf: "Hosting in Frankfurt · ISO 27001 · DSGVO"). Ohne Wert
+  // bleibt die Stelle leer, statt einen Claim zu erfinden.
+  footerNote                     String?
   // Ein/Aus je Systembenachrichtigung-Kategorie (Nutzervorgabe, 2026-08-16:
   // Karte auf /dashboard/system-messages) – bestimmt, ob die jeweilige
   // Kategorie überhaupt als Banner/Glocken-Zähler auftaucht, unabhängig
@@ -1194,10 +1215,14 @@ model Navigation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  items            NavigationItem[]
-  // Rückbezug für AppSettings.mainNavigationId (Frontend-Hauptmenü) –
-  // rein strukturell für Prisma, keine eigene Verwendung nötig.
-  mainNavigationOf AppSettings?
+  items                       NavigationItem[]
+  // Rückbezüge für die drei AppSettings-Verweise (Hauptmenü + zwei
+  // Footer-Spalten) – rein strukturell für Prisma, keine eigene
+  // Verwendung nötig. Listen statt Einzelwerten, seit das `@unique`
+  // drüben gefallen ist (siehe dortiger Kommentar).
+  mainNavigationOf            AppSettings[]    @relation("MainNavigation")
+  footerNavigationPrimaryOf   AppSettings[]    @relation("FooterNavigationPrimary")
+  footerNavigationSecondaryOf AppSettings[]    @relation("FooterNavigationSecondary")
 
   @@map("navigations")
 }
@@ -1251,6 +1276,13 @@ model NavigationItem {
   // die Kategorie zeigt (Hauptmenü zuerst, siehe dort).
   categoryLayout CategoryArchiveLayout @default(LIST)
 
+  // Wie der Punkt im Header der Website aussieht (Nutzerentscheidung,
+  // 2026-09-02). Damit sind Handlungsaufrufe wie "Anmelden" und "Demo
+  // buchen" ganz normale Menüpunkte, die sich umbenennen, umhängen oder
+  // entfernen lassen – statt zweier fest verdrahteter Knöpfe im Code.
+  // Im Footer ohne Wirkung: dort sind alle Punkte Links.
+  appearance NavigationItemAppearance @default(LINK)
+
   parentId String?
   parent   NavigationItem?  @relation("NavigationItemHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
   children NavigationItem[] @relation("NavigationItemHierarchy")
@@ -1272,6 +1304,20 @@ model NavigationItem {
 enum CategoryArchiveLayout {
   LIST
   BLOCKS
+}
+
+/**
+ * Darstellung eines Menüpunkts im Header der öffentlichen Website
+ * (Nutzerentscheidung, 2026-09-02).
+ * - `LINK`: gewöhnlicher Menüpunkt.
+ * - `TEXT_BUTTON`: rechts abgesetzt, kräftiger, ohne Fläche ("Anmelden").
+ * - `ACCENT_BUTTON`: rechts abgesetzt, gefüllte Akzentfläche ("Demo
+ * buchen"). Mehrere Punkte dürfen dieselbe Darstellung haben.
+ */
+enum NavigationItemAppearance {
+  LINK
+  TEXT_BUTTON
+  ACCENT_BUTTON
 }
 
 // ---------- Medien ----------

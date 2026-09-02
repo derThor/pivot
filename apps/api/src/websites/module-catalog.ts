@@ -50,7 +50,6 @@ export const MODULE_CATALOG: ModuleCatalogEntry[] = [
       // Nutzervorgabe, 2026-09-02: Aufbewahrungsfristen als eigener
       // Reiter (vorher eine Karte am Ende der Rechtstexte).
       { key: 'aufbewahrung', label: 'Aufbewahrung' },
-
     ],
     // Master betreibt selbst /dashboard/privacy und nutzt diese Reiter
     // für die eigene Installation.

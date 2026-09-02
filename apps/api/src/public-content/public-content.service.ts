@@ -102,20 +102,95 @@ export class PublicContentService {
         publicBaseUrl: true,
         accentColor: true,
         mainNavigationId: true,
+        footerNavigationPrimaryId: true,
+        footerNavigationSecondaryId: true,
+        footerNote: true,
+        companyName: true,
       },
     });
-    return (
-      settings ?? {
-        siteTitle: null,
-        siteTagline: null,
-        faviconUrl: null,
-        defaultSeoDescription: null,
-        defaultOgImageUrl: null,
-        publicBaseUrl: null,
-        accentColor: null,
-        mainNavigationId: null,
-      }
-    );
+    const empty = {
+      siteTitle: null,
+      siteTagline: null,
+      faviconUrl: null,
+      defaultSeoDescription: null,
+      defaultOgImageUrl: null,
+      publicBaseUrl: null,
+      accentColor: null,
+      mainNavigationId: null,
+      footerNavigationPrimaryId: null,
+      footerNavigationSecondaryId: null,
+      footerNote: null,
+      companyName: null,
+    };
+    const base = settings ?? empty;
+    // Header und Footer der Website hängen an genau diesem Aufruf
+    // (Nutzerentscheidung, 2026-09-02): das Layout holt die Hülle EINMAL,
+    // statt für jedes Menü einen eigenen Aufruf zu machen. Alle drei
+    // Menüs sind optional – ist keines gewählt, bleibt die jeweilige
+    // Stelle leer, statt Einträge zu erfinden.
+    const [mainNavigation, footerPrimary, footerSecondary, legalLinks] =
+      await Promise.all([
+        this.resolveNavigation({ id: base.mainNavigationId }),
+        this.resolveNavigation({ id: base.footerNavigationPrimaryId }),
+        this.resolveNavigation({ id: base.footerNavigationSecondaryId }),
+        this.getLegalLinks(),
+      ]);
+    return {
+      ...base,
+      mainNavigation,
+      footerNavigationPrimary: footerPrimary,
+      footerNavigationSecondary: footerSecondary,
+      legalLinks,
+    };
+  }
+
+  /** Die Rechtstexte für die dritte Footer-Spalte (Nutzerentscheidung,
+   * 2026-09-02: "Rechtliches automatisch"). Bewusst ohne Einstellung – wer
+   * einen Rechtstext erzeugt, will ihn auch verlinkt haben.
+   *
+   * `LegalDocument.contentId` ist eine lose Referenz ohne Fremdschlüssel
+   * (siehe Schema), deshalb ein zweiter Aufruf statt eines Joins. Ohne
+   * erzeugte Seite (`contentId: null`, z.B. die noch nicht generierte
+   * Barrierefreiheitserklärung) oder mit unveröffentlichter Seite fällt
+   * der Eintrag weg – ein Link ins Leere ist schlechter als keiner. */
+  private async getLegalLinks() {
+    const documents = await this.prisma.legalDocument.findMany({
+      where: { contentId: { not: null } },
+      select: { key: true, title: true, contentId: true },
+      orderBy: { title: 'asc' },
+    });
+    if (documents.length === 0) return [];
+    const contents = await this.prisma.content.findMany({
+      where: {
+        id: { in: documents.map((d) => d.contentId!) },
+        status: ContentStatus.PUBLISHED,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        slug: true,
+        categories: {
+          select: {
+            category: { select: { id: true, name: true, slug: true } },
+          },
+        },
+      },
+    });
+    const byId = new Map(contents.map((c) => [c.id, c]));
+    return documents.flatMap((doc) => {
+      const content = byId.get(doc.contentId!);
+      if (!content) return [];
+      return [
+        {
+          key: doc.key,
+          label: doc.title,
+          href: buildContentPath({
+            slug: content.slug,
+            categories: content.categories.map((c) => c.category),
+          }),
+        },
+      ];
+    });
   }
 
   /** Aufgelöster Menübaum, aber nur Einträge, deren Ziel-Inhalt
@@ -124,8 +199,24 @@ export class PublicContentService {
    * ist für die Backend-Verwaltung korrekt, für die öffentliche Website
    * aber nicht. */
   async getNavigation(slug: string) {
+    const navigation = await this.resolveNavigation({ slug });
+    if (!navigation) {
+      throw new NotFoundException(`Navigation "${slug}" nicht gefunden.`);
+    }
+    return navigation;
+  }
+
+  /** Gemeinsamer Kern von `getNavigation()` (nach Slug, für den
+   * öffentlichen Endpunkt) und der Hülle in `getSite()` (nach Id, für
+   * Hauptmenü und die beiden Footer-Spalten). Liefert `null` statt eines
+   * Fehlers, weil eine nicht gesetzte Menü-Einstellung der Normalfall ist
+   * und kein Fehler. */
+  private async resolveNavigation(
+    where: { slug: string } | { id: string | null },
+  ) {
+    if ('id' in where && !where.id) return null;
     const navigation = await this.prisma.navigation.findUnique({
-      where: { slug },
+      where: where as { slug: string } | { id: string },
       select: {
         id: true,
         name: true,
@@ -139,6 +230,7 @@ export class PublicContentService {
             openInNewTab: true,
             parentId: true,
             isHomepage: true,
+            appearance: true,
             content: {
               select: {
                 slug: true,
@@ -159,9 +251,7 @@ export class PublicContentService {
         },
       },
     });
-    if (!navigation) {
-      throw new NotFoundException(`Navigation "${slug}" nicht gefunden.`);
-    }
+    if (!navigation) return null;
 
     // Menüpunkte, die ins Leere führen würden, tauchen im öffentlichen Menü
     // gar nicht erst auf: Inhalte, die nicht veröffentlicht sind, und
@@ -185,6 +275,7 @@ export class PublicContentService {
         label: item.label,
         externalUrl: item.externalUrl,
         openInNewTab: item.openInNewTab,
+        appearance: item.appearance,
         // Der Startseiten-Punkt verlinkt auf `/`, nicht auf seinen Slug.
         // Für Inhalte gilt sonst dasselbe Pfad-Schema wie überall
         // (`buildContentPath`) – vorher stand hier fest `/{slug}`, was für

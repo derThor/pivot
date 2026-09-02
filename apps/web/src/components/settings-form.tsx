@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, type Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -33,6 +33,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { DashboardBreadcrumbs } from "@/components/dashboard-breadcrumbs";
@@ -62,6 +70,7 @@ import type {
   MailShellListItem,
   MailTemplateListItem,
   ModuleSettingsEntry,
+  NavigationSummary,
   ScheduledJobsResponse,
   SettingsChangesResponse,
   SmtpSettings,
@@ -119,6 +128,10 @@ const settingsSchema = z.object({
   siteTagline: z.string().nullable(),
   defaultSeoDescription: z.string().nullable(),
   publicBaseUrl: z.string().nullable(),
+  mainNavigationId: z.string().nullable(),
+  footerNavigationPrimaryId: z.string().nullable(),
+  footerNavigationSecondaryId: z.string().nullable(),
+  footerNote: z.string().nullable(),
 });
 
 // Exportiert, damit MasterClientCard das Formular typsicher entgegennehmen
@@ -322,8 +335,72 @@ function PlaceholderCard({ title, note }: { title: string; note: string }) {
   );
 }
 
+/** Auswahl einer `Navigation` für Header bzw. Footer der öffentlichen
+ * Website (Nutzerentscheidung, 2026-09-02).
+ *
+ * "Kein Menü" ist ein echter Wert und braucht deshalb einen Platzhalter-
+ * Schlüssel: Base UI behandelt den leeren String als "nichts ausgewählt"
+ * und würde die Auswahl nicht anzeigen. Nach außen bleibt es `null`. */
+const NO_NAVIGATION = "__keine__";
+
+function NavigationSelectField({
+  control,
+  name,
+  label,
+  description,
+  navigations,
+}: {
+  control: Control<SettingsValues>;
+  name:
+    | "mainNavigationId"
+    | "footerNavigationPrimaryId"
+    | "footerNavigationSecondaryId";
+  label: string;
+  description: string;
+  navigations: NavigationSummary[];
+}) {
+  const items = {
+    [NO_NAVIGATION]: "Kein Menü",
+    ...Object.fromEntries(navigations.map((nav) => [nav.id, nav.name])),
+  };
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem className="flex flex-col gap-1.5">
+          <Label htmlFor={name}>{label}</Label>
+          <FormControl>
+            <Select
+              value={field.value ?? NO_NAVIGATION}
+              onValueChange={(value) =>
+                field.onChange(value === NO_NAVIGATION ? null : value)
+              }
+              items={items}
+            >
+              <SelectTrigger id={name} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_NAVIGATION}>Kein Menü</SelectItem>
+                {navigations.map((nav) => (
+                  <SelectItem key={nav.id} value={nav.id}>
+                    {nav.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormControl>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </FormItem>
+      )}
+    />
+  );
+}
+
 export function SettingsForm({
   settings,
+  navigations,
   logoFolderId,
   webhooks,
   settingsChanges,
@@ -338,6 +415,8 @@ export function SettingsForm({
   licenseState,
 }: {
   settings: AppSettings;
+  /** Auswahl für Hauptmenü und die beiden Footer-Spalten der Website. */
+  navigations: NavigationSummary[];
   logoFolderId: string | null;
   webhooks: WebhookListResponse | null;
   settingsChanges: SettingsChangesResponse | null;
@@ -470,6 +549,10 @@ export function SettingsForm({
     siteTagline: settings.siteTagline,
     defaultSeoDescription: settings.defaultSeoDescription,
     publicBaseUrl: settings.publicBaseUrl,
+    mainNavigationId: settings.mainNavigationId,
+    footerNavigationPrimaryId: settings.footerNavigationPrimaryId,
+    footerNavigationSecondaryId: settings.footerNavigationSecondaryId,
+    footerNote: settings.footerNote,
   };
 
   const form = useForm<SettingsValues>({
@@ -1343,9 +1426,9 @@ export function SettingsForm({
                 <CardHeader>
                   <CardTitle>Frontend</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Grundwerte für die öffentliche Website dieser Installation –
-                    die Website selbst ist noch nicht gebaut, diese Felder
-                    werden bereits jetzt gespeichert.
+                    Grundwerte für die öffentliche Website dieser Installation
+                    sowie die Menüs, aus denen ihr Kopf- und Fußbereich
+                    entsteht.
                   </p>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -1453,6 +1536,65 @@ export function SettingsForm({
                         <p className="text-sm text-muted-foreground">
                           Wird verwendet, wenn eine Seite keine eigene
                           SEO-Beschreibung hat.
+                        </p>
+                      </FormItem>
+                    )}
+                  />
+                  <Separator className="sm:col-span-2" />
+                  <div className="flex flex-col gap-1 sm:col-span-2">
+                    <h3 className="text-sm font-semibold">
+                      Kopf- und Fußbereich
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Aus diesen Menüs baut die Website ihren Header und Footer.
+                      Gepflegt werden sie unter Inhalte → Menüs; die
+                      Spaltenüberschrift im Footer ist der Name des Menüs. Die
+                      Spalte „Rechtliches“ entsteht automatisch aus den
+                      vorhandenen Rechtstexten.
+                    </p>
+                  </div>
+                  <NavigationSelectField
+                    control={form.control}
+                    name="mainNavigationId"
+                    label="Hauptmenü (Header)"
+                    description="Erscheint oben neben dem Logo."
+                    navigations={navigations}
+                  />
+                  <div className="hidden sm:block" />
+                  <NavigationSelectField
+                    control={form.control}
+                    name="footerNavigationPrimaryId"
+                    label="Footer-Menü 1"
+                    description="Erste Linkspalte im Footer."
+                    navigations={navigations}
+                  />
+                  <NavigationSelectField
+                    control={form.control}
+                    name="footerNavigationSecondaryId"
+                    label="Footer-Menü 2"
+                    description="Zweite Linkspalte im Footer."
+                    navigations={navigations}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="footerNote"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col gap-1.5 sm:col-span-2">
+                        <Label htmlFor="footerNote">Footer-Zusatzzeile</Label>
+                        <FormControl>
+                          <Input
+                            id="footerNote"
+                            placeholder="z. B. Hosting in Frankfurt · ISO 27001 · DSGVO"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) =>
+                              field.onChange(e.target.value || null)
+                            }
+                          />
+                        </FormControl>
+                        <p className="text-sm text-muted-foreground">
+                          Steht unten rechts, gegenüber der Copyright-Zeile.
+                          Ohne Eintrag bleibt die Stelle leer.
                         </p>
                       </FormItem>
                     )}

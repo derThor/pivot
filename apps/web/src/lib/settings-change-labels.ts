@@ -90,6 +90,9 @@ export const SETTINGS_FIELD_LABELS: Record<string, string> = {
   defaultOgImageUrl: "Standard-Social-Media-Bild",
   publicBaseUrl: "Basis-URL der Website",
   mainNavigationId: "Hauptmenü",
+  footerNavigationPrimaryId: "Footer-Menü 1",
+  footerNavigationSecondaryId: "Footer-Menü 2",
+  footerNote: "Footer-Zusatzzeile",
 };
 
 // Für Protokoll-/Aktivitäts-Einträge, die kein Feld ändern, sondern eine

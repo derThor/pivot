@@ -60,6 +60,22 @@ const CATEGORY_LAYOUT_DESCRIPTION: Record<string, string> = {
   BLOCKS: "Karte je Seite mit Titelbild, Datum und Anreißtext.",
 };
 
+/** Aussehen des Punkts im Header der Website (Nutzerentscheidung,
+ * 2026-09-02). Damit sind Handlungsaufrufe wie "Anmelden" oder "Demo
+ * buchen" ganz normale Menüpunkte statt fest verdrahteter Knöpfe. Gilt
+ * für alle Zielarten, deshalb außerhalb der Kategorie-Verzweigung. */
+const APPEARANCE_OPTIONS = [
+  { value: "LINK" as const, label: "Link" },
+  { value: "TEXT_BUTTON" as const, label: "Textknopf" },
+  { value: "ACCENT_BUTTON" as const, label: "Akzentknopf" },
+];
+
+const APPEARANCE_DESCRIPTION: Record<string, string> = {
+  LINK: "Gewöhnlicher Menüpunkt in der Menüzeile.",
+  TEXT_BUTTON: "Rechts abgesetzt, kräftiger, ohne Fläche.",
+  ACCENT_BUTTON: "Rechts abgesetzt, mit farbiger Fläche.",
+};
+
 /** Welche Zielart der Dialog beim Öffnen zeigt. Ausschlaggebend ist das
  * tatsächlich gesetzte Feld – `content` ist der Standard beim Anlegen. */
 function initialTargetType(item?: NavigationItemNode): string {
@@ -248,6 +264,9 @@ export function NavigationItemDialog({
   const [categoryLayout, setCategoryLayout] = useState<"LIST" | "BLOCKS">(
     item?.categoryLayout ?? "LIST",
   );
+  const [appearance, setAppearance] = useState<
+    "LINK" | "TEXT_BUTTON" | "ACCENT_BUTTON"
+  >(item?.appearance ?? "LINK");
   const [externalUrl, setExternalUrl] = useState(item?.externalUrl ?? "");
   const [openInNewTab, setOpenInNewTab] = useState(item?.openInNewTab ?? false);
   const [error, setError] = useState<string | null>(null);
@@ -275,6 +294,7 @@ export function NavigationItemDialog({
     );
     setCategoryId(item?.categoryId ?? "");
     setCategoryLayout(item?.categoryLayout ?? "LIST");
+    setAppearance(item?.appearance ?? "LINK");
     setExternalUrl(item?.externalUrl ?? "");
     setOpenInNewTab(item?.openInNewTab ?? false);
     setError(null);
@@ -295,6 +315,7 @@ export function NavigationItemDialog({
           body: JSON.stringify({
             label,
             openInNewTab,
+            appearance,
             ...(!isEditing && { parentId }),
             // Die drei Ziele schließen sich aus – die jeweils anderen
             // werden explizit auf `null` gesetzt, sonst bliebe beim
@@ -448,6 +469,18 @@ export function NavigationItemDialog({
               />
             </div>
           )}
+          <div className="flex flex-col gap-1.5">
+            <SegmentedPicker
+              label="Darstellung im Header"
+              options={APPEARANCE_OPTIONS}
+              value={appearance}
+              onChange={setAppearance}
+            />
+            <p className="text-xs text-muted-foreground">
+              {APPEARANCE_DESCRIPTION[appearance]} Im Footer bleibt jeder Punkt
+              ein Link.
+            </p>
+          </div>
           <div className="flex items-center gap-2.5">
             <Checkbox
               id="nav-item-new-tab"

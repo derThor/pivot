@@ -1,9 +1,29 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Manrope, IBM_Plex_Mono } from "next/font/google";
 import { resolveImageSrc } from "@pivot/blocks";
 import { getSiteSettings } from "@/lib/api";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 import "./globals.css";
+
+// Schriften des Entwurfs (siehe globals.css). Über next/font statt über
+// einen <link> auf Google Fonts: die Dateien werden mitgebaut und lokal
+// ausgeliefert – kein Aufruf zu einem Dritten beim Seitenaufruf, was auf
+// einer Website mit Datenschutzerklärung der wichtigere Punkt ist als die
+// eingesparte Verbindung.
+const manrope = Manrope({
+  variable: "--font-manrope",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  display: "swap",
+});
 
 // Siehe REVALIDATE_SECONDS in lib/api.ts – hier bewusst als Literal, weil
 // Next.js diesen Segment-Wert statisch auswerten muss.
@@ -49,34 +69,32 @@ export default async function RootLayout({
     : undefined;
 
   return (
-    <html lang="de" style={themeStyle}>
+    <html
+      lang="de"
+      style={themeStyle}
+      className={`${manrope.variable} ${plexMono.variable}`}
+    >
       <body className="flex min-h-screen flex-col">
-        <header className="border-b border-border">
-          <div className="mx-auto flex w-full max-w-4xl flex-wrap items-baseline gap-x-4 gap-y-1 px-6 py-8">
-            <Link href="/" className="text-xl font-semibold tracking-tight">
-              {site.siteTitle ?? " "}
-            </Link>
-            {site.siteTagline && (
-              <span className="text-sm text-muted-foreground">
-                {site.siteTagline}
-              </span>
-            )}
-          </div>
-          {/* Hauptmenü (AppSettings.mainNavigationId → GET
-              /public/navigation/:slug) folgt in Schritt 5 des
-              Frontend-Plans, zusammen mit RSS-Verlinkung und
-              SEO-Feinschliff. */}
-        </header>
+        <SiteHeader
+          siteTitle={site.siteTitle}
+          navigation={site.mainNavigation}
+        />
 
-        <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
+        {/* Der Inhalt kommt vollständig aus dem Seiten-Designer
+            (Nutzervorgabe, 2026-09-02: "alle Inhalte sollen über den
+            Designer unter Seiten kommen"). Die Hülle gibt dafür dieselbe
+            Bahn vor wie Header und Footer (1180px), damit alles auf einer
+            Flucht steht.
+
+            Randlose Abschnitte über die volle Fensterbreite – im Entwurf
+            der Hero und das Branchen-Band – kann heute kein Baustein: die
+            Breite liegt hier und nicht im Baustein. Das aufzubrechen wäre
+            ein eigener Schritt am Designer, kein Nebeneffekt der Hülle. */}
+        <main className="mx-auto w-full max-w-[1180px] flex-1 px-6 py-14 sm:px-8">
           {children}
         </main>
 
-        <footer className="border-t border-border">
-          <div className="mx-auto w-full max-w-4xl px-6 py-8 text-sm text-muted-foreground">
-            {site.siteTitle}
-          </div>
-        </footer>
+        <SiteFooter site={site} legalLinks={site.legalLinks} />
       </body>
     </html>
   );

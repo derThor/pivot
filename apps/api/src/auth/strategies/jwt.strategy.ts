@@ -42,9 +42,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  validate(
-    payload: JwtPayload | TwoFactorChallengePayload,
-  ): JwtPayload {
+  validate(payload: JwtPayload | TwoFactorChallengePayload): JwtPayload {
     if ('purpose' in payload && payload.purpose === 'mfa-challenge') {
       throw new UnauthorizedException('Ungültiger Token-Typ.');
     }

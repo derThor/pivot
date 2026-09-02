@@ -20,7 +20,5 @@ export async function isPasswordLeaked(password: string): Promise<boolean> {
     return false;
   }
   const body = await res.text();
-  return body
-    .split('\n')
-    .some((line) => line.split(':')[0]?.trim() === suffix);
+  return body.split('\n').some((line) => line.split(':')[0]?.trim() === suffix);
 }

@@ -6,6 +6,7 @@ import {
   getMailShells,
   getMailTemplates,
   getMediaFolders,
+  getNavigations,
   getLicenseState,
   getModuleSettings,
   getSettings,
@@ -40,9 +41,13 @@ export default async function SettingsPage({
   const jobsRunsPage = Number(jobsRunsPageParam) || 1;
   const mandantenPage = Number(mandantenPageParam) || 1;
 
-  const [settings, folders] = await Promise.all([
+  const [settings, folders, navigations] = await Promise.all([
     getSettings(),
     getMediaFolders(),
+    // Für die drei Menü-Auswahlfelder unter Frontend (Header + zwei
+    // Footer-Spalten). `null` bei fehlendem Menü-Recht – die Felder
+    // zeigen dann einen Hinweis statt einer leeren Liste.
+    getNavigations({ pageSize: 100 }),
   ]);
   // Eigener Query-Param `webhooksPage`/`protocolPage`/`jobsRunsPage` statt
   // `page`, damit sich die Paginierungen der einzelnen
@@ -116,6 +121,7 @@ export default async function SettingsPage({
   return (
     <SettingsForm
       settings={settings}
+      navigations={navigations?.items ?? []}
       licenseState={licenseState}
       logoFolderId={logoFolderId}
       webhooks={webhooks}

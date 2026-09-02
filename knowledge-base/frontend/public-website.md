@@ -436,3 +436,74 @@ API-Aufrufe aus dem Browser braucht, geht denselben Weg.
 
 Vollständige Beschreibung in
 [forms.md](../content/forms.md#update-2026-09-02-4-formulare-erscheinen-endlich-auf-der-website).
+
+## Update 2026-09-02 (2): Echte Hülle – Header und Footer
+
+Bis hierher hatte `apps/site` bewusst nur ein Platzhalter-Gerüst (Titel
+oben, Titel unten). Der Nutzer hat einen fertigen Entwurf geliefert
+(„Pivot Landing.html") mit der Vorgabe: **Header und Footer übernehmen,
+alle Inhalte kommen über den Seiten-Designer.**
+
+**Woher der Entwurf kam.** Eine 735-KB-Einzeldatei aus einem
+Baukasten-System: 661 KB Assets als Base64 (Hero-JPEG, 18 WOFF2-Schnitte),
+das Markup als JSON-String in einer einzigen Zeile. Reines HTML mit
+Inline-Styles, kein Framework. Zwei Attribute daraus (`style-hover="…"`,
+`sc-camel-on-click="{{ … }}"`) sind proprietär und mussten zu echtem CSS
+bzw. React werden.
+
+**Das übernommene Design-System** liegt jetzt in `globals.css`:
+
+| | |
+| --- | --- |
+| Grund | `#fbfbf9`, abgesetzt `#f2f2ec` |
+| Dunkel (Footer) | `#0e1116` |
+| Akzent | `#c6e86a`, Hover `#b7dd54`, Link-Hover `#5c7a12` |
+| Schrift | Manrope (400–800), IBM Plex Mono für Versal-Label |
+| Bahn | max. 1180px |
+
+Die Schriften kommen über `next/font/google`, nicht über einen `<link>`:
+so werden sie mitgebaut und lokal ausgeliefert – auf einer Website mit
+Datenschutzerklärung wiegt das schwerer als die gesparte Verbindung. Neu
+ist außerdem die eigene Utility `eyebrow` für die kleinen Mono-Label.
+
+**Nichts am Header und Footer ist hart verdrahtet:**
+
+| Stelle | Quelle |
+| --- | --- |
+| Logo-Kachel + Wortmarke | `siteTitle` (endet er auf einen Punkt, wird der abgetrennt und farbig gesetzt – „Pivot**.**") |
+| Header-Menü | `AppSettings.mainNavigationId` |
+| „Anmelden" / „Demo buchen" | ganz normale Menüpunkte mit `NavigationItem.appearance` |
+| Footer-Spalte 1 + 2 | zwei frei gewählte Navigationen; **Spaltenüberschrift ist der Name der Navigation** |
+| Footer-Spalte 3 | automatisch aus `LegalDocument` |
+| Claim im Footer | `siteTagline` |
+| Copyright | `companyName`, ersatzweise der Website-Titel |
+| Zusatzzeile rechts | `AppSettings.footerNote` |
+
+Damit ist auch **Schritt 5 des Frontend-Plans** erledigt: `mainNavigationId`
+hatte seit seiner Anlage kein Eingabefeld und war deshalb nie gesetzt.
+
+**Warum `appearance` am Menüpunkt und nicht als zwei Einstellungsfelder:**
+zwei Felder „Knopf 1" / „Knopf 2" hätten die Anzahl der Handlungsaufrufe
+für immer auf zwei festgelegt. Als Darstellungs-Flag am Menüpunkt sind es
+gewöhnliche Menüeinträge – umbenennbar, verschiebbar, löschbar. Dieselbe
+Begründung wie bei `categoryLayout` am Menüpunkt statt an der Kategorie.
+
+**Eine Relation weniger streng.** `AppSettings` zeigt jetzt DREIMAL auf
+`Navigation`, daher tragen alle drei Relationen einen Namen. Dabei ist das
+frühere `@unique` auf `mainNavigationId` gefallen: es hätte verboten,
+dieselbe Navigation gleichzeitig als Hauptmenü und als Footer-Spalte zu
+verwenden – eine plausible Absicht. Es gibt ohnehin nur eine
+AppSettings-Zeile.
+
+**Bewusst weggelassen:** der Knopf „Cookie-Einstellungen" aus dem Entwurf.
+Einen Cookie-Banner gibt es hier nicht, der Knopf hätte nichts zu öffnen.
+Der Rechtstext „Cookie-Hinweis" erscheint als normaler Link in der
+Rechtliches-Spalte.
+
+**Bekannte Grenze.** Die Inhaltsbahn (1180px) liegt in der Hülle, nicht im
+Baustein. Randlose Abschnitte über die volle Fensterbreite – im Entwurf
+der Hero und das Branchen-Band – kann deshalb heute kein Modultyp. Das
+aufzubrechen ist ein eigener Schritt am Designer. Ebenso fehlen für die
+Landingpage noch Modultypen für Feature-Kacheln, Ablauf-Schritte und
+Preistabelle; die vorhandenen zwölf decken Hero (Cover), Text, Bild,
+Galerie, FAQ und Formular ab.

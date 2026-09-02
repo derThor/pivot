@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { Prisma } from '@pivot/database';
 import { PrismaService } from '../prisma/prisma.service';
@@ -38,7 +42,11 @@ type CompanyFields = {
 };
 
 function addressLine(c: CompanyFields): string {
-  return [c.companyStreet, [c.companyPostalCode, c.companyCity].filter(Boolean).join(' '), c.companyCountry]
+  return [
+    c.companyStreet,
+    [c.companyPostalCode, c.companyCity].filter(Boolean).join(' '),
+    c.companyCountry,
+  ]
     .filter(Boolean)
     .join(', ');
 }
@@ -56,7 +64,10 @@ function dpoLine(c: CompanyFields): string | null {
 // Demonstration des "aus Stammdaten generiert"-Mechanismus (Nutzervorgabe,
 // 2026-08-18). Fehlende Felder werden ausgelassen statt Platzhalter wie
 // "[nicht angegeben]" zu erzeugen.
-const TEMPLATES: Record<string, { title: string; slug: string; generate: (c: CompanyFields) => string }> = {
+const TEMPLATES: Record<
+  string,
+  { title: string; slug: string; generate: (c: CompanyFields) => string }
+> = {
   impressum: {
     title: 'Impressum',
     slug: '/impressum',
@@ -71,8 +82,10 @@ const TEMPLATES: Record<string, { title: string; slug: string; generate: (c: Com
       if (c.companyPhone) lines.push(`Telefon: ${c.companyPhone}`);
       if (c.companyRegisterCourt || c.companyRegisterNumber) {
         lines.push('');
-        if (c.companyRegisterCourt) lines.push(`Registergericht: ${c.companyRegisterCourt}`);
-        if (c.companyRegisterNumber) lines.push(`Registernummer: ${c.companyRegisterNumber}`);
+        if (c.companyRegisterCourt)
+          lines.push(`Registergericht: ${c.companyRegisterCourt}`);
+        if (c.companyRegisterNumber)
+          lines.push(`Registernummer: ${c.companyRegisterNumber}`);
       }
       if (c.companyVatId) lines.push(`USt-IdNr.: ${c.companyVatId}`);
       if (c.companySupervisoryAuthority)
@@ -110,7 +123,9 @@ const TEMPLATES: Record<string, { title: string; slug: string; generate: (c: Com
         `Diese Website${c.companyName ? ` von ${c.companyName}` : ''} verwendet Cookies, um grundlegende Funktionen bereitzustellen.`,
       );
       if (c.companyEmail)
-        lines.push(`Fragen zum Einsatz von Cookies richten Sie bitte an: ${c.companyEmail}`);
+        lines.push(
+          `Fragen zum Einsatz von Cookies richten Sie bitte an: ${c.companyEmail}`,
+        );
       return lines.join('\n');
     },
   },
@@ -137,7 +152,9 @@ const TEMPLATES: Record<string, { title: string; slug: string; generate: (c: Com
         `${c.companyName ?? 'Wir'} ${c.companyName ? 'ist' : 'sind'} bemüht, dieses Angebot im Einklang mit den geltenden Vorschriften zur Barrierefreiheit zugänglich zu gestalten.`,
       );
       if (c.companyEmail)
-        lines.push(`Hinweise zu Barrieren richten Sie bitte an: ${c.companyEmail}`);
+        lines.push(
+          `Hinweise zu Barrieren richten Sie bitte an: ${c.companyEmail}`,
+        );
       return lines.join('\n');
     },
   },
@@ -222,9 +239,8 @@ export class LegalDocumentsService {
     });
     return Promise.all(
       rows.map(async (row) => {
-        const linkedContent =
-          row.contentId ?
-            await this.prisma.content.findUnique({
+        const linkedContent = row.contentId
+          ? await this.prisma.content.findUnique({
               where: { id: row.contentId },
               select: { status: true, deletedAt: true },
             })
@@ -233,7 +249,8 @@ export class LegalDocumentsService {
         // als "fehlt" (Nutzervorgabe, 2026-08-18), inkl. Aufräumen der toten
         // Referenz, damit nicht dauerhaft auf eine Papierkorb-Seite verlinkt
         // bleibt.
-        const linkGone = row.contentId != null && (!linkedContent || linkedContent.deletedAt);
+        const linkGone =
+          row.contentId != null && (!linkedContent || linkedContent.deletedAt);
         if (linkGone) {
           await this.prisma.legalDocument.update({
             where: { key: row.key },
@@ -246,9 +263,11 @@ export class LegalDocumentsService {
           lastGeneratedAt: linkGone ? null : row.lastGeneratedAt,
           contentStatus: linkGone ? null : (linkedContent?.status ?? null),
           status:
-            linkGone || !row.lastGeneratedAt ? ('missing' as const)
-            : (await this.isStale(row.lastGeneratedAt)) ? ('stale' as const)
-            : ('current' as const),
+            linkGone || !row.lastGeneratedAt
+              ? ('missing' as const)
+              : (await this.isStale(row.lastGeneratedAt))
+                ? ('stale' as const)
+                : ('current' as const),
         };
       }),
     );
@@ -258,14 +277,19 @@ export class LegalDocumentsService {
    * für den Rich-Text-Block der verknüpften Content-Seite – Zeilen werden zu
    * Absätzen, die Ergänzung wird als letzter Absatz angehängt (bleibt so bei
    * jedem "Neu erzeugen" erhalten, ohne den Editor-Inhalt diffen zu müssen). */
-  private toHtml(generatedContent: string, manualAddendum: string | null): string {
+  private toHtml(
+    generatedContent: string,
+    manualAddendum: string | null,
+  ): string {
     const paragraphs = generatedContent
       .split('\n')
       .map((line) => line.trim())
       .filter(Boolean)
       .map((line) => `<p>${escapeHtml(line)}</p>`)
       .join('');
-    const addendumHtml = manualAddendum ? `<p>${escapeHtml(manualAddendum)}</p>` : '';
+    const addendumHtml = manualAddendum
+      ? `<p>${escapeHtml(manualAddendum)}</p>`
+      : '';
     return paragraphs + addendumHtml;
   }
 
@@ -276,7 +300,12 @@ export class LegalDocumentsService {
    * anzulegen. Kein Public-Routing dahinter – die Seite ist nur im
    * Dashboard sicht-/bearbeitbar (siehe knowledge-base/auth/privacy-page.md). */
   private async syncContentEntry(
-    row: { title: string; slug: string; contentId: string | null; manualAddendum: string | null },
+    row: {
+      title: string;
+      slug: string;
+      contentId: string | null;
+      manualAddendum: string | null;
+    },
     generatedContent: string,
     actingUserId: string,
   ): Promise<string | null> {
@@ -291,7 +320,9 @@ export class LegalDocumentsService {
         {
           id: randomUUID(),
           moduleTypeId: richTextModule.id,
-          values: { content: this.toHtml(generatedContent, row.manualAddendum) },
+          values: {
+            content: this.toHtml(generatedContent, row.manualAddendum),
+          },
         },
       ],
     } satisfies Prisma.InputJsonValue;
@@ -362,9 +393,16 @@ export class LegalDocumentsService {
       data: { generatedContent, lastGeneratedAt: new Date() },
     });
 
-    const contentId = await this.syncContentEntry(row, generatedContent, actingUserId);
+    const contentId = await this.syncContentEntry(
+      row,
+      generatedContent,
+      actingUserId,
+    );
     if (contentId !== row.contentId) {
-      return this.prisma.legalDocument.update({ where: { key }, data: { contentId } });
+      return this.prisma.legalDocument.update({
+        where: { key },
+        data: { contentId },
+      });
     }
     return row;
   }

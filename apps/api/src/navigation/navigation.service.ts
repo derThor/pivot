@@ -25,6 +25,7 @@ const itemSelect = {
   content: { select: { id: true, title: true, slug: true, status: true } },
   categoryId: true,
   categoryLayout: true,
+  appearance: true,
   category: {
     select: { id: true, name: true, slug: true },
   },
@@ -172,6 +173,7 @@ export class NavigationService {
         contentId: dto.contentId ?? null,
         categoryId: dto.categoryId ?? null,
         ...(dto.categoryLayout && { categoryLayout: dto.categoryLayout }),
+        ...(dto.appearance && { appearance: dto.appearance }),
         externalUrl: dto.externalUrl ?? null,
         parentId: dto.parentId ?? null,
         openInNewTab: dto.openInNewTab ?? false,
@@ -269,6 +271,7 @@ export class NavigationService {
           ...(dto.categoryLayout !== undefined && {
             categoryLayout: dto.categoryLayout,
           }),
+          ...(dto.appearance !== undefined && { appearance: dto.appearance }),
           ...(dto.parentId !== undefined && { parentId: dto.parentId }),
           ...(dto.openInNewTab !== undefined && {
             openInNewTab: dto.openInNewTab,

@@ -11,21 +11,43 @@
    knowledge-base/frontend/public-website.md). Die fünf Token-Namen, die
    @pivot/blocks verwendet (bg-muted, text-muted-foreground, border-border,
    border-input, divide-border), müssen hier existieren, damit die
-   gemeinsamen Block-Komponenten auch im Frontend korrekt aussehen. */
+   gemeinsamen Block-Komponenten auch im Frontend korrekt aussehen.
+
+   Die Werte stammen seit 2026-09-02 aus dem Entwurf "Pivot Landing" des
+   Nutzers: warmes Off-White als Grund, Beinahe-Schwarz als Schrift, Lime
+   als Akzent. Das ist dieselbe Farbfamilie wie die Administration, nur
+   wärmer abgestimmt. */
 @theme {
-  --color-background: #ffffff;
-  --color-foreground: #17181c;
-  --color-muted: #f4f5f7;
-  --color-muted-foreground: #6b7280;
-  --color-border: #e6e8ec;
-  --color-input: #d5d8de;
+  --color-background: #fbfbf9;
+  --color-foreground: #0e1116;
+  /* Abgesetzte Abschnitte und Karten auf dem Off-White-Grund. */
+  --color-muted: #f2f2ec;
+  --color-muted-foreground: #4b5058;
+  --color-border: #ebebe6;
+  --color-input: #d9d9d0;
   /* Fallback; zur Laufzeit von AppSettings.accentColor überschrieben
      (Inline-Style auf <html> in layout.tsx). */
-  --color-accent: #a3e635;
+  --color-accent: #c6e86a;
+  /* Eigene Tokens der Hülle – nicht von @pivot/blocks verwendet, aber von
+     Header und Footer. `accent-strong` ist die Hover-Stufe des Akzents,
+     `accent-ink` die Schrift AUF einer Akzentfläche (Lime ist hell, weiße
+     Schrift wäre darauf unlesbar). Der dunkle Grund ist der Footer. */
+  --color-accent-strong: #b7dd54;
+  --color-accent-ink: #0e1116;
+  --color-accent-link: #5c7a12;
+  --color-surface-dark: #0e1116;
+  --color-surface-dark-foreground: #d6dae0;
+  --color-surface-dark-muted: #6b7280;
+
+  /* Manrope für alles, IBM Plex Mono für die kleinen Versal-Label über
+     Abschnitten und Footer-Spalten. Beide werden in layout.tsx über
+     next/font geladen und setzen diese beiden Variablen. */
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica,
-    Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    var(--font-manrope), Manrope, ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono:
+    var(--font-plex-mono), "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo,
+    Consolas, monospace;
 }
 
 @layer base {
@@ -41,5 +63,23 @@
   h3,
   h4 {
     text-wrap: balance;
+    letter-spacing: -0.02em;
   }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+}
+
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }

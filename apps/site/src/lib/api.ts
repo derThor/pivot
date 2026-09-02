@@ -12,6 +12,32 @@ const API_URL = process.env.API_URL ?? "http://localhost:3001/v1";
  * Veröffentlichung also bis zu 60 Sekunden später öffentlich sichtbar. */
 export const REVALIDATE_SECONDS = 60;
 
+/** Ein Punkt aus einem der drei Menüs der Hülle. `href` ist bereits
+ * aufgelöst (Startseite, Kategorie-Archiv, Beitrag mit Kategorie, externe
+ * URL) – die Website muss keine Pfade mehr bauen. */
+export interface SiteNavigationItem {
+  id: string;
+  label: string;
+  href: string | null;
+  openInNewTab: boolean;
+  appearance: "LINK" | "TEXT_BUTTON" | "ACCENT_BUTTON";
+  children: SiteNavigationItem[];
+}
+
+export interface SiteNavigation {
+  id: string;
+  name: string;
+  slug: string;
+  items: SiteNavigationItem[];
+}
+
+/** Rechtstext mit veröffentlichter Seite – die dritte Footer-Spalte. */
+export interface SiteLegalLink {
+  key: string;
+  label: string;
+  href: string;
+}
+
 export interface SiteSettings {
   siteTitle: string | null;
   siteTagline: string | null;
@@ -20,7 +46,18 @@ export interface SiteSettings {
   defaultOgImageUrl: string | null;
   publicBaseUrl: string | null;
   accentColor: string | null;
+  companyName: string | null;
+  footerNote: string | null;
   mainNavigationId: string | null;
+  footerNavigationPrimaryId: string | null;
+  footerNavigationSecondaryId: string | null;
+  // Aufgelöste Menüs für Header und Footer – kommen aus demselben Aufruf,
+  // damit das Layout die Hülle in EINEM Zug holt (siehe getSite() in
+  // apps/api/src/public-content/public-content.service.ts).
+  mainNavigation: SiteNavigation | null;
+  footerNavigationPrimary: SiteNavigation | null;
+  footerNavigationSecondary: SiteNavigation | null;
+  legalLinks: SiteLegalLink[];
 }
 
 export interface CategoryRef {
@@ -107,7 +144,15 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       defaultOgImageUrl: null,
       publicBaseUrl: null,
       accentColor: null,
+      companyName: null,
+      footerNote: null,
       mainNavigationId: null,
+      footerNavigationPrimaryId: null,
+      footerNavigationSecondaryId: null,
+      mainNavigation: null,
+      footerNavigationPrimary: null,
+      footerNavigationSecondary: null,
+      legalLinks: [],
     }
   );
 }

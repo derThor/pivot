@@ -10,6 +10,7 @@ import {
   IsUrl,
   Matches,
   Max,
+  MaxLength,
   Min,
   ValidateIf,
 } from 'class-validator';
@@ -270,6 +271,26 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsString()
   mainNavigationId?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @IsString()
+  footerNavigationPrimaryId?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @IsString()
+  footerNavigationSecondaryId?: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Freie Zeile rechts in der Footer-Fußleiste der öffentlichen Website.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  footerNote?: string | null;
 
   @ApiPropertyOptional()
   @IsOptional()

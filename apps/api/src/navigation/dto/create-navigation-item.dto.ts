@@ -1,5 +1,8 @@
 import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
-import { CategoryArchiveLayout } from '@pivot/database';
+import {
+  CategoryArchiveLayout,
+  NavigationItemAppearance,
+} from '@pivot/database';
 import {
   IsBoolean,
   IsEnum,
@@ -51,6 +54,18 @@ export class CreateNavigationItemDto {
   @IsOptional()
   @IsUrl({ require_tld: false })
   externalUrl?: string;
+
+  @ApiPropertyOptional({
+    enum: NavigationItemAppearance,
+    description:
+      'Darstellung im Header der öffentlichen Website: LINK = gewöhnlicher ' +
+      'Menüpunkt, TEXT_BUTTON = rechts abgesetzt ohne Fläche, ' +
+      'ACCENT_BUTTON = rechts abgesetzt mit Akzentfläche. Im Footer ohne ' +
+      'Wirkung, dort sind alle Punkte Links.',
+  })
+  @IsOptional()
+  @IsEnum(NavigationItemAppearance)
+  appearance?: NavigationItemAppearance;
 
   @ApiPropertyOptional({
     nullable: true,
