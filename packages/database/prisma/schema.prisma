@@ -235,6 +235,11 @@ model AppSettings {
   dsrDeadlineReminderEnabled     Boolean     @default(true)
   notifyDeletionRequests         Boolean     @default(true)
   notifyTrashExpiring            Boolean     @default(true)
+  // Erinnerung, wenn Formular-Einsendungen zu lange ungelesen liegen
+  // (Nutzervorgabe, 2026-09-02) – Schwelle in
+  // formSubmissionUnreadReminderDays, täglicher Cron, Meldung erscheint
+  // im zentralen Postfach /dashboard/system-messages.
+  notifyUnreadSubmissions        Boolean     @default(true)
   // Master-seitige Live-Überwachung gesperrter Websites (Nutzervorgabe,
   // 2026-08-24: "baue einen test ein, der regelmäßig testet, ob eine
   // Seite live ist. wenn gesperrt, dennoch live, dass ich in Master
@@ -365,19 +370,48 @@ model AppSettings {
   // Aufbewahrungsfristen – reine Richtwerte, KEINE automatische
   // Hintergrund-Löschung (explizite Nutzervorgabe: Löschung immer manuell
   // über die Review-Listen auf der Datenschutz-Seite). null bei
-  // retentionFormSubmissionsDays = "unbegrenzt". Für Formular-Einsendungen
-  // existiert in dieser App kein Formular-Modul – der Wert wird nur
-  // gespeichert, es gibt dafür keine Review-Liste (siehe privacy-view.tsx).
+  // retentionFormSubmissionsDays = "unbegrenzt".
+  //
+  // AUSNAHME seit 2026-09-02: formSubmissionDeleteAfterReadDays unten
+  // löscht als einzige Frist tatsächlich automatisch (Nutzervorgabe).
   retentionFormSubmissionsDays       Int?      @default(90)
   retentionAccessLogMonths           Int       @default(12)
   retentionDeactivatedAccountsMonths Int       @default(6)
   retentionTrashDays                 Int       @default(30)
   // Betroffenenrechte-Kachel (Datenschutz → Rechtstexte, Art. 15/17 DSGVO,
-  // Nutzervorgabe 2026-08-19). Wie retentionFormSubmissionsDays: kein
-  // Formular-Modul vorhanden, Werte werden nur vorgehalten (kein
-  // tatsächlicher Formular-Footer, der sie auswerten könnte).
+  // Nutzervorgabe 2026-08-19).
+  //
+  // dsbFormSelfServiceDisclosure hat weiterhin KEINEN Verbraucher – es
+  // gibt keinen Formular-Footer, der ihn auswerten würde. (Die frühere
+  // Begründung "kein Formular-Modul vorhanden" stimmt seit dem
+  // Formulare-Feature nicht mehr und ist 2026-09-02 korrigiert worden;
+  // Formulare sind kein Modul und werden auch nie eins, siehe
+  // websites/module-catalog.ts.)
   dsbFormSelfServiceDisclosure       Boolean   @default(false)
+  // Wirkt dagegen echt: FormsService.submit() speichert submitterIp nur,
+  // wenn dieser Schalter an ist.
   dsbFormStoreSubmissionIp           Boolean   @default(false)
+  // Datenschutz → Reiter "Formulare" (Nutzerentscheidung, 2026-09-02).
+  // Anzahl Tage NACH dem Lesen, nach denen eine Einsendung endgültig
+  // gelöscht wird; null = nie. Anders als alle übrigen Fristen oben wirkt
+  // diese wirklich automatisch (täglicher Cron) – gemessen ab
+  // FormSubmission.readAt, nicht ab Eingang.
+  formSubmissionDeleteAfterReadDays  Int?
+  // Einstellungen → Mailing → Reiter "Einsendungen" (Nutzervorgabe,
+  // 2026-09-02). Bis dahin gab es global gar nichts: die Admin-Mail ging
+  // immer raus, sobald irgendein Empfänger auflösbar war.
+  formSubmissionNotifyOnNew          Boolean   @default(true)
+  // Eigener Empfänger für Formular-Benachrichtigungen. Leer = weiterhin
+  // Rückfall auf notificationRecipientEmail (bisheriges Verhalten). Ein
+  // am Formular gesetzter Empfänger (MailTemplate.recipientTo) hat
+  // weiterhin Vorrang vor beidem.
+  formSubmissionRecipientEmail       String?
+  // Vorbelegung von Form.sendConfirmation für NEU angelegte Formulare –
+  // ändert nichts an bestehenden.
+  formSubmissionConfirmationDefault  Boolean   @default(false)
+  // Erinnerung, wenn Einsendungen so viele Tage ungelesen liegen;
+  // null = keine Erinnerung. Siehe notifyUnreadSubmissions.
+  formSubmissionUnreadReminderDays   Int?
   updatedAt                          DateTime  @updatedAt
 
   @@map("app_settings")
@@ -687,7 +721,9 @@ model User {
 // berechnet zu werden. Bewusst NICHT umgesetzt (kein erfundenes Feature):
 // "Freigaben" (Freigabe-Workflow) und "Kommentare" gibt es in dieser App
 // nicht (Nutzerentscheidung, 2026-08-21: "weglassen"); ebenso keine
-// "Formulare"-Kategorie (kein Formular-Modul vorhanden), kein Konten-ohne-
+// "Formulare"-Kategorie als Benachrichtigungs-Bereich (seit 2026-09-02
+// gibt es stattdessen die Kategorie notifyUnreadSubmissions), kein
+// Konten-ohne-
 // 2FA-/Geo-Anomalie-Check (existieren nicht als berechnete Bedingung) und
 // keine Ruhezeiten (Digest/Zeitfenster) – Nutzerentscheidung, 2026-08-22:
 // "sofort bei jedem neuen Vorfall" statt gesammelt. E-Mail-Zustellung an
@@ -1745,9 +1781,9 @@ model Form {
 }
 
 model FormSubmission {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   formId      String
-  form        Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  form        Form      @relation(fields: [formId], references: [id], onDelete: Cascade)
   values      Json
   // Nur befüllt, wenn AppSettings.dsbFormStoreSubmissionIp aktiv ist –
   // aktiviert erstmals diese bisher wirkungslose Datenschutz-Einstellung
@@ -1756,8 +1792,14 @@ model FormSubmission {
   submitterIp String?
   // Basis für den "unbearbeitet"-Zähler in der Formulare-Übersicht,
   // gleiches Prinzip wie Notification.isRead.
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  isRead      Boolean   @default(false)
+  // Zeitpunkt des Lesens – Bezugspunkt für die automatische Löschung
+  // (AppSettings.formSubmissionDeleteAfterReadDays, Nutzervorgabe
+  // 2026-09-02). `isRead` allein reichte dafür nicht: es sagt DASS,
+  // nicht WANN. Wird beim Markieren gesetzt und beim Zurücksetzen auf
+  // ungelesen wieder geleert, damit die Frist neu beginnt.
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
 
   @@index([formId, createdAt])
   @@map("form_submissions")
