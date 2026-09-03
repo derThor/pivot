@@ -71,6 +71,17 @@ export class FormsController {
     return this.formsService.allSubmissions(query);
   }
 
+  // Zähler für das Briefsymbol in der Kopfzeile (Nutzervorgabe,
+  // 2026-09-03). Eigener, sehr schlanker Endpunkt statt einer Zahl an der
+  // Listen-Antwort: die Kopfzeile lädt bei JEDEM Seitenaufruf, sie soll
+  // dafür keine Seite voller Einsendungen mitziehen.
+  @ApiBearerAuth()
+  @RequirePermission('form-submissions:read')
+  @Get('submissions/unread-count')
+  unreadSubmissionCount() {
+    return this.formsService.countUnreadSubmissions();
+  }
+
   // Öffentlicher Formular-Baustein im Seiten-Designer – muss vor `:id`
   // stehen, sonst würde Nest "public" als `:id` interpretieren.
   @Public()

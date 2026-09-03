@@ -996,6 +996,12 @@ export interface JobRunsResponse {
 
 /** `status` filtert die "Letzte Läufe"-Karte auf einen ihrer Reiter
  * (Nutzervorgabe, 2026-09-03). Ohne Angabe: alle Läufe. */
+/** Ungelesene Einsendungen für das Briefsymbol in der Kopfzeile.
+ * `null` ohne `form-submissions:read` – das Symbol bleibt dann aus. */
+export function getUnreadSubmissionCount() {
+  return apiFetch<{ unread: number }>("/forms/submissions/unread-count");
+}
+
 export function getJobRuns(params?: {
   page?: number;
   pageSize?: number;

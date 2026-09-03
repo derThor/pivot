@@ -250,6 +250,18 @@ export class FormsService {
 
   /** App-weite "Einsendungen"-Sammelübersicht (alle Formulare gemeinsam),
    * gleiches Prinzip wie JobsService.findRecentRuns()/"Letzte Läufe". */
+  /** Ungelesene Einsendungen für das Briefsymbol in der Kopfzeile
+   * (Nutzervorgabe, 2026-09-03). Bewusst ohne jede Frist: das Symbol zeigt
+   * den STAND, nicht eine Mahnung – anders als die entfallene
+   * Systembenachrichtigung, die erst nach einer eingestellten Anzahl Tage
+   * ansprang. */
+  async countUnreadSubmissions() {
+    const unread = await this.prisma.formSubmission.count({
+      where: { isRead: false },
+    });
+    return { unread };
+  }
+
   async allSubmissions(query: QuerySubmissionsDto) {
     const { page, pageSize, isRead } = query;
     const where = isRead !== undefined ? { isRead } : {};

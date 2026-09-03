@@ -13,6 +13,7 @@ import {
   getCurrentUser,
   getLicenseState,
   getNotifications,
+  getUnreadSubmissionCount,
   getPublicSettings,
 } from "@/lib/api-server";
 import { formatName } from "@/lib/utils";
@@ -45,6 +46,11 @@ export default async function DashboardLayout({
   const systemMessageCount = (notifications ?? []).filter(
     (n) => !n.isRead,
   ).length;
+
+  // Briefsymbol in der Kopfzeile (Nutzervorgabe, 2026-09-03) – zeigt den
+  // Ungelesen-Stand der Formular-Einsendungen. `null` bei fehlendem
+  // `form-submissions:read`, dann bleibt das Symbol aus.
+  const submissionCounts = await getUnreadSubmissionCount();
 
   // Präsenter Hinweis für Client-Installationen (Nutzervorgabe, siehe
   // knowledge-base/platform/master-slave-licensing.md) – nur bei
@@ -131,6 +137,7 @@ export default async function DashboardLayout({
             user={user}
             defaultPageSize={settings?.defaultPageSize ?? 10}
             systemMessageCount={systemMessageCount}
+            unreadSubmissionCount={submissionCounts?.unread ?? 0}
             allowTwoFactor={settings?.allowTwoFactor ?? false}
             keyboardShortcutsEnabled={
               settings?.keyboardShortcutsEnabled !== false

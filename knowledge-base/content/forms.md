@@ -1154,3 +1154,54 @@ Identitätsprüfung passiert beim Bearbeiten im Backend.
 Der Schalter steht unter **Datenschutz → Betroffenenrechte** und ist
 standardmäßig **aus**; seine Beschreibung nennt jetzt die tatsächliche
 Wirkung statt des alten „ohne Wirkung"-Hinweises.
+
+## Update 2026-09-03: Briefsymbol in der Kopfzeile
+
+**Nutzervorgabe:** *„mache hier ein mailing icon und da sollen einsendungen
+angezeigt werden. und beim klick drauf auf einsendungen kommen. beachte bei
+dem icon mobil. und aus systembenachrichtigung rausnehmen"*, präzisiert:
+*„nur warnungen oder fehler sollen dann da rein von einsendungen formulare
+usw."*
+
+### Die Trennung dahinter
+
+| | Briefsymbol | Glocke |
+| --- | --- | --- |
+| zeigt | den **Stand**: wie viele Einsendungen ungelesen sind | **Ausnahmen**: Warnungen und Fehler |
+| verschwindet | wenn alles gelesen ist | wenn man die Meldung erledigt |
+
+Vorher lag beides in der Glocke, und die Erinnerung „N Einsendungen seit
+über X Tagen ungelesen" musste man wegklicken, obwohl sie kein Ereignis
+beschreibt, sondern einen Zustand. Genau das ist die Aufgabe eines Zählers
+in der Kopfzeile.
+
+**Geblieben ist in der Glocke** die Warnung vor der automatischen Löschung
+(`submissions-due-deletion`) – das ist ein Ereignis mit Frist, kein Stand.
+Der Schalter unter Benachrichtigungen heißt entsprechend nicht mehr
+„Einsendungen liegen ungelesen", sondern „Einsendungen werden bald
+gelöscht".
+
+Bereits erzeugte Postfach-Zeilen der alten Meldung räumt `sync()` von
+selbst ab: es löscht Einträge, zu denen es keinen Kandidaten mehr gibt.
+
+### Details
+
+- **Eigener Endpunkt** `GET /forms/submissions/unread-count` statt einer
+  Zahl an der Listen-Antwort: die Kopfzeile lädt bei jedem Seitenaufruf und
+  soll dafür keine Seite voller Einsendungen mitziehen.
+- **Ohne Frist gezählt.** Das Symbol zeigt den Stand, nicht eine Mahnung –
+  anders als die entfallene Meldung, die erst nach
+  `formSubmissionUnreadReminderDays` ansprang. Diese Frist bleibt in
+  Gebrauch: der Job `form-submission-unread-reminder` verschickt weiterhin
+  eine E-Mail.
+- **Ohne ungelesene Einsendungen erscheint das Symbol gar nicht.** Auf
+  schmalen Geräten stehen Suche, Glocke und Konto ohnehin dicht an dicht;
+  ein dauerhaft leeres Symbol nähme dort nur Platz. Es liegt außerdem
+  innerhalb des `!mobileSearchOpen`-Blocks und weicht bei aufgeklappter
+  mobiler Suche wie alles andere.
+- **Vor der Glocke platziert**: der Ungelesen-Stand ist der häufigere
+  Blick.
+- **Akzentfarbe statt Rot** für das Zähler-Abzeichen. Rot ist in dieser App
+  die Farbe für Probleme (Glocke); ungelesene Post ist keins.
+- Fehlt `form-submissions:read`, liefert der Endpunkt nichts und das Symbol
+  bleibt aus.
