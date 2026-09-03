@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { SortMenu } from "@/components/sort-menu";
 
 import { tagDotColor } from "@/lib/tag-colors";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,19 @@ const TYPE_OPTIONS: {
 // Filter (Dateityp/Tags/ungenutzt) sind vollständig URL-getrieben – analog
 // zum bestehenden `?folder=`. So bleiben sie teilbar/verlinkbar und
 // funktionieren mit Server-seitigem Pagination-Rendering zusammen.
+/** Sortier-Vorgaben der Mediathek. Feste Paare aus Feld und Richtung,
+ * damit die Beschriftung sagt, was passiert ("Groesste zuerst" statt
+ * "Groesse absteigend"). */
+const MEDIA_SORT_OPTIONS = [
+  { field: "createdAt", dir: "desc" as const, label: "Neueste zuerst" },
+  { field: "createdAt", dir: "asc" as const, label: "Aelteste zuerst" },
+  { field: "filename", dir: "asc" as const, label: "Name A-Z" },
+  { field: "filename", dir: "desc" as const, label: "Name Z-A" },
+  { field: "size", dir: "desc" as const, label: "Groesste zuerst" },
+  { field: "size", dir: "asc" as const, label: "Kleinste zuerst" },
+  { field: "mimeType", dir: "asc" as const, label: "Dateityp" },
+];
+
 export function MediaFilters({
   tags,
   counts,
@@ -97,6 +111,14 @@ export function MediaFilters({
         {TYPE_OPTIONS.map((option) =>
           typePill(option.value, option.label, counts?.[option.countKey] ?? 0),
         )}
+        {/* Sortierung in derselben Zeile wie die Filter (Nutzervorgabe,
+            2026-09-03) – beides sind Einstellungen an derselben Liste und
+            gehören nebeneinander, nicht in zwei Zeilen übereinander.
+            `ml-auto` schiebt es ans Ende der Zeile, damit die Filter-Pillen
+            links zusammenbleiben. */}
+        <div className="ml-auto">
+          <SortMenu options={MEDIA_SORT_OPTIONS} />
+        </div>
         <button
           type="button"
           onClick={() => updateParams({ unused: unused ? null : "true" })}

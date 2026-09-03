@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { SortableHead } from "@/components/sortable-head";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -439,9 +440,37 @@ export function CategoryExplorer({
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border text-left text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                          <th className="px-4 py-3">Beitrag</th>
-                          <th className="px-4 py-3">Autor</th>
-                          <th className="px-4 py-3">Datum</th>
+                          {/* Eigener Namensvorsatz: auf dieser Seite steht
+                              links die Kategorien-Liste und rechts diese
+                              Beitragsliste – ohne Vorsatz läsen beide
+                              dasselbe `sortBy` und sortierten sich
+                              gegenseitig um. Die Zellen sind schmaler als
+                              in den übrigen Tabellen, deshalb die eigenen
+                              Abstände. */}
+                          <SortableHead
+                            field="title"
+                            className="px-4 py-3"
+                            pageParam="postsPage"
+                            paramPrefix="posts"
+                          >
+                            Beitrag
+                          </SortableHead>
+                          <SortableHead
+                            field="author"
+                            className="px-4 py-3"
+                            pageParam="postsPage"
+                            paramPrefix="posts"
+                          >
+                            Autor
+                          </SortableHead>
+                          <SortableHead
+                            field="publishedAt"
+                            className="px-4 py-3"
+                            pageParam="postsPage"
+                            paramPrefix="posts"
+                          >
+                            Datum
+                          </SortableHead>
                           <th className="px-4 py-3">Aktionen</th>
                         </tr>
                       </thead>

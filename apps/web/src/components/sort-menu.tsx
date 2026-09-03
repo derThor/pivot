@@ -31,16 +31,24 @@ export interface SortOption {
 export function SortMenu({
   options,
   pageParam = "page",
+  paramPrefix = "",
 }: {
   options: SortOption[];
   pageParam?: string;
+  /** Namensvorsatz der Query-Parameter. Nötig, sobald ZWEI sortierbare
+   * Listen auf derselben Seite stehen – die Kategorien-Seite zeigt links
+   * die Kategorien und rechts deren Beiträge; ohne Vorsatz würden beide
+   * dasselbe `sortBy` lesen und sich gegenseitig umsortieren. */
+  paramPrefix?: string;
 }) {
+  const byField = `${paramPrefix}sortBy`;
+  const byDir = `${paramPrefix}sortDir`;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const activeField = searchParams.get("sortBy");
-  const activeDir = searchParams.get("sortDir") === "asc" ? "asc" : "desc";
+  const activeField = searchParams.get(byField);
+  const activeDir = searchParams.get(byDir) === "asc" ? "asc" : "desc";
   const active = options.find(
     (o) => o.field === activeField && (o.dir ?? "desc") === activeDir,
   );
@@ -48,11 +56,11 @@ export function SortMenu({
   function apply(option: SortOption | null) {
     const next = new URLSearchParams(searchParams.toString());
     if (option) {
-      next.set("sortBy", option.field);
-      next.set("sortDir", option.dir ?? "desc");
+      next.set(byField, option.field);
+      next.set(byDir, option.dir ?? "desc");
     } else {
-      next.delete("sortBy");
-      next.delete("sortDir");
+      next.delete(byField);
+      next.delete(byDir);
     }
     next.delete(pageParam);
     const query = next.toString();

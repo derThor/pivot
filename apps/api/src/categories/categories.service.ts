@@ -45,8 +45,7 @@ export class CategoriesService {
           {
             name: (dir) => ({ name: dir }),
             slug: (dir) => ({ slug: dir }),
-            // Category hat bewusst KEIN createdAt (siehe Schema) – nach
-            // Alter laesst sich hier also nicht sortieren.
+            createdAt: (dir) => ({ createdAt: dir }),
           },
           { name: 'asc' },
           query.sortBy,

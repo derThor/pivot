@@ -31,30 +31,38 @@ export function SortableHead({
   className,
   /** Name des Seitenzahl-Parameters dieser Liste, falls nicht `page`. */
   pageParam = "page",
+  paramPrefix = "",
 }: {
   field: string;
   children: React.ReactNode;
   className?: string;
   pageParam?: string;
+  /** Namensvorsatz der Query-Parameter. Nötig, sobald ZWEI sortierbare
+   * Listen auf derselben Seite stehen – die Kategorien-Seite zeigt links
+   * die Kategorien und rechts deren Beiträge; ohne Vorsatz würden beide
+   * dasselbe `sortBy` lesen und sich gegenseitig umsortieren. */
+  paramPrefix?: string;
 }) {
+  const byField = `${paramPrefix}sortBy`;
+  const byDir = `${paramPrefix}sortDir`;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const activeField = searchParams.get("sortBy");
-  const activeDir = searchParams.get("sortDir") === "asc" ? "asc" : "desc";
+  const activeField = searchParams.get(byField);
+  const activeDir = searchParams.get(byDir) === "asc" ? "asc" : "desc";
   const isActive = activeField === field;
 
   function toggle() {
     const next = new URLSearchParams(searchParams.toString());
     if (!isActive) {
-      next.set("sortBy", field);
-      next.set("sortDir", "asc");
+      next.set(byField, field);
+      next.set(byDir, "asc");
     } else if (activeDir === "asc") {
-      next.set("sortDir", "desc");
+      next.set(byDir, "desc");
     } else {
-      next.delete("sortBy");
-      next.delete("sortDir");
+      next.delete(byField);
+      next.delete(byDir);
     }
     next.delete(pageParam);
     const query = next.toString();

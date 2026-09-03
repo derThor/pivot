@@ -1151,6 +1151,17 @@ model Category {
   name              String            @unique
   slug              String            @unique
   description       String?
+  // Kategorien hatten als einziges Taxonomie-Modell keine Zeitstempel
+  // (Nutzervorgabe, 2026-09-03: "in Kategorie Erstellungsdatum
+  // hinzufügen") – dadurch ließ sich die Liste weder nach Alter sortieren
+  // noch überhaupt anzeigen, wann eine Kategorie angelegt wurde.
+  // Bestehende Zeilen bekommen den Zeitpunkt der Migration, nicht ihren
+  // echten Anlage-Zeitpunkt: der ist nirgends festgehalten und wäre nur
+  // geraten.
+  createdAt         DateTime          @default(now())
+  // @default(now()) zusaetzlich zu @updatedAt: ohne Vorgabewert liesse
+  // sich die Spalte nicht zu bestehenden Zeilen hinzufuegen.
+  updatedAt         DateTime          @default(now()) @updatedAt
   // Kategorien-Seite, Kopfkachel/Sidebar-Balken (Nutzervorgabe,
   // 2026-08-31: "nutze den gleichen color picker wie in einstellungen
   // und darstellung") – Hex-Wert wie `AppSettings.accentColor`, nicht

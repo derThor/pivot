@@ -23,6 +23,8 @@ export default async function CategoriesPage({
     categoryPage?: string;
     sortBy?: string;
     sortDir?: string;
+    postsSortBy?: string;
+    postsSortDir?: string;
   }>;
 }) {
   const {
@@ -33,8 +35,13 @@ export default async function CategoriesPage({
     categoryPage,
     sortBy,
     sortDir: sortDirParam,
+    postsSortBy,
+    postsSortDir: postsSortDirParam,
   } = await searchParams;
   const sortDir = sortDirParam === "asc" ? "asc" : "desc";
+  // Eigener Vorsatz, weil zwei sortierbare Listen auf dieser Seite stehen
+  // (Kategorien links, deren Beitraege rechts).
+  const postsSortDir = postsSortDirParam === "asc" ? "asc" : "desc";
 
   const settings = await getPublicSettings();
   const [categories, allTags] = await Promise.all([
@@ -68,6 +75,8 @@ export default async function CategoriesPage({
           status: status as ContentStatus | undefined,
           search,
           sortOrder: selectedCategory?.sortOrder,
+          sortBy: postsSortBy,
+          sortDir: postsSortDir,
           page: Number(postsPage) || 1,
           // Nutzervorgabe, 2026-08-31 (Korrektur): die Admin-Beiträge-Tabelle
           // folgt IMMER der globalen Seitengröße aus Einstellungen →
