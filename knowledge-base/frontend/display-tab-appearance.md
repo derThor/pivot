@@ -214,9 +214,9 @@ Nutzervorgabe mit Bildvorlage: *"akzentfarbe mehrere reihen, so das die
 kachel so hoch ist wie logo. nutze mehrere neue farben"*. Die Kachel stand
 neben der Logo-Kachel und war mit ihrer einen Reihe halb so hoch.
 
-`ACCENT_PRESETS` umfasst jetzt 26 Farben statt vier – nach der Rückmeldung
-*"noch mehr farben bis unten hin"* aufgestockt, bis das Raster die Kachel
-füllt. Sortiert nach Farbfamilie (Grün → Türkis → Blau → Violett → Rot →
+`ACCENT_PRESETS` umfasst jetzt 32 Farben statt vier – in zwei Schritten
+aufgestockt (*"noch mehr farben bis unten hin"*, dann *"mehr farben"*),
+bis das Raster die Kachel ohne angebrochene letzte Reihe füllt. Sortiert nach Farbfamilie (Grün → Türkis → Blau → Violett → Rot →
 Orange/Gelb → Neutrale), damit es nicht wie eine Zufallsauswahl wirkt. Sie
 brechen in einem `flex-wrap`-Raster um; der Hex-Wert steht per `mt-auto ml-auto` unten rechts statt rechts
 neben den Farben. `h-full`/`flex-1` sind von der `FormItem` bis zur Box

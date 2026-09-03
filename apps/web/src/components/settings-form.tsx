@@ -91,8 +91,10 @@ import type {
 // Hex-Wert explizit zu speichern.
 // Farbvorrat für den Akzent. Die ersten vier standen hier von Anfang an,
 // der Rest kam am 2026-09-03 dazu (Nutzervorgabe: "nutze mehrere neue
-// farben", dann "noch mehr farben bis unten hin") – zusammen füllen sie
-// die Kachel bis zur Höhe der Logo-Kachel daneben aus.
+// farben", dann "noch mehr farben bis unten hin", dann "mehr farben") –
+// 32 Stück plus der Knopf für die eigene Farbe füllen das Raster ohne
+// angebrochene Reihe und bringen die Kachel auf die Höhe der Logo-Kachel
+// daneben.
 //
 // Sortiert nach Farbfamilie (Grün → Türkis → Blau → Violett → Rot →
 // Orange/Gelb → Neutrale), damit das Raster nicht wie eine Zufallsauswahl
@@ -108,24 +110,30 @@ const ACCENT_PRESETS = [
   { label: "Grün", hex: "#7BC96F" },
   { label: "Mint", hex: "#86E0B8" },
   { label: "Smaragd", hex: "#2FA36B" },
+  { label: "Waldgrün", hex: "#2E6B4F" },
   { label: "Petrol", hex: "#17A2A2" },
   { label: "Türkis", hex: "#3FC7C7" },
   { label: "Himmelblau", hex: "#7FC5F0" },
   { label: "Azur", hex: "#4FA3E3" },
+  { label: "Stahlblau", hex: "#3F6E9C" },
   { label: "Blau", hex: "#93B7EE" },
   { label: "Kobalt", hex: "#2F5FD0" },
   { label: "Indigo", hex: "#5B6BE1" },
   { label: "Lavendel", hex: "#C3B5F5" },
   { label: "Violett", hex: "#9B7BE8" },
+  { label: "Pflaume", hex: "#7A3E6B" },
   { label: "Magenta", hex: "#D45BB5" },
   { label: "Pink", hex: "#E87BB0" },
+  { label: "Weinrot", hex: "#9B3A4B" },
   { label: "Koralle", hex: "#F08A6C" },
   { label: "Rot", hex: "#E4695E" },
+  { label: "Terrakotta", hex: "#C4633F" },
   { label: "Orange", hex: "#E8A33D" },
   { label: "Bernstein", hex: "#C97C1E" },
   { label: "Gelb", hex: "#F2CE4B" },
   { label: "Sand", hex: "#D9C89E" },
   { label: "Braun", hex: "#8B5E3C" },
+  { label: "Grau", hex: "#9AA5B1" },
   { label: "Schiefer", hex: "#6B7A8F" },
   { label: "Anthrazit", hex: "#4A5568" },
   { label: "Navy", hex: "#151E2E" },
