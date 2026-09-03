@@ -38,7 +38,7 @@ export function DashboardHeader({
   user,
   defaultPageSize,
   systemMessageCount = 0,
-  unreadSubmissionCount = 0,
+  unreadSubmissionCount,
   allowTwoFactor = false,
   keyboardShortcutsEnabled = true,
   enabledModules,
@@ -46,9 +46,12 @@ export function DashboardHeader({
   user: CurrentUser;
   defaultPageSize: number;
   systemMessageCount?: number;
-  /** Ungelesene Formular-Einsendungen. 0 (oder fehlendes Recht) blendet
-   * das Briefsymbol ganz aus, statt eine leere Null zu zeigen. */
-  unreadSubmissionCount?: number;
+  /** Ungelesene Formular-Einsendungen. `null` = kein Leserecht, dann
+   * bleibt das Briefsymbol aus – ein Weg zu einer Seite, die man nicht
+   * öffnen darf, wäre eine Sackgasse. Bei `0` erscheint es weiterhin,
+   * nur ohne Abzeichen (Nutzervorgabe, 2026-09-03: "zeige das symbol immer
+   * an. so kommt man schneller zu einsendungen"). */
+  unreadSubmissionCount: number | null;
   allowTwoFactor?: boolean;
   keyboardShortcutsEnabled?: boolean;
   enabledModules: string[];
@@ -119,27 +122,35 @@ export function DashboardHeader({
           <>
             {/* Einsendungen (Nutzervorgabe, 2026-09-03). Bewusst VOR der
                 Glocke: der Ungelesen-Stand ist der häufigere Blick, die
-                Glocke sammelt Ausnahmen. Ohne ungelesene Einsendungen
-                erscheint das Symbol gar nicht – ein dauerhaft leeres
-                Symbol nähme auf schmalen Geräten nur Platz weg, und genau
-                dort ist der Platz knapp (neben Suche, Glocke und Konto).
-                Deshalb steht es auch innerhalb des `!mobileSearchOpen`-
-                Blocks: bei aufgeklappter mobiler Suche weicht es wie
-                alles andere. */}
-            {unreadSubmissionCount > 0 && (
+                Glocke sammelt Ausnahmen.
+
+                Immer sichtbar, sobald das Leserecht da ist – es ist nicht
+                nur ein Zähler, sondern die kurze Wegstrecke zu den
+                Einsendungen ("so kommt man schneller zu einsendungen").
+                Das Abzeichen erscheint nur, wenn es etwas zu zeigen gibt.
+
+                Innerhalb des `!mobileSearchOpen`-Blocks: bei
+                aufgeklappter mobiler Suche weicht es wie alles andere. */}
+            {unreadSubmissionCount !== null && (
               <div className="relative shrink-0">
                 <Button
                   variant="outline"
                   size="icon"
                   className="size-11 rounded-full bg-card"
                   render={<Link href="/dashboard/forms/submissions" />}
-                  aria-label={`${unreadSubmissionCount} ungelesene Einsendungen`}
+                  aria-label={
+                    unreadSubmissionCount > 0
+                      ? `Einsendungen – ${unreadSubmissionCount} ungelesen`
+                      : "Einsendungen"
+                  }
                 >
                   <Mail />
                 </Button>
-                <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
-                  {unreadSubmissionCount > 99 ? "99+" : unreadSubmissionCount}
-                </span>
+                {unreadSubmissionCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
+                    {unreadSubmissionCount > 99 ? "99+" : unreadSubmissionCount}
+                  </span>
+                )}
               </div>
             )}
             <div className="relative shrink-0">

@@ -47,9 +47,10 @@ export default async function DashboardLayout({
     (n) => !n.isRead,
   ).length;
 
-  // Briefsymbol in der Kopfzeile (Nutzervorgabe, 2026-09-03) – zeigt den
-  // Ungelesen-Stand der Formular-Einsendungen. `null` bei fehlendem
-  // `form-submissions:read`, dann bleibt das Symbol aus.
+  // Briefsymbol in der Kopfzeile (Nutzervorgabe, 2026-09-03) – kurzer Weg
+  // zu den Einsendungen, mit dem Ungelesen-Stand als Abzeichen. `null`
+  // bei fehlendem `form-submissions:read`: dann bleibt das Symbol aus,
+  // sonst führte es in eine Sackgasse.
   const submissionCounts = await getUnreadSubmissionCount();
 
   // Präsenter Hinweis für Client-Installationen (Nutzervorgabe, siehe
@@ -137,7 +138,7 @@ export default async function DashboardLayout({
             user={user}
             defaultPageSize={settings?.defaultPageSize ?? 10}
             systemMessageCount={systemMessageCount}
-            unreadSubmissionCount={submissionCounts?.unread ?? 0}
+            unreadSubmissionCount={submissionCounts?.unread ?? null}
             allowTwoFactor={settings?.allowTwoFactor ?? false}
             keyboardShortcutsEnabled={
               settings?.keyboardShortcutsEnabled !== false

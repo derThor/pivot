@@ -1194,14 +1194,17 @@ selbst ab: es löscht Einträge, zu denen es keinen Kandidaten mehr gibt.
   `formSubmissionUnreadReminderDays` ansprang. Diese Frist bleibt in
   Gebrauch: der Job `form-submission-unread-reminder` verschickt weiterhin
   eine E-Mail.
-- **Ohne ungelesene Einsendungen erscheint das Symbol gar nicht.** Auf
-  schmalen Geräten stehen Suche, Glocke und Konto ohnehin dicht an dicht;
-  ein dauerhaft leeres Symbol nähme dort nur Platz. Es liegt außerdem
-  innerhalb des `!mobileSearchOpen`-Blocks und weicht bei aufgeklappter
-  mobiler Suche wie alles andere.
+- **Immer sichtbar, sobald das Leserecht da ist** (Nutzervorgabe,
+  2026-09-03: *„zeige das symbol immer an. so kommt man schneller zu
+  einsendungen"*). Zuerst hatte ich es bei null Ungelesenen ausgeblendet,
+  um auf schmalen Geräten Platz zu sparen – das war zu eng gedacht: das
+  Symbol ist nicht nur ein Zähler, sondern die kurze Wegstrecke zu den
+  Einsendungen. Das Abzeichen erscheint weiterhin nur, wenn es etwas zu
+  zeigen gibt. Es liegt innerhalb des `!mobileSearchOpen`-Blocks und
+  weicht bei aufgeklappter mobiler Suche wie alles andere.
 - **Vor der Glocke platziert**: der Ungelesen-Stand ist der häufigere
   Blick.
 - **Akzentfarbe statt Rot** für das Zähler-Abzeichen. Rot ist in dieser App
   die Farbe für Probleme (Glocke); ungelesene Post ist keins.
 - Fehlt `form-submissions:read`, liefert der Endpunkt nichts und das Symbol
-  bleibt aus.
+  bleibt aus – es führte sonst in eine Sackgasse.
