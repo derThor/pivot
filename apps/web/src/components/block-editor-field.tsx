@@ -988,14 +988,24 @@ export function BlockEditorField({
         </p>
       </div>
 
-      <div className="flex w-full min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card">
+      {/* Bewusst OHNE `overflow-hidden`, obwohl der Rahmen abgerundet
+          ist: die Werkzeugleiste jedes Bausteins sitzt per `-top-3`
+          absichtlich ÜBER dessen Oberkante, und die Einfüge-Markierungen
+          beim Ziehen ragen ebenfalls hinaus. Ein abschneidender Rahmen
+          verschluckt beides – beim obersten Baustein war dadurch der Griff
+          zum Verschieben nicht mehr erreichbar (Nutzer-Bugreport,
+          2026-09-03: "Bausteine lassen sich nicht neu anordnen").
+
+          Die Rundung übernimmt stattdessen die Leiste selbst
+          (`rounded-t-xl`). */}
+      <div className="flex w-full min-w-0 flex-1 flex-col rounded-xl border border-border bg-card">
         {/* Browser-Rahmen wie in der Versionshistorie (Nutzervorgabe,
             2026-09-03) – dieselbe Leiste mit drei Punkten und Adresszeile,
             damit auf einen Blick klar ist: was hier steht, ist die spätere
             Seite und nicht Teil der Verwaltungsoberfläche. Bewusst 1:1 die
             Klassen von dort übernommen statt eines ähnlich aussehenden
             Eigenbaus. */}
-        <div className="flex shrink-0 items-center gap-3 border-b border-border bg-muted px-4 py-2.5">
+        <div className="flex shrink-0 items-center gap-3 rounded-t-xl border-b border-border bg-muted px-4 py-2.5">
           <div className="flex shrink-0 gap-1.5">
             <span className="size-2.5 rounded-full bg-border" />
             <span className="size-2.5 rounded-full bg-border" />
