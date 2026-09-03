@@ -80,8 +80,8 @@ export class WebsiteMonitorService {
         status: 'success',
         message:
           lockedSites.length === 0
-            ? 'Aktuell ist keine Website gesperrt.'
-            : `${lockedSites.length} gesperrte Website(s) geprüft — ${
+            ? 'Aktuell ist keine Webseite gesperrt.'
+            : `${lockedSites.length} gesperrte Webseite(s) geprüft — ${
                 anomalyCount === 0
                   ? 'keine Auffälligkeit'
                   : `${anomalyCount} trotz Sperre erreichbar`

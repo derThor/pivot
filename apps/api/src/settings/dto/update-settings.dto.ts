@@ -260,7 +260,7 @@ export class UpdateSettingsDto {
   @ApiPropertyOptional({
     nullable: true,
     description:
-      'Basis-URL der öffentlichen Website, z.B. https://www.strasev.de',
+      'Basis-URL der öffentlichen Webseite, z.B. https://www.strasev.de',
   })
   @IsOptional()
   @ValidateIf((_, value) => value !== null)
@@ -294,7 +294,7 @@ export class UpdateSettingsDto {
 
   @ApiPropertyOptional({
     description:
-      'Zwischenspeicherung der API-Antworten in der öffentlichen Website (apps/site).',
+      'Zwischenspeicherung der API-Antworten in der öffentlichen Webseite (apps/site).',
   })
   @IsOptional()
   @IsBoolean()
@@ -320,7 +320,7 @@ export class UpdateSettingsDto {
   @ApiPropertyOptional({
     nullable: true,
     description:
-      'Freie Zeile rechts in der Footer-Fußleiste der öffentlichen Website.',
+      'Freie Zeile rechts in der Footer-Fußleiste der öffentlichen Webseite.',
   })
   @IsOptional()
   @IsString()

@@ -215,7 +215,7 @@ const SECTIONS: {
   {
     id: "frontend",
     title: "Frontend",
-    subtitle: "Öffentliche Website",
+    subtitle: "Öffentliche Webseite",
     icon: Globe,
   },
   {
@@ -562,7 +562,7 @@ export function SettingsForm({
       }
       toastCleared("Der Frontend-Cache wurde geleert.");
     } catch {
-      toastWarning("Website nicht erreichbar.");
+      toastWarning("Webseite nicht erreichbar.");
     } finally {
       setIsClearingFrontendCache(false);
     }
@@ -1059,7 +1059,7 @@ export function SettingsForm({
                   <CardHeader>
                     <CardTitle>Frontend-Cache</CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      Wie lange die öffentliche Website Antworten der API
+                      Wie lange die öffentliche Webseite Antworten der API
                       wiederverwendet, bevor sie neu nachfragt. Eine frisch
                       veröffentlichte Seite wird dadurch erst nach Ablauf dieser
                       Zeit öffentlich sichtbar – oder sofort, wenn Sie hier
@@ -1074,7 +1074,7 @@ export function SettingsForm({
                         <FormItem>
                           <SwitchRow
                             label="Frontend-Cache verwenden"
-                            description="Aus = die Website fragt bei jedem Besucher neu an. Ehrlich, aber deutlich langsamer."
+                            description="Aus = die Webseite fragt bei jedem Besucher neu an. Ehrlich, aber deutlich langsamer."
                             checked={field.value}
                             onCheckedChange={field.onChange}
                           />
@@ -1094,7 +1094,7 @@ export function SettingsForm({
                           />
                           <p className="text-sm text-muted-foreground">
                             Kürzer als eine Minute ist nicht wählbar: die Seiten
-                            der Website sind selbst auf eine Minute eingestellt,
+                            der Webseite sind selbst auf eine Minute eingestellt,
                             und dieser Wert steht dort fest im Code. Ein
                             kleinerer Wert hier würde also nichts bewirken.
                           </p>
@@ -1105,7 +1105,7 @@ export function SettingsForm({
                       <div className="flex flex-col gap-0.5">
                         <Label className="text-sm">Jetzt leeren</Label>
                         <p className="text-sm text-muted-foreground">
-                          Verwirft die gesamte zwischengespeicherte Website –
+                          Verwirft die gesamte zwischengespeicherte Webseite –
                           gerenderte Seiten wie API-Antworten.
                         </p>
                       </div>
@@ -1642,7 +1642,7 @@ export function SettingsForm({
                 <CardHeader>
                   <CardTitle>Frontend</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Grundwerte für die öffentliche Website dieser Installation
+                    Grundwerte für die öffentliche Webseite dieser Installation
                     sowie die Menüs, aus denen ihr Kopf- und Fußbereich
                     entsteht.
                   </p>
@@ -1653,7 +1653,7 @@ export function SettingsForm({
                     name="siteTitle"
                     render={({ field }) => (
                       <FormItem className="flex flex-col gap-1.5">
-                        <Label htmlFor="siteTitle">Website-Titel</Label>
+                        <Label htmlFor="siteTitle">Webseiten-Titel</Label>
                         <FormControl>
                           <Input
                             id="siteTitle"
@@ -1672,7 +1672,7 @@ export function SettingsForm({
                     name="siteTagline"
                     render={({ field }) => (
                       <FormItem className="flex flex-col gap-1.5">
-                        <Label htmlFor="siteTagline">Website-Untertitel</Label>
+                        <Label htmlFor="siteTagline">Webseiten-Untertitel</Label>
                         <FormControl>
                           <Input
                             id="siteTagline"
@@ -1710,7 +1710,7 @@ export function SettingsForm({
                     render={({ field }) => (
                       <FormItem className="flex flex-col gap-1.5 sm:col-span-2">
                         <Label htmlFor="publicBaseUrl">
-                          Basis-URL der Website
+                          Basis-URL der Webseite
                         </Label>
                         <FormControl>
                           <Input
@@ -1762,7 +1762,7 @@ export function SettingsForm({
                       Kopf- und Fußbereich
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Aus diesen Menüs baut die Website ihren Header und Footer.
+                      Aus diesen Menüs baut die Webseite ihren Header und Footer.
                       Gepflegt werden sie unter Inhalte → Menüs; die
                       Spaltenüberschrift im Footer ist der Name des Menüs. Die
                       Spalte „Rechtliches“ entsteht automatisch aus den
@@ -1858,7 +1858,7 @@ export function SettingsForm({
                         <FormItem>
                           <SwitchRow
                             label="Wartungsmodus"
-                            description="Zeigt einen Hinweis im Dashboard, dass die Website aktuell im Wartungsmodus ist."
+                            description="Zeigt einen Hinweis im Dashboard, dass die Webseite aktuell im Wartungsmodus ist."
                             checked={field.value}
                             onCheckedChange={field.onChange}
                           />

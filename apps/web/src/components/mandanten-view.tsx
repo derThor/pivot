@@ -191,7 +191,7 @@ export function MandantenView({
                     </span>
                   )}
                   {/* Im Kopf steht nur die erste Domain – bei mehreren
-                      Websites wäre die Kachel sonst stillschweigend
+                      Webseiten wäre die Kachel sonst stillschweigend
                       unvollständig. */}
                   {mandant.websites.length > 1 && (
                     <Badge className="badge--slate shrink-0 border-0">

@@ -58,7 +58,7 @@ export class CreateNavigationItemDto {
   @ApiPropertyOptional({
     enum: NavigationItemAppearance,
     description:
-      'Darstellung im Header der öffentlichen Website: LINK = gewöhnlicher ' +
+      'Darstellung im Header der öffentlichen Webseite: LINK = gewöhnlicher ' +
       'Menüpunkt, TEXT_BUTTON = rechts abgesetzt ohne Fläche, ' +
       'ACCENT_BUTTON = rechts abgesetzt mit Akzentfläche. Im Footer ohne ' +
       'Wirkung, dort sind alle Punkte Links.',

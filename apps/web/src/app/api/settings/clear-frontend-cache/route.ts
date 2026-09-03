@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     // Die Adresse gehört in die Meldung, sonst rätselt man, welche
     // Installation überhaupt gemeint war.
     return NextResponse.json(
-      { message: `Website unter ${base} nicht erreichbar.` },
+      { message: `Webseite unter ${base} nicht erreichbar.` },
       { status: 502 },
     );
   }

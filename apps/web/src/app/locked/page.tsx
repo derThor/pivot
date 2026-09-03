@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 
 const DEFAULT_TITLE = "Gleich wieder da.";
 const DEFAULT_MESSAGE =
-  "Wir aktualisieren die Website. Ihre Daten bleiben unberührt — in wenigen Minuten ist alles wieder erreichbar.";
+  "Wir aktualisieren die Webseite. Ihre Daten bleiben unberührt — in wenigen Minuten ist alles wieder erreichbar.";
 const DEFAULT_ACCENT = "#BCE64D";
 
 // Gleiche grobe Helligkeitsschätzung wie bei der Akzentfarbe-Auswahl unter

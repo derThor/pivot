@@ -46,7 +46,7 @@ const MODULE_PERMISSIONS: Record<string, string[]> = {
 // noch keinen eigenen Text hat.
 const MODULE_SUMMARY: Record<string, string[]> = {
   datenschutz: [
-    "Bündelt alle datenschutzrelevanten Aufgaben rund um die Website in einem eigenen Arbeitsbereich, statt sie über mehrere Menüs zu verteilen.",
+    "Bündelt alle datenschutzrelevanten Aufgaben rund um die Webseite in einem eigenen Arbeitsbereich, statt sie über mehrere Menüs zu verteilen.",
     "Rechtstexte wie Impressum und Datenschutzerklärung werden zentral gepflegt und automatisch verlinkt, Betroffenenanfragen (Auskunft, Löschung) durchlaufen einen nachvollziehbaren Bearbeitungsprozess mit Fristen, das Verzeichnis von Verarbeitungstätigkeiten und die Auftragsverarbeiter-Übersicht erfüllen die Dokumentationspflicht nach Art. 30 DSGVO, und Datenschutzvorfälle lassen sich erfassen und bis zur Meldung nachverfolgen.",
     "Jeder dieser Bereiche entspricht einem eigenen Reiter und lässt sich einzeln freischalten oder deaktivieren – ein Mandant sieht dadurch immer nur die Funktionen, die für ihn aktiviert sind, alle anderen Reiter bleiben sowohl in der Navigation als auch serverseitig unsichtbar.",
   ],

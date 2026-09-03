@@ -208,7 +208,7 @@ export function WebsiteDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Website bearbeiten</DialogTitle>
+          <DialogTitle>Webseite bearbeiten</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

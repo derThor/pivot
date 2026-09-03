@@ -74,7 +74,7 @@ export function JobRunRetentionCard({
           />
           <p className="text-xs text-muted-foreground">
             Läuft täglich über alle Jobs hinweg, inklusive der Live-Überwachung
-            gesperrter Websites.
+            gesperrter Webseiten.
           </p>
         </div>
         <SwitchRow

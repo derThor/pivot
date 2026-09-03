@@ -240,7 +240,7 @@ export class WebsitesService implements OnModuleInit {
     });
     if (existing && existing.id !== excludeId) {
       throw new ConflictException(
-        `Für die Domain „${domain}“ existiert bereits eine Website.`,
+        `Für die Domain „${domain}“ existiert bereits eine Webseite.`,
       );
     }
   }
@@ -277,7 +277,7 @@ export class WebsitesService implements OnModuleInit {
   async update(id: string, dto: UpdateWebsiteDto) {
     const website = await this.prisma.website.findUnique({ where: { id } });
     if (!website) {
-      throw new NotFoundException(`Website ${id} nicht gefunden.`);
+      throw new NotFoundException(`Webseite ${id} nicht gefunden.`);
     }
     if (dto.domain) {
       await this.assertDomainFree(dto.domain, id);
@@ -323,7 +323,7 @@ export class WebsitesService implements OnModuleInit {
   async regenerateApiKey(id: string) {
     const website = await this.prisma.website.findUnique({ where: { id } });
     if (!website) {
-      throw new NotFoundException(`Website ${id} nicht gefunden.`);
+      throw new NotFoundException(`Webseite ${id} nicht gefunden.`);
     }
     const apiKey = generateApiKey();
     const apiKeyEncrypted = encryptSecret(apiKey, this.getEncryptionKey());
@@ -345,11 +345,11 @@ export class WebsitesService implements OnModuleInit {
       select: { apiKeyEncrypted: true },
     });
     if (!website) {
-      throw new NotFoundException(`Website ${id} nicht gefunden.`);
+      throw new NotFoundException(`Webseite ${id} nicht gefunden.`);
     }
     if (!website.apiKeyEncrypted) {
       throw new NotFoundException(
-        'Für diese Website ist noch kein Key gespeichert – bitte zuerst neu erzeugen.',
+        'Für diese Webseite ist noch kein Key gespeichert – bitte zuerst neu erzeugen.',
       );
     }
     return {
@@ -385,7 +385,7 @@ export class WebsitesService implements OnModuleInit {
   }> {
     const website = await this.prisma.website.findUnique({ where: { id } });
     if (!website) {
-      throw new NotFoundException(`Website ${id} nicht gefunden.`);
+      throw new NotFoundException(`Webseite ${id} nicht gefunden.`);
     }
     const result = await this.performWakeup(website);
     await this.prisma.website.update({
@@ -577,7 +577,7 @@ export class WebsitesService implements OnModuleInit {
       ? await this.prisma.website.findUnique({ where: { id: websiteId } })
       : null;
     if (websiteId && !website) {
-      throw new NotFoundException(`Website ${websiteId} nicht gefunden.`);
+      throw new NotFoundException(`Webseite ${websiteId} nicht gefunden.`);
     }
 
     const scope = websiteId ? { websiteId } : {};
@@ -595,7 +595,7 @@ export class WebsitesService implements OnModuleInit {
     });
     await this.auditLog.record({
       action: 'website.stats_history_reset',
-      entityType: 'Website',
+      entityType: 'Webseite',
       entityId: websiteId ?? 'all',
       userId: actingUserId,
       metadata: {
@@ -614,7 +614,7 @@ export class WebsitesService implements OnModuleInit {
   async dismissStatsAnomaly(id: string) {
     const website = await this.prisma.website.findUnique({ where: { id } });
     if (!website) {
-      throw new NotFoundException(`Website ${id} nicht gefunden.`);
+      throw new NotFoundException(`Webseite ${id} nicht gefunden.`);
     }
     return this.prisma.website.update({
       where: { id },

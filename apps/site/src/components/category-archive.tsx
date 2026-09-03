@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cn } from "@pivot/blocks";
 import type {
   PublicCategoryArchive,
   PublicContentSummary,
@@ -51,18 +52,22 @@ function ListRow({
  * statt einen grauen Platzhalter zu zeigen. */
 function BlockCard({
   categorySlug,
+  categoryColor,
   post,
   large = false,
 }: {
   categorySlug: string;
+  /** Farbe der Kategorie – füllt die Bildfläche, wenn ein Beitrag kein
+   * Titelbild hat. */
+  categoryColor: string | null;
   post: PublicContentSummary;
   large?: boolean;
 }) {
   const date = formatDate(post.publishedAt);
   return (
-    <article className="overflow-hidden rounded-xl border border-border">
+    <article className="overflow-hidden rounded-xl border border-border transition-colors hover:border-foreground/25">
       <Link href={postHref(categorySlug, post)} className="flex flex-col">
-        {post.ogImageUrl && (
+        {post.ogImageUrl ? (
           // Bewusst <img> statt next/image: die Bilder liegen unter der
           // API-Origin (siehe `resolveImageSrc`), die je Installation anders
           // lautet – next/image müsste dafür pro Deployment eine erlaubte
@@ -76,6 +81,26 @@ function BlockCard({
                 ? "aspect-[2/1] w-full object-cover"
                 : "aspect-[16/9] w-full object-cover"
             }
+          />
+        ) : (
+          // Ohne Titelbild bleibt sonst eine Karte übrig, die nur aus einem
+          // Rahmen mit zwei Textzeilen besteht – sie wirkt kaputt, obwohl
+          // sie es nicht ist (Nutzer-Bugreport, 2026-09-03: "Block
+          // funktioniert nicht"). Statt ein Bild zu erfinden bekommt sie
+          // eine ruhige Farbfläche in der Farbe der Kategorie; ohne
+          // gepflegte Farbe die neutrale Abstufung des Templates.
+          <div
+            aria-hidden
+            style={
+              categoryColor
+                ? { backgroundColor: categoryColor, opacity: 0.18 }
+                : undefined
+            }
+            className={cn(
+              "w-full",
+              !categoryColor && "bg-muted",
+              large ? "aspect-[2/1]" : "aspect-[16/9]",
+            )}
           />
         )}
         <div className="flex flex-col gap-2 p-5">
@@ -195,7 +220,12 @@ export function CategoryArchive({
       </header>
 
       {showFeatured && (
-        <BlockCard categorySlug={category.slug} post={featured} large />
+        <BlockCard
+          categorySlug={category.slug}
+          categoryColor={category.color}
+          post={featured}
+          large
+        />
       )}
 
       {rest.length === 0 && !showFeatured ? (
@@ -211,7 +241,12 @@ export function CategoryArchive({
       ) : (
         <div className="flex flex-col gap-6">
           {rest.map((post) => (
-            <BlockCard key={post.id} categorySlug={category.slug} post={post} />
+            <BlockCard
+              key={post.id}
+              categorySlug={category.slug}
+              categoryColor={category.color}
+              post={post}
+            />
           ))}
         </div>
       )}

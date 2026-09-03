@@ -30,7 +30,7 @@ const ROWS: { key: NotifyKey; label: string; description: string }[] = [
     key: "notifyMaintenanceMode",
     label: "Wartungsmodus",
     description:
-      "Zeigt einen Hinweis im Dashboard, dass die Website aktuell im Wartungsmodus ist.",
+      "Zeigt einen Hinweis im Dashboard, dass die Webseite aktuell im Wartungsmodus ist.",
   },
   {
     key: "notifyStorageQuota",

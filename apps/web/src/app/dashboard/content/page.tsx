@@ -106,7 +106,7 @@ export default async function ContentPage({
         <StatCard
           label="Veröffentlicht"
           value={String(counts.PUBLISHED)}
-          sublabel="Live auf der Website"
+          sublabel="Live auf der Webseite"
           valueClassName="text-emerald-600"
         />
         <StatCard

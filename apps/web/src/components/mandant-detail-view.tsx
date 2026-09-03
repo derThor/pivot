@@ -397,7 +397,7 @@ export function MandantDetailView({
                       {STATUS_OPTIONS.find((o) => o.value === status)?.label}
                     </Badge>
                   </div>
-                  {/* Domain, Ort und Website-Zahl in einer Monospace-Zeile
+                  {/* Domain, Ort und Webseiten-Zahl in einer Monospace-Zeile
                     (Bildvorlage) statt wie bisher untereinander – die drei
                     Angaben sind kurz und gehören zusammen. `flex-wrap`
                     fängt schmale Breiten ab. */}

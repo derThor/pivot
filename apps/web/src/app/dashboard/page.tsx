@@ -296,7 +296,7 @@ export default async function DashboardPage() {
         <SystemMessage
           variant="neutral"
           title="Wartungsmodus aktiv"
-          description="Die Website ist aktuell im Wartungsmodus und für Besucher nicht erreichbar."
+          description="Die Webseite ist aktuell im Wartungsmodus und für Besucher nicht erreichbar."
         />
       )}
 

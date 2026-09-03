@@ -285,7 +285,7 @@ export function NavigationExplorer({
             <Badge
               variant="secondary"
               className="badge--lime border-0"
-              title="Startseite der öffentlichen Website"
+              title="Startseite der öffentlichen Webseite"
             >
               Startseite
             </Badge>

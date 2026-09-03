@@ -86,7 +86,7 @@ export class CreateContentDto {
 
   @ApiPropertyOptional({
     description:
-      'Blendet die sichtbare Überschrift auf der öffentlichen Website aus. Der Titel bleibt gesetzt und wird weiter für Backend-Listen, <title> und Suchmaschinen genutzt.',
+      'Blendet die sichtbare Überschrift auf der öffentlichen Webseite aus. Der Titel bleibt gesetzt und wird weiter für Backend-Listen, <title> und Suchmaschinen genutzt.',
   })
   @IsOptional()
   @IsBoolean()

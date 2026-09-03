@@ -123,7 +123,7 @@ export default async function ModulesPage() {
                           <p className="text-sm text-dark-surface-foreground/60">
                             {CATEGORY_LABEL[module.category]} ·{" "}
                             {websiteCount}{" "}
-                            {websiteCount === 1 ? "Website" : "Websites"}
+                            {websiteCount === 1 ? "Webseite" : "Webseiten"}
                           </p>
                         </div>
                       </div>

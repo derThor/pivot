@@ -828,7 +828,7 @@ function CategorySettingsForm({
           <h3 className="text-lg font-semibold">Übersicht &amp; Feed</h3>
           <p className="text-sm text-muted-foreground">
             Steuert, wie Beiträge dieser Kategorie später auf der öffentlichen
-            Website ausgespielt werden.
+            Webseite ausgespielt werden.
           </p>
         </div>
         <SwitchRow

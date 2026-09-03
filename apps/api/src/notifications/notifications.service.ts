@@ -155,7 +155,7 @@ export class NotificationsService {
         dedupeKey: 'maintenance-mode',
         title: 'Wartungsmodus ist aktiv',
         description:
-          'Die Website ist aktuell im Wartungsmodus und für Besucher nicht erreichbar.',
+          'Die Webseite ist aktuell im Wartungsmodus und für Besucher nicht erreichbar.',
         isUrgent: false,
         actionLabel: 'Einstellungen öffnen',
         actionUrl: '/dashboard/settings',
@@ -213,7 +213,7 @@ export class NotificationsService {
           title: `„${site.name}“ ist gesperrt, aber weiterhin live erreichbar`,
           description: `${site.domain} antwortet trotz Sperre normal statt mit der Wartungsseite – die Sperre wird dort offenbar nicht durchgesetzt.`,
           isUrgent: true,
-          actionLabel: 'Website öffnen',
+          actionLabel: 'Webseite öffnen',
           actionUrl: '/dashboard/websites',
         });
       }
@@ -233,7 +233,7 @@ export class NotificationsService {
           title: `Unglaubwürdiger Rückgang bei „${site.name}“`,
           description: `${site.statsAnomalyMessage} – die Zahlen meldet die Installation selbst, ein solcher Einbruch kann echt oder manipuliert sein.`,
           isUrgent: false,
-          actionLabel: 'Website öffnen',
+          actionLabel: 'Webseite öffnen',
           actionUrl: '/dashboard/websites',
         });
       }
@@ -440,7 +440,7 @@ export class NotificationsService {
         candidates.push({
           category: 'privacy',
           dedupeKey: `dsr-new:${r.id}`,
-          title: `Neue Auskunftsanfrage ${r.dsrId} über die Website`,
+          title: `Neue Auskunftsanfrage ${r.dsrId} über die Webseite`,
           description: `${r.requesterEmail} hat über den Selbstauskunft-Link eine Auskunft angefordert.`,
           isUrgent: false,
           actionLabel: 'Anfrage bearbeiten',

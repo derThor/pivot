@@ -120,19 +120,19 @@ export class SiteCacheService {
       });
       if (!res.ok) {
         this.logger.warn(
-          `Website-Cache konnte nicht geleert werden (${base}): HTTP ${res.status}. Auslöser: ${reasons.join(', ')}`,
+          `Webseiten-Cache konnte nicht geleert werden (${base}): HTTP ${res.status}. Auslöser: ${reasons.join(', ')}`,
         );
         return;
       }
       this.logger.log(
-        `Website-Cache geleert (${reasons.join(', ')}) — ${base}`,
+        `Webseiten-Cache geleert (${reasons.join(', ')}) — ${base}`,
       );
     } catch (error) {
       // Häufigster Fall: die Website läuft gerade nicht. Das ist kein
       // Grund, irgendetwas anderes scheitern zu lassen – beim nächsten
       // Start ist ihr Cache ohnehin leer.
       this.logger.warn(
-        `Website unter ${base} nicht erreichbar, Cache nicht geleert. Auslöser: ${reasons.join(', ')} (${(error as Error).message})`,
+        `Webseite unter ${base} nicht erreichbar, Cache nicht geleert. Auslöser: ${reasons.join(', ')} (${(error as Error).message})`,
       );
     }
   }

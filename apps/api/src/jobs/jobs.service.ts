@@ -35,7 +35,7 @@ import { UpdateJobDto } from './dto/update-job.dto';
 const READ_ONLY_JOB_TITLES: Record<string, string> = {
   [LICENSE_CHECK_JOB_ID]: 'Lizenzprüfung (Client)',
   [WEBSITE_MONITOR_JOB_ID]:
-    'Prüft, ob gesperrte Websites trotzdem erreichbar sind (Master)',
+    'Prüft, ob gesperrte Webseiten trotzdem erreichbar sind (Master)',
   [DEVELOPMENT_MODE_AUTOLOCK_JOB_ID]:
     'Automatische Sperre nach 3 Tagen Entwicklungsmodus (Master)',
 };

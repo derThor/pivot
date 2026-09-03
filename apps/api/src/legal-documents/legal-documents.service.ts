@@ -121,7 +121,7 @@ const TEMPLATES: Record<
     generate: (c) => {
       const lines: string[] = [];
       lines.push(
-        `Diese Website${c.companyName ? ` von ${c.companyName}` : ''} verwendet Cookies, um grundlegende Funktionen bereitzustellen.`,
+        `Diese Webseite${c.companyName ? ` von ${c.companyName}` : ''} verwendet Cookies, um grundlegende Funktionen bereitzustellen.`,
       );
       if (c.companyEmail)
         lines.push(
