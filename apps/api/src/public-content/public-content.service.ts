@@ -43,6 +43,23 @@ const contentSummarySelect = {
   tags: { select: { tag: { select: { id: true, name: true, slug: true } } } },
 } as const;
 
+/** Wie {@link contentSummarySelect}, aber mit dem vollständigen Inhalt.
+ *
+ * Gebraucht von der Blog-Darstellung des Kategorie-Archivs (Nutzervorgabe,
+ * 2026-09-03: "dieser Modus soll alle enthaltenen Beiträge untereinander
+ * komplett darstellen"). Dort steht der Beitrag ausgeschrieben in der
+ * Übersicht, nicht nur als Karte – dafür braucht die Website die Bausteine
+ * und das Feld-Schema des Inhaltstyps.
+ *
+ * Bewusst NUR für diese eine Darstellung: die Listen-Darstellung soll
+ * weiterhin die schlanke Zusammenfassung laden und nicht bei jeder
+ * Übersichtsseite den kompletten Inhalt aller Beiträge mitschleppen. */
+const contentBlogSelect = {
+  ...contentSummarySelect,
+  data: true,
+  contentType: { select: { slug: true, schema: true } },
+} as const;
+
 const contentFullSelect = {
   ...contentSummarySelect,
   data: true,
@@ -463,6 +480,16 @@ export class PublicContentService {
       };
     }
 
+    // Die Darstellung entscheidet, WIE VIEL geladen wird, und muss
+    // deshalb vor der Abfrage feststehen: die Blog-Darstellung schreibt
+    // jeden Beitrag aus und braucht seine Bausteine, die Liste kommt mit
+    // der Zusammenfassung aus (Nutzervorgabe, 2026-09-03).
+    const layout = await this.resolveArchiveLayout(category.id);
+    const select =
+      layout === CategoryArchiveLayout.BLOCKS
+        ? contentBlogSelect
+        : contentSummarySelect;
+
     const pageSize =
       category.postsPerPage ?? FEED_ITEM_LIMIT_FALLBACK_PAGE_SIZE;
     const orderBy =
@@ -481,7 +508,7 @@ export class PublicContentService {
         ? this.prisma.content.findFirst({
             where: { ...where, isFeatured: true },
             orderBy: { publishedAt: 'desc' },
-            select: contentSummarySelect,
+            select,
           })
         : Promise.resolve(null),
       this.prisma.content.findMany({
@@ -489,7 +516,7 @@ export class PublicContentService {
         orderBy,
         skip: (page - 1) * pageSize,
         take: pageSize,
-        select: contentSummarySelect,
+        select,
       }),
       this.prisma.content.count({ where }),
     ]);
@@ -503,7 +530,7 @@ export class PublicContentService {
         color: category.color,
         rssEnabled: category.rssEnabled,
       },
-      layout: await this.resolveArchiveLayout(category.id),
+      layout,
       featured: featured ? mapRelations(featured) : null,
       items: items.map((item) => mapRelations(item)),
       meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },

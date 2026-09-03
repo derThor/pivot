@@ -740,3 +740,65 @@ Zugabe für Menschen.
 Geprüft: Feed nach Slug 200 bei eingeschaltetem RSS, **404 bei
 ausgeschaltetem** (ein Reader soll dann nichts abonnieren können);
 `<link>` und sichtbarer Link erscheinen nur im ersten Fall.
+
+## Update 2026-09-03 (7): Aus „Blöcke" wird „Blog"
+
+**Nutzervorgabe:** *„in Menü bei Kategorie Blöcke in Blog ändern. und
+dieser Modus soll alle enthaltenen Beiträge untereinander komplett
+darstellen außer, es ist ein Weiterlesen-Baustein in einer Seite, dann
+verkürzen bis zu Weiterlesen. Der Artikel soll Datum, Erstellung,
+Überschrift zeigen und die Artikelausgabe soll mit Pagination begrenzt
+werden."*
+
+Die Darstellung hieß „Blöcke" und zeigte **Karten** mit Titelbild und
+Anreißtext. Jetzt ist sie ein echtes Blog: jeder Beitrag steht
+**ausgeschrieben** in der Übersicht, mit Datum und Überschrift darüber.
+
+| | Liste | Blog |
+| --- | --- | --- |
+| zeigt | Titel + Datum je Zeile | Datum, Überschrift, **ganzen Beitrag** |
+| lädt | Zusammenfassung | zusätzlich `data` + Feld-Schema |
+
+**Der gespeicherte Wert heißt weiterhin `BLOCKS`** – nur die Beschriftung
+ist „Blog". Den Enum-Wert umzubenennen hieße, jede bestehende Einstellung
+zu migrieren, ohne dass jemand etwas davon hätte.
+
+### Die „Weiterlesen"-Marke
+
+Ein neuer Baustein ohne Felder (`read-more`). Steht er irgendwo im
+Beitrag, endet der Anriss dort und es folgt der Link auf den ganzen
+Beitrag; ohne ihn steht der Beitrag komplett in der Übersicht – „komplett"
+ist der Normalfall, das Kürzen die Ausnahme.
+
+**Warum ein Baustein und keine Einstellung an der Seite:** die Marke
+gehört an die Stelle im Text, an der geschnitten wird. Eine Zahl („nach
+300 Zeichen") oder ein Schalter könnte das nicht ausdrücken, und im
+Designer sieht man sofort, wo der Anriss endet.
+
+**Falle dabei:** Der Baustein hat wie der **Trenner** keine Felder, und
+`isDividerModule()` erkennt genau daran. Ohne Unterscheidung wäre die
+Marke als Trennlinie gerendert worden. `isReadMoreModule()` prüft deshalb
+den Slug und muss **vor** der Trenner-Prüfung stehen.
+
+Wo er was zeigt:
+
+| Ort | Darstellung |
+| --- | --- |
+| Seiten-Designer | sichtbare Linie „Weiterlesen — Anriss endet hier" |
+| Backend-Vorschau | sichtbare Linie „Weiterlesen" |
+| Beitragsseite | **nichts** – dort steht der ganze Text ohnehin |
+| Kategorie-Archiv | schneidet ab, danach der Link |
+
+### Nur die Blog-Darstellung lädt den vollen Inhalt
+
+`contentBlogSelect` kommt ausschließlich zum Einsatz, wenn die Darstellung
+BLOCKS ist. Die Liste lädt weiterhin die schlanke Zusammenfassung – sonst
+schleppte jede Übersichtsseite den kompletten Inhalt aller Beiträge mit.
+Die Darstellung wird dafür **vor** der Abfrage aufgelöst.
+
+Die Anzahl je Seite steuert unverändert „Beiträge pro Seite" an der
+Kategorie (`Category.postsPerPage`).
+
+Geprüft an einem echten Beitrag: Archiv zeigt den Anriss und
+„Weiterlesen", nicht den Teil dahinter; die Beitragsseite zeigt beide
+Teile und die Marke selbst gar nicht.

@@ -231,6 +231,16 @@ export function isTilesModule(contentFields: ContentTypeField[]): boolean {
   return contentFields.filter((f) => f.type === "image").length > 1;
 }
 
+/** Slug des Bausteins, der in der Blog-Darstellung den Anriss beendet.
+ * Er hat wie der Trenner KEINE Felder – ohne diese Unterscheidung würde
+ * `isDividerModule()` ihn als Trennlinie rendern (Nutzervorgabe,
+ * 2026-09-03). */
+export const READ_MORE_SLUG = "read-more";
+
+export function isReadMoreModule(slug: string | undefined): boolean {
+  return slug === READ_MORE_SLUG;
+}
+
 // Erkennt Module ohne jegliches sichtbares Feld (der "Trenner"-Baustein).
 export function isDividerModule(contentFields: ContentTypeField[]): boolean {
   return contentFields.length === 0;

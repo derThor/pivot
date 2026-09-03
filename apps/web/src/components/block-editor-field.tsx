@@ -64,6 +64,7 @@ import {
   isComplexModuleType,
   isCoverModuleType,
   isDividerModule,
+  isReadMoreModule,
   isFormModuleType,
   isGalleryModuleType,
   isTilesModule,
@@ -1135,7 +1136,10 @@ export function BlockEditorField({
             const contentFields =
               moduleType?.schema.fields.filter((f) => !f.option) ?? [];
             const isTiles = isTilesModule(contentFields);
-            const isDivider = isDividerModule(contentFields);
+            // Vor der Trenner-Prüfung: beide Bausteine haben keine
+            // Felder, der Trenner würde die Marke sonst verschlucken.
+            const isReadMore = isReadMoreModule(moduleType?.slug);
+            const isDivider = !isReadMore && isDividerModule(contentFields);
             const isCover = isCoverModuleType(contentFields);
             const imageField = contentFields.find((f) => f.type === "image");
             const imageValue = imageField
@@ -1580,6 +1584,17 @@ export function BlockEditorField({
                     {moduleType && isDivider && (
                       <div className="py-2">
                         <DividerOutput />
+                      </div>
+                    )}
+                    {/* Im Designer sichtbar, in der Ausgabe nicht: hier
+                        endet der Anriss, den das Kategorie-Archiv in der
+                        Blog-Darstellung zeigt (Nutzervorgabe,
+                        2026-09-03). */}
+                    {moduleType && isReadMore && (
+                      <div className="flex items-center gap-3 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                        <span className="h-px flex-1 bg-border" />
+                        Weiterlesen — Anriss endet hier
+                        <span className="h-px flex-1 bg-border" />
                       </div>
                     )}
                     {moduleType && isCover && !isGlobal && (

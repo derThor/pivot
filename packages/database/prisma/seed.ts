@@ -153,7 +153,9 @@ const ROLES: {
       (p) =>
         !(p.resource === "roles" && p.action !== "read") &&
         p.resource !== "settings" &&
-        !(p.resource === "users" && ["delete", "impersonate"].includes(p.action)),
+        !(
+          p.resource === "users" && ["delete", "impersonate"].includes(p.action)
+        ),
     ),
   },
   {
@@ -254,7 +256,12 @@ async function main() {
   // `onDelete: Cascade` auf `RolePermission.permission` räumt betroffene
   // Zuordnungen automatisch mit ab.
   await prisma.permission.deleteMany({
-    where: { OR: OBSOLETE_PERMISSIONS.map((p) => ({ resource: p.resource, action: p.action })) },
+    where: {
+      OR: OBSOLETE_PERMISSIONS.map((p) => ({
+        resource: p.resource,
+        action: p.action,
+      })),
+    },
   });
 
   await prisma.appSettings.upsert({
@@ -266,11 +273,11 @@ async function main() {
   // Systemordner für Logo-Uploads (Einstellungen → Firma) – darf nicht
   // gelöscht werden (isSystem), daher hier statt on-demand angelegt.
   const existingLogoFolder = await prisma.mediaFolder.findFirst({
-    where: { name: 'Logo', parentId: null },
+    where: { name: "Logo", parentId: null },
   });
   if (!existingLogoFolder) {
     await prisma.mediaFolder.create({
-      data: { name: 'Logo', parentId: null, isSystem: true },
+      data: { name: "Logo", parentId: null, isSystem: true },
     });
   } else if (!existingLogoFolder.isSystem) {
     await prisma.mediaFolder.update({
@@ -284,11 +291,11 @@ async function main() {
   // Bilder darin (z.B. nach Nutzer-Löschung) aber schon (Nutzervorgabe,
   // 2026-08-17).
   const existingAvatarFolder = await prisma.mediaFolder.findFirst({
-    where: { name: 'Avatare', parentId: null },
+    where: { name: "Avatare", parentId: null },
   });
   if (!existingAvatarFolder) {
     await prisma.mediaFolder.create({
-      data: { name: 'Avatare', parentId: null, isSystem: true },
+      data: { name: "Avatare", parentId: null, isSystem: true },
     });
   } else if (!existingAvatarFolder.isSystem) {
     await prisma.mediaFolder.update({
@@ -303,11 +310,11 @@ async function main() {
   // (zippt den ganzen Ordnerinhalt) immer einen festen, verlässlichen Ort
   // hat (Nutzervorgabe, 2026-08-19).
   const existingAvsFolder = await prisma.mediaFolder.findFirst({
-    where: { name: 'AVs', parentId: null },
+    where: { name: "AVs", parentId: null },
   });
   if (!existingAvsFolder) {
     await prisma.mediaFolder.create({
-      data: { name: 'AVs', parentId: null, isSystem: true },
+      data: { name: "AVs", parentId: null, isSystem: true },
     });
   } else if (!existingAvsFolder.isSystem) {
     await prisma.mediaFolder.update({
@@ -393,8 +400,18 @@ async function main() {
       icon: "Image",
       schema: {
         fields: [
-          { name: "imageUrl", type: "image", required: true, example: dummyImage },
-          { name: "altText", type: "string", option: true, example: "Beispielbild" },
+          {
+            name: "imageUrl",
+            type: "image",
+            required: true,
+            example: dummyImage,
+          },
+          {
+            name: "altText",
+            type: "string",
+            option: true,
+            example: "Beispielbild",
+          },
         ],
       },
     },
@@ -404,8 +421,18 @@ async function main() {
       icon: "Columns2",
       schema: {
         fields: [
-          { name: "imageUrl", type: "image", required: true, example: dummyImage },
-          { name: "altText", type: "string", option: true, example: "Beispielbild" },
+          {
+            name: "imageUrl",
+            type: "image",
+            required: true,
+            example: dummyImage,
+          },
+          {
+            name: "altText",
+            type: "string",
+            option: true,
+            example: "Beispielbild",
+          },
           {
             name: "text",
             type: "richtext",
@@ -475,7 +502,13 @@ async function main() {
             variant: "button",
             example: "Jetzt entdecken",
           },
-          { name: "url", type: "string", required: true, option: true, example: "/" },
+          {
+            name: "url",
+            type: "string",
+            required: true,
+            option: true,
+            example: "/",
+          },
         ],
       },
     },
@@ -512,10 +545,30 @@ async function main() {
       icon: "LayoutGrid",
       schema: {
         fields: [
-          { name: "image1", type: "image", required: true, example: dummyImage },
-          { name: "image2", type: "image", required: true, example: dummyImage },
-          { name: "image3", type: "image", required: true, example: dummyImage },
-          { name: "image4", type: "image", required: true, example: dummyImage },
+          {
+            name: "image1",
+            type: "image",
+            required: true,
+            example: dummyImage,
+          },
+          {
+            name: "image2",
+            type: "image",
+            required: true,
+            example: dummyImage,
+          },
+          {
+            name: "image3",
+            type: "image",
+            required: true,
+            example: dummyImage,
+          },
+          {
+            name: "image4",
+            type: "image",
+            required: true,
+            example: dummyImage,
+          },
         ],
       },
     },
@@ -526,6 +579,24 @@ async function main() {
       name: "Trenner",
       slug: "divider",
       icon: "SeparatorHorizontal",
+      schema: { fields: [] },
+    },
+    {
+      // Schnittmarke für die Blog-Darstellung eines Kategorie-Archivs
+      // (Nutzervorgabe, 2026-09-03: "außer, es ist ein Weiterlesen-
+      // Baustein in einer Seite, dann verkürzen bis zu Weiterlesen").
+      //
+      // Bewusst ein Baustein OHNE Felder statt einer Einstellung an der
+      // Seite: die Marke gehört an die Stelle im Text, an der geschnitten
+      // wird – eine Zahl ("nach 300 Zeichen") oder ein Schalter könnte das
+      // nicht ausdrücken, und der Redakteur sieht im Designer sofort, wo
+      // der Anriss endet.
+      //
+      // Auf der Beitragsseite selbst rendert er nichts: dort ist der
+      // ganze Text ohnehin sichtbar.
+      name: "Weiterlesen",
+      slug: "read-more",
+      icon: "TextQuote",
       schema: { fields: [] },
     },
     {

@@ -10,6 +10,7 @@ import {
   cn,
   isCoverModuleType,
   isDividerModule,
+  isReadMoreModule,
   isTilesModule,
   resolveBlockLayout,
   resolveInstanceValues,
@@ -95,7 +96,14 @@ export function ContentBlocks({
                     style={blockLayoutStyle(layout.align, layout.width)}
                   >
                     <BlockSpacingWrapper layout={instance.layout}>
-                      {isDividerModule(contentFields) ? (
+                      {/* Die "Weiterlesen"-Marke ist nur eine Schnittstelle
+                          für das Kategorie-Archiv – auf der Seite selbst
+                          steht der ganze Text ohnehin, sie zeigt dort
+                          nichts. Muss VOR der Trenner-Prüfung stehen: beide
+                          Bausteine haben keine Felder. */}
+                      {isReadMoreModule(
+                        moduleType?.slug,
+                      ) ? null : isDividerModule(contentFields) ? (
                         <DividerOutput />
                       ) : isTilesModule(contentFields) ? (
                         <TilesGridOutput

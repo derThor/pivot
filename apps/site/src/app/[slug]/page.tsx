@@ -104,6 +104,16 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
 
   const archive = await getCategoryArchive(slug, pageNumber(pageParam));
   if (!archive) notFound();
+  // Die Blog-Darstellung schreibt die Beitraege aus und braucht dafuer
+  // dieselben Bausteine wie eine normale Seite.
+  const { moduleTypes, globalModules } = await getBlockContext();
 
-  return <CategoryArchive archive={archive} site={site} />;
+  return (
+    <CategoryArchive
+      archive={archive}
+      site={site}
+      moduleTypes={moduleTypes}
+      globalModules={globalModules}
+    />
+  );
 }

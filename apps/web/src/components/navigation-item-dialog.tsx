@@ -50,14 +50,19 @@ const targetTypeOptions: Record<string, string> = {
  * Menüpunkt und nicht
  * an der Kategorie (Nutzerentscheidung, 2026-09-02), damit dieselbe
  * Kategorie in zwei Menüs unterschiedlich aussehen kann. */
+// Der gespeicherte Wert heißt weiterhin BLOCKS – nur die Beschriftung
+// ist "Blog" (Nutzervorgabe, 2026-09-03). Den Datenbank-Wert umzubenennen
+// hieße, jede bestehende Einstellung zu migrieren, ohne dass jemand etwas
+// davon hätte.
 const CATEGORY_LAYOUT_OPTIONS = [
   { value: "LIST" as const, label: "Liste" },
-  { value: "BLOCKS" as const, label: "Blöcke" },
+  { value: "BLOCKS" as const, label: "Blog" },
 ];
 
 const CATEGORY_LAYOUT_DESCRIPTION: Record<string, string> = {
   LIST: "Kompakt: nur Titel und Datum je Seite.",
-  BLOCKS: "Karte je Seite mit Titelbild, Datum und Anreißtext.",
+  BLOCKS:
+    "Jeder Beitrag ausgeschrieben, untereinander. Ein „Weiterlesen“-Baustein im Beitrag kürzt ihn bis dorthin.",
 };
 
 /** Aussehen des Punkts im Header der Website (Nutzerentscheidung,

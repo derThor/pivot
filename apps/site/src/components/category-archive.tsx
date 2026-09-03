@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { cn } from "@pivot/blocks";
 import type {
+  ModuleType,
+  PublicArchivePost,
   PublicCategoryArchive,
   PublicContentSummary,
   SiteSettings,
 } from "@/lib/api";
+import type { GlobalModule } from "@pivot/blocks";
+import { ContentBlocks } from "@/components/content-blocks";
 import { resolveImageSrc } from "@pivot/blocks";
 
 const dateFormatter = new Intl.DateTimeFormat("de-DE", { dateStyle: "long" });
@@ -50,6 +54,88 @@ function ListRow({
  * OG-Bild aus dem SEO-Tab des Beitrags – das einzige echte "Bild dieser
  * Seite" im Datenmodell. Fehlt es, entfällt der Bildbereich ersatzlos,
  * statt einen grauen Platzhalter zu zeigen. */
+/** Slug des Bausteins, der den Anriss beendet. Als Konstante, weil zwei
+ * Stellen ihn kennen müssen: das Archiv schneidet dort ab, die
+ * Beitragsseite blendet ihn aus. */
+const READ_MORE_SLUG = "read-more";
+
+/** Ein Beitrag in der Blog-Darstellung: vollständig ausgeschrieben,
+ * höchstens gekürzt bis zur „Weiterlesen"-Marke (Nutzervorgabe,
+ * 2026-09-03).
+ *
+ * Gezeigt werden Datum und Überschrift, darunter der Inhalt aus dem
+ * Seiten-Designer. Steht irgendwo ein „Weiterlesen"-Baustein, endet der
+ * Text dort und es folgt der Link auf den ganzen Beitrag – sonst steht der
+ * Beitrag komplett in der Übersicht. */
+function BlogPost({
+  categorySlug,
+  post,
+  moduleTypes,
+  globalModules,
+}: {
+  categorySlug: string;
+  post: PublicArchivePost;
+  moduleTypes: ModuleType[];
+  globalModules: GlobalModule[];
+}) {
+  const date = formatDate(post.publishedAt);
+  const readMoreTypeId = moduleTypes.find((t) => t.slug === READ_MORE_SLUG)?.id;
+
+  // Bausteine bis zur Marke. Ohne Marke bleibt alles stehen – "komplett
+  // darstellen" ist der Normalfall, das Kürzen die Ausnahme.
+  const blocks = Array.isArray(post.data?.blocks) ? post.data.blocks : [];
+  const cutIndex = readMoreTypeId
+    ? blocks.findIndex(
+        (b) =>
+          typeof b === "object" &&
+          b !== null &&
+          (b as { moduleTypeId?: string }).moduleTypeId === readMoreTypeId,
+      )
+    : -1;
+  const isTruncated = cutIndex >= 0;
+  const visibleBlocks = isTruncated ? blocks.slice(0, cutIndex) : blocks;
+
+  return (
+    <article className="flex flex-col gap-4 border-b border-border pb-10 last:border-0">
+      <header className="flex flex-col gap-1">
+        {date && (
+          <time
+            dateTime={post.publishedAt ?? undefined}
+            className="text-sm text-muted-foreground"
+          >
+            {date}
+          </time>
+        )}
+        <h2 className="text-2xl font-semibold tracking-tight">
+          <Link
+            href={postHref(categorySlug, post)}
+            className="hover:text-accent-link"
+          >
+            {post.title}
+          </Link>
+        </h2>
+      </header>
+
+      {post.contentType && (
+        <ContentBlocks
+          data={{ ...post.data, blocks: visibleBlocks }}
+          moduleTypes={moduleTypes}
+          globalModules={globalModules}
+        />
+      )}
+
+      {isTruncated && (
+        <Link
+          href={postHref(categorySlug, post)}
+          className="text-sm font-medium underline underline-offset-4 hover:no-underline"
+        >
+          Weiterlesen
+        </Link>
+      )}
+    </article>
+  );
+}
+
 function BlockCard({
   categorySlug,
   categoryColor,
@@ -195,9 +281,16 @@ function Pagination({
 export function CategoryArchive({
   archive,
   site,
+  moduleTypes,
+  globalModules,
 }: {
   archive: PublicCategoryArchive;
   site: SiteSettings;
+  /** Fuer die Blog-Darstellung: die Bausteine der Beitraege werden hier
+   * ausgeschrieben, dafuer braucht es Typen und globale Module wie auf
+   * einer normalen Seite. */
+  moduleTypes: ModuleType[];
+  globalModules: GlobalModule[];
 }) {
   const { category, layout, featured, items, meta } = archive;
   const basePath = `/${category.slug}`;
@@ -239,18 +332,21 @@ export function CategoryArchive({
           ))}
         </ul>
       ) : (
-        <div className="flex flex-col gap-6">
+        // Blog: jeder Beitrag ausgeschrieben, gekürzt nur bis zu einer
+        // "Weiterlesen"-Marke (Nutzervorgabe, 2026-09-03). Die Anzahl je
+        // Seite steuert weiterhin "Beiträge pro Seite" an der Kategorie.
+        <div className="flex flex-col gap-10">
           {rest.map((post) => (
-            <BlockCard
+            <BlogPost
               key={post.id}
               categorySlug={category.slug}
-              categoryColor={category.color}
               post={post}
+              moduleTypes={moduleTypes}
+              globalModules={globalModules}
             />
           ))}
         </div>
       )}
-
       <Pagination
         basePath={basePath}
         page={meta.page}

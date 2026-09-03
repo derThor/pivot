@@ -263,6 +263,15 @@ export interface PublicContentSummary {
  * Menüpunkt gilt. */
 export type CategoryArchiveLayout = "LIST" | "BLOCKS";
 
+/** Ein Beitrag in der Blog-Darstellung – wie die Zusammenfassung, aber
+ * mit dem vollständigen Inhalt. Die Felder sind optional, weil dieselbe
+ * Antwortform auch die Listen-Darstellung bedient; dort fehlen sie
+ * bewusst (siehe contentBlogSelect im Backend). */
+export interface PublicArchivePost extends PublicContentSummary {
+  data?: Record<string, unknown>;
+  contentType?: { slug: string; schema: { fields: ContentTypeField[] } };
+}
+
 export interface PublicCategoryArchive {
   category: {
     id: string;
@@ -274,8 +283,8 @@ export interface PublicCategoryArchive {
   };
   layout: CategoryArchiveLayout;
   /** Nur befüllt, wenn die Kategorie `showFeaturedLarge` gesetzt hat. */
-  featured: PublicContentSummary | null;
-  items: PublicContentSummary[];
+  featured: PublicArchivePost | null;
+  items: PublicArchivePost[];
   meta: { page: number; pageSize: number; total: number; pageCount: number };
 }
 

@@ -8,6 +8,7 @@ import {
   blockLayoutClasses,
   isCoverModuleType,
   isDividerModule,
+  isReadMoreModule,
   isTilesModule,
   resolveBlockLayout,
   resolveInstanceValues,
@@ -128,7 +129,15 @@ export function ContentPreviewRender({
                       style={{ width: `${layout.width}%` }}
                     >
                       <BlockSpacingWrapper layout={instance.layout}>
-                        {isDividerModule(contentFields) ? (
+                        {isReadMoreModule(moduleType?.slug) ? (
+                          // Wie im Designer: die Marke bleibt sichtbar,
+                          // damit erkennbar ist, wo der Anriss endet.
+                          <div className="flex items-center gap-3 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                            <span className="h-px flex-1 bg-border" />
+                            Weiterlesen
+                            <span className="h-px flex-1 bg-border" />
+                          </div>
+                        ) : isDividerModule(contentFields) ? (
                           <DividerOutput />
                         ) : isTilesModule(contentFields) ? (
                           <TilesGridOutput
