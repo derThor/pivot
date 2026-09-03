@@ -657,3 +657,41 @@ unterscheiden). `apps/site` setzt daraus CSS-Variablen und die Klasse
 die eigene Website nichts) und auf einzelnen Beiträgen einer Kategorie
 (`/{kategorie}/{beitrag}`): der Menüpunkt zeigt auf die Übersichtsseite,
 nicht auf jeden Beitrag darunter.
+
+
+## Update 2026-09-03 (2): Globaler Abstand + Schalter für die Startseite
+
+Nutzervorgabe direkt im Anschluss: *"unter einstellung und allgemein und
+frontend soll [Abstand der Seite] global gesetzt werden für alle seiten.
+zusätzlich einen Schalter, ob auf startseite ja oder nein"*.
+
+**Zwei Ebenen, eine Regel.** Der Abstand kommt jetzt aus zwei Quellen:
+
+| Ebene | Wo | Reichweite |
+| --- | --- | --- |
+| Global | Einstellungen → Frontend → "Abstand der Seite" | alle Seiten |
+| Einzeln | Menüpunkt-Dialog → "Abstand der Seite" | die Zielseite dieses Punkts |
+
+Gemischt wird **Wert für Wert, nicht als Paket** (`resolveNavContext()`):
+wer global 80 oben setzt und an einer Seite 0, hat unten weiterhin den
+globalen Wert. Der Menüpunkt ist damit eine Ausnahme von der Regel und
+kein Neuanfang – ein "alles zurück auf Template" an einer einzelnen Seite
+gibt es bewusst nicht, das wäre ein zweiter Mechanismus für dieselbe Sache.
+
+**Der Schalter "Auch auf der Startseite anwenden"**
+(`AppSettings.pageSpacingOnHomepage`, Standard an) betrifft **nur den
+globalen Wert**. Hintergrund: Startseiten beginnen oft mit einem randlosen
+Aufmacher, der bündig unter der Kopfzeile sitzen soll, während alle
+übrigen Seiten Luft brauchen. Ein am Startseiten-Menüpunkt gesetzter Wert
+bleibt davon unberührt – der ist eine ausdrückliche Ansage für genau diese
+Seite.
+
+Die Startseite ist unter ZWEI URLs erreichbar (`/` und `/{slug}`), deshalb
+prüfen `getHome()` und `getPage()` beide auf `isHomepage`. Nur eine der
+beiden zu behandeln wäre der naheliegende Fehler.
+
+**Sichtbarkeit:** die sieben neuen Felder stehen in
+`SITE_RELEVANT_SETTING_KEYS` – ein Speichern verwirft also sofort den
+Cache der Website – und haben ihre deutschen Labels in allen drei dafür
+zuständigen Dateien (`settings.service.ts`, `settings-change-labels.ts` –
+sonst stünde im Protokoll und in der Aktivität der rohe Feldname).

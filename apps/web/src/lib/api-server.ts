@@ -824,6 +824,18 @@ export interface AppSettings {
   footerNavigationPrimaryId: string | null;
   footerNavigationSecondaryId: string | null;
   footerNote: string | null;
+  /** Globaler Abstand oben/unten ALLER Seiten der Webseite, je Breakpoint
+   * (Nutzervorgabe, 2026-09-03). Ein Wert am Menüpunkt sticht den
+   * globalen. `null` = kein globaler Abstand. */
+  pageSpacingTopMobile: number | null;
+  pageSpacingBottomMobile: number | null;
+  pageSpacingTopTablet: number | null;
+  pageSpacingBottomTablet: number | null;
+  pageSpacingTopDesktop: number | null;
+  pageSpacingBottomDesktop: number | null;
+  /** Gilt der globale Abstand auch auf der Startseite? Ein am
+   * Startseiten-Menüpunkt gesetzter Wert bleibt davon unberührt. */
+  pageSpacingOnHomepage: boolean;
   backendCacheEnabled: boolean;
   backendCacheTtlSeconds: number;
   frontendCacheEnabled: boolean;

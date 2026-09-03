@@ -376,13 +376,17 @@ export class PublicContentService {
       select: contentFullSelect,
     });
     if (!content) return { content: null, spacing: EMPTY_SPACING };
-    // Der Abstand hängt am Menüpunkt, nicht am Inhalt (siehe
-    // resolveNavItem()) – für die Startseite ist das genau der als
-    // Startseite markierte Punkt.
-    const navItem = await this.resolveNavItem({ contentId: content.id });
+    // Der Abstand hängt am Menüpunkt und am globalen Wert, nicht am
+    // Inhalt (siehe resolveNavContext()) – für die Startseite ist das
+    // genau der als Startseite markierte Punkt. `isHomepage`, damit der
+    // Schalter "auch auf der Startseite" greifen kann.
+    const { spacing } = await this.resolveNavContext(
+      { contentId: content.id },
+      { isHomepage: true },
+    );
     return {
       content: { ...mapRelations(content), path: '/' },
-      spacing: this.navSpacing(navItem),
+      spacing,
     };
   }
 
@@ -408,13 +412,18 @@ export class PublicContentService {
     // unterschiedlichen Canonicals erreichbar (Duplicate Content).
     const homepageContentId = await this.findHomepageContentId();
     const mapped = mapRelations(content);
-    const navItem = await this.resolveNavItem({ contentId: content.id });
+    // Auch `/{slug}` kann die Startseite sein (sie ist unter beiden URLs
+    // erreichbar) – der Schalter muss deshalb hier genauso greifen.
+    const { spacing } = await this.resolveNavContext(
+      { contentId: content.id },
+      { isHomepage: homepageContentId === content.id },
+    );
     return {
       content: {
         ...mapped,
         path: homepageContentId === content.id ? '/' : buildContentPath(mapped),
       },
-      spacing: this.navSpacing(navItem),
+      spacing,
     };
   }
 
@@ -505,7 +514,9 @@ export class PublicContentService {
     // deshalb vor der Abfrage feststehen: die Blog-Darstellung schreibt
     // jeden Beitrag aus und braucht seine Bausteine, die Liste kommt mit
     // der Zusammenfassung aus (Nutzervorgabe, 2026-09-03).
-    const navItem = await this.resolveNavItem({ categoryId: category.id });
+    const { item: navItem, spacing } = await this.resolveNavContext({
+      categoryId: category.id,
+    });
     const layout = navItem?.categoryLayout ?? CategoryArchiveLayout.LIST;
     const select =
       layout === CategoryArchiveLayout.BLOCKS
@@ -553,7 +564,7 @@ export class PublicContentService {
         rssEnabled: category.rssEnabled,
       },
       layout,
-      spacing: this.navSpacing(navItem),
+      spacing,
       featured: featured ? mapRelations(featured) : null,
       items: items.map((item) => mapRelations(item)),
       meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
@@ -573,14 +584,15 @@ export class PublicContentService {
     return this.categories.generateFeed(category.id);
   }
 
-  /** Der Menüpunkt, über den ein Ziel veröffentlicht ist.
+  /** Der Menüpunkt, über den ein Ziel veröffentlicht ist – und der daraus
+   * fertig gemischte Abstand der Seite.
    *
    * Zwei Einstellungen sitzen am MENÜPUNKT statt am Inhalt: die
    * Darstellung der Kategorie-Übersicht (`categoryLayout`,
-   * Nutzerentscheidung 2026-09-02) und der Außenabstand oben/unten
-   * (`marginTop`/`marginBottom`, Nutzervorgabe 2026-09-03). Der Grund ist
-   * derselbe: dasselbe Ziel darf an zwei Stellen im Menü unterschiedlich
-   * aussehen.
+   * Nutzerentscheidung 2026-09-02) und der Abstand oben/unten
+   * (`marginTop*`/`marginBottom*`, Nutzervorgabe 2026-09-03). Der Grund
+   * ist derselbe: dasselbe Ziel darf an zwei Stellen im Menü
+   * unterschiedlich aussehen.
    *
    * Die öffentliche URL ist aber nur `/{slug}` und weiß nicht, über
    * welchen Menüpunkt jemand gekommen ist. Deshalb wird hier
@@ -591,9 +603,17 @@ export class PublicContentService {
    * gewählten Hauptmenü (`AppSettings.mainNavigationId`) – das ist das
    * Menü, das die Website tatsächlich anzeigt –, sonst der älteste
    * Menüpunkt überhaupt. `null`, wenn gar kein Menüpunkt auf das Ziel
-   * zeigt; dann gelten überall die Vorgaben. */
-  private async resolveNavItem(
+   * zeigt.
+   *
+   * Der Abstand kommt aus ZWEI Quellen (seit 2026-09-03): dem globalen
+   * Wert aus den Einstellungen (Frontend → "Abstand der Seite", gilt für
+   * alle Seiten) und dem Wert am Menüpunkt. Gemischt wird Wert für Wert,
+   * nicht als Paket – wer global 80 oben setzt und an einer Seite 0, hat
+   * unten weiterhin den globalen Wert. So verhält sich der Menüpunkt wie
+   * eine Ausnahme von der Regel und nicht wie ein Neuanfang. */
+  private async resolveNavContext(
     target: { contentId: string } | { categoryId: string },
+    options: { isHomepage?: boolean } = {},
   ) {
     const select = {
       categoryLayout: true,
@@ -605,44 +625,62 @@ export class PublicContentService {
       marginBottomDesktop: true,
     } as const;
     const settings = await this.prisma.appSettings.findFirst({
-      select: { mainNavigationId: true },
+      select: {
+        mainNavigationId: true,
+        pageSpacingTopMobile: true,
+        pageSpacingBottomMobile: true,
+        pageSpacingTopTablet: true,
+        pageSpacingBottomTablet: true,
+        pageSpacingTopDesktop: true,
+        pageSpacingBottomDesktop: true,
+        pageSpacingOnHomepage: true,
+      },
     });
-    if (settings?.mainNavigationId) {
-      const inMain = await this.prisma.navigationItem.findFirst({
-        where: { ...target, navigationId: settings.mainNavigationId },
+    // Erst das Hauptmenü, dann irgendein Menüpunkt – als Ausdruck und
+    // nicht als `let`, damit Prisma den Typ der Auswahl behält.
+    const inMain = settings?.mainNavigationId
+      ? await this.prisma.navigationItem.findFirst({
+          where: { ...target, navigationId: settings.mainNavigationId },
+          orderBy: { createdAt: 'asc' },
+          select,
+        })
+      : null;
+    const item =
+      inMain ??
+      (await this.prisma.navigationItem.findFirst({
+        where: target,
         orderBy: { createdAt: 'asc' },
         select,
-      });
-      if (inMain) return inMain;
-    }
-    return this.prisma.navigationItem.findFirst({
-      where: target,
-      orderBy: { createdAt: 'asc' },
-      select,
-    });
-  }
+      }));
 
-  /** Außenabstand der Zielseite in Pixeln, getrennt nach Breakpoint;
-   * `null` = Vorgabe des Templates. Immer alle vier Werte, damit das
-   * Frontend nicht zwischen "nicht gesetzt" und "nicht mitgeliefert"
-   * unterscheiden muss. */
-  private navSpacing(
-    item: {
-      marginTopMobile: number | null;
-      marginBottomMobile: number | null;
-      marginTopTablet: number | null;
-      marginBottomTablet: number | null;
-      marginTopDesktop: number | null;
-      marginBottomDesktop: number | null;
-    } | null,
-  ) {
+    // Der globale Abstand gilt überall – außer auf der Startseite, wenn der
+    // Schalter in den Einstellungen ihn dort abbestellt (Nutzervorgabe,
+    // 2026-09-03: Startseiten fangen oft mit einem randlosen Aufmacher an,
+    // der bündig sitzen soll). Ein am Menüpunkt gesetzter Wert ist davon
+    // NICHT betroffen: der ist eine ausdrückliche Ansage für genau diese
+    // Seite und sticht ohnehin.
+    const globalApplies =
+      !options.isHomepage || (settings?.pageSpacingOnHomepage ?? true);
+    const global = (value: number | null | undefined) =>
+      globalApplies ? (value ?? null) : null;
+
     return {
-      topMobile: item?.marginTopMobile ?? null,
-      bottomMobile: item?.marginBottomMobile ?? null,
-      topTablet: item?.marginTopTablet ?? null,
-      bottomTablet: item?.marginBottomTablet ?? null,
-      topDesktop: item?.marginTopDesktop ?? null,
-      bottomDesktop: item?.marginBottomDesktop ?? null,
+      item,
+      spacing: {
+        topMobile:
+          item?.marginTopMobile ?? global(settings?.pageSpacingTopMobile),
+        bottomMobile:
+          item?.marginBottomMobile ?? global(settings?.pageSpacingBottomMobile),
+        topTablet:
+          item?.marginTopTablet ?? global(settings?.pageSpacingTopTablet),
+        bottomTablet:
+          item?.marginBottomTablet ?? global(settings?.pageSpacingBottomTablet),
+        topDesktop:
+          item?.marginTopDesktop ?? global(settings?.pageSpacingTopDesktop),
+        bottomDesktop:
+          item?.marginBottomDesktop ??
+          global(settings?.pageSpacingBottomDesktop),
+      },
     };
   }
 

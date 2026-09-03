@@ -97,6 +97,13 @@ export const SETTINGS_FIELD_LABELS: Record<string, string> = {
   backendCacheTtlSeconds: "Backend-Cache-Dauer",
   frontendCacheEnabled: "Frontend-Cache",
   frontendCacheTtlSeconds: "Frontend-Cache-Dauer",
+  pageSpacingTopMobile: "Seitenabstand oben (Mobil)",
+  pageSpacingBottomMobile: "Seitenabstand unten (Mobil)",
+  pageSpacingTopTablet: "Seitenabstand oben (Tablet)",
+  pageSpacingBottomTablet: "Seitenabstand unten (Tablet)",
+  pageSpacingTopDesktop: "Seitenabstand oben (Desktop)",
+  pageSpacingBottomDesktop: "Seitenabstand unten (Desktop)",
+  pageSpacingOnHomepage: "Seitenabstand auch auf der Startseite",
 };
 
 // Für Protokoll-/Aktivitäts-Einträge, die kein Feld ändern, sondern eine

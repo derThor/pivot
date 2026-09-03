@@ -17,10 +17,15 @@ import {
   History,
   Mail,
   Menu,
+  Monitor,
   Palette,
   Plug,
   Shield,
   ShieldCheck,
+  Smartphone,
+  // "Tablet" kollidiert mit nichts, wird aber umbenannt, damit im JSX
+  // klar bleibt, dass es das Icon ist und nicht der Breakpoint-Wert.
+  Tablet as TabletIcon,
   Timer,
   Webhook,
   type LucideIcon,
@@ -169,8 +174,111 @@ const settingsSchema = z.object({
   frontendCacheTtlSeconds: z.number(),
   footerNavigationPrimaryId: z.string().nullable(),
   footerNavigationSecondaryId: z.string().nullable(),
+  pageSpacingTopMobile: z.number().int().min(0).max(1000).nullable(),
+  pageSpacingBottomMobile: z.number().int().min(0).max(1000).nullable(),
+  pageSpacingTopTablet: z.number().int().min(0).max(1000).nullable(),
+  pageSpacingBottomTablet: z.number().int().min(0).max(1000).nullable(),
+  pageSpacingTopDesktop: z.number().int().min(0).max(1000).nullable(),
+  pageSpacingBottomDesktop: z.number().int().min(0).max(1000).nullable(),
+  pageSpacingOnHomepage: z.boolean(),
   footerNote: z.string().nullable(),
 });
+
+/** Die drei Stufen des globalen Seitenabstands. Der Wert ist zugleich das
+ * Namensfragment der sechs Formularfelder (`pageSpacingTop{Mobile}` …),
+ * deshalb englisch und großgeschrieben. */
+const PAGE_SPACING_TABS = [
+  { value: "Mobile" as const, label: "Mobil", icon: Smartphone },
+  { value: "Tablet" as const, label: "Tablet", icon: TabletIcon },
+  { value: "Desktop" as const, label: "Desktop", icon: Monitor },
+];
+
+/** Globaler Abstand oben/unten für ALLE Seiten der öffentlichen Webseite
+ * (Nutzervorgabe, 2026-09-03: "soll global gesetzt werden für alle
+ * seiten").
+ *
+ * Bedienung bewusst 1:1 wie im Menüpunkt-Dialog und im Abstände-Dialog des
+ * Designers – dieselbe Sache soll sich überall gleich anfühlen. Der
+ * Unterschied liegt nur in der Reichweite: hier alle Seiten, dort eine.
+ * Ein Wert am Menüpunkt sticht den globalen, Wert für Wert. */
+function PageSpacingFields({ control }: { control: Control<SettingsValues> }) {
+  const [tab, setTab] =
+    useState<(typeof PAGE_SPACING_TABS)[number]["value"]>("Mobile");
+  return (
+    <div className="flex flex-col gap-2 sm:col-span-2">
+      <Label>Abstand der Seite</Label>
+      <div className="flex gap-1 rounded-lg border border-border bg-muted p-1">
+        {PAGE_SPACING_TABS.map((entry) => {
+          const Icon = entry.icon;
+          return (
+            <button
+              key={entry.value}
+              type="button"
+              onClick={() => setTab(entry.value)}
+              className={cn(
+                "flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors",
+                tab === entry.value
+                  ? "border-primary bg-card shadow-sm"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Icon className="size-4" />
+              {entry.label}
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap items-center gap-4">
+        {(["Top", "Bottom"] as const).map((side) => (
+          <FormField
+            key={side}
+            control={control}
+            name={`pageSpacing${side}${tab}` as const}
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center gap-2">
+                <Label
+                  htmlFor={`pageSpacing${side}${tab}`}
+                  className="text-sm font-normal text-muted-foreground"
+                >
+                  {side === "Top" ? "Oben" : "Unten"}
+                </Label>
+                <FormControl>
+                  <Input
+                    id={`pageSpacing${side}${tab}`}
+                    type="number"
+                    min={0}
+                    max={1000}
+                    placeholder="–"
+                    className="h-9 w-20 px-2 text-center text-sm"
+                    value={field.value ?? ""}
+                    onChange={(e) => {
+                      // Leeres Feld heißt "kein globaler Wert" – das ist
+                      // etwas anderes als 0 (bündig unter der Kopfzeile),
+                      // deshalb null statt einer stillen Umwandlung.
+                      const next = Number(e.target.value);
+                      field.onChange(
+                        e.target.value === "" || !Number.isFinite(next)
+                          ? null
+                          : next,
+                      );
+                    }}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        ))}
+        <span className="text-sm text-muted-foreground">px</span>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Luft über und unter jeder Seite der Webseite. Leer heißt: Vorgabe des
+        Templates – jede Stufe erbt dann die nächstkleinere. Tablet greift ab
+        768px, Desktop ab 1024px Bildschirmbreite. Ein am Menüpunkt gesetzter
+        Abstand hat Vorrang.
+      </p>
+    </div>
+  );
+}
 
 // Exportiert, damit MasterClientCard das Formular typsicher entgegennehmen
 // kann (die Zählerstand-Schwellen liegen im selben Formular, siehe dort).
@@ -680,6 +788,13 @@ export function SettingsForm({
     frontendCacheTtlSeconds: settings.frontendCacheTtlSeconds,
     footerNavigationPrimaryId: settings.footerNavigationPrimaryId,
     footerNavigationSecondaryId: settings.footerNavigationSecondaryId,
+    pageSpacingTopMobile: settings.pageSpacingTopMobile,
+    pageSpacingBottomMobile: settings.pageSpacingBottomMobile,
+    pageSpacingTopTablet: settings.pageSpacingTopTablet,
+    pageSpacingBottomTablet: settings.pageSpacingBottomTablet,
+    pageSpacingTopDesktop: settings.pageSpacingTopDesktop,
+    pageSpacingBottomDesktop: settings.pageSpacingBottomDesktop,
+    pageSpacingOnHomepage: settings.pageSpacingOnHomepage,
     footerNote: settings.footerNote,
   };
 
@@ -1809,6 +1924,22 @@ export function SettingsForm({
                           Wird verwendet, wenn eine Seite keine eigene
                           SEO-Beschreibung hat.
                         </p>
+                      </FormItem>
+                    )}
+                  />
+                  <Separator className="sm:col-span-2" />
+                  <PageSpacingFields control={form.control} />
+                  <FormField
+                    control={form.control}
+                    name="pageSpacingOnHomepage"
+                    render={({ field }) => (
+                      <FormItem className="sm:col-span-2">
+                        <SwitchRow
+                          label="Auch auf der Startseite anwenden"
+                          description="Aus, wenn die Startseite mit einem randlosen Aufmacher beginnt, der bündig unter der Kopfzeile sitzen soll. Ein am Startseiten-Menüpunkt gesetzter Abstand bleibt davon unberührt."
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
                       </FormItem>
                     )}
                   />

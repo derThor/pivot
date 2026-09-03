@@ -925,6 +925,12 @@ Architektur, Entscheidungen und Stolpersteine:
       Kategorie-Übersicht), umgesetzt als `padding` über CSS-Variablen –
       Begründung und Grenzen in
       knowledge-base/content/navigation-management.md
+- [x] Globaler Abstand aller Seiten + Schalter für die Startseite
+      (2026-09-03) – Einstellungen → Frontend → "Abstand der Seite", drei
+      Stufen wie überall. Gilt für alle Seiten; ein Wert am Menüpunkt
+      sticht ihn Wert für Wert. Der Schalter "Auch auf der Startseite
+      anwenden" nimmt nur den GLOBALEN Wert von der Startseite zurück,
+      damit ein randloser Aufmacher dort bündig sitzen kann
 - [x] Dritte Stufe "Tablet" bei den Abständen der Bausteine (2026-09-03) –
       der Abstände-Dialog im Designer hat seitdem drei Reiter. Achtung:
       Desktop-Werte greifen dadurch erst ab 1024px statt ab 640px, dazwischen

@@ -247,6 +247,35 @@ model AppSettings {
   // was nicht eintritt.
   frontendCacheEnabled           Boolean     @default(true)
   frontendCacheTtlSeconds        Int         @default(60)
+
+  // Abstand oben/unten für ALLE Seiten der öffentlichen Webseite, in
+  // Pixeln, getrennt nach Breakpoint (Nutzervorgabe, 2026-09-03: "soll
+  // global gesetzt werden für alle seiten"). Dieselben drei Stufen wie am
+  // Menüpunkt und im Designer: mobil ist der Grundwert, Tablet ab 768px,
+  // Desktop ab 1024px, jede erbt ohne eigenen Wert die nächstkleinere.
+  //
+  // Verhältnis zum Menüpunkt: der EINZELNE Wert am Menüpunkt sticht den
+  // globalen, Seite für Seite und Wert für Wert (siehe
+  // PublicContentService.resolveNavContext()). Global ist also die
+  // Vorgabe, der Menüpunkt die Ausnahme.
+  //
+  // `null` = kein globaler Abstand, dann bleibt es beim Template.
+  pageSpacingTopMobile     Int?
+  pageSpacingBottomMobile  Int?
+  pageSpacingTopTablet     Int?
+  pageSpacingBottomTablet  Int?
+  pageSpacingTopDesktop    Int?
+  pageSpacingBottomDesktop Int?
+
+  // Gilt der globale Abstand auch auf der Startseite? (Nutzervorgabe,
+  // 2026-09-03: "zusätzlich einen Schalter, ob auf startseite ja oder
+  // nein"). Hintergrund: Startseiten beginnen oft mit einem randlosen
+  // Aufmacher, der bündig unter der Kopfzeile sitzen soll – während alle
+  // übrigen Seiten Luft brauchen.
+  //
+  // Betrifft nur den GLOBALEN Wert. Ein am Startseiten-Menüpunkt gesetzter
+  // Abstand ist eine ausdrückliche Ansage und wirkt weiterhin.
+  pageSpacingOnHomepage    Boolean     @default(true)
   // Ein/Aus je Systembenachrichtigung-Kategorie (Nutzervorgabe, 2026-08-16:
   // Karte auf /dashboard/system-messages) – bestimmt, ob die jeweilige
   // Kategorie überhaupt als Banner/Glocken-Zähler auftaucht, unabhängig

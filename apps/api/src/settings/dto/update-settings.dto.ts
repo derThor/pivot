@@ -312,6 +312,59 @@ export class UpdateSettingsDto {
   @Max(86400)
   frontendCacheTtlSeconds?: number;
 
+  // Globaler Abstand oben/unten aller Seiten der Webseite (Nutzervorgabe,
+  // 2026-09-03). null/weglassen = kein globaler Wert; ein am Menüpunkt
+  // gesetzter Wert sticht den globalen.
+  @ApiPropertyOptional({ nullable: true, minimum: 0, maximum: 1000 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1000)
+  pageSpacingTopMobile?: number | null;
+
+  @ApiPropertyOptional({ nullable: true, minimum: 0, maximum: 1000 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1000)
+  pageSpacingBottomMobile?: number | null;
+
+  @ApiPropertyOptional({ nullable: true, minimum: 0, maximum: 1000 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1000)
+  pageSpacingTopTablet?: number | null;
+
+  @ApiPropertyOptional({ nullable: true, minimum: 0, maximum: 1000 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1000)
+  pageSpacingBottomTablet?: number | null;
+
+  @ApiPropertyOptional({ nullable: true, minimum: 0, maximum: 1000 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1000)
+  pageSpacingTopDesktop?: number | null;
+
+  @ApiPropertyOptional({ nullable: true, minimum: 0, maximum: 1000 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1000)
+  pageSpacingBottomDesktop?: number | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Gilt der globale Abstand auch auf der Startseite? Ein am Startseiten-Menüpunkt gesetzter Wert bleibt davon unberührt.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  pageSpacingOnHomepage?: boolean;
+
   @ApiPropertyOptional({ nullable: true })
   @IsOptional()
   @IsString()

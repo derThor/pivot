@@ -122,6 +122,13 @@ const FIELD_LABELS: Record<string, string> = {
   backendCacheTtlSeconds: 'Backend-Cache-Dauer',
   frontendCacheEnabled: 'Frontend-Cache',
   frontendCacheTtlSeconds: 'Frontend-Cache-Dauer',
+  pageSpacingTopMobile: 'Seitenabstand oben (Mobil)',
+  pageSpacingBottomMobile: 'Seitenabstand unten (Mobil)',
+  pageSpacingTopTablet: 'Seitenabstand oben (Tablet)',
+  pageSpacingBottomTablet: 'Seitenabstand unten (Tablet)',
+  pageSpacingTopDesktop: 'Seitenabstand oben (Desktop)',
+  pageSpacingBottomDesktop: 'Seitenabstand unten (Desktop)',
+  pageSpacingOnHomepage: 'Seitenabstand auch auf der Startseite',
 };
 
 // Firma-Stammdaten-Felder (Verwaltung → Firma, "Letzte Änderungen"-Karte,
@@ -223,6 +230,13 @@ const SITE_RELEVANT_SETTING_KEYS = [
   'footerNavigationSecondaryId',
   'frontendCacheEnabled',
   'frontendCacheTtlSeconds',
+  'pageSpacingTopMobile',
+  'pageSpacingBottomMobile',
+  'pageSpacingTopTablet',
+  'pageSpacingBottomTablet',
+  'pageSpacingTopDesktop',
+  'pageSpacingBottomDesktop',
+  'pageSpacingOnHomepage',
 ] as const satisfies readonly (keyof UpdateSettingsDto)[];
 
 @Injectable()
