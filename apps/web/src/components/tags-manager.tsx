@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SortableHead } from "@/components/sortable-head";
 import { useRouter } from "next/navigation";
 
 import { toastDeleted } from "@/components/app-toast";
@@ -90,9 +91,12 @@ export function TagsManager({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Tag</TableHead>
+              {/* "Verwendet in" ist eine gezählte Anzahl verknüpfter
+                  Medien – danach zu sortieren hieße, alle Schlagworte samt
+                  ihren Verknüpfungen zu laden. */}
+              <SortableHead field="name">Tag</SortableHead>
               <TableHead>Verwendet in</TableHead>
-              <TableHead>Erstellt</TableHead>
+              <SortableHead field="createdAt">Erstellt</SortableHead>
               <TableHead className="text-center">Aktionen</TableHead>
             </TableRow>
           </TableHeader>

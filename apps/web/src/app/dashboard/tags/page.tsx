@@ -8,9 +8,14 @@ import { getAllTags, getPublicSettings, getTags } from "@/lib/api-server";
 export default async function TagsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    sortBy?: string;
+    sortDir?: string;
+  }>;
 }) {
-  const { page: pageParam } = await searchParams;
+  const { page: pageParam, sortBy, sortDir: sortDirParam } = await searchParams;
+  const sortDir = sortDirParam === "asc" ? "asc" : "desc";
   const page = Number(pageParam) || 1;
   const [settings, allTags] = await Promise.all([
     getPublicSettings(),
@@ -19,6 +24,8 @@ export default async function TagsPage({
   const pagedTags = await getTags({
     page,
     pageSize: settings?.defaultPageSize ?? 10,
+    sortBy,
+    sortDir,
   });
 
   return (

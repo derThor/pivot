@@ -3,8 +3,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ContentStatus } from '@pivot/database';
+import { Prisma, ContentStatus } from '@pivot/database';
 import { PrismaService } from '../prisma/prisma.service';
+import { resolveOrderBy } from '../common/sort';
 import { SiteCacheService } from '../site-cache/site-cache.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -40,7 +41,17 @@ export class CategoriesService {
     const [items, total] = await Promise.all([
       this.prisma.category.findMany({
         where,
-        orderBy: { name: 'asc' },
+        orderBy: resolveOrderBy<Prisma.CategoryOrderByWithRelationInput>(
+          {
+            name: (dir) => ({ name: dir }),
+            slug: (dir) => ({ slug: dir }),
+            // Category hat bewusst KEIN createdAt (siehe Schema) – nach
+            // Alter laesst sich hier also nicht sortieren.
+          },
+          { name: 'asc' },
+          query.sortBy,
+          query.sortDir,
+        ),
         skip: (page - 1) * pageSize,
         take: pageSize,
         include: { _count: { select: { contents: true } } },

@@ -3,7 +3,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@pivot/database';
 import { PrismaService } from '../prisma/prisma.service';
+import { resolveOrderBy } from '../common/sort';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { QueryTagDto } from './dto/query-tag.dto';
@@ -18,7 +20,16 @@ export class TagsService {
     const [items, total] = await Promise.all([
       this.prisma.tag.findMany({
         where,
-        orderBy: { name: 'asc' },
+        orderBy: resolveOrderBy<Prisma.TagOrderByWithRelationInput>(
+          {
+            name: (dir) => ({ name: dir }),
+            slug: (dir) => ({ slug: dir }),
+            createdAt: (dir) => ({ createdAt: dir }),
+          },
+          { name: 'asc' },
+          query.sortBy,
+          query.sortDir,
+        ),
         skip: (page - 1) * pageSize,
         take: pageSize,
         include: { _count: { select: { media: true } } },

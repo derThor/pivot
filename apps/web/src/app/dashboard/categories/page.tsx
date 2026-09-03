@@ -21,6 +21,8 @@ export default async function CategoriesPage({
     search?: string;
     postsPage?: string;
     categoryPage?: string;
+    sortBy?: string;
+    sortDir?: string;
   }>;
 }) {
   const {
@@ -29,13 +31,18 @@ export default async function CategoriesPage({
     search,
     postsPage,
     categoryPage,
+    sortBy,
+    sortDir: sortDirParam,
   } = await searchParams;
+  const sortDir = sortDirParam === "asc" ? "asc" : "desc";
 
   const settings = await getPublicSettings();
   const [categories, allTags] = await Promise.all([
     getCategories({
       page: Number(categoryPage) || 1,
       pageSize: settings?.defaultPageSize ?? 10,
+      sortBy,
+      sortDir,
     }),
     getAllTags(),
   ]);

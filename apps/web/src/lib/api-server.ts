@@ -607,10 +607,17 @@ export interface TaxonomyListResponse {
   meta: { page: number; pageSize: number; total: number; pageCount: number };
 }
 
-function taxonomyQuery(params?: { page?: number; pageSize?: number }) {
+function taxonomyQuery(params?: {
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDir?: "asc" | "desc";
+}) {
   const search = new URLSearchParams();
   if (params?.page) search.set("page", String(params.page));
   if (params?.pageSize) search.set("pageSize", String(params.pageSize));
+  if (params?.sortBy) search.set("sortBy", params.sortBy);
+  if (params?.sortDir) search.set("sortDir", params.sortDir);
   const query = search.toString();
   return query ? `?${query}` : "";
 }
@@ -625,7 +632,12 @@ export interface CategoryListResponse {
   meta: { page: number; pageSize: number; total: number; pageCount: number };
 }
 
-export function getCategories(params?: { page?: number; pageSize?: number }) {
+export function getCategories(params?: {
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDir?: "asc" | "desc";
+}) {
   return apiFetch<CategoryListResponse>(`/categories${taxonomyQuery(params)}`);
 }
 
@@ -673,7 +685,12 @@ export interface TagListResponse {
   meta: { page: number; pageSize: number; total: number; pageCount: number };
 }
 
-export function getTags(params?: { page?: number; pageSize?: number }) {
+export function getTags(params?: {
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDir?: "asc" | "desc";
+}) {
   return apiFetch<TagListResponse>(`/tags${taxonomyQuery(params)}`);
 }
 
@@ -1552,11 +1569,15 @@ export function getAllFormSubmissions(params?: {
   page?: number;
   pageSize?: number;
   isRead?: boolean;
+  sortBy?: string;
+  sortDir?: "asc" | "desc";
 }) {
   const search = new URLSearchParams();
   if (params?.page) search.set("page", String(params.page));
   if (params?.pageSize) search.set("pageSize", String(params.pageSize));
   if (params?.isRead !== undefined) search.set("isRead", String(params.isRead));
+  if (params?.sortBy) search.set("sortBy", params.sortBy);
+  if (params?.sortDir) search.set("sortDir", params.sortDir);
   const query = search.toString();
   return apiFetch<FormSubmissionListResponse>(
     `/forms/submissions${query ? `?${query}` : ""}`,

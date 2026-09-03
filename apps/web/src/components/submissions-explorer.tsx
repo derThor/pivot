@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SortableHead } from "@/components/sortable-head";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
@@ -256,9 +257,11 @@ export function SubmissionsExplorer({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-8" />
-                {showForm && <TableHead>Formular</TableHead>}
+                {/* "Inhalt" ist die zusammengesetzte Kurzfassung aller
+                    Feldwerte aus dem JSON – dahinter steht keine Spalte. */}
+                {showForm && <SortableHead field="form">Formular</SortableHead>}
                 <TableHead>Inhalt</TableHead>
-                <TableHead>Eingegangen</TableHead>
+                <SortableHead field="createdAt">Eingegangen</SortableHead>
                 <TableHead className="text-center">Aktionen</TableHead>
               </TableRow>
             </TableHeader>

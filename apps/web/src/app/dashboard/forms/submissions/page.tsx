@@ -6,13 +6,18 @@ import { getAllFormSubmissions, getPrivacySettings } from "@/lib/api-server";
 export default async function AllFormSubmissionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    sortBy?: string;
+    sortDir?: string;
+  }>;
 }) {
-  const { page: pageParam } = await searchParams;
+  const { page: pageParam, sortBy, sortDir: sortDirParam } = await searchParams;
+  const sortDir = sortDirParam === "asc" ? "asc" : "desc";
   const page = Number(pageParam) || 1;
 
   const [result, privacy] = await Promise.all([
-    getAllFormSubmissions({ page }),
+    getAllFormSubmissions({ page, sortBy, sortDir }),
     getPrivacySettings(),
   ]);
 

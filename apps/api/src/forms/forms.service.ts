@@ -247,7 +247,16 @@ export class FormsService {
     const [items, total] = await Promise.all([
       this.prisma.formSubmission.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: resolveOrderBy<Prisma.FormSubmissionOrderByWithRelationInput>(
+          {
+            form: (dir) => ({ form: { name: dir } }),
+            createdAt: (dir) => ({ createdAt: dir }),
+            isRead: (dir) => ({ isRead: dir }),
+          },
+          { createdAt: 'desc' },
+          query.sortBy,
+          query.sortDir,
+        ),
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
