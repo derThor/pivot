@@ -564,11 +564,15 @@ export function BlockEditorField({
   onChange,
   moduleTypes,
   globalModules,
+  previewPath,
 }: {
   value: ModuleInstance[];
   onChange: (value: ModuleInstance[]) => void;
   moduleTypes: ModuleType[];
   globalModules: GlobalModule[];
+  /** Pfad für die Adresszeile des Browser-Rahmens, z.B. "/ueber-uns".
+   * Ohne Angabe steht dort nur "Designer". */
+  previewPath?: string;
 }) {
   const [search, setSearch] = useState("");
   const [draggingPaletteId, setDraggingPaletteId] = useState<string | null>(
@@ -984,7 +988,23 @@ export function BlockEditorField({
         </p>
       </div>
 
-      <div className="flex w-full min-w-0 flex-1 flex-col rounded-lg border">
+      <div className="flex w-full min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card">
+        {/* Browser-Rahmen wie in der Versionshistorie (Nutzervorgabe,
+            2026-09-03) – dieselbe Leiste mit drei Punkten und Adresszeile,
+            damit auf einen Blick klar ist: was hier steht, ist die spätere
+            Seite und nicht Teil der Verwaltungsoberfläche. Bewusst 1:1 die
+            Klassen von dort übernommen statt eines ähnlich aussehenden
+            Eigenbaus. */}
+        <div className="flex shrink-0 items-center gap-3 border-b border-border bg-muted px-4 py-2.5">
+          <div className="flex shrink-0 gap-1.5">
+            <span className="size-2.5 rounded-full bg-border" />
+            <span className="size-2.5 rounded-full bg-border" />
+            <span className="size-2.5 rounded-full bg-border" />
+          </div>
+          <div className="flex-1 truncate rounded-md bg-card px-3 py-1 text-center text-xs text-muted-foreground">
+            {previewPath ? `${previewPath} · Designer` : "Designer"}
+          </div>
+        </div>
         {/* `flow-root` statt `flex flex-col`: Blöcke mit Links-/
             Rechtsbündig floaten (siehe `blockLayoutClasses`) – Flex-Kinder
             ignorieren `float` komplett, außerdem fängt `flow-root` das

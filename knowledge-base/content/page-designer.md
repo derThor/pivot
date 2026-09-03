@@ -654,3 +654,34 @@ Abzeichen oben links am Baustein schließt genau diese Lücke.
   Redaktions-Information.
 - Erkannt wird der Zustand an BEIDEN möglichen Stellen: Ausrichtung am
   Block oder am Bild (siehe `resolveBlockLayout`).
+
+### Browser-Rahmen um die Designer-Fläche
+
+*„mach um den rechten Bereich einen Browserrahmen wie bei
+Versionshistorie"* – dieselbe Leiste mit drei Punkten und Adresszeile, 1:1
+mit den Klassen aus `content-versions-explorer.tsx` statt eines ähnlich
+aussehenden Eigenbaus.
+
+Der Rahmen macht auf einen Blick klar, wo die Verwaltungsoberfläche endet
+und die spätere Seite beginnt – im Designer stehen beide unmittelbar
+nebeneinander.
+
+In der Adresszeile steht der Pfad der Seite (`previewPath`, aus dem
+Slug-Feld des Editors), sonst nur „Designer".
+
+### Kopfzeilenhöhe bei voller Fensterhöhe
+
+*„die Headerhöhe wird bei Vollbild angehängt, kann das abgerechnet
+werden? denk an mobil"* – ein Aufmacher auf „Volle Fensterhöhe" rechnet
+jetzt `calc(100vh - var(--header-height, 0px))`. Ohne den Abzug ragte er
+genau um die Kopfzeile unter den Bildschirmrand.
+
+**Gemessen statt festgelegt:** `header-height-sync.tsx` schreibt die
+tatsächliche Höhe per `ResizeObserver` nach `--header-height`. Ein fester
+Wert im CSS wäre auf schmalen Geräten falsch, weil die Kopfzeile dort
+umbricht (Logo oben, Menü darunter) – also genau dort, wo der Bildschirm
+am knappsten ist. Der Beobachter erfasst auch Drehung und Zoom.
+
+Rückfall ist `0px`: bis zur ersten Messung ist der Aufmacher lieber etwas
+zu hoch als zu kurz. Im Seiten-Designer gibt es die Variable nicht, dort
+bleibt es bei vollen `100vh`.

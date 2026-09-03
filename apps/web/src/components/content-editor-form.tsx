@@ -881,6 +881,11 @@ export function ContentEditorForm({
                             }
                             moduleTypes={moduleTypes}
                             globalModules={globalModules}
+                            previewPath={
+                              watchedValues.slug
+                                ? `/${watchedValues.slug}`
+                                : undefined
+                            }
                           />
                           {dataErrors[field.name] && (
                             <p className="text-center text-sm text-destructive">

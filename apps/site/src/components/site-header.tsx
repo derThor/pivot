@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { SiteLogo } from "@/components/site-logo";
 
+import { HeaderHeightSync } from "@/components/header-height-sync";
 import type { SiteNavigation, SiteNavigationItem } from "@/lib/api";
 
 /** Klassen je Darstellung eines Menüpunkts (`NavigationItem.appearance`).
@@ -69,6 +70,7 @@ export function SiteHeader({
   const actions = items.filter((item) => item.appearance !== "LINK");
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur-md">
+      <HeaderHeightSync />
       <div className="mx-auto flex w-full max-w-[var(--content-width,1180px)] flex-wrap items-center gap-x-8 gap-y-3 px-6 py-3.5 sm:px-8">
         <Link href="/" className="mr-auto flex items-center">
           <SiteLogo variant="light" siteTitle={siteTitle} priority />

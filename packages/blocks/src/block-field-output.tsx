@@ -137,7 +137,13 @@ export function CoverOutput({
   // stünde er über den Rand hinaus.
   const heightStyle =
     height === "screen"
-      ? { minHeight: "100vh" }
+      ? // Kopfzeile abziehen (Nutzervorgabe, 2026-09-03): sie steht ueber
+        // dem Aufmacher, reines 100vh liefe genau um ihre Hoehe unter den
+        // Bildschirmrand. Der Wert wird auf der Website zur Laufzeit
+        // gemessen (header-height-sync.tsx); wo es ihn nicht gibt -- etwa
+        // im Seiten-Designer -- greift der Rueckfall 0px und es bleibt bei
+        // vollen 100vh.
+        { minHeight: "calc(100vh - var(--header-height, 0px))" }
       : typeof height === "number"
         ? { minHeight: `${height}px` }
         : undefined;

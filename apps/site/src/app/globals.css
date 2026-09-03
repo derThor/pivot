@@ -61,6 +61,17 @@
 }
 
 @layer base {
+  :root {
+    /* Tatsaechliche Hoehe des Kopfbereichs, zur Laufzeit gemessen (siehe
+       components/header-height-sync.tsx). Ein Aufmacher auf volle
+       Fensterhoehe rechnet 100vh minus diesem Wert, sonst ragt er genau
+       um die Kopfzeile unter den Bildschirmrand.
+
+       0px als Rueckfall: bis zur ersten Messung ist der Aufmacher lieber
+       etwas zu hoch als zu kurz. */
+    --header-height: 0px;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
