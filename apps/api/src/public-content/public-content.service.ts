@@ -693,7 +693,7 @@ export class PublicContentService {
       where: { slug: categorySlug, deletedAt: null },
       select: { id: true },
     });
-    if (!category) return { content: null };
+    if (!category) return { content: null, spacing: EMPTY_SPACING };
     const content = await this.prisma.content.findFirst({
       where: {
         slug: contentSlug,
@@ -704,9 +704,23 @@ export class PublicContentService {
       },
       select: contentFullSelect,
     });
-    if (!content) return { content: null };
+    if (!content) return { content: null, spacing: EMPTY_SPACING };
     const mapped = mapRelations(content);
-    return { content: { ...mapped, path: buildContentPath(mapped) } };
+    // Auch ein Beitrag INNERHALB einer Kategorie bekommt den Abstand
+    // (Fehlerbild 2026-09-03: "auf einer unterseite werden die werte nicht
+    // gezeigt, startseite ja" – dieser Endpunkt lieferte gar kein
+    // `spacing`). In aller Regel greift hier der globale Wert: Menüpunkte
+    // zeigen auf die Übersichtsseite, nicht auf einzelne Beiträge. Zeigt
+    // doch einer direkt auf diesen Inhalt, sticht dessen Wert wie überall.
+    const homepageContentId = await this.findHomepageContentId();
+    const { spacing } = await this.resolveNavContext(
+      { contentId: content.id },
+      { isHomepage: homepageContentId === content.id },
+    );
+    return {
+      content: { ...mapped, path: buildContentPath(mapped) },
+      spacing,
+    };
   }
 
   /** Sitemap über alle veröffentlichten Seiten/Beiträge, `robotsIndex`

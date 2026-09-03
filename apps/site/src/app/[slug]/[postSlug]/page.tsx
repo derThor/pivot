@@ -60,6 +60,9 @@ export default async function CategoryPostPage({
       {preview && <PreviewNotice />}
       <ContentArticle
         content={post}
+        // In der Vorschau leer: der Token kennt weder Menüpunkt noch
+        // Seitenkontext (siehe getPreviewContent()).
+        spacing={post.spacing}
         moduleTypes={moduleTypes}
         globalModules={globalModules}
       />

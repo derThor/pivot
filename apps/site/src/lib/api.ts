@@ -273,7 +273,12 @@ export async function getPreviewContent(token: string) {
   );
   if (!res.ok) return null;
   const body = (await res.json()) as { content: PublicContent | null };
-  return body.content;
+  if (!body.content) return null;
+  // Ohne Abstand: die Vorschau hängt an einem Token und kennt weder
+  // Menüpunkt noch Seitenkontext. Das Feld ist trotzdem gesetzt, damit
+  // Vorschau und normaler Weg dieselbe Form haben und die Seiten sie nicht
+  // auseinanderhalten müssen.
+  return { ...body.content, spacing: NO_SPACING };
 }
 
 /** Zusammenfassung eines Beitrags in der Archivliste (`contentSummarySelect`
@@ -339,10 +344,16 @@ export async function getCategoryArchive(slug: string, page: number) {
 
 /** Einzelner Beitrag innerhalb einer Kategorie (`/{kategorie}/{slug}`). */
 export async function getCategoryPost(categorySlug: string, slug: string) {
-  const res = await getJson<{ content: PublicContent | null }>(
+  const res = await getJson<{
+    content: PublicContent | null;
+    spacing?: PageSpacing;
+  }>(
     `/public/categories/${encodeURIComponent(categorySlug)}/${encodeURIComponent(slug)}`,
   );
-  return res?.content ?? null;
+  if (!res?.content) return null;
+  // Wie bei getPage(): der Abstand kommt neben dem Inhalt an und wird hier
+  // zusammengeführt, damit die Aufrufer nur EIN Objekt haben.
+  return { ...res.content, spacing: res.spacing ?? NO_SPACING };
 }
 
 /** Modul-Typen und globale Module sind zum Auflösen von

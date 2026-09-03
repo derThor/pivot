@@ -653,10 +653,14 @@ unterscheiden). `apps/site` setzt daraus CSS-Variablen und die Klasse
   über Media Queries auf – Tablet ab 48rem (768px), Desktop ab 64rem
   (1024px), jede Stufe erbt ohne eigenen Wert die nächstkleinere.
 
-**Ohne Wirkung** bei einem Menüpunkt auf eine externe URL (dort rendert
-die eigene Website nichts) und auf einzelnen Beiträgen einer Kategorie
-(`/{kategorie}/{beitrag}`): der Menüpunkt zeigt auf die Übersichtsseite,
-nicht auf jeden Beitrag darunter.
+**Ohne Wirkung** bei einem Menüpunkt auf eine externe URL – dort rendert
+die eigene Website nichts.
+
+Auf einzelnen Beiträgen einer Kategorie (`/{kategorie}/{beitrag}`) greift
+der Wert des Menüpunkts in der Regel nicht: der zeigt auf die
+Übersichtsseite, nicht auf jeden Beitrag darunter. Der GLOBALE Wert gilt
+dort aber sehr wohl (siehe nächstes Update) – anfangs nicht, das war ein
+Fehler und ist behoben.
 
 
 ## Update 2026-09-03 (2): Globaler Abstand + Schalter für die Startseite
@@ -689,6 +693,16 @@ Seite.
 Die Startseite ist unter ZWEI URLs erreichbar (`/` und `/{slug}`), deshalb
 prüfen `getHome()` und `getPage()` beide auf `isHomepage`. Nur eine der
 beiden zu behandeln wäre der naheliegende Fehler.
+
+**Nachgezogen (Fehlerbild noch am selben Tag):** *"auf einer unterseite
+werden die werte nicht gezeigt, startseite ja"* – `getCategoryPost()`
+lieferte gar kein `spacing`, ein Beitrag innerhalb einer Kategorie ging
+damit leer aus. Jeder der VIER Inhalts-Endpunkte muss den Abstand liefern
+(Startseite, freie Seite, Kategorie-Übersicht, Beitrag); wer einen neuen
+hinzufügt, muss daran denken. Die Vorschau (`getPreview()`) ist die
+bewusste Ausnahme: sie hängt an einem Token und kennt weder Menüpunkt noch
+Seitenkontext – `apps/site` setzt dort `NO_SPACING`, damit beide Wege
+dieselbe Form haben.
 
 **Sichtbarkeit:** die sieben neuen Felder stehen in
 `SITE_RELEVANT_SETTING_KEYS` – ein Speichern verwirft also sofort den
