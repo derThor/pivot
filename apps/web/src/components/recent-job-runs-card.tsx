@@ -15,13 +15,25 @@ import {
 } from "@/components/ui/card";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { PaginationControls } from "@/components/pagination-controls";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatRelativePast } from "@/lib/jobs-format";
-import type { JobRunsResponse } from "@/lib/api-server";
+import type { JobRunStatusFilter, JobRunsResponse } from "@/lib/api-server";
 import { bff } from "@/lib/bff";
 
 const STATUS_DOT: Record<string, string> = {
   success: "bg-green-500",
   error: "bg-red-500",
+};
+
+/** Reiter der Karte (Nutzervorgabe, 2026-09-03). "alle" ist kein Status
+ * in der Datenbank, sondern das Weglassen des Filters – deshalb ein
+ * eigener Schlüssel statt `undefined` im Reiter-Zustand. */
+const TAB_ALL = "alle";
+
+const EMPTY_TEXT: Record<string, string> = {
+  alle: "Noch keine Läufe protokolliert.",
+  success: "Keine erfolgreichen Läufe.",
+  error: "Keine fehlgeschlagenen Läufe — gut so.",
 };
 
 /** "Jobs"-Reiter unter Einstellungen, Karte "Letzte Läufe" (Nutzervorgabe,
@@ -32,10 +44,22 @@ const STATUS_DOT: Record<string, string> = {
  * gewandert (Nutzervorgabe, 2026-08-30). */
 export function RecentJobRunsCard({
   runs: initialRuns,
+  status,
 }: {
   runs: JobRunsResponse;
+  /** Aktiver Reiter; `undefined` = "Alle". */
+  status?: JobRunStatusFilter;
 }) {
   const router = useRouter();
+  const activeTab = status ?? TAB_ALL;
+  // Der Reiter steht in der URL, nicht im lokalen Zustand: gefiltert wird
+  // serverseitig (sonst zeigte "Seite 2" einen Ausschnitt aus einer
+  // anderen Grundmenge), und die Seite lädt ihre Daten aus genau diesen
+  // Query-Parametern. Gleiches Muster wie die Pagination darunter.
+  const hrefFor = (tab: string, page: number) =>
+    tab === TAB_ALL
+      ? `?jobsRunsPage=${page}`
+      : `?jobsRunsStatus=${tab}&jobsRunsPage=${page}`;
   const [runs, setRuns] = useState(initialRuns);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [confirmAllOpen, setConfirmAllOpen] = useState(false);
@@ -56,7 +80,9 @@ export function RecentJobRunsCard({
     try {
       const res = await fetch(
         bff(
-          `/api/jobs/runs?page=${runs.meta.page}&pageSize=${runs.meta.pageSize}`,
+          `/api/jobs/runs?page=${runs.meta.page}&pageSize=${runs.meta.pageSize}${
+            status ? `&status=${status}` : ""
+          }`,
         ),
       );
       const data = await res.json().catch(() => null);
@@ -92,8 +118,16 @@ export function RecentJobRunsCard({
                   Alle löschen
                 </Button>
               }
-              title={`${runs.meta.total} Läufe endgültig löschen?`}
-              description="Diese Aktion kann nicht rückgängig gemacht werden."
+              title={
+                status
+                  ? "Alle Läufe endgültig löschen?"
+                  : `${runs.meta.total} Läufe endgültig löschen?`
+              }
+              description={
+                status
+                  ? "Gelöscht wird die gesamte Historie, nicht nur der angezeigte Reiter. Diese Aktion kann nicht rückgängig gemacht werden."
+                  : "Diese Aktion kann nicht rückgängig gemacht werden."
+              }
               onConfirm={handleDeleteAll}
             />
             <Button
@@ -113,9 +147,19 @@ export function RecentJobRunsCard({
         </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => router.push(hrefFor(String(value), 1))}
+        >
+          <TabsList className="!h-auto w-fit justify-start gap-1 !overflow-visible p-1">
+            <TabsTrigger value={TAB_ALL}>Alle</TabsTrigger>
+            <TabsTrigger value="success">Erfolgreich</TabsTrigger>
+            <TabsTrigger value="error">Fehler</TabsTrigger>
+          </TabsList>
+        </Tabs>
         {runs.items.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Noch keine Läufe protokolliert.
+            {EMPTY_TEXT[activeTab]}
           </p>
         ) : (
           runs.items.map((run) => (
@@ -144,7 +188,7 @@ export function RecentJobRunsCard({
           <PaginationControls
             page={runs.meta.page}
             pageCount={runs.meta.pageCount}
-            buildHref={(p) => `?jobsRunsPage=${p}`}
+            buildHref={(p) => hrefFor(activeTab, p)}
           />
         )}
       </CardContent>

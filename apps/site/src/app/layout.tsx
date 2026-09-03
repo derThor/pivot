@@ -1,29 +1,11 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { Metadata } from "next";
-import { Manrope, IBM_Plex_Mono } from "next/font/google";
 import { resolveImageSrc } from "@pivot/blocks";
 import { getSiteSettings } from "@/lib/api";
+import { fontVariables } from "@/template/fonts";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import "./globals.css";
-
-// Schriften des Entwurfs (siehe globals.css). Über next/font statt über
-// einen <link> auf Google Fonts: die Dateien werden mitgebaut und lokal
-// ausgeliefert – kein Aufruf zu einem Dritten beim Seitenaufruf, was auf
-// einer Website mit Datenschutzerklärung der wichtigere Punkt ist als die
-// eingesparte Verbindung.
-const manrope = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const plexMono = IBM_Plex_Mono({
-  variable: "--font-plex-mono",
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  display: "swap",
-});
 
 // Siehe REVALIDATE_SECONDS in lib/api.ts – hier bewusst als Literal, weil
 // Next.js diesen Segment-Wert statisch auswerten muss.
@@ -72,7 +54,10 @@ export default async function RootLayout({
     <html
       lang="de"
       style={themeStyle}
-      className={`${manrope.variable} ${plexMono.variable}`}
+      // Welche Schriften das sind, entscheidet das Template dieser
+      // Installation (src/template/fonts.ts) – diese Datei hier bleibt
+      // projektübergreifend gleich.
+      className={fontVariables}
     >
       <body className="flex min-h-screen flex-col">
         <SiteHeader

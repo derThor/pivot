@@ -40,7 +40,11 @@ export class JobsController {
   @RequirePermission('settings:read')
   @Get('runs')
   findRecentRuns(@Query() query: QueryJobRunsDto) {
-    return this.jobsService.findRecentRuns(query.page, query.pageSize);
+    return this.jobsService.findRecentRuns(
+      query.page,
+      query.pageSize,
+      query.status,
+    );
   }
 
   @RequirePermission('settings:read')

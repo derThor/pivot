@@ -994,9 +994,23 @@ export interface JobRunsResponse {
   meta: { page: number; pageSize: number; total: number; pageCount: number };
 }
 
-export function getJobRuns(params?: { page?: number; pageSize?: number }) {
-  return apiFetch<JobRunsResponse>(`/jobs/runs${taxonomyQuery(params)}`);
+/** `status` filtert die "Letzte Läufe"-Karte auf einen ihrer Reiter
+ * (Nutzervorgabe, 2026-09-03). Ohne Angabe: alle Läufe. */
+export function getJobRuns(params?: {
+  page?: number;
+  pageSize?: number;
+  status?: JobRunStatusFilter;
+}) {
+  const query = taxonomyQuery(params);
+  const suffix = params?.status
+    ? `${query ? "&" : "?"}status=${params.status}`
+    : "";
+  return apiFetch<JobRunsResponse>(`/jobs/runs${query}${suffix}`);
 }
+
+/** Die beiden Status, die `JobsService` schreibt – ein dritter Reiter
+ * wäre immer leer. */
+export type JobRunStatusFilter = "success" | "error";
 
 // Eigener, engerer Endpoint für `company:read` (Nutzervorgabe, 2026-08-21:
 // "admin soll aber firma sehen können" – Administrator hat kein
