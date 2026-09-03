@@ -256,3 +256,31 @@ vorher"*): im Light Mode bleibt es beim normalen `bg-background`, dort
 stand das dunkle Logo ja nie im Weg. Anders als beim Dunkelmodus-Logo, das
 seine dunkle Fläche in BEIDEN Modi behält – hell auf hell wäre auch im
 Light Mode unlesbar.
+
+
+## Update 2026-09-03: Festes Favicon für die Verwaltung
+
+Nutzervorgabe mit Bildvorlage: *"backend soll immer dieses favicon
+haben"*. Die Verwaltung trägt seitdem `apps/web/src/app/icon.png` (das
+Pivot-Zeichen, 512×512, lime auf Navy); die frühere `favicon.ico` ist
+entfallen.
+
+**Warum "immer":** das Favicon der Verwaltung ist bewusst NICHT das aus
+den Einstellungen. `AppSettings.faviconUrl` gehört der öffentlichen
+Website (siehe `apps/site/src/app/layout.tsx`, `metadata.icons`) – dort
+soll jede Installation ihr eigenes Zeichen zeigen. Die Verwaltung ist das
+Produkt selbst und behält ihr eigenes, egal was eine Installation für ihre
+Website hinterlegt hat. Diese Trennung bestand schon vorher, es war nur nie
+aufgeschrieben.
+
+**Technisch:** `icon.png` statt `favicon.ico` ist die Dateikonvention des
+App Routers – Next.js baut daraus den `<link rel="icon">` samt Hash im
+Dateinamen. Beide Dateien nebeneinander liegen zu lassen wäre unklar
+(zwei konkurrierende Icons), deshalb ist die alte gelöscht.
+
+**Für abgeleitete Installationen (strasev & Co.) wichtig:** `apps/web` ist
+gemeinsamer Code, das Zeichen kommt beim nächsten Abgleich also überall
+an. Wer dort ein eigenes Verwaltungs-Icon will, muss `icon.png` wie die
+Frontend-Vorlage projekteigen halten (siehe
+knowledge-base/platform/master-slave-licensing.md zum Umgang mit
+projekteigenen Dateien).
