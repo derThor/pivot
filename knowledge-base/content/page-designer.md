@@ -775,3 +775,9 @@ Beschriftung `dark:text-[#8df0b4]` – exakt die Werte der Variante
 Abstufung. Alle übrigen Teile der Box (Außenrahmen, "Inhalt"-Feld,
 Eingabefelder, Verkettungs-Knopf) hingen schon an Theme-Tokens
 (`bg-muted`, `bg-card`, `border-border`) und waren deshalb nie betroffen.
+
+Direkt danach nachgeschoben (*"inputfelder rahmen drum"*): auf der nun
+dunkelgrünen Fläche ging der übliche Eingabe-Rahmen (LINE) unter. Die
+Zahlenfelder des Box-Modells tragen deshalb `dark:border-button-border`
+(LINE2) – derselbe eine Stufe hellere Ton, der im Dunkelmodus schon dunkle
+Knöpfe sichtbar macht. Nur im Dark Mode, der Light Mode bleibt unberührt.

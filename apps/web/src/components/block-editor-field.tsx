@@ -407,7 +407,13 @@ function SpacingSideInput({
       // bestimmt allein das Innenabstand-/"Inhalt"-Element – ein großes
       // Eingabefeld würde die Spalte unnötig aufblähen (Nutzervorgabe,
       // 2026-08-18: "Inputs kleiner, innerer Bereich breiter").
-      className="h-9 w-12 min-w-0 shrink-0 px-1 text-center text-sm leading-normal"
+      // `dark:border-button-border` (Nutzervorgabe, 2026-09-03:
+      // "inputfelder rahmen drum"): der übliche Eingabe-Rahmen (LINE) ging
+      // im Dunkelmodus auf der grünen Innenabstand-Fläche unter. LINE2 ist
+      // derselbe eine Stufe hellere Ton, der dort schon dunkle Knöpfe
+      // sichtbar macht – kein neuer Wert, und der Light Mode bleibt
+      // unangetastet.
+      className="h-9 w-12 min-w-0 shrink-0 px-1 text-center text-sm leading-normal dark:border-button-border"
     />
   );
 }
