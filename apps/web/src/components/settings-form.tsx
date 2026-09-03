@@ -1513,7 +1513,14 @@ export function SettingsForm({
                                   logo") – die Kachel steht neben der
                                   Logo-Kachel und war halb so hoch. */}
                               <div className="flex flex-1 flex-col gap-3 rounded-lg border border-border bg-muted p-4">
-                                <div className="flex flex-wrap items-center gap-2">
+                                {/* `flex-1` + `content-center`: die Kachel
+                                    ist so hoch wie die Logo-Kachel daneben,
+                                    die Farbreihen stehen darin senkrecht
+                                    mittig statt oben (Nutzervorgabe,
+                                    2026-09-03). `content-center` greift, weil
+                                    der Container umbricht – bei
+                                    `flex-nowrap` bliebe es wirkungslos. */}
+                                <div className="flex flex-1 flex-wrap content-center items-center gap-2">
                                   {ACCENT_PRESETS.map((preset) => {
                                     const isSelected =
                                       current.toLowerCase() ===
@@ -1570,7 +1577,7 @@ export function SettingsForm({
                                     />
                                   </label>
                                 </div>
-                                <span className="mt-auto ml-auto shrink-0 font-mono text-sm text-muted-foreground">
+                                <span className="ml-auto shrink-0 font-mono text-sm text-muted-foreground">
                                   {current.toLowerCase()}
                                 </span>
                               </div>

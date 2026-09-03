@@ -223,7 +223,9 @@ leeraum sein"*). 17 plus der Knopf für die eigene Farbe ergeben 18 Felder:
 auf breiten Kacheln zwei Reihen, auf schmalen drei – in beiden Fällen in
 der Nähe der Logo-Kachel. Wer erweitert, sollte das im Blick behalten. Sortiert nach Farbfamilie (Grün → Türkis → Blau → Violett → Rot →
 Orange/Gelb → Neutrale), damit es nicht wie eine Zufallsauswahl wirkt. Sie
-brechen in einem `flex-wrap`-Raster um; der Hex-Wert steht per `mt-auto ml-auto` unten rechts statt rechts
+brechen in einem `flex-wrap`-Raster um und stehen darin senkrecht mittig
+(`flex-1 content-center`, Nutzervorgabe *"platziere die farben mittig in
+der höhe"* – `content-center` wirkt nur, weil der Container umbricht); der Hex-Wert steht per `mt-auto ml-auto` unten rechts statt rechts
 neben den Farben. `h-full`/`flex-1` sind von der `FormItem` bis zur Box
 durchgereicht, damit die Kachel die Höhe der Zeile auch dann mitgeht, wenn
 ihr Inhalt kürzer ist.
