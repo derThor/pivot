@@ -83,7 +83,7 @@ export function SiteFooter({
 
   return (
     <footer className="mt-24 bg-surface-dark text-white">
-      <div className="mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-10 px-6 pt-16 pb-7 sm:grid-cols-2 sm:px-8 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+      <div className="mx-auto grid w-full max-w-[var(--content-width,1180px)] grid-cols-1 gap-10 px-6 pt-16 pb-7 sm:grid-cols-2 sm:px-8 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
           <SiteLogo variant="dark" siteTitle={site.siteTitle} />
           {site.siteTagline && (
@@ -115,7 +115,7 @@ export function SiteFooter({
         )}
       </div>
 
-      <div className="mx-auto flex w-full max-w-[1180px] flex-wrap justify-between gap-4 border-t border-white/10 px-6 pt-5 pb-10 sm:px-8">
+      <div className="mx-auto flex w-full max-w-[var(--content-width,1180px)] flex-wrap justify-between gap-4 border-t border-white/10 px-6 pt-5 pb-10 sm:px-8">
         <span className="text-[13px] text-surface-dark-muted">
           © {year} {owner}
         </span>

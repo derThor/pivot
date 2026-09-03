@@ -101,12 +101,14 @@ const ALIGN_OPTIONS: {
   icon: typeof Square;
 }[] = [
   { value: "none", label: "Keine", icon: Square },
-  { value: "full", label: "Volle Breite", icon: Maximize2 },
-  // Randlos = über die volle FENSTERbreite, nicht nur über die Spalte
-  // (Nutzervorgabe, 2026-09-03). Direkt neben "Volle Breite", weil beide
-  // dieselbe Frage beantworten und der Unterschied sonst nirgends
-  // auffiele.
-  { value: "bleed", label: "Randlos", icon: MoveHorizontal },
+  // Die beiden Breiten-Werte heißen bewusst ausdrücklich "Spalte" und
+  // "Fenster" (Nutzer-Bugreport, 2026-09-03: "das Bild ist auf volle
+  // Breite, wird aber genauso wie vorher gezeigt"). "Volle Breite" allein
+  // klang nach voller Fensterbreite, meinte aber die Inhaltsbahn – deren
+  // Breite gibt das Template vor (--content-width in globals.css der
+  // Website). Erst "Volle Fensterbreite" bricht daraus aus.
+  { value: "full", label: "Volle Spaltenbreite", icon: Maximize2 },
+  { value: "bleed", label: "Volle Fensterbreite", icon: MoveHorizontal },
   { value: "left", label: "Linksbündig", icon: AlignLeft },
   { value: "center", label: "Zentrieren", icon: AlignCenter },
   { value: "right", label: "Rechtsbündig", icon: AlignRight },

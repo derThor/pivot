@@ -80,7 +80,7 @@ export default async function RootLayout({
             schließt die Bildlaufleiste mit ein. Ohne das Abschneiden
             entstünde eine waagerechte Bildlaufleiste (siehe
             blockLayoutClasses in @pivot/blocks). */}
-        <main className="mx-auto w-full max-w-[1180px] flex-1 overflow-x-clip px-6 py-14 sm:px-8">
+        <main className="mx-auto w-full max-w-[var(--content-width,1180px)] flex-1 overflow-x-clip px-6 py-14 sm:px-8">
           {children}
         </main>
 

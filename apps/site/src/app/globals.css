@@ -39,6 +39,16 @@
   --color-surface-dark-foreground: #d6dae0;
   --color-surface-dark-muted: #6b7280;
 
+  /* Standardbreite der Inhaltsbahn – DER Wert, den dieses Template
+     vorgibt (Nutzervorgabe, 2026-09-03: "volle breite und zentriert mit
+     standardwert, der vom template vorgegeben ist"). Ein Baustein steht
+     entweder darin (zentriert, Normalfall) oder bricht mit der
+     Ausrichtung "Volle Fensterbreite" daraus aus.
+
+     Wer die Bahn breiter oder schmaler will, ändert nur diesen einen
+     Wert. Header und Footer folgen ihm ebenfalls. */
+  --content-width: 1180px;
+
   /* Manrope für alles, IBM Plex Mono für die kleinen Versal-Label über
      Abschnitten und Footer-Spalten. Beide werden in layout.tsx über
      next/font geladen und setzen diese beiden Variablen. */

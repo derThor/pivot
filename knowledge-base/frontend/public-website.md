@@ -580,8 +580,23 @@ neues Feld:
 
 | Wert | Wirkung |
 | --- | --- |
-| Volle Breite | 100 % der Inhaltsbahn (1180px) |
-| **Randlos** | 100 % der **Fensterbreite** – bricht aus der Bahn aus |
+| Volle Spaltenbreite | 100 % der Inhaltsbahn |
+| **Volle Fensterbreite** | bricht aus der Bahn aus, von Fensterrand zu Fensterrand |
+
+**Die Beschriftungen hießen zuerst „Volle Breite" und „Randlos" – das war
+falsch gewählt** (Nutzer-Bugreport: *„das Bild ist auf volle Breite, wird
+aber genauso wie vorher gezeigt"*). Wer „Volle Breite" liest, erwartet die
+Fensterbreite; gemeint war die Spalte. Seit 2026-09-03 steht in beiden
+Werten ausdrücklich drin, worauf sie sich beziehen.
+
+### Die Bahnbreite gehört dem Template
+
+ in  (also in der projekteigenen Datei) legt
+fest, wie breit die Inhaltsbahn ist – 1180px in beiden bestehenden
+Templates. Layout, Header und Footer lesen denselben Wert, wer die Bahn
+ändern will, ändert genau diese eine Zeile. Die Nutzung erfolgt als
+ MIT Rückfallwert: ein Template ohne
+diesen Token liefert sonst gar keine Begrenzung mehr.
 
 Damit sitzt die Einstellung an der Stelle, an der man ohnehin über die
 Breite eines Blocks entscheidet. Ein zweites Feld „volle Fensterbreite"
