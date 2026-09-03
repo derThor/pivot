@@ -80,12 +80,18 @@ export default async function RootLayout({
             der Hero und das Branchen-Band – kann heute kein Baustein: die
             Breite liegt hier und nicht im Baustein. Das aufzubrechen wäre
             ein eigener Schritt am Designer, kein Nebeneffekt der Hülle. */}
-        {/* Die Bahn selbst darf NICHT abschneiden – sonst wäre sie genau
+        {/* Kein Abstand nach OBEN (Nutzervorgabe, 2026-09-03: "Abstand auf
+            das erste Element seiner Seite nach oben soll nicht sein") –
+            ein Aufmacher soll bündig unter dem Kopfbereich sitzen. Wer an
+            einer Stelle doch Luft braucht, setzt sie am Baustein selbst
+            (Abstände-Dialog im Designer).
+
+            Die Bahn selbst darf NICHT abschneiden – sonst wäre sie genau
             die Grenze, die randlose Blöcke überwinden sollen (Fehlerbild
             2026-09-03: der Block war 100vw breit, wurde aber auf
             Bahnbreite beschnitten). Abgeschnitten wird am <body>, der
             über die volle Fensterbreite geht. */}
-        <main className="mx-auto w-full max-w-[var(--content-width,1180px)] flex-1 px-6 py-14 sm:px-8">
+        <main className="mx-auto w-full max-w-[var(--content-width,1180px)] flex-1 px-6 pb-14 sm:px-8">
           {children}
         </main>
 

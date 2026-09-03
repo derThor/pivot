@@ -1,48 +1,67 @@
 import Image from "next/image";
 
-/** Beide Logo-Fassungen liegen als Asset in diesem Template
- * (`public/brand/`) und nicht in den Einstellungen: das Frontend-Template
- * gehört zum jeweiligen Projekt (Nutzer-Einordnung, 2026-09-03: "wir haben
- * im Frontend ein template, das für jedes Projekt unterschiedlich ist …
- * backend template ui ist immer gleich"). Eine andere Installation bringt
- * hier ihr eigenes Logo mit, statt das fremde über eine Einstellung
- * abwählen zu müssen.
- *
- * Zwei Dateien statt einer umgefärbten: das Logo wechselt zwischen hellem
- * und dunklem Grund nicht nur die Schriftfarbe, sondern dreht Kachel und
- * "p" um (dunkle Kachel mit Lime-p im Header, Lime-Kachel mit dunklem p
- * im Footer). Ein CSS-Filter könnte das nicht leisten, ohne die
- * Lime-Fläche zu zerstören – in der Administration liegt dafür eigens ein
- * Duotone-SVG-Filter (siehe apps/web/src/app/layout.tsx), der hier
- * schlicht nicht nötig ist, weil beide Fassungen als Datei vorliegen. */
-const SOURCES = {
-  light: "/brand/logo-on-light.png",
-  dark: "/brand/logo-on-dark.png",
-} as const;
+import {
+  brandLogoOnDark,
+  brandLogoOnLight,
+  type BrandLogo,
+} from "@/template/brand";
 
-// Seitenverhältnis der Dateien (817 × 336). Die Höhe ist so gewählt, dass
-// die Kachel im Logo die 34px des Entwurfs trifft.
+/** Anzeigehöhe des Logos in beiden Fassungen. Die Breite ergibt sich aus
+ * den echten Bildmaßen (siehe template/brand.ts). */
 const HEIGHT = 38;
-const WIDTH = Math.round((HEIGHT * 817) / 336);
 
+/**
+ * Logo der Website – GETEILTER Code. Was gezeigt wird, entscheidet allein
+ * `template/brand.ts`, und die Datei gehört dem jeweiligen Projekt.
+ *
+ * Das ist die Lehre aus zwei Vorfällen (2026-09-03): Bei einem Merge
+ * kommen fremde Dateien mit, sobald nur die Gegenseite etwas geändert hat
+ * – `merge=ours` greift nur bei beidseitigen Änderungen. Solange diese
+ * Datei selbst das Logo festlegte, konnte ein Merge das Aussehen einer
+ * Website verändern. Jetzt dürfen fremde Logo-Dateien mitwandern: sie
+ * werden nicht referenziert, wenn sie hier nicht eingetragen sind.
+ *
+ * Ohne eingetragenes Logo steht der Website-Titel als Wortmarke – ein
+ * fehlendes Bild wäre schlechter als der Name, den die Installation
+ * ohnehin führt.
+ */
 export function SiteLogo({
   variant,
   siteTitle,
   priority,
 }: {
-  variant: keyof typeof SOURCES;
-  /** Alternativtext – der Schriftzug steht im Bild, nicht daneben. */
+  /** "light" = auf hellem Grund (Kopfbereich), "dark" = auf dunklem. */
+  variant: "light" | "dark";
   siteTitle: string | null;
   priority?: boolean;
 }) {
+  const logo: BrandLogo | null =
+    variant === "dark" ? brandLogoOnDark : brandLogoOnLight;
+  const title = siteTitle?.trim();
+
+  if (logo) {
+    return (
+      <Image
+        src={logo.src}
+        alt={title || "Startseite"}
+        width={Math.round((HEIGHT * logo.width) / logo.height)}
+        height={HEIGHT}
+        priority={priority}
+        className="h-[38px] w-auto"
+      />
+    );
+  }
+
+  if (!title) return null;
   return (
-    <Image
-      src={SOURCES[variant]}
-      alt={siteTitle?.trim() || "Startseite"}
-      width={WIDTH}
-      height={HEIGHT}
-      priority={priority}
-      className="h-[38px] w-auto"
-    />
+    <span
+      className={
+        variant === "dark"
+          ? "text-[19px] font-extrabold text-white"
+          : "text-[19px] font-extrabold"
+      }
+    >
+      {title}
+    </span>
   );
 }

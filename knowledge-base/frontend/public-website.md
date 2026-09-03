@@ -681,3 +681,34 @@ Ausbruch selbst zu verhindern.
 
 **Merksatz:** Das Abschneiden muss immer WEITER AUSSEN sitzen als die
 Grenze, die überwunden werden soll.
+
+## Update 2026-09-03 (5): Das Aussehen liest, statt festzulegen
+
+Zweimal ist an einem Tag Pivots Logo auf strasevs Website gelandet – beim
+zweiten Mal, obwohl die Datei als `merge=ours` markiert war.
+
+**Die Grenze der Markierung:** sie greift nur, wenn BEIDE Seiten dieselbe
+Datei geändert haben. Ändert nur das Ursprungs-Repository sie, übernimmt
+git das kommentarlos – kein Konflikt, kein Treiber, keine Meldung. Genau
+das passierte, als in pivot das eigene Template wiederhergestellt werden
+musste.
+
+**Die Bindung ist deshalb umgedreht:**
+
+| vorher | jetzt |
+| --- | --- |
+| `site-logo.tsx` legte das Logo fest → projekteigen | `site-logo.tsx` ist geteilter Code und LIEST |
+| — | `template/brand.ts` legt fest → projekteigen |
+
+Damit dürfen fremde Logo-Dateien bei einem Merge ruhig mitwandern: sie
+werden nicht referenziert, wenn sie in `brand.ts` nicht eingetragen sind.
+Ein Merge kann das Aussehen einer Website nicht mehr verändern, ohne
+gleichzeitig die eine kleine Datei zu treffen, die dem Projekt gehört –
+und die ist so klein, dass eine Änderung daran auffällt.
+
+Steht dort `null`, zeigt die Website ihren Titel als Wortmarke. pivot
+trägt seine beiden PNG-Fassungen ein, strasev (noch) nichts.
+
+**Das projekteigene Set ist damit:** `app/globals.css` (Farben, Bahnbreite),
+`template/fonts.ts` (Schriften), `template/brand.ts` (Logo),
+`public/brand/**` (die Dateien). Alles andere ist geteilt.
