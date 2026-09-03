@@ -802,3 +802,18 @@ Kategorie (`Category.postsPerPage`).
 Geprüft an einem echten Beitrag: Archiv zeigt den Anriss und
 „Weiterlesen", nicht den Teil dahinter; die Beitragsseite zeigt beide
 Teile und die Marke selbst gar nicht.
+
+### Nachtrag: im Blog-Modus stehen NUR die Beiträge
+
+Die erste Fassung zeigte weiterhin den Kategorie-Kopf, die Aufmacher-Karte
+und den RSS-Hinweis – und darunter erst die Beiträge. Nutzer-Korrektur:
+*„nur die Beiträge!"*
+
+Die Blog-Darstellung ist deshalb ein eigener, früher Zweig: Beiträge
+fortlaufend untereinander, darunter die Paginierung – sonst nichts. Auch
+die Aufmacher-Sonderbehandlung entfällt; alle Beiträge laufen in der
+Reihenfolge der Kategorie durch, keiner wird herausgehoben.
+
+Der Kategoriename steht ohnehin im Browser-Tab und im Menüpunkt, über den
+man hergekommen ist; der RSS-Feed bleibt über den `<link>` im `<head>`
+auffindbar, nur der sichtbare Hinweis entfällt in dieser Darstellung.

@@ -294,10 +294,48 @@ export function CategoryArchive({
 }) {
   const { category, layout, featured, items, meta } = archive;
   const basePath = `/${category.slug}`;
-  const showFeatured = featured !== null && meta.page === 1;
+  const isBlog = layout === "BLOCKS";
+
+  // Im Blog-Modus stehen NUR die Beiträge da (Nutzervorgabe, 2026-09-03:
+  // "nur die Beiträge!"): kein Kategorie-Kopf, keine Aufmacher-Karte, kein
+  // RSS-Hinweis. Die Seite soll wie ein Blog wirken, nicht wie ein Archiv
+  // mit Beiträgen darunter – der Kategoriename steht ohnehin im
+  // Browser-Tab und im Menü, über das man hergekommen ist.
+  //
+  // Auch die Aufmacher-Sonderbehandlung entfällt: alle Beiträge laufen
+  // fortlaufend untereinander, in der Reihenfolge der Kategorie.
+  const showFeatured = !isBlog && featured !== null && meta.page === 1;
   const rest = showFeatured
     ? items.filter((item) => item.id !== featured.id)
     : items;
+
+  if (isBlog) {
+    return (
+      <div className="flex flex-col gap-10">
+        {items.length === 0 ? (
+          <p className="text-muted-foreground">
+            In dieser Kategorie sind noch keine Beiträge veröffentlicht.
+          </p>
+        ) : (
+          items.map((post) => (
+            <BlogPost
+              key={post.id}
+              categorySlug={category.slug}
+              post={post}
+              moduleTypes={moduleTypes}
+              globalModules={globalModules}
+            />
+          ))
+        )}
+
+        <Pagination
+          basePath={basePath}
+          page={meta.page}
+          pageCount={meta.pageCount}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -331,22 +369,7 @@ export function CategoryArchive({
             <ListRow key={post.id} categorySlug={category.slug} post={post} />
           ))}
         </ul>
-      ) : (
-        // Blog: jeder Beitrag ausgeschrieben, gekürzt nur bis zu einer
-        // "Weiterlesen"-Marke (Nutzervorgabe, 2026-09-03). Die Anzahl je
-        // Seite steuert weiterhin "Beiträge pro Seite" an der Kategorie.
-        <div className="flex flex-col gap-10">
-          {rest.map((post) => (
-            <BlogPost
-              key={post.id}
-              categorySlug={category.slug}
-              post={post}
-              moduleTypes={moduleTypes}
-              globalModules={globalModules}
-            />
-          ))}
-        </div>
-      )}
+      ) : null}
       <Pagination
         basePath={basePath}
         page={meta.page}
