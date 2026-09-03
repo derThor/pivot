@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@pivot/database';
 import { PrismaService } from '../prisma/prisma.service';
+import { resolveOrderBy } from '../common/sort';
 import { MailerService } from '../mailer/mailer.service';
 import { CreateFormDto } from './dto/create-form.dto';
 import { UpdateFormDto } from './dto/update-form.dto';
@@ -56,7 +57,17 @@ export class FormsService {
     const [items, total, unreadByForm] = await Promise.all([
       this.prisma.form.findMany({
         where,
-        orderBy: { updatedAt: 'desc' },
+        orderBy: resolveOrderBy<Prisma.FormOrderByWithRelationInput>(
+          {
+            name: (dir) => ({ name: dir }),
+            status: (dir) => ({ status: dir }),
+            createdAt: (dir) => ({ createdAt: dir }),
+            updatedAt: (dir) => ({ updatedAt: dir }),
+          },
+          { updatedAt: 'desc' },
+          query.sortBy,
+          query.sortDir,
+        ),
         skip: (page - 1) * pageSize,
         take: pageSize,
         include: this.submissionCountInclude,

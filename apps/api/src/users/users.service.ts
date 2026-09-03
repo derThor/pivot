@@ -7,7 +7,9 @@ import {
 } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'node:crypto';
+import { Prisma } from '@pivot/database';
 import { PrismaService } from '../prisma/prisma.service';
+import { resolveOrderBy } from '../common/sort';
 import { SettingsService } from '../settings/settings.service';
 import { CacheService } from '../cache/cache.service';
 import { MediaService } from '../media/media.service';
@@ -130,7 +132,17 @@ export class UsersService {
       this.prisma.user.findMany({
         where,
         select: publicSelect,
-        orderBy: { createdAt: 'desc' },
+        orderBy: resolveOrderBy<Prisma.UserOrderByWithRelationInput>(
+          {
+            name: (dir) => ({ lastName: dir }),
+            email: (dir) => ({ email: dir }),
+            createdAt: (dir) => ({ createdAt: dir }),
+            lastLoginAt: (dir) => ({ lastLoginAt: dir }),
+          },
+          { createdAt: 'desc' },
+          query.sortBy,
+          query.sortDir,
+        ),
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),

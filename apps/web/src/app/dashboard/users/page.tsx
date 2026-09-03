@@ -24,9 +24,19 @@ export default async function UsersPage({
     status?: string;
     role?: string;
     q?: string;
+    sortBy?: string;
+    sortDir?: string;
   }>;
 }) {
-  const { page: pageParam, status, role, q } = await searchParams;
+  const {
+    page: pageParam,
+    status,
+    role,
+    q,
+    sortBy,
+    sortDir: sortDirParam,
+  } = await searchParams;
+  const sortDir = sortDirParam === "asc" ? "asc" : "desc";
   const page = Number(pageParam) || 1;
   const roleId = role && role !== "all" ? role : undefined;
   const isActive =
@@ -82,6 +92,8 @@ export default async function UsersPage({
     anonymized,
     deleted,
     q,
+    sortBy,
+    sortDir,
   });
 
   return (

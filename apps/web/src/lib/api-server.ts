@@ -313,6 +313,8 @@ export function getUsers(params?: {
   anonymized?: boolean;
   deleted?: boolean;
   q?: string;
+  sortBy?: string;
+  sortDir?: "asc" | "desc";
 }) {
   const search = new URLSearchParams();
   if (params?.page) search.set("page", String(params.page));
@@ -325,6 +327,8 @@ export function getUsers(params?: {
   if (params?.deleted !== undefined)
     search.set("deleted", String(params.deleted));
   if (params?.q) search.set("q", params.q);
+  if (params?.sortBy) search.set("sortBy", params.sortBy);
+  if (params?.sortDir) search.set("sortDir", params.sortDir);
   const query = search.toString();
 
   return apiFetch<UserListResponse>(`/users${query ? `?${query}` : ""}`);
@@ -549,6 +553,8 @@ export function getMediaList(params?: {
   minSize?: number;
   maxSize?: number;
   tagIds?: string[];
+  sortBy?: string;
+  sortDir?: "asc" | "desc";
 }) {
   const search = new URLSearchParams();
   if (params?.page) search.set("page", String(params.page));
@@ -559,6 +565,8 @@ export function getMediaList(params?: {
   if (params?.maxSize) search.set("maxSize", String(params.maxSize));
   if (params?.tagIds && params.tagIds.length > 0)
     search.set("tagIds", params.tagIds.join(","));
+  if (params?.sortBy) search.set("sortBy", params.sortBy);
+  if (params?.sortDir) search.set("sortDir", params.sortDir);
   const query = search.toString();
 
   return apiFetch<MediaListResponse>(`/media${query ? `?${query}` : ""}`);
@@ -1480,12 +1488,16 @@ export function getForms(params?: {
   pageSize?: number;
   status?: FormStatus;
   q?: string;
+  sortBy?: string;
+  sortDir?: "asc" | "desc";
 }) {
   const search = new URLSearchParams();
   if (params?.page) search.set("page", String(params.page));
   if (params?.pageSize) search.set("pageSize", String(params.pageSize));
   if (params?.status) search.set("status", params.status);
   if (params?.q) search.set("q", params.q);
+  if (params?.sortBy) search.set("sortBy", params.sortBy);
+  if (params?.sortDir) search.set("sortDir", params.sortDir);
   const query = search.toString();
   return apiFetch<FormListResponse>(`/forms${query ? `?${query}` : ""}`);
 }

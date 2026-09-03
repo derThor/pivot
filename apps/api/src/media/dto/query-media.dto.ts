@@ -1,4 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { SortQueryDto } from '../../common/dto/sort-query.dto';
 import { Transform, Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import type { MediaCategory } from '../media.config';
@@ -18,7 +19,7 @@ const MEDIA_CATEGORIES: MediaCategory[] = [
 const QUERY_TYPES = [...MEDIA_CATEGORIES, 'document'] as const;
 type QueryMediaType = (typeof QUERY_TYPES)[number];
 
-export class QueryMediaDto {
+export class QueryMediaDto extends SortQueryDto {
   @ApiPropertyOptional({
     description:
       'Ordner-ID zum Filtern. Literal "root" filtert auf Medien ohne Ordner. Weggelassen = alle Medien, ordnerübergreifend.',

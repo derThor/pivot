@@ -4,6 +4,7 @@ import { ShieldCheck, ShieldOff } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { SortableHead } from "@/components/sortable-head";
 import {
   Table,
   TableBody,
@@ -39,10 +40,13 @@ export function UsersTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Benutzer</TableHead>
+            {/* "2FA" und "Status" sind aus mehreren Feldern
+                zusammengesetzt (aktiv, gesperrt, anonymisiert, gelöscht) –
+                dafür gibt es keine einzelne Spalte zum Sortieren. */}
+            <SortableHead field="name">Benutzer</SortableHead>
             <TableHead>2FA</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Zuletzt online</TableHead>
+            <SortableHead field="lastLoginAt">Zuletzt online</SortableHead>
             <TableHead className="text-center">Aktionen</TableHead>
           </TableRow>
         </TableHeader>

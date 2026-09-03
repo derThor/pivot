@@ -1,4 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { SortQueryDto } from '../../common/dto/sort-query.dto';
 import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
@@ -9,7 +10,7 @@ import {
   Min,
 } from 'class-validator';
 
-export class QueryUserDto {
+export class QueryUserDto extends SortQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

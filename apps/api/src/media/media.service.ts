@@ -16,6 +16,7 @@ import {
 } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import { PrismaService } from '../prisma/prisma.service';
+import { resolveOrderBy } from '../common/sort';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { SettingsService } from '../settings/settings.service';
 import { CropMediaDto } from './dto/crop-media.dto';
@@ -125,7 +126,17 @@ export class MediaService {
         where,
         skip: (page - 1) * pageSize,
         take: pageSize,
-        orderBy: { createdAt: 'desc' },
+        orderBy: resolveOrderBy<Prisma.MediaOrderByWithRelationInput>(
+          {
+            filename: (dir) => ({ filename: dir }),
+            size: (dir) => ({ size: dir }),
+            mimeType: (dir) => ({ mimeType: dir }),
+            createdAt: (dir) => ({ createdAt: dir }),
+          },
+          { createdAt: 'desc' },
+          query.sortBy,
+          query.sortDir,
+        ),
         include: {
           uploadedBy: { select: { id: true, firstName: true, lastName: true } },
           variants: true,
