@@ -1460,7 +1460,7 @@ export function SettingsForm({
                             label="Firmenlogo (Hellmodus)"
                             currentUrl={settings.companyLogoUrl}
                             folderId={logoFolderId}
-                            previewClassName="bg-neutral-200 text-neutral-500"
+                            previewClassName="bg-neutral-300 text-neutral-600"
                           />
                         </div>
                         <div className="flex flex-col gap-1.5 border-t border-border pt-3">
