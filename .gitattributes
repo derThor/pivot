@@ -18,5 +18,6 @@
 # bewusst einzeln (git checkout upstream/master -- <datei>).
 
 apps/site/src/app/globals.css        merge=ours
+apps/site/src/template/fonts.ts      merge=ours
 apps/site/src/components/site-logo.tsx merge=ours
 apps/site/public/brand/**            merge=ours
