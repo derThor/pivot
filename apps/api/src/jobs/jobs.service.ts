@@ -401,14 +401,22 @@ export class JobsService implements OnModuleInit {
   /** "Letzte Läufe"-Karte – über ALLE Jobs hinweg, neueste zuerst, mit
    * Pagination (Nutzervorgabe, 2026-08-22: "bei den letzte läufe
    * pagination beachten"). */
-  async findRecentRuns(page: number, pageSize: number) {
+  async findRecentRuns(
+    page: number,
+    pageSize: number,
+    status?: 'success' | 'error',
+  ) {
+    // Ohne Status: alle Läufe ("Alle"-Reiter). Die Sortierung bleibt in
+    // jedem Reiter dieselbe – neueste zuerst.
+    const where = status ? { status } : {};
     const [items, total] = await Promise.all([
       this.prisma.jobRun.findMany({
+        where,
         orderBy: { startedAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-      this.prisma.jobRun.count(),
+      this.prisma.jobRun.count({ where }),
     ]);
     const titleById = new Map([
       ...this.definitions.map((d): [string, string] => [d.id, d.title]),

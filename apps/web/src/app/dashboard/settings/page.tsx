@@ -25,6 +25,7 @@ export default async function SettingsPage({
     protocolPage?: string;
     jobsPage?: string;
     jobsRunsPage?: string;
+    jobsRunsStatus?: string;
     mandantenPage?: string;
   }>;
 }) {
@@ -33,12 +34,19 @@ export default async function SettingsPage({
     protocolPage: protocolPageParam,
     jobsPage: jobsPageParam,
     jobsRunsPage: jobsRunsPageParam,
+    jobsRunsStatus: jobsRunsStatusParam,
     mandantenPage: mandantenPageParam,
   } = await searchParams;
   const webhooksPage = Number(webhooksPageParam) || 1;
   const protocolPage = Number(protocolPageParam) || 1;
   const jobsPage = Number(jobsPageParam) || 1;
   const jobsRunsPage = Number(jobsRunsPageParam) || 1;
+  // Reiter der "Letzte Läufe"-Karte. Alles Unbekannte fällt auf "alle"
+  // zurück, damit eine von Hand verbogene URL keine leere Karte erzeugt.
+  const jobsRunsStatus =
+    jobsRunsStatusParam === "success" || jobsRunsStatusParam === "error"
+      ? jobsRunsStatusParam
+      : undefined;
   const mandantenPage = Number(mandantenPageParam) || 1;
 
   const [settings, folders, navigations] = await Promise.all([
@@ -78,6 +86,7 @@ export default async function SettingsPage({
     getJobRuns({
       page: jobsRunsPage,
       pageSize: settings?.defaultPageSize ?? 10,
+      status: jobsRunsStatus,
     }),
     getMailTemplates(),
     getMailShells(),
@@ -145,6 +154,7 @@ export default async function SettingsPage({
           meta: { page: 1, pageSize: 10, total: 0, pageCount: 1 },
         }
       }
+      jobRunsStatus={jobsRunsStatus}
       jobRuns={
         jobRuns ?? {
           items: [],

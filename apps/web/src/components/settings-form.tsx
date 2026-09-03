@@ -74,6 +74,7 @@ import type {
   LicenseState,
   MailShellListItem,
   MailTemplateListItem,
+  JobRunStatusFilter,
   ModuleSettingsEntry,
   NavigationSummary,
   ScheduledJobsResponse,
@@ -467,6 +468,7 @@ export function SettingsForm({
   smtp,
   jobs,
   jobRuns,
+  jobRunsStatus,
   mailTemplates,
   mailShells,
   websites,
@@ -483,6 +485,8 @@ export function SettingsForm({
   smtp: SmtpSettings;
   jobs: ScheduledJobsResponse;
   jobRuns: JobRunsResponse;
+  /** Aktiver Reiter der "Letzte Läufe"-Karte (`?jobsRunsStatus=`). */
+  jobRunsStatus?: JobRunStatusFilter;
   mailTemplates: MailTemplateListItem[];
   mailShells: MailShellListItem[];
   websites: WebsiteListResponse;
@@ -1907,7 +1911,7 @@ export function SettingsForm({
               <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
                 <div className="flex flex-col gap-4 lg:col-span-2">
                   <ScheduledJobsCard jobs={jobs} />
-                  <RecentJobRunsCard runs={jobRuns} />
+                  <RecentJobRunsCard runs={jobRuns} status={jobRunsStatus} />
                 </div>
                 <div className="flex flex-col gap-4">
                   <JobRunRetentionCard
