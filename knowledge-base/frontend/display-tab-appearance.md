@@ -227,8 +227,9 @@ mitgeht, wenn die Farben eine Reihe weniger brauchen.
 er gewählt, speichert das Formular `null` statt eines Hex-Werts. Lime muss
 deshalb vorn bleiben.
 
-Gleichzeitig wurde die Vorschau-Fläche des Hellmodus-Logos von `bg-white`
-auf `bg-neutral-300` gesetzt (*"der bg für helles logo dunkler"*, nach
-einem Zwischenschritt auf `bg-neutral-200` noch einmal *"etwas
-dunkler"*) – hell genug, damit ein dunkles Logo darauf steht, aber kein
-Leuchtfeld im dunklen Formular.
+Gleichzeitig wurde die Vorschau-Fläche des Hellmodus-Logos abgedunkelt –
+hell genug, damit ein dunkles Logo darauf steht, aber kein Leuchtfeld im
+dunklen Formular. Über `bg-neutral-200` und `-300` (*"der bg für helles
+logo dunkler"*, *"etwas dunkler"*) steht sie jetzt auf dem vom Nutzer
+vorgegebenen Wert `bg-[#969696]` – ein fester Hex-Wert und bewusst keine
+Tailwind-Stufe, weil genau dieser Ton gewünscht war.
