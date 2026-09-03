@@ -104,3 +104,65 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+
+/* Abstände der Bausteine – dieselbe Regel wie in apps/web.
+   Sie MUSS hier stehen: der Seiten-Designer schreibt die Werte als
+   CSS-Variablen an den Baustein, ausgewertet werden sie erst durch
+   diese Regel. Ohne sie setzt man im Designer Abstände, und auf der
+   Webseite passiert nichts (Nutzer-Bugreport, 2026-09-03: "warum wird
+   der Abstand nicht gesetzt").
+
+   Bewusst dupliziert statt geteilt: die beiden Anwendungen haben
+   getrennte Stylesheets ohne gemeinsame CSS-Datei, und ein Import
+   quer über die App-Grenze wäre der schlechtere Tausch. */
+
+/* Nutzerdefinierter Innen-/Außenabstand eines Bausteins, je Seite einzeln
+   (Seiten-Designer, siehe block-field-output.tsx `BlockSpacingWrapper`) –
+   Mobil-Wert gilt als Standard (mobile-first), ab 640px übernimmt der
+   Desktop-Wert je Seite, sofern gesetzt (sonst bleibt der Mobil-Wert). Nur
+   die tatsächlich vom Nutzer gesetzten CSS-Variablen wirken sich aus (kein
+   Fallback auf 0), damit ein Baustein ohne eigene Angabe nicht plötzlich
+   seinen Abstand verliert. */
+.block-spacing {
+  padding-top: var(--block-padding-top-mobile);
+  padding-right: var(--block-padding-right-mobile);
+  padding-bottom: var(--block-padding-bottom-mobile);
+  padding-left: var(--block-padding-left-mobile);
+  margin-top: var(--block-margin-top-mobile);
+  margin-right: var(--block-margin-right-mobile);
+  margin-bottom: var(--block-margin-bottom-mobile);
+  margin-left: var(--block-margin-left-mobile);
+}
+@media (width >= 40rem) {
+  .block-spacing {
+    padding-top: var(
+      --block-padding-top-desktop,
+      var(--block-padding-top-mobile)
+    );
+    padding-right: var(
+      --block-padding-right-desktop,
+      var(--block-padding-right-mobile)
+    );
+    padding-bottom: var(
+      --block-padding-bottom-desktop,
+      var(--block-padding-bottom-mobile)
+    );
+    padding-left: var(
+      --block-padding-left-desktop,
+      var(--block-padding-left-mobile)
+    );
+    margin-top: var(--block-margin-top-desktop, var(--block-margin-top-mobile));
+    margin-right: var(
+      --block-margin-right-desktop,
+      var(--block-margin-right-mobile)
+    );
+    margin-bottom: var(
+      --block-margin-bottom-desktop,
+      var(--block-margin-bottom-mobile)
+    );
+    margin-left: var(
+      --block-margin-left-desktop,
+      var(--block-margin-left-mobile)
+    );
+  }
+}
