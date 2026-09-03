@@ -278,9 +278,10 @@ App Routers – Next.js baut daraus den `<link rel="icon">` samt Hash im
 Dateinamen. Beide Dateien nebeneinander liegen zu lassen wäre unklar
 (zwei konkurrierende Icons), deshalb ist die alte gelöscht.
 
-**Für abgeleitete Installationen (strasev & Co.) wichtig:** `apps/web` ist
-gemeinsamer Code, das Zeichen kommt beim nächsten Abgleich also überall
-an. Wer dort ein eigenes Verwaltungs-Icon will, muss `icon.png` wie die
-Frontend-Vorlage projekteigen halten (siehe
-knowledge-base/platform/master-slave-licensing.md zum Umgang mit
-projekteigenen Dateien).
+**Für abgeleitete Installationen (strasev & Co.):** `apps/web` ist
+gemeinsamer Code, das Zeichen kommt beim nächsten Abgleich also überall an
+– und genau so ist es gewollt. Die Regel dazu, vom Nutzer bestätigt
+(2026-09-03): *"backend ist immer pivot. frontend ist individuell"*. Die
+Verwaltung trägt in jeder Installation die Pivot-Marke; projekteigen ist
+allein die Frontend-Vorlage (`apps/site/src/template/*`). Marken-Dateien
+in `apps/web` also NICHT projekteigen machen.
