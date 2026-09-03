@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { SiteLogo } from "@/components/site-logo";
+
 import type { SiteNavigation, SiteNavigationItem } from "@/lib/api";
 
 /** Klassen je Darstellung eines Menüpunkts (`NavigationItem.appearance`).
@@ -50,9 +52,10 @@ function NavLink({ item }: { item: SiteNavigationItem }) {
  * Darstellung am Menüpunkt. Ohne gewähltes Menü bleibt der Balken bis auf
  * das Logo leer – bewusst, statt Punkte zu erfinden.
  *
- * Die Logo-Kachel zeigt den ersten Buchstaben des Website-Titels. Ein
- * echtes Bildlogo hat die Installation für die Website nicht (das
- * `faviconUrl` ist ein Favicon, kein Schriftzug); den Titel gibt es immer.
+ * Das Logo ist ein Asset dieses Templates, keine Einstellung: das
+ * Frontend-Template gehört zum jeweiligen Projekt (Nutzer-Einordnung,
+ * 2026-09-03: "wir haben im Frontend ein template, das für jedes Projekt
+ * unterschiedlich ist"). Nur die Administration sieht überall gleich aus.
  */
 export function SiteHeader({
   siteTitle,
@@ -64,26 +67,11 @@ export function SiteHeader({
   const items = navigation?.items ?? [];
   const links = items.filter((item) => item.appearance === "LINK");
   const actions = items.filter((item) => item.appearance !== "LINK");
-  const title = siteTitle?.trim() || "";
-  // "Pivot." → Kachel "P", Wortmarke "Pivot" + Akzentpunkt. Endet der
-  // Titel auf einen Punkt, wird der abgetrennt und farbig gesetzt; sonst
-  // steht der Titel unverändert da.
-  const wordmark = title.endsWith(".") ? title.slice(0, -1) : title;
-  const initial = title.slice(0, 1).toUpperCase();
-
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex w-full max-w-[1180px] flex-wrap items-center gap-x-8 gap-y-3 px-6 py-3.5 sm:px-8">
-        <Link href="/" className="mr-auto flex items-center gap-2.5">
-          {initial && (
-            <span className="flex size-[34px] items-center justify-center rounded-[10px] bg-foreground text-[17px] font-extrabold italic text-accent">
-              {initial}
-            </span>
-          )}
-          <span className="text-[19px] font-extrabold">
-            {wordmark}
-            {title.endsWith(".") && <span className="text-accent-link">.</span>}
-          </span>
+        <Link href="/" className="mr-auto flex items-center">
+          <SiteLogo variant="light" siteTitle={siteTitle} priority />
         </Link>
 
         {links.length > 0 && (

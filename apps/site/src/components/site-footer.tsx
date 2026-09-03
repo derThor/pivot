@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { SiteLogo } from "@/components/site-logo";
+
 import type { SiteLegalLink, SiteNavigation, SiteSettings } from "@/lib/api";
 
 function FooterLink({
@@ -73,30 +75,17 @@ export function SiteFooter({
     site.footerNavigationPrimary,
     site.footerNavigationSecondary,
   ].filter((nav): nav is SiteNavigation => Boolean(nav && nav.items.length));
-  const title = site.siteTitle?.trim() || "";
-  const wordmark = title.endsWith(".") ? title.slice(0, -1) : title;
-  const initial = title.slice(0, 1).toUpperCase();
   const year = new Date().getFullYear();
   // Ohne gepflegten Firmennamen steht der Website-Titel im Copyright –
   // eine Firma zu erfinden wäre schlechter als der Name, den die
   // Installation ohnehin führt.
-  const owner = site.companyName?.trim() || wordmark;
+  const owner = site.companyName?.trim() || site.siteTitle?.trim() || "";
 
   return (
     <footer className="mt-24 bg-surface-dark text-white">
       <div className="mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-10 px-6 pt-16 pb-7 sm:grid-cols-2 sm:px-8 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
-          <div className="flex items-center gap-2.5">
-            {initial && (
-              <span className="flex size-[34px] items-center justify-center rounded-[10px] bg-accent text-[17px] font-extrabold italic text-accent-ink">
-                {initial}
-              </span>
-            )}
-            <span className="text-[19px] font-extrabold">
-              {wordmark}
-              {title.endsWith(".") && <span className="text-accent">.</span>}
-            </span>
-          </div>
+          <SiteLogo variant="dark" siteTitle={site.siteTitle} />
           {site.siteTagline && (
             <p className="mt-4.5 max-w-[300px] text-[15px] leading-relaxed text-surface-dark-muted">
               {site.siteTagline}
