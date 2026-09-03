@@ -637,3 +637,20 @@ Zahl zu speichern – dann gilt wieder die Vorgabe des Bausteins. Beim
 Öffnen ist der aktuelle Wert vorbelegt, sofern es einer in Pixeln ist.
 
 Geprüft: `height: 733` erscheint als `min-height:733px` in der Ausgabe.
+
+### Abzeichen „Volle Fensterbreite" im Designer
+
+*„lege einen Badge auf den Baustein, der vollflächig ist im Designer, nur
+im Designer"* – ein Baustein, der aus der Inhaltsbahn ausbricht, sieht im
+Seiten-Designer genauso aus wie einer auf voller Spaltenbreite. Das ist
+Absicht (ein 100vw-Block säße sonst quer über Sidebar und
+Formularspalten), macht die beiden dort aber ununterscheidbar. Das
+Abzeichen oben links am Baustein schließt genau diese Lücke.
+
+- **Immer sichtbar**, nicht erst beim Überfahren: es beantwortet „welcher
+  Block bricht aus?" auf einen Blick über die ganze Seite.
+- **Nur im Designer** (`block-editor-field.tsx`) – weder in der
+  Backend-Vorschau noch in der Ausgabe. Es ist reine
+  Redaktions-Information.
+- Erkannt wird der Zustand an BEIDEN möglichen Stellen: Ausrichtung am
+  Block oder am Bild (siehe `resolveBlockLayout`).

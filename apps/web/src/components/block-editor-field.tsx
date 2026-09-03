@@ -1046,6 +1046,11 @@ export function BlockEditorField({
               imageField && contentFields.length === 1,
             );
             const hasBlockLayoutControls = !isPureImageBlock;
+            // Bricht dieser Baustein aus der Inhaltsbahn aus? Die
+            // Ausrichtung kann dabei am Block ODER am Bild hängen (siehe
+            // resolveBlockLayout) – beides zählt.
+            const isBleedBlock =
+              blockLayout.align === "bleed" || imageValue?.align === "bleed";
             const currentAlign =
               ALIGN_OPTIONS.find(
                 (o) =>
@@ -1067,6 +1072,25 @@ export function BlockEditorField({
                     draggingInstanceId === instance.id && "opacity-40",
                   )}
                 >
+                  {/* Hinweis-Abzeichen NUR im Designer (Nutzervorgabe,
+                      2026-09-03). Hier wird "Volle Fensterbreite" bewusst
+                      wie "Volle Spaltenbreite" dargestellt – ein
+                      100vw-Block säße sonst quer über Sidebar und
+                      Formularspalten (siehe editorAlign/allowBleed). Genau
+                      dadurch sind die beiden hier aber nicht mehr
+                      auseinanderzuhalten; das Abzeichen schließt die
+                      Lücke.
+
+                      Immer sichtbar, nicht erst beim Überfahren: es
+                      beantwortet die Frage "welcher Block bricht aus?" auf
+                      einen Blick über die ganze Seite. In der Ausgabe
+                      erscheint es nirgends – es ist reine
+                      Redaktions-Information. */}
+                  {isBleedBlock && (
+                    <span className="pointer-events-none absolute top-1 left-1 z-10 rounded-md bg-foreground/80 px-1.5 py-0.5 text-[11px] font-medium text-background">
+                      Volle Fensterbreite
+                    </span>
+                  )}
                   {isDragging && isFloatedAlign(blockLayout.align) && (
                     // Links-/rechts ausgerichtete (geflotete) Blöcke können
                     // im Designer nebeneinander stehen (auch zu dritt oder
