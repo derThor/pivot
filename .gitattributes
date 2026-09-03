@@ -1,0 +1,23 @@
+# Projekteigenes Frontend-Template
+#
+# Das Frontend (apps/site) ist die öffentliche Website und sieht für jedes
+# Projekt anders aus; das Backend (apps/web) ist überall dieselbe
+# Verwaltungsoberfläche. Code und Datenanbindung der Website kommen weiter
+# aus dem pivot-Repository, das AUSSEHEN gehört dieser Installation.
+#
+# Am 2026-09-03 hatte ein Merge aus pivot das dortige Template hierher
+# gebracht (Pivot-Logo, Lime-Farben). Diese Regel verhindert das künftig:
+# Bei einem Merge behalten die folgenden Dateien den Stand DIESES Repos,
+# statt vom pivot-Stand überschrieben zu werden.
+#
+# Voraussetzung ist der lokale Merge-Treiber (einmalig je Arbeitskopie):
+#   git config merge.ours.driver true
+#
+# Achtung, die Kehrseite: echte Verbesserungen an diesen Dateien kommen
+# damit auch nicht mehr automatisch an. Wer eine haben will, holt sie
+# bewusst einzeln (git checkout upstream/master -- <datei>).
+
+apps/site/src/app/globals.css        merge=ours
+apps/site/src/template/fonts.ts      merge=ours
+apps/site/src/components/site-logo.tsx merge=ours
+apps/site/public/brand/**            merge=ours
