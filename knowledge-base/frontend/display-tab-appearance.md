@@ -237,9 +237,15 @@ natürliche Höhe.
 er gewählt, speichert das Formular `null` statt eines Hex-Werts. Lime muss
 deshalb vorn bleiben.
 
-Gleichzeitig wurde die Vorschau-Fläche des Hellmodus-Logos abgedunkelt –
-hell genug, damit ein dunkles Logo darauf steht, aber kein Leuchtfeld im
-dunklen Formular. Über `bg-neutral-200` und `-300` (*"der bg für helles
-logo dunkler"*, *"etwas dunkler"*) steht sie jetzt auf dem vom Nutzer
-vorgegebenen Wert `bg-[#969696]` – ein fester Hex-Wert und bewusst keine
-Tailwind-Stufe, weil genau dieser Ton gewünscht war.
+Gleichzeitig bekam die Vorschau-Fläche des Hellmodus-Logos eine eigene
+Farbe – hell genug, damit ein dunkles Logo darauf steht, aber kein
+Leuchtfeld im dunklen Formular. Über `bg-white`, `bg-neutral-200` und
+`-300` (*"der bg für helles logo dunkler"*, *"etwas dunkler"*) steht sie
+jetzt auf dem vorgegebenen `#969696` – ein fester Hex-Wert und bewusst
+keine Tailwind-Stufe, weil genau dieser Ton gewünscht war.
+
+**Nur im Dark Mode** (*"#969696 diese farbe nur im dunkelmodus, sonst wie
+vorher"*): im Light Mode bleibt es beim normalen `bg-background`, dort
+stand das dunkle Logo ja nie im Weg. Anders als beim Dunkelmodus-Logo, das
+seine dunkle Fläche in BEIDEN Modi behält – hell auf hell wäre auch im
+Light Mode unlesbar.

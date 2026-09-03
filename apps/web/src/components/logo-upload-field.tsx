@@ -27,11 +27,14 @@ export function LogoUploadField({
   currentUrl: string | null;
   folderId: string | null;
   // Grund UND Textfarbe der Vorschau-Fläche. Ein Logo ist für genau eine
-  // Umgebung gezeichnet: das Hellmodus-Logo ist dunkel und braucht immer
-  // eine helle Fläche, das Dunkelmodus-Logo ist hell und braucht immer eine
-  // dunkle – unabhängig davon, in welchem Modus die Verwaltung gerade läuft
-  // (Nutzervorgabe, 2026-09-03: "im dunkelmodus muss das feld für das helle
-  // logo heller sein"). Die Textfarbe gehört mit dazu, sonst steht das
+  // Umgebung gezeichnet und braucht deshalb eine Fläche, die zu IHM passt,
+  // nicht zum gerade laufenden Modus der Verwaltung (Nutzervorgabe,
+  // 2026-09-03: "im dunkelmodus muss das feld für das helle logo heller
+  // sein"). Das Dunkelmodus-Logo bekommt seine dunkle Fläche in beiden
+  // Modi; das Hellmodus-Logo braucht nur im Dark Mode eine eigene (dort
+  // steht es sonst dunkel auf dunkel) und bleibt im Light Mode beim
+  // normalen `bg-background` – Nutzervorgabe: "#969696 nur im dunkelmodus,
+  // sonst wie vorher". Die Textfarbe gehört mit dazu, sonst steht das
   // Platzhalter-Symbol ohne Logo unsichtbar auf der Fläche.
   previewClassName?: string;
 }) {
