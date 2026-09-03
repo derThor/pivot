@@ -41,6 +41,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -778,6 +779,28 @@ export function BlockEditorField({
     setEditingInstanceId((current) => (current === id ? null : current));
   }
 
+  // Freie Höhe für den Cover-Baustein (Nutzervorgabe, 2026-09-03).
+  const [customHeightInstanceId, setCustomHeightInstanceId] = useState<
+    string | null
+  >(null);
+  const [customHeightValue, setCustomHeightValue] = useState("");
+
+  /** Übernimmt den eingetippten Wert. Ungültiges oder Leeres nimmt die
+   * Höhe wieder heraus, statt eine kaputte Zahl zu speichern – dann gilt
+   * wieder die Vorgabe des Bausteins. */
+  function applyCustomHeight() {
+    const id = customHeightInstanceId;
+    if (!id) return;
+    const parsed = Number(customHeightValue);
+    const height =
+      Number.isFinite(parsed) && parsed >= 40 && parsed <= 4000
+        ? Math.round(parsed)
+        : undefined;
+    const instance = value.find((i) => i.id === id);
+    updateInstanceLayout(id, { ...instance?.layout, height });
+    setCustomHeightInstanceId(null);
+  }
+
   function updateInstanceLayout(instanceId: string, layout: BlockLayoutValue) {
     onChange(
       value.map((instance) =>
@@ -1218,6 +1241,19 @@ export function BlockEditorField({
                                 {option.label}
                               </DropdownMenuItem>
                             ))}
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCustomHeightValue(
+                                  typeof instance.layout?.height === "number"
+                                    ? String(instance.layout.height)
+                                    : "",
+                                );
+                                setCustomHeightInstanceId(instance.id);
+                              }}
+                            >
+                              Eigener Wert …
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                         {imageField && (
@@ -1647,6 +1683,57 @@ export function BlockEditorField({
               </Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Freie Höhe (Nutzervorgabe, 2026-09-03: "erweitere die Höhe noch um
+          individuellen Wert"). Bewusst ein kleiner Dialog wie bei den
+          Abständen und KEIN Eingabefeld im Aufklappmenü: ein Menü fängt
+          Tastendrücke für seine Sprungmarken-Suche ab, Tippen wäre dort
+          unzuverlässig. */}
+      <Dialog
+        open={customHeightInstanceId !== null}
+        onOpenChange={(open) => !open && setCustomHeightInstanceId(null)}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Eigene Höhe</DialogTitle>
+            <DialogDescription>
+              Mindesthöhe des Bausteins in Pixeln. Längerer Inhalt lässt die
+              Fläche weiter wachsen.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              min={40}
+              max={4000}
+              autoFocus
+              value={customHeightValue}
+              onChange={(e) => setCustomHeightValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  applyCustomHeight();
+                }
+              }}
+              className="w-32"
+            />
+            <span className="text-sm text-muted-foreground">px</span>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-button-border"
+              onClick={() => setCustomHeightInstanceId(null)}
+            >
+              Abbrechen
+            </Button>
+            <Button type="button" onClick={applyCustomHeight}>
+              Übernehmen
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

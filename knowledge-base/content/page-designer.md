@@ -621,3 +621,19 @@ kein Fremdwert als CSS-Klasse landet.
 
 Geprüft an einer echten Seite: `min-height:100vh` und `object-contain`
 kommen in der Ausgabe an.
+
+### Nachtrag: eigener Höhenwert
+
+*„erweitere die Höhe noch um individuellen Wert"* – im Höhen-Menü steht
+jetzt zusätzlich **„Eigener Wert …"** und öffnet einen kleinen Dialog mit
+einem Pixel-Feld (40–4000).
+
+**Bewusst ein Dialog und kein Eingabefeld im Aufklappmenü:** ein Menü
+fängt Tastendrücke für seine Sprungmarken-Suche ab, Tippen wäre dort
+unzuverlässig. Denselben Weg geht der Abstände-Dialog des Bausteins.
+
+Ungültiges oder Leeres nimmt die Höhe wieder heraus, statt eine kaputte
+Zahl zu speichern – dann gilt wieder die Vorgabe des Bausteins. Beim
+Öffnen ist der aktuelle Wert vorbelegt, sofern es einer in Pixeln ist.
+
+Geprüft: `height: 733` erscheint als `min-height:733px` in der Ausgabe.
