@@ -2,6 +2,7 @@ import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { SiteCacheService } from '../site-cache/site-cache.service';
 import { MailerService } from '../mailer/mailer.service';
 import { AuthService } from '../auth/auth.service';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
@@ -117,6 +118,10 @@ const FIELD_LABELS: Record<string, string> = {
   footerNavigationPrimaryId: 'Footer-Menü 1',
   footerNavigationSecondaryId: 'Footer-Menü 2',
   footerNote: 'Footer-Zusatzzeile',
+  backendCacheEnabled: 'Backend-Cache',
+  backendCacheTtlSeconds: 'Backend-Cache-Dauer',
+  frontendCacheEnabled: 'Frontend-Cache',
+  frontendCacheTtlSeconds: 'Frontend-Cache-Dauer',
 };
 
 // Firma-Stammdaten-Felder (Verwaltung → Firma, "Letzte Änderungen"-Karte,
@@ -193,6 +198,33 @@ const TWO_FACTOR_ENFORCEMENT_KEYS = [
   'requireTwoFactorForPublishers',
 ] as const;
 
+/** Einstellungen, die sich unmittelbar auf die öffentliche Website
+ * auswirken – Titel und Untertitel stehen in Kopf- und Fußbereich, die
+ * drei Menü-Verweise bilden sie überhaupt erst, der Rest steckt in
+ * Metadaten oder im Cache-Verhalten selbst. Ändert sich eines davon,
+ * bekommt die Website sofort Bescheid (2026-09-03).
+ *
+ * Bewusst eine ausdrückliche Liste und keine Pauschale über alle Felder:
+ * die meisten Einstellungen (Passwortregeln, Benachrichtigungen, Jobs)
+ * gehen die Website nichts an, und jedes Speichern dort ihren Cache zu
+ * verwerfen wäre unnötig. */
+const SITE_RELEVANT_SETTING_KEYS = [
+  'siteTitle',
+  'siteTagline',
+  'faviconUrl',
+  'defaultSeoDescription',
+  'defaultOgImageUrl',
+  'publicBaseUrl',
+  'accentColor',
+  'companyName',
+  'footerNote',
+  'mainNavigationId',
+  'footerNavigationPrimaryId',
+  'footerNavigationSecondaryId',
+  'frontendCacheEnabled',
+  'frontendCacheTtlSeconds',
+] as const satisfies readonly (keyof UpdateSettingsDto)[];
+
 @Injectable()
 export class SettingsService {
   constructor(
@@ -202,6 +234,7 @@ export class SettingsService {
     private readonly config: ConfigService,
     @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
+    private readonly siteCache: SiteCacheService,
   ) {}
 
   private get encryptionKey(): string {
@@ -397,6 +430,10 @@ export class SettingsService {
       where: { id: 1 },
       data: dto,
     });
+
+    if (SITE_RELEVANT_SETTING_KEYS.some((key) => key in dto)) {
+      this.siteCache.invalidate('settings.changed');
+    }
 
     // "Letzte Änderungen" auf der Firma-Seite (Verwaltung → Firma): pro
     // tatsächlich geändertem Stammdaten-Feld ein eigener Eintrag, nicht nur

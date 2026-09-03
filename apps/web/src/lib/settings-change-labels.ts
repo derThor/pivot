@@ -93,6 +93,10 @@ export const SETTINGS_FIELD_LABELS: Record<string, string> = {
   footerNavigationPrimaryId: "Footer-Menü 1",
   footerNavigationSecondaryId: "Footer-Menü 2",
   footerNote: "Footer-Zusatzzeile",
+  backendCacheEnabled: "Backend-Cache",
+  backendCacheTtlSeconds: "Backend-Cache-Dauer",
+  frontendCacheEnabled: "Frontend-Cache",
+  frontendCacheTtlSeconds: "Frontend-Cache-Dauer",
 };
 
 // Für Protokoll-/Aktivitäts-Einträge, die kein Feld ändern, sondern eine

@@ -277,6 +277,41 @@ export class UpdateSettingsDto {
   @IsString()
   footerNavigationPrimaryId?: string | null;
 
+  @ApiPropertyOptional({
+    description:
+      'Prozessinterner Backend-Cache (CacheService). Aus = jede Abfrage geht direkt an die Datenbank.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  backendCacheEnabled?: boolean;
+
+  @ApiPropertyOptional({ minimum: 5, maximum: 3600 })
+  @IsOptional()
+  @IsInt()
+  @Min(5)
+  @Max(3600)
+  backendCacheTtlSeconds?: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Zwischenspeicherung der API-Antworten in der öffentlichen Website (apps/site).',
+  })
+  @IsOptional()
+  @IsBoolean()
+  frontendCacheEnabled?: boolean;
+
+  @ApiPropertyOptional({
+    minimum: 60,
+    maximum: 86400,
+    description:
+      'Mindestens 60 Sekunden: die Seiten selbst stehen auf revalidate = 60, ein kleinerer Wert bliebe wirkungslos.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(60)
+  @Max(86400)
+  frontendCacheTtlSeconds?: number;
+
   @ApiPropertyOptional({ nullable: true })
   @IsOptional()
   @IsString()

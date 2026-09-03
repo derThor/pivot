@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { buildAuthCookies } from "@/lib/auth";
 import { resolveAccessToken } from "@/lib/bff-proxy";
+import { resolveSiteBaseUrl } from "@/lib/site-base-url";
 
 const API_URL = process.env.API_URL ?? "http://localhost:3001/v1";
 
@@ -10,41 +11,6 @@ const API_URL = process.env.API_URL ?? "http://localhost:3001/v1";
  * teilbarer Freigabe-Link (dafür gibt es Vorschau-Links unter
  * Seiten → Vorschau-Links, Standard 7 Tage). */
 const PREVIEW_TTL_HOURS = 1;
-
-/** Basis-URL der öffentlichen Website. Bewusst so gestaffelt, dass die
- * Vorschau **ohne jede Konfiguration** funktioniert (Nutzervorgabe,
- * 2026-09-02: "kann man es so bauen, dass das frontend immer aufrufbar ist
- * als vorschau für seiten? ohne eintragung in einstellung frontend?") –
- * eine gepflegte Einstellung hat aber immer Vorrang:
- *
- * 1. `AppSettings.publicBaseUrl` (Einstellungen → Frontend) – die einzige
- *    Quelle, die auch die echte öffentliche Domain kennt.
- * 2. `SITE_URL` aus der Umgebung – für Deployments, die die Website unter
- *    einer anderen Adresse betreiben als das Backend.
- * 3. Entwicklung: fest `http://localhost:3002`. `apps/site` startet laut
- *    seiner package.json immer auf diesem Port (`next dev --port 3002`),
- *    das ist also kein geratener Wert. Deckt beide lokalen Fälle ab – den
- *    direkten Aufruf über Port 3000 genauso wie den über `pnpm dev:proxy`.
- * 4. Produktion ohne alles: dieselbe Origin. Das trifft das dokumentierte
- *    Ein-Domain-Layout (`/` Website, `/admin` Backend, siehe
- *    knowledge-base/platform/deployment.md); der `/admin`-Basispfad fällt
- *    dabei automatisch weg, weil `URL.origin` den Pfad nicht enthält.
- */
-async function resolveSiteBaseUrl(request: Request): Promise<string> {
-  const stripSlash = (url: string) => url.replace(/\/+$/, "");
-
-  const res = await fetch(`${API_URL}/public/site`, { cache: "no-store" });
-  const site = res.ok
-    ? ((await res.json()) as { publicBaseUrl: string | null })
-    : null;
-  if (site?.publicBaseUrl) return stripSlash(site.publicBaseUrl);
-
-  if (process.env.SITE_URL) return stripSlash(process.env.SITE_URL);
-
-  if (process.env.NODE_ENV !== "production") return "http://localhost:3002";
-
-  return new URL(request.url).origin;
-}
 
 /** Fehler mit Angabe des gescheiterten Schritts – ohne die stand im
  * Browser nur ein nackter Status, dem man nicht ansah, ob das Ausstellen

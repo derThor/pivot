@@ -106,6 +106,11 @@ export class PublicContentService {
         footerNavigationSecondaryId: true,
         footerNote: true,
         companyName: true,
+        // Steuert die Zwischenspeicherung IN der Website (apps/site liest
+        // das beim Rendern, siehe lib/api.ts) – deshalb Teil der
+        // öffentlichen Hülle und nicht der geschützten Einstellungen.
+        frontendCacheEnabled: true,
+        frontendCacheTtlSeconds: true,
       },
     });
     const empty = {
@@ -121,6 +126,8 @@ export class PublicContentService {
       footerNavigationSecondaryId: null,
       footerNote: null,
       companyName: null,
+      frontendCacheEnabled: true,
+      frontendCacheTtlSeconds: 60,
     };
     const base = settings ?? empty;
     // Header und Footer der Website hängen an genau diesem Aufruf

@@ -783,6 +783,10 @@ export interface AppSettings {
   footerNavigationPrimaryId: string | null;
   footerNavigationSecondaryId: string | null;
   footerNote: string | null;
+  backendCacheEnabled: boolean;
+  backendCacheTtlSeconds: number;
+  frontendCacheEnabled: boolean;
+  frontendCacheTtlSeconds: number;
   notifyMaintenanceMode: boolean;
   notifyStorageQuota: boolean;
   notifyWebhookFailures: boolean;

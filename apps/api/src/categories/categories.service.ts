@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { ContentStatus } from '@pivot/database';
 import { PrismaService } from '../prisma/prisma.service';
+import { SiteCacheService } from '../site-cache/site-cache.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { QueryCategoryDto } from './dto/query-category.dto';
@@ -28,7 +29,10 @@ const FEED_ITEM_LIMIT = 20;
 
 @Injectable()
 export class CategoriesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly siteCache: SiteCacheService,
+  ) {}
 
   async findAll(query: QueryCategoryDto) {
     const { page, pageSize } = query;
@@ -144,7 +148,11 @@ ${itemsXml}
     return { page: Math.floor(rank / pageSize) + 1 };
   }
 
+  // Kategorien betreffen die Website doppelt: die Archivseite selbst und
+  // den Pfad jedes Beitrags darin (/{kategorie}/{slug}). Deshalb löst jede
+  // Änderung hier eine Invalidierung aus (2026-09-03).
   async create(dto: CreateCategoryDto) {
+    this.siteCache.invalidate('category.changed');
     assertSlugNotReserved(dto.slug);
     const existing = await this.prisma.category.findFirst({
       where: { OR: [{ name: dto.name }, { slug: dto.slug }] },
@@ -158,6 +166,7 @@ ${itemsXml}
   }
 
   async update(id: string, dto: UpdateCategoryDto) {
+    this.siteCache.invalidate('category.changed');
     assertSlugNotReserved(dto.slug);
     if (dto.name || dto.slug) {
       const existing = await this.prisma.category.findFirst({
@@ -181,6 +190,7 @@ ${itemsXml}
   /** Papierkorb: Soft-Delete (Nutzervorgabe, 2026-08-18, "überall da wo man
    * löschen kann"). */
   async remove(id: string, actingUserId: string) {
+    this.siteCache.invalidate('category.changed');
     await this.prisma.category.update({
       where: { id },
       data: { deletedAt: new Date(), deletedById: actingUserId },
@@ -188,6 +198,7 @@ ${itemsXml}
   }
 
   async restore(id: string) {
+    this.siteCache.invalidate('category.changed');
     const category = await this.prisma.category.findUnique({ where: { id } });
     if (!category || !category.deletedAt) {
       throw new NotFoundException(

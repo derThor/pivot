@@ -630,56 +630,70 @@ export class UsersService {
   private static readonly FAILED_LOGIN_NOTIFICATION_THRESHOLD = 5;
   private static readonly NOTIFICATION_COUNTS_CACHE_KEY =
     'users:notification-counts';
-  // 30s statt live: läuft bei jeder Dashboard-Navigation für jeden Nutzer
-  // mit `users:read` – bei vielen Konten (die App ist nicht auf eine
-  // kleine, feste Admin-Zahl beschränkt, siehe Schema-Kommentar zu
+  // Vorgabewert, falls die Einstellung nicht gelesen werden kann. 30s
+  // statt live: läuft bei jeder Dashboard-Navigation für jeden Nutzer mit
+  // `users:read` – bei vielen Konten (die App ist nicht auf eine kleine,
+  // feste Admin-Zahl beschränkt, siehe Schema-Kommentar zu
   // `User.pendingActivation`) sonst unnötig viele COUNT-Abfragen.
+  //
+  // Seit 2026-09-03 ist die Dauer unter Einstellungen → Caching
+  // einstellbar und der Cache dort auch ganz abschaltbar; dieser Wert
+  // greift nur noch als Rückfall.
   private static readonly NOTIFICATION_COUNTS_CACHE_TTL_MS = 30_000;
 
   // Rohe Zähler für die Systembenachrichtigungen-Karte (2b.14). Zwei
   // Performance-Maßnahmen (Nutzervorgabe, 2026-08-16, "bei vielen Nutzern"):
-  // 1) Ergebnis wird für NOTIFICATION_COUNTS_CACHE_TTL_MS gecacht (siehe
-  //    CacheService, per "Cache leeren" unter Einstellungen manuell
+  // 1) Ergebnis wird zwischengespeichert (siehe CacheService, per
+  //    "Backend-Cache leeren" unter Einstellungen → Caching manuell
   //    löschbar).
   // 2) Für eine per `AppSettings.notify*` deaktivierte Kategorie wird gar
   //    nicht erst gezählt (0 ohne Query) – "nicht nur ausblenden, sondern
   //    das Erfassen beenden".
+  //
+  // Die Einstellungen werden VOR dem Cache-Zugriff gelesen, nicht in der
+  // Factory: die Dauer muss feststehen, bevor gecacht wird, und bei
+  // abgeschaltetem Cache soll gar nicht erst nachgeschlagen werden. Der
+  // Aufruf ist billig, `SettingsService.get()` cacht selbst.
   async getNotificationCounts() {
+    const settings = await this.settings.get();
+    const compute = async () => {
+      const [pendingActivation, failedLogins, pendingPasswordChange] =
+        await Promise.all([
+          settings.notifyPendingActivations
+            ? this.prisma.user.count({
+                where: { pendingActivation: true, anonymizedAt: null },
+              })
+            : Promise.resolve(0),
+          settings.notifyFailedLogins
+            ? this.prisma.user.count({
+                where: {
+                  failedLoginAttempts: {
+                    gte: UsersService.FAILED_LOGIN_NOTIFICATION_THRESHOLD,
+                  },
+                  isActive: true,
+                  anonymizedAt: null,
+                },
+              })
+            : Promise.resolve(0),
+          settings.notifyPendingPasswordChanges
+            ? this.prisma.user.count({
+                where: {
+                  mustChangePassword: true,
+                  isActive: true,
+                  anonymizedAt: null,
+                },
+              })
+            : Promise.resolve(0),
+        ]);
+      return { pendingActivation, failedLogins, pendingPasswordChange };
+    };
+
+    if (!settings.backendCacheEnabled) return compute();
     return this.cache.getOrSet(
       UsersService.NOTIFICATION_COUNTS_CACHE_KEY,
-      UsersService.NOTIFICATION_COUNTS_CACHE_TTL_MS,
-      async () => {
-        const settings = await this.settings.get();
-        const [pendingActivation, failedLogins, pendingPasswordChange] =
-          await Promise.all([
-            settings.notifyPendingActivations
-              ? this.prisma.user.count({
-                  where: { pendingActivation: true, anonymizedAt: null },
-                })
-              : Promise.resolve(0),
-            settings.notifyFailedLogins
-              ? this.prisma.user.count({
-                  where: {
-                    failedLoginAttempts: {
-                      gte: UsersService.FAILED_LOGIN_NOTIFICATION_THRESHOLD,
-                    },
-                    isActive: true,
-                    anonymizedAt: null,
-                  },
-                })
-              : Promise.resolve(0),
-            settings.notifyPendingPasswordChanges
-              ? this.prisma.user.count({
-                  where: {
-                    mustChangePassword: true,
-                    isActive: true,
-                    anonymizedAt: null,
-                  },
-                })
-              : Promise.resolve(0),
-          ]);
-        return { pendingActivation, failedLogins, pendingPasswordChange };
-      },
+      (settings.backendCacheTtlSeconds ?? 30) * 1000 ||
+        UsersService.NOTIFICATION_COUNTS_CACHE_TTL_MS,
+      compute,
     );
   }
 

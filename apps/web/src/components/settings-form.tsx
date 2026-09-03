@@ -12,6 +12,7 @@ import {
   Clock,
   Construction,
   Contrast,
+  DatabaseZap,
   Globe,
   History,
   Mail,
@@ -25,7 +26,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { toastEdited } from "@/components/app-toast";
+import {
+  toastCleared,
+  toastEdited,
+  toastWarning,
+} from "@/components/app-toast";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { SegmentedPicker } from "@/components/segmented-picker";
 import { SwitchRow } from "@/components/switch-row";
@@ -129,6 +134,10 @@ const settingsSchema = z.object({
   defaultSeoDescription: z.string().nullable(),
   publicBaseUrl: z.string().nullable(),
   mainNavigationId: z.string().nullable(),
+  backendCacheEnabled: z.boolean(),
+  backendCacheTtlSeconds: z.number(),
+  frontendCacheEnabled: z.boolean(),
+  frontendCacheTtlSeconds: z.number(),
   footerNavigationPrimaryId: z.string().nullable(),
   footerNavigationSecondaryId: z.string().nullable(),
   footerNote: z.string().nullable(),
@@ -149,6 +158,7 @@ type SectionId =
   | "master-client"
   | "module"
   | "maintenance-page"
+  | "caching"
   | "jobs"
   | "mailing"
   | "protocol";
@@ -158,6 +168,11 @@ const SECTIONS: {
   title: string;
   subtitle: string;
   icon: LucideIcon;
+  /** Nur auf einer Master-Installation sinnvoll. Seit 2026-09-03 auf
+   * BEREICHS- statt Gruppenebene: die Gruppe "Administration" enthält
+   * seitdem auch Benachrichtigungen und Protokoll, und die dürfen auf
+   * einer Client-Installation nicht mit verschwinden. */
+  masterOnly?: boolean;
 }[] = [
   {
     id: "master-client",
@@ -170,6 +185,7 @@ const SECTIONS: {
     title: "Module",
     subtitle: "Freischaltung & Reiter",
     icon: Blocks,
+    masterOnly: true,
   },
   {
     id: "access",
@@ -226,6 +242,12 @@ const SECTIONS: {
     icon: Construction,
   },
   {
+    id: "caching",
+    title: "Caching",
+    subtitle: "Zwischenspeicher",
+    icon: DatabaseZap,
+  },
+  {
     id: "jobs",
     title: "Jobs",
     subtitle: "Geplante Aufgaben",
@@ -248,17 +270,45 @@ const SECTIONS_BY_ID = new Map(SECTIONS.map((s) => [s.id, s]));
 // ist dieser Bereich NICHT `masterOnly` (zeigt auf einer Slave-
 // Installation den Lizenz-/API-Key-Status statt der Mandantenliste,
 // bleibt also für beide Modi sichtbar).
+/** Feste Vorgaben statt eines freien Zahlenfelds – dieselbe Konvention wie
+ * bei den Aufbewahrungsfristen (siehe SegmentedPicker). */
+const BACKEND_CACHE_TTL_OPTIONS = [
+  { value: 10, label: "10 Sekunden" },
+  { value: 30, label: "30 Sekunden" },
+  { value: 60, label: "1 Minute" },
+  { value: 300, label: "5 Minuten" },
+];
+
+/** Seit der ereignisgesteuerten Invalidierung (2026-09-03) ist dieser Wert
+ * NICHT mehr der Weg, auf dem Änderungen sichtbar werden – das erledigen
+ * die Auslöser sofort. Er ist nur noch das Sicherheitsnetz für den Fall,
+ * dass ein Auslöser ausgefallen ist.
+ *
+ * Deshalb sind die Minutenwerte gefallen (Nutzervorgabe: "1 und 5 minute
+ * kann weg"): unterhalb einer Stunde bringt ein Netz nichts, was die
+ * Auslöser nicht schon getan hätten. Woche und Monat standen kurz zur
+ * Debatte und sind bewusst wieder raus (Nutzerentscheidung, 2026-09-03):
+ * je länger der Wert, desto länger bliebe eine Seite falsch, wenn ein
+ * Auslöser einmal nicht durchkommt – ein Netz mit einem Monat Maschenweite
+ * ist keins mehr. */
+const FRONTEND_CACHE_TTL_OPTIONS = [
+  { value: 900, label: "15 Minuten" },
+  { value: 1800, label: "30 Minuten" },
+  { value: 3600, label: "1 Stunde" },
+  { value: 86400, label: "1 Tag" },
+];
+
 const GROUPS: {
   id: string;
   title: string;
   subtitle: string;
   icon: LucideIcon;
   sections: SectionId[];
-  // Datenschutz-als-Modul (Nutzervorgabe, 2026-08-28: "das soll unter
-  // Einstellungen sein") – nur auf einer Master-Installation sinnvoll
-  // (Slave hat kein eigenes `ModuleSettings`, Backend gated zusätzlich
-  // hart über `MasterOnlyGuard`).
-  masterOnly?: boolean;
+  // Ein früheres `masterOnly` auf Gruppenebene ist 2026-09-03 entfallen:
+  // die Beschränkung sitzt jetzt am einzelnen Bereich (siehe SECTIONS),
+  // und eine Gruppe verschwindet automatisch, sobald kein Bereich von ihr
+  // übrig bleibt. Zwei Mechanismen für dieselbe Sache wären eine
+  // Fehlerquelle gewesen.
 }[] = [
   {
     id: "general",
@@ -295,9 +345,20 @@ const GROUPS: {
   {
     id: "operations",
     title: "Betrieb",
-    subtitle: "Wartung & Protokoll",
+    subtitle: "Wartungsseite",
     icon: Clock,
-    sections: ["maintenance-page", "notifications", "protocol"],
+    sections: ["maintenance-page"],
+  },
+  {
+    // Eigener Oberpunkt statt eines Bereichs unter "Betrieb"
+    // (Nutzerentscheidung, 2026-09-03) – wie Mailing und Jobs mit nur
+    // EINEM Bereich und damit ohne zweite Sidebar-Ebene, siehe
+    // showSectionColumn.
+    id: "caching",
+    title: "Caching",
+    subtitle: "Zwischenspeicher",
+    icon: DatabaseZap,
+    sections: ["caching"],
   },
   {
     // Wie Mailing eine eigene Gruppe mit nur einem Bereich
@@ -312,10 +373,9 @@ const GROUPS: {
   {
     id: "administration",
     title: "Administration",
-    subtitle: "Module freischalten",
+    subtitle: "Module, Meldungen & Protokoll",
     icon: ShieldCheck,
-    sections: ["module"],
-    masterOnly: true,
+    sections: ["module", "notifications", "protocol"],
   },
 ];
 
@@ -438,11 +498,21 @@ export function SettingsForm({
   const [activeSection, setActiveSection] = useState<SectionId>("access");
   const activeGroup =
     GROUPS.find((group) => group.sections.includes(activeSection)) ?? GROUPS[0];
+  // Bereiche, die auf DIESER Installation überhaupt existieren. Seit
+  // 2026-09-03 hängt das am Bereich, nicht mehr an der Gruppe (siehe
+  // masterOnly in SECTIONS) – "Administration" enthält jetzt auch
+  // Benachrichtigungen und Protokoll, die es auf einem Client genauso
+  // geben muss.
+  const visibleSections = (group: (typeof GROUPS)[number]) =>
+    group.sections.filter(
+      (id) =>
+        !SECTIONS_BY_ID.get(id)?.masterOnly ||
+        settings.deploymentMode === "master",
+    );
   // Gruppen mit nur einem Bereich bekommen keine zweite Sidebar-Ebene
   // (Nutzervorgabe, 2026-08-31, am Beispiel Mailing): eine Spalte mit
-  // einem einzigen Eintrag wiederholt nur den Gruppennamen. Betrifft
-  // aktuell Mailing, Sicherheit und Administration.
-  const showSectionColumn = activeGroup.sections.length > 1;
+  // einem einzigen Eintrag wiederholt nur den Gruppennamen.
+  const showSectionColumn = visibleSections(activeGroup).length > 1;
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -466,9 +536,31 @@ export function SettingsForm({
     setIsClearingCache(true);
     try {
       await fetch(bff("/api/settings/clear-cache"), { method: "POST" });
-      toastEdited("Cache wurde geleert.");
+      toastCleared("Der Backend-Cache wurde geleert.");
     } finally {
       setIsClearingCache(false);
+    }
+  }
+
+  const [isClearingFrontendCache, setIsClearingFrontendCache] = useState(false);
+  async function handleClearFrontendCache() {
+    setIsClearingFrontendCache(true);
+    try {
+      const res = await fetch(bff("/api/settings/clear-frontend-cache"), {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        toastWarning(
+          body?.message ?? "Frontend-Cache konnte nicht geleert werden.",
+        );
+        return;
+      }
+      toastCleared("Der Frontend-Cache wurde geleert.");
+    } catch {
+      toastWarning("Website nicht erreichbar.");
+    } finally {
+      setIsClearingFrontendCache(false);
     }
   }
 
@@ -550,6 +642,10 @@ export function SettingsForm({
     defaultSeoDescription: settings.defaultSeoDescription,
     publicBaseUrl: settings.publicBaseUrl,
     mainNavigationId: settings.mainNavigationId,
+    backendCacheEnabled: settings.backendCacheEnabled,
+    backendCacheTtlSeconds: settings.backendCacheTtlSeconds,
+    frontendCacheEnabled: settings.frontendCacheEnabled,
+    frontendCacheTtlSeconds: settings.frontendCacheTtlSeconds,
     footerNavigationPrimaryId: settings.footerNavigationPrimaryId,
     footerNavigationSecondaryId: settings.footerNavigationSecondaryId,
     footerNote: settings.footerNote,
@@ -644,8 +740,7 @@ export function SettingsForm({
             >
               <div className="flex flex-col divide-y divide-border">
                 {GROUPS.filter(
-                  (group) =>
-                    !group.masterOnly || settings.deploymentMode === "master",
+                  (group) => visibleSections(group).length > 0,
                 ).map((group) => {
                   const isActive = group.id === activeGroup.id;
                   const Icon = group.icon;
@@ -653,7 +748,11 @@ export function SettingsForm({
                     <button
                       key={group.id}
                       type="button"
-                      onClick={() => setActiveSection(group.sections[0])}
+                      onClick={() =>
+                        setActiveSection(
+                          visibleSections(group)[0] ?? group.sections[0],
+                        )
+                      }
                       className={cn(
                         "flex items-start gap-3 border-l-4 px-4 py-4 text-left transition-colors",
                         isActive
@@ -693,7 +792,7 @@ export function SettingsForm({
                   </span>
                 </div>
                 <div className="flex flex-col divide-y divide-border">
-                  {activeGroup.sections.map((sectionId) => {
+                  {visibleSections(activeGroup).map((sectionId) => {
                     const section = SECTIONS_BY_ID.get(sectionId)!;
                     const isActive = sectionId === activeSection;
                     const Icon = section.icon;
@@ -886,28 +985,141 @@ export function SettingsForm({
                       placeholder="Unbegrenzt"
                     />
                   </div>
-                  <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted p-4">
-                    <div className="flex flex-col gap-0.5">
-                      <Label className="text-sm">Cache</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Leert den serverseitigen Cache (z.B. Zähler für
-                        Systembenachrichtigungen). Wirkt sich nicht auf
-                        gespeicherte Daten aus, nur auf zwischengespeicherte
-                        Werte.
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="border-button-border"
-                      disabled={isClearingCache}
-                      onClick={handleClearCache}
-                    >
-                      {isClearingCache ? "Leert…" : "Cache leeren"}
-                    </Button>
-                  </div>
                 </CardContent>
               </Card>
+            )}
+
+            {activeSection === "caching" && (
+              <div className="flex flex-col gap-4">
+                <Card className="rounded-xl shadow-sm">
+                  <CardHeader>
+                    <CardTitle>Backend-Cache</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Hält häufig wiederholte Abfragen kurz im Arbeitsspeicher
+                      des Servers – aktuell die Zähler für die
+                      Systembenachrichtigungen, die bei jedem Seitenwechsel neu
+                      ermittelt würden. Betrifft nur zwischengespeicherte Werte,
+                      niemals gespeicherte Daten.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-4">
+                    <FormField
+                      control={form.control}
+                      name="backendCacheEnabled"
+                      render={({ field }) => (
+                        <FormItem>
+                          <SwitchRow
+                            label="Backend-Cache verwenden"
+                            description="Aus = jede Abfrage geht direkt an die Datenbank."
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="backendCacheTtlSeconds"
+                      render={({ field }) => (
+                        <FormItem>
+                          <SegmentedPicker
+                            label="Wie lange gespeichert wird"
+                            options={BACKEND_CACHE_TTL_OPTIONS}
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-muted p-4">
+                      <div className="flex flex-col gap-0.5">
+                        <Label className="text-sm">Jetzt leeren</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Verwirft alle zwischengespeicherten Werte sofort.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="border-button-border"
+                        disabled={isClearingCache}
+                        onClick={handleClearCache}
+                      >
+                        {isClearingCache ? "Leert…" : "Backend-Cache leeren"}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="rounded-xl shadow-sm">
+                  <CardHeader>
+                    <CardTitle>Frontend-Cache</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Wie lange die öffentliche Website Antworten der API
+                      wiederverwendet, bevor sie neu nachfragt. Eine frisch
+                      veröffentlichte Seite wird dadurch erst nach Ablauf dieser
+                      Zeit öffentlich sichtbar – oder sofort, wenn Sie hier
+                      leeren.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-4">
+                    <FormField
+                      control={form.control}
+                      name="frontendCacheEnabled"
+                      render={({ field }) => (
+                        <FormItem>
+                          <SwitchRow
+                            label="Frontend-Cache verwenden"
+                            description="Aus = die Website fragt bei jedem Besucher neu an. Ehrlich, aber deutlich langsamer."
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="frontendCacheTtlSeconds"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col gap-1.5">
+                          <SegmentedPicker
+                            label="Wie lange gespeichert wird"
+                            options={FRONTEND_CACHE_TTL_OPTIONS}
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                          <p className="text-sm text-muted-foreground">
+                            Kürzer als eine Minute ist nicht wählbar: die Seiten
+                            der Website sind selbst auf eine Minute eingestellt,
+                            und dieser Wert steht dort fest im Code. Ein
+                            kleinerer Wert hier würde also nichts bewirken.
+                          </p>
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-muted p-4">
+                      <div className="flex flex-col gap-0.5">
+                        <Label className="text-sm">Jetzt leeren</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Verwirft die gesamte zwischengespeicherte Website –
+                          gerenderte Seiten wie API-Antworten.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="border-button-border"
+                        disabled={isClearingFrontendCache}
+                        onClick={handleClearFrontendCache}
+                      >
+                        {isClearingFrontendCache
+                          ? "Leert…"
+                          : "Frontend-Cache leeren"}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             )}
 
             {activeSection === "security" && (

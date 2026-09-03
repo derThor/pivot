@@ -170,6 +170,23 @@ export function toastDeleted(description = "Der Eintrag wurde entfernt.") {
   ));
 }
 
+// Für das Leeren von Zwischenspeichern (Nutzer-Bugreport, 2026-09-03:
+// "wenn cache geleert wird passt der toast text nicht"). Dritter Fall
+// derselben Art wie toastSent() und toastChecked(): toastEdited() war der
+// Standardgriff, obwohl nichts bearbeitet wurde. Papierkorb-Variante statt
+// Stift, weil etwas verworfen wird – aber "geleert" statt "gelöscht", denn
+// es geht nur um zwischengespeicherte Werte, nicht um Daten.
+export function toastCleared(description = "Der Zwischenspeicher ist leer.") {
+  toast.custom((id) => (
+    <ActionToast
+      id={id}
+      variant="deleted"
+      title="Erfolgreich geleert"
+      description={description}
+    />
+  ));
+}
+
 // Für dauerhaft geltende, aber bewusst NICHT dauerhaft anzuzeigende Hinweise
 // (Nutzervorgabe, 2026-08-25: "soll sich hier nicht gemerkt werden ... bei
 // jedem neuen Seitenaufruf erneut geladen werden") – im Unterschied zu

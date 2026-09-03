@@ -232,6 +232,21 @@ model AppSettings {
   // (im Entwurf: "Hosting in Frankfurt · ISO 27001 · DSGVO"). Ohne Wert
   // bleibt die Stelle leer, statt einen Claim zu erfinden.
   footerNote                     String?
+  // ---- Caching (Nutzervorgabe, 2026-09-03: eigener Bereich unter
+  // Einstellungen mit Einstellungen und je einem Sofort-Leeren-Knopf) ----
+  //
+  // Backend: der prozessinterne CacheService (siehe cache/cache.service.ts).
+  // Aus = jede Abfrage geht wieder direkt an die Datenbank.
+  backendCacheEnabled            Boolean     @default(true)
+  backendCacheTtlSeconds         Int         @default(30)
+  // Frontend: wie lange apps/site Antworten der Content-Delivery-API
+  // wiederverwendet. Der kleinste wählbare Wert ist bewusst 60 Sekunden –
+  // die Seiten selbst stehen auf `export const revalidate = 60`, und das
+  // muss ein Literal bleiben (Next.js wertet es statisch aus). Ein
+  // kleinerer Wert hier wäre also wirkungslos und würde etwas versprechen,
+  // was nicht eintritt.
+  frontendCacheEnabled           Boolean     @default(true)
+  frontendCacheTtlSeconds        Int         @default(60)
   // Ein/Aus je Systembenachrichtigung-Kategorie (Nutzervorgabe, 2026-08-16:
   // Karte auf /dashboard/system-messages) – bestimmt, ob die jeweilige
   // Kategorie überhaupt als Banner/Glocken-Zähler auftaucht, unabhängig

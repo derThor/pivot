@@ -1,8 +1,19 @@
-import { Controller, Get, Header, Param, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from '../auth/decorators/public.decorator';
 import { PublicContentService } from './public-content.service';
 import { GlobalModulesService } from '../global-modules/global-modules.service';
+import { SiteCacheService } from '../site-cache/site-cache.service';
 
 /** Content-Delivery-API für die öffentliche Website ("Frontend", siehe
  * knowledge-base/frontend/taxonomy-management.md, Update 2026-08-31 –
@@ -16,6 +27,7 @@ export class PublicContentController {
   constructor(
     private readonly publicContentService: PublicContentService,
     private readonly globalModulesService: GlobalModulesService,
+    private readonly siteCache: SiteCacheService,
   ) {}
 
   @Public()
@@ -50,6 +62,23 @@ export class PublicContentController {
   @Get('home')
   getHome() {
     return this.publicContentService.getHome();
+  }
+
+  /** Prüft ein Token, das die API selbst für das Leeren des
+   * Website-Caches ausgestellt hat (siehe SiteCacheService). Die Website
+   * kann die Signatur nicht selbst prüfen – sie ist symmetrisch, den
+   * Schlüssel hat nur die API –, deshalb dieser Umweg. Öffentlich, aber
+   * nutzlos ohne gültiges Token: die Antwort ist ein reines Ja/Nein und
+   * verrät nichts.
+   *
+   * Ausstellen kann so ein Token nur, wer den JWT-Schlüssel hat, also
+   * die API selbst. Damit muss niemand ein gemeinsames Geheimnis in zwei
+   * Anwendungen gleich halten. */
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('revalidation-check')
+  checkRevalidationToken(@Body() body: { token?: string }) {
+    return { valid: this.siteCache.verifyToken(body?.token ?? '') };
   }
 
   @Public()

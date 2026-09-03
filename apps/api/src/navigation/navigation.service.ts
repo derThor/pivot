@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { SiteCacheService } from '../site-cache/site-cache.service';
 import { CreateNavigationDto } from './dto/create-navigation.dto';
 import { UpdateNavigationDto } from './dto/update-navigation.dto';
 import { CreateNavigationItemDto } from './dto/create-navigation-item.dto';
@@ -36,6 +37,7 @@ export class NavigationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLog: AuditLogService,
+    private readonly siteCache: SiteCacheService,
   ) {}
 
   async findAll(query: QueryNavigationDto) {
@@ -95,12 +97,16 @@ export class NavigationService {
     }
   }
 
+  // Menüs bilden Header und Footer der Website (siehe SiteHeader/
+  // SiteFooter in apps/site) – jede Änderung muss dort sofort ankommen.
   async create(dto: CreateNavigationDto) {
+    this.siteCache.invalidate('navigation.changed');
     await this.assertSlugUnique(dto.slug);
     return this.prisma.navigation.create({ data: dto });
   }
 
   async update(id: string, dto: UpdateNavigationDto) {
+    this.siteCache.invalidate('navigation.changed');
     if (dto.slug) {
       await this.assertSlugUnique(dto.slug, id);
     }
@@ -109,6 +115,7 @@ export class NavigationService {
   }
 
   async remove(id: string) {
+    this.siteCache.invalidate('navigation.changed');
     await this.assertNavigationExists(id);
     await this.prisma.navigation.delete({ where: { id } });
   }
@@ -151,6 +158,7 @@ export class NavigationService {
   }
 
   async createItem(navigationId: string, dto: CreateNavigationItemDto) {
+    this.siteCache.invalidate('navigation.changed');
     await this.assertNavigationExists(navigationId);
     this.assertExactlyOneTarget(dto);
     if (dto.contentId) {
@@ -193,6 +201,7 @@ export class NavigationService {
     dto: UpdateNavigationItemDto,
     userId?: string,
   ) {
+    this.siteCache.invalidate('navigation.changed');
     const existing = await this.assertItemInNavigation(navigationId, itemId);
     const effectiveContentId =
       dto.contentId !== undefined ? dto.contentId : existing.contentId;
@@ -300,11 +309,13 @@ export class NavigationService {
   }
 
   async removeItem(navigationId: string, itemId: string) {
+    this.siteCache.invalidate('navigation.changed');
     await this.assertItemInNavigation(navigationId, itemId);
     await this.prisma.navigationItem.delete({ where: { id: itemId } });
   }
 
   async reorderItems(navigationId: string, dto: ReorderNavigationItemsDto) {
+    this.siteCache.invalidate('navigation.changed');
     await this.assertNavigationExists(navigationId);
     const overrides = new Map(
       dto.items.map((item) => [item.id, item.parentId ?? null]),

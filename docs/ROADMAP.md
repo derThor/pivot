@@ -802,7 +802,19 @@ für Details. Zwei Folgevorhaben dabei zunächst vom Nutzer als
       Modul-Feature-Entitlement-Musters neben Controllern und
       `NotificationsService`. Siehe
       [master-slave-licensing.md](../knowledge-base/platform/master-slave-licensing.md).
-- [ ] Redis-Anbindung für Caching/Sessions aktivieren
+- [x] Caching steuerbar machen (2026-09-03) – eigener Oberpunkt unter
+      Einstellungen: Backend-Cache (`CacheService`) und Frontend-Cache
+      (Next.js-ISR in `apps/site`) je an/aus, mit einstellbarer Dauer und
+      einem Knopf zum sofortigen Leeren. Details in
+      [caching.md](../knowledge-base/platform/caching.md)
+- [x] Ereignisgesteuerte Invalidierung der Website (2026-09-03) – Inhalte,
+      Kategorien, Menüs, Rechtstexte und die frontend-relevanten
+      Einstellungen stoßen die Website sofort an; der Zeitablauf ist
+      seitdem nur noch Sicherheitsnetz. Ersetzt den Kompromiss
+      "revalidate: 60 statt Rebuild/Webhook" aus Phase 4.0
+- [ ] Redis-Anbindung für Caching/Sessions aktivieren – der `CacheService`
+      ist bewusst prozessintern; erst bei mehreren Instanzen nötig, die
+      Schnittstelle bleibt dieselbe
 - [ ] API-Keys für externe Anwendungen
 - [ ] Rate Limits pro API-Key
 - [ ] API-Dokumentation pro Mandant

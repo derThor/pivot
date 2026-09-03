@@ -8,6 +8,7 @@ import { Prisma } from '@pivot/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { SiteCacheService } from '../site-cache/site-cache.service';
 import { UpdateLegalDocumentDto } from './dto/update-legal-document.dto';
 
 function escapeHtml(value: string): string {
@@ -168,6 +169,7 @@ export class LegalDocumentsService {
     private readonly prisma: PrismaService,
     private readonly settings: SettingsService,
     private readonly auditLog: AuditLogService,
+    private readonly siteCache: SiteCacheService,
   ) {}
 
   private async companyFields(): Promise<CompanyFields> {
@@ -380,6 +382,7 @@ export class LegalDocumentsService {
   }
 
   async regenerate(key: string, actingUserId: string) {
+    this.siteCache.invalidate('legal-document.changed');
     if (!LEGAL_DOCUMENT_KEYS.includes(key)) {
       throw new NotFoundException(`Rechtstext „${key}“ nicht gefunden.`);
     }
@@ -407,7 +410,9 @@ export class LegalDocumentsService {
     return row;
   }
 
+  // Rechtstexte bilden die dritte Footer-Spalte der Website.
   async updateAddendum(key: string, dto: UpdateLegalDocumentDto) {
+    this.siteCache.invalidate('legal-document.changed');
     const row = await this.prisma.legalDocument.findUnique({ where: { key } });
     if (!row) {
       throw new NotFoundException(`Rechtstext „${key}“ nicht gefunden.`);

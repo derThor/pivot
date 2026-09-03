@@ -47,6 +47,9 @@ export interface SiteSettings {
   publicBaseUrl: string | null;
   accentColor: string | null;
   companyName: string | null;
+  // Steuern die Zwischenspeicherung DIESER Website, siehe getCacheConfig().
+  frontendCacheEnabled: boolean;
+  frontendCacheTtlSeconds: number;
   footerNote: string | null;
   mainNavigationId: string | null;
   footerNavigationPrimaryId: string | null;
@@ -119,9 +122,48 @@ export interface ModuleType {
  * 2026-08-31, siehe knowledge-base/frontend/public-website.md). Die
  * 404-Behandlung hier bleibt als Sicherheitsnetz für Routen, die es
  * wirklich nicht gibt. */
+/** Zwischenspeicher-Verhalten dieser Website, gesteuert unter
+ * Einstellungen → Caching (Nutzervorgabe, 2026-09-03). Kommt aus
+ * `/public/site` und damit aus derselben Antwort, die das Layout ohnehin
+ * bei jedem Rendern holt – Next.js führt identische Aufrufe innerhalb
+ * eines Renderdurchlaufs zusammen, es entsteht also keine zusätzliche
+ * Anfrage.
+ *
+ * Diese eine Abfrage MUSS eine feste Dauer haben, sonst müsste man die
+ * Einstellung kennen, um die Einstellung zu holen. `REVALIDATE_SECONDS`
+ * ist dafür der richtige Wert: er entspricht dem `export const
+ * revalidate = 60` der Seiten, unter das ohnehin niemand kommt. */
+async function getCacheConfig(): Promise<{
+  enabled: boolean;
+  ttlSeconds: number;
+}> {
+  try {
+    const res = await fetch(`${API_URL}/public/site`, {
+      next: { revalidate: REVALIDATE_SECONDS },
+    });
+    if (!res.ok) return { enabled: true, ttlSeconds: REVALIDATE_SECONDS };
+    const site = (await res.json()) as Partial<SiteSettings>;
+    return {
+      enabled: site.frontendCacheEnabled ?? true,
+      ttlSeconds: site.frontendCacheTtlSeconds ?? REVALIDATE_SECONDS,
+    };
+  } catch {
+    // Ist die API nicht erreichbar, greift der Vorgabewert. Eine
+    // unerreichbare API ist ohnehin gleich das größere Problem und wird
+    // vom eigentlichen Aufruf unten gemeldet.
+    return { enabled: true, ttlSeconds: REVALIDATE_SECONDS };
+  }
+}
+
 async function getJson<T>(path: string): Promise<T | null> {
+  const cache = await getCacheConfig();
   const res = await fetch(`${API_URL}${path}`, {
-    next: { revalidate: REVALIDATE_SECONDS },
+    // Abgeschaltet heißt wirklich abgeschaltet: `no-store` nimmt die Route
+    // zusätzlich aus der statischen Erzeugung heraus, die Seite wird also
+    // bei jedem Aufruf frisch gerendert.
+    ...(cache.enabled
+      ? { next: { revalidate: cache.ttlSeconds } }
+      : { cache: "no-store" as const }),
   });
   // 404 ist hier ein normaler Zustand (nicht veröffentlicht/gelöscht/kein
   // solcher Slug) und wird von den Seiten in Next.js' notFound() übersetzt,
@@ -145,6 +187,8 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       publicBaseUrl: null,
       accentColor: null,
       companyName: null,
+      frontendCacheEnabled: true,
+      frontendCacheTtlSeconds: 60,
       footerNote: null,
       mainNavigationId: null,
       footerNavigationPrimaryId: null,

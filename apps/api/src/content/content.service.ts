@@ -10,6 +10,7 @@ import { ContentStatus, ContentVersionTrigger, Prisma } from '@pivot/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { SiteCacheService } from '../site-cache/site-cache.service';
 import { CreateContentDto } from './dto/create-content.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
 import { QueryContentDto } from './dto/query-content.dto';
@@ -81,6 +82,7 @@ export class ContentService {
     private readonly prisma: PrismaService,
     private readonly webhooksService: WebhooksService,
     private readonly auditLog: AuditLogService,
+    private readonly siteCache: SiteCacheService,
   ) {}
 
   async findAll(query: QueryContentDto) {
@@ -327,6 +329,7 @@ export class ContentService {
     });
 
     if (content.status === ContentStatus.PUBLISHED) {
+      this.siteCache.invalidate('content.published');
       void this.webhooksService.dispatch('content.published', {
         id: content.id,
         title: content.title,
@@ -414,6 +417,7 @@ export class ContentService {
       },
     });
 
+    this.siteCache.invalidate('content.updated');
     void this.webhooksService.dispatch('content.updated', {
       id: content.id,
       title: content.title,
@@ -421,6 +425,7 @@ export class ContentService {
       status: content.status,
     });
     if (becomingPublished) {
+      this.siteCache.invalidate('content.published');
       void this.webhooksService.dispatch('content.published', {
         id: content.id,
         title: content.title,
@@ -463,6 +468,7 @@ export class ContentService {
     });
 
     for (const content of due) {
+      this.siteCache.invalidate('content.published');
       void this.webhooksService.dispatch('content.published', {
         id: content.id,
         title: content.title,
@@ -516,6 +522,10 @@ export class ContentService {
       where: { id },
       data: { deletedAt: new Date(), deletedById: actingUserId },
     });
+    // War die Seite veröffentlicht, verschwindet sie damit von der
+    // Website – ohne diesen Anstoß bliebe sie bis zum Ablauf des
+    // Sicherheitsnetzes weiter abrufbar.
+    this.siteCache.invalidate('content.deleted');
   }
 
   async restore(id: string) {
@@ -525,10 +535,12 @@ export class ContentService {
         `Inhalt ${id} befindet sich nicht im Papierkorb.`,
       );
     }
-    return this.prisma.content.update({
+    const restored = await this.prisma.content.update({
       where: { id },
       data: { deletedAt: null, deletedById: null },
     });
+    this.siteCache.invalidate('content.restored');
+    return restored;
   }
 
   async permanentDelete(id: string) {
@@ -539,6 +551,7 @@ export class ContentService {
       );
     }
     await this.prisma.content.delete({ where: { id } });
+    this.siteCache.invalidate('content.purged');
   }
 
   /** Ungepaginiert für den vereinheitlichten Papierkorb (`TrashService`),
