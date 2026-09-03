@@ -1453,12 +1453,20 @@ export function SettingsForm({
                       Wirkt im Backend.
                     </p>
                   </CardHeader>
+                  {/* Beide Kacheln nebeneinander sind immer gleich hoch
+                      (Nutzervorgabe, 2026-09-03): das Raster streckt seine
+                      Zellen ohnehin auf die Zeilenhöhe, die `h-full`/
+                      `flex-1`-Kette reicht diese Höhe bis zur eigentlichen
+                      Fläche durch – sonst stünde die kürzere Kachel oben in
+                      einer zu hohen Zelle. Ab `sm` untereinander, dann ist
+                      jede ihre eigene Zeile und behält ihre natürliche
+                      Höhe. */}
                   <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div className="flex flex-col gap-2">
+                    <div className="flex h-full flex-col gap-2">
                       <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                         Logo
                       </span>
-                      <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted p-4">
+                      <div className="flex flex-1 flex-col gap-3 rounded-lg border border-border bg-muted p-4">
                         <div className="flex flex-col gap-1.5">
                           <p className="text-xs text-muted-foreground">
                             Hellmodus

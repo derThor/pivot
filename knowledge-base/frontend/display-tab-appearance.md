@@ -220,8 +220,18 @@ bis das Raster die Kachel ohne angebrochene letzte Reihe füllt. Sortiert nach F
 Orange/Gelb → Neutrale), damit es nicht wie eine Zufallsauswahl wirkt. Sie
 brechen in einem `flex-wrap`-Raster um; der Hex-Wert steht per `mt-auto ml-auto` unten rechts statt rechts
 neben den Farben. `h-full`/`flex-1` sind von der `FormItem` bis zur Box
-durchgereicht, damit die Kachel die Höhe der Logo-Kachel auch dann
-mitgeht, wenn die Farben eine Reihe weniger brauchen.
+durchgereicht, damit die Kachel die Höhe der Zeile auch dann mitgeht, wenn
+ihr Inhalt kürzer ist.
+
+**Beide Kacheln sind immer gleich hoch** (Nutzervorgabe: *"mach, das die
+beiden kacheln immer gleich hoch sind, bis sie umbrechen"*). Dieselbe
+`h-full`/`flex-1`-Kette liegt seitdem auch auf der Logo-Kachel – die
+Grid-Zellen strecken sich ohnehin auf die Zeilenhöhe, ohne die
+Durchreichung stünde die kürzere Fläche aber oben in einer zu hohen Zelle.
+Welche der beiden die Höhe vorgibt, ergibt sich aus der Fensterbreite: je
+schmaler, desto mehr Reihen braucht das Farbraster. Unterhalb von `sm`
+stehen sie untereinander, dann ist jede ihre eigene Zeile und behält ihre
+natürliche Höhe.
 
 **Nicht beliebig sortierbar:** `ACCENT_PRESETS[0]` ist der Standard – wird
 er gewählt, speichert das Formular `null` statt eines Hex-Werts. Lime muss
