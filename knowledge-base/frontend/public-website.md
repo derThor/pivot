@@ -507,3 +507,62 @@ aufzubrechen ist ein eigener Schritt am Designer. Ebenso fehlen für die
 Landingpage noch Modultypen für Feature-Kacheln, Ablauf-Schritte und
 Preistabelle; die vorhandenen zwölf decken Hero (Cover), Text, Bild,
 Galerie, FAQ und Formular ab.
+
+## Update 2026-09-03 (3): Was am Frontend zum Projekt gehört
+
+**Nutzer-Einordnung:** *„wir haben im Frontend ein template, das für jedes
+Projekt unterschiedlich ist. also pivot hat sein eigenes und strasev usw.
+backend template ui ist immer gleich."*
+
+Beim Übertrag nach strasev ist genau das schiefgegangen: der Merge brachte
+pivots Logo und die Lime-Palette mit, und ich habe es dabei belassen mit
+der Begründung, auf einer leeren Website falle es nicht auf. Falsch – eine
+fremde Marke auf der Website eines Kunden ist kein kosmetisches Problem.
+
+### Die Trennlinie
+
+| projekteigen | geteilt |
+| --- | --- |
+| `app/globals.css` (Farben, Token-Werte) | `app/layout.tsx` (Hüllen-Verdrahtung, Metadaten) |
+| `template/fonts.ts` (welche Schriften) | `lib/api.ts`, alle Routen, `api/`-Proxys |
+| `components/site-logo.tsx` | `components/site-header.tsx`, `site-footer.tsx` |
+| `public/brand/**` | `components/content-*.tsx`, `public-form.tsx`, `category-archive.tsx` |
+
+Header und Footer sind bewusst **geteilt**: ihr Aufbau ist generisch, alle
+Farben kommen aus den Tokens, alle Inhalte aus den Einstellungen. Sie
+sollen Verbesserungen weiter mitbekommen.
+
+### Warum fonts.ts und keine fonts.css
+
+Nutzerfrage: *„können wir schriften auslagern in eine eigene css?"* – Die
+Idee stimmt, das Dateiformat nicht. `next/font` lädt die Schriftdateien
+beim Bauen herunter und liefert sie lokal aus; eine reine CSS-Datei könnte
+dasselbe nur über `@import` von Google Fonts, und dann stünde bei jedem
+Besucher wieder ein Aufruf zu einem Dritten in der Seite. Deshalb eine
+kleine `.ts`, die nur die Schriften bestimmt und `fontVariables`
+exportiert. Die Zuordnung, welche Schrift wo greift, bleibt in
+`globals.css`.
+
+Der Gewinn ist derselbe wie beabsichtigt: `layout.tsx` enthält keine
+Design-Entscheidung mehr und wandert unverändert zwischen den Projekten.
+
+### Wie die Trennung durchgesetzt wird
+
+Nicht durch Disziplin beim Mergen, sondern durch `.gitattributes` im
+Ziel-Repository:
+
+```
+apps/site/src/app/globals.css          merge=ours
+apps/site/src/template/fonts.ts        merge=ours
+apps/site/src/components/site-logo.tsx merge=ours
+apps/site/public/brand/**              merge=ours
+```
+
+Dazu einmalig je Arbeitskopie `git config merge.ours.driver true`. Bei
+einem Merge aus pivot behalten diese Dateien dann den Stand des
+Ziel-Repos.
+
+**Die Kehrseite gehört dazu:** echte Verbesserungen an genau diesen
+Dateien kommen damit auch nicht mehr automatisch an und müssen einzeln
+geholt werden (`git checkout upstream/master -- <datei>`). Das ist der
+Preis dafür, dass ein Merge nie wieder eine fremde Marke einschleppt.
