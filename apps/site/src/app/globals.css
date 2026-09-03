@@ -1,51 +1,53 @@
 @import "tailwindcss";
 
-/* PROJEKTEIGENE DATEI – siehe .gitattributes im Wurzelverzeichnis. Wird bei
-   einem Merge aus dem pivot-Repository bewusst NICHT überschrieben.
-
-   Hier liegt das Aussehen DIESER Website. Das Frontend-Template gehört zum
-   Projekt (Nutzer-Einordnung, 2026-09-03: "wir haben im Frontend ein
-   template, das für jedes Projekt unterschiedlich ist ... backend template
-   ui ist immer gleich"). Am 2026-09-03 stand hier versehentlich das
-   Template von pivot (Off-White, Lime, Manrope) – ein Merge hatte es
-   mitgebracht.
-
-   Die Werte unten sind bewusst ZURÜCKHALTEND und kein Markenauftritt:
-   neutrales Weiß, dunkles Schiefergrau, ein gedämpftes Blau als Akzent.
-   Sie sind der Platzhalter, bis ein eigener Entwurf vorliegt – nicht der
-   Entwurf selbst. */
-
 /* @pivot/blocks liegt außerhalb dieser App (packages/blocks) – Tailwinds
    automatische Content-Erkennung deckt das nicht zuverlässig ab, daher
-   hier explizit als zusätzliche Quelle ergänzt. */
+   hier explizit als zusätzliche Quelle ergänzt (gleicher Eintrag wie in
+   apps/web/src/app/globals.css). */
 @source "../../../../packages/blocks/src";
 
+/* Eigenes, öffentliches Design-System – bewusst NICHT das Admin-Theme aus
+   apps/web (Architekturentscheidung, siehe
+   knowledge-base/frontend/public-website.md). Die fünf Token-Namen, die
+   @pivot/blocks verwendet (bg-muted, text-muted-foreground, border-border,
+   border-input, divide-border), müssen hier existieren, damit die
+   gemeinsamen Block-Komponenten auch im Frontend korrekt aussehen.
+
+   Die Werte stammen seit 2026-09-02 aus dem Entwurf "Pivot Landing" des
+   Nutzers: warmes Off-White als Grund, Beinahe-Schwarz als Schrift, Lime
+   als Akzent. Das ist dieselbe Farbfamilie wie die Administration, nur
+   wärmer abgestimmt. */
 @theme {
-  --color-background: #ffffff;
-  --color-foreground: #16202b;
-  /* Abgesetzte Abschnitte und Karten auf dem weißen Grund. */
-  --color-muted: #f3f5f8;
-  --color-muted-foreground: #52616f;
-  --color-border: #e3e8ee;
-  --color-input: #cdd5df;
+  --color-background: #fbfbf9;
+  --color-foreground: #0e1116;
+  /* Abgesetzte Abschnitte und Karten auf dem Off-White-Grund. */
+  --color-muted: #f2f2ec;
+  --color-muted-foreground: #4b5058;
+  --color-border: #ebebe6;
+  --color-input: #d9d9d0;
   /* Fallback; zur Laufzeit von AppSettings.accentColor überschrieben
      (Inline-Style auf <html> in layout.tsx). */
-  --color-accent: #2f6f9f;
-  /* Eigene Tokens der Hülle – von Header und Footer verwendet.
-     `accent-ink` ist die Schrift AUF einer Akzentfläche. */
-  --color-accent-strong: #255a82;
-  --color-accent-ink: #ffffff;
-  --color-accent-link: #1f4f74;
-  --color-surface-dark: #16202b;
-  --color-surface-dark-foreground: #d4dbe3;
-  --color-surface-dark-muted: #7c8a98;
+  --color-accent: #c6e86a;
+  /* Eigene Tokens der Hülle – nicht von @pivot/blocks verwendet, aber von
+     Header und Footer. `accent-strong` ist die Hover-Stufe des Akzents,
+     `accent-ink` die Schrift AUF einer Akzentfläche (Lime ist hell, weiße
+     Schrift wäre darauf unlesbar). Der dunkle Grund ist der Footer. */
+  --color-accent-strong: #b7dd54;
+  --color-accent-ink: #0e1116;
+  --color-accent-link: #5c7a12;
+  --color-surface-dark: #0e1116;
+  --color-surface-dark-foreground: #d6dae0;
+  --color-surface-dark-muted: #6b7280;
 
+  /* Manrope für alles, IBM Plex Mono für die kleinen Versal-Label über
+     Abschnitten und Footer-Spalten. Beide werden in layout.tsx über
+     next/font geladen und setzen diese beiden Variablen. */
   --font-sans:
-    var(--font-manrope), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-    Roboto, Helvetica, Arial, sans-serif;
+    var(--font-manrope), Manrope, ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono:
-    var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo, Consolas,
-    monospace;
+    var(--font-plex-mono), "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo,
+    Consolas, monospace;
 }
 
 @layer base {
@@ -61,6 +63,7 @@
   h3,
   h4 {
     text-wrap: balance;
+    letter-spacing: -0.02em;
   }
 
   a {
