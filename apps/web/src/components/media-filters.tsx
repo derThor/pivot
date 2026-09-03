@@ -117,7 +117,13 @@ export function MediaFilters({
             `ml-auto` schiebt es ans Ende der Zeile, damit die Filter-Pillen
             links zusammenbleiben. */}
         <div className="ml-auto">
-          <SortMenu options={MEDIA_SORT_OPTIONS} />
+          {/* Gleiche Form und Höhe wie "Nur ungenutzte" daneben
+              (Nutzervorgabe, 2026-09-03) – in einer Reihe mit den
+              Filter-Pillen wäre eine abweichende Schaltfläche ein Bruch. */}
+          <SortMenu
+            options={MEDIA_SORT_OPTIONS}
+            className="h-auto shrink-0 rounded-full border-button-border px-3.5 py-1.5 text-sm font-medium"
+          />
         </div>
         <button
           type="button"

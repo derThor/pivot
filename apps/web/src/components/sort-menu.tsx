@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowDownUp, Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,9 +33,15 @@ export function SortMenu({
   options,
   pageParam = "page",
   paramPrefix = "",
+  className,
 }: {
   options: SortOption[];
   pageParam?: string;
+  /** Zusätzliche Klassen für die Schaltfläche – damit sich das Menü der
+   * Umgebung anpasst, in der es steht. In der Mediathek sitzt es in einer
+   * Reihe mit den Filter-Pillen und übernimmt deren Form und Höhe
+   * (Nutzervorgabe, 2026-09-03). */
+  className?: string;
   /** Namensvorsatz der Query-Parameter. Nötig, sobald ZWEI sortierbare
    * Listen auf derselben Seite stehen – die Kategorien-Seite zeigt links
    * die Kategorien und rechts deren Beiträge; ohne Vorsatz würden beide
@@ -75,7 +82,7 @@ export function SortMenu({
             type="button"
             variant="outline"
             size="sm"
-            className="border-button-border"
+            className={cn("border-button-border", className)}
           />
         }
       >
