@@ -67,10 +67,14 @@ function settingKeyFor(dedupeKey: string): keyof AppSettings | null {
   if (dedupeKey === 'storage-quota') return 'notifyStorageQuota';
   if (dedupeKey.startsWith('webhook-failure:')) return 'notifyWebhookFailures';
   if (dedupeKey === 'trash-expiring') return 'notifyTrashExpiring';
-  // 'submissions-unread' ist 2026-09-03 entfallen (der Stand steht am
-  // Briefsymbol in der Kopfzeile); bereits erzeugte Zeilen raeumt sync()
-  // von selbst ab, weil sie kein Kandidat mehr sind.
-  if (dedupeKey === 'submissions-due-deletion') {
+  // Beide Warnungen haengen am selben Schalter: ueber der Frist liegen
+  // geblieben und bald geloescht werden sind dieselbe Sorge aus zwei
+  // Richtungen. Der reine Ungelesen-Stand steht dagegen am Briefsymbol in
+  // der Kopfzeile und erzeugt hier gar keinen Eintrag mehr.
+  if (
+    dedupeKey === 'submissions-unread' ||
+    dedupeKey === 'submissions-due-deletion'
+  ) {
     return 'notifyUnreadSubmissions';
   }
   // Beide Website-Anomalien hängen am selben Schalter. Der erste
@@ -250,18 +254,31 @@ export class NotificationsService {
       }
     }
 
-    // Formular-Einsendungen. Hier steht seit 2026-09-03 nur noch die
-    // WARNUNG vor der automatischen Löschung. Die bloße Erinnerung "es
-    // liegen ungelesene Einsendungen" ist entfallen (Nutzervorgabe: "aus
-    // systembenachrichtigung rausnehmen ... nur warnungen oder fehler
-    // sollen dann da rein") – der Ungelesen-Stand steht jetzt dauerhaft
-    // am Briefsymbol in der Kopfzeile und braucht keine Meldung mehr, die
-    // man wegklicken muss.
-    //
-    // Die Frist `formSubmissionUnreadReminderDays` bleibt in Gebrauch:
-    // der Job "form-submission-unread-reminder" verschickt weiterhin eine
-    // E-Mail (siehe JobsService).
+    // Formular-Einsendungen. Der reine Ungelesen-STAND steht seit
+    // 2026-09-03 am Briefsymbol in der Kopfzeile und gehört nicht mehr
+    // hierher (Nutzervorgabe: "nur warnungen oder fehler sollen dann da
+    // rein"). Was hier bleibt, sind die beiden Warnungen: über der Frist
+    // liegen geblieben und bald gelöscht werden.
     if (settings.notifyUnreadSubmissions) {
+      const unreadDays = settings.formSubmissionUnreadReminderDays;
+      if (unreadDays != null) {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - unreadDays);
+        const unread = await this.prisma.formSubmission.count({
+          where: { isRead: false, createdAt: { lt: cutoff } },
+        });
+        if (unread > 0) {
+          candidates.push({
+            category: 'system',
+            dedupeKey: 'submissions-unread',
+            title: `${unread} Einsendung${unread === 1 ? '' : 'en'} überfällig`,
+            description: `Länger als ${unreadDays} Tage ungelesen. Der laufende Stand steht am Briefsymbol in der Kopfzeile; hier steht nur, was die eingestellte Frist überschritten hat.`,
+            isUrgent: true,
+            actionLabel: 'Einsendungen öffnen',
+            actionUrl: '/dashboard/forms/submissions',
+          });
+        }
+      }
       // Die Löschmeldung hängt am Datenschutz-Modul (Nutzervorgabe,
       // 2026-09-02: "Systembenachrichtigung für zu löschende einsendungen
       // nur, wenn datenschutzmodul vorhanden") – der Schalter dafür sitzt

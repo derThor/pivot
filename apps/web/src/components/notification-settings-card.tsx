@@ -86,9 +86,9 @@ const ROWS: { key: NotifyKey; label: string; description: string }[] = [
   },
   {
     key: "notifyUnreadSubmissions",
-    label: "Einsendungen werden bald gelöscht",
+    label: "Einsendungen überfällig oder fällig zur Löschung",
     description:
-      "Warnt vor Formular-Einsendungen, die in den nächsten Tagen automatisch gelöscht werden. Fristen: Einstellungen → Datenschutz → Aufbewahrung. Der reine Ungelesen-Stand steht seit 2026-09-03 am Briefsymbol in der Kopfzeile und erscheint hier nicht mehr.",
+      "Warnt, wenn Formular-Einsendungen länger als die eingestellte Frist ungelesen liegen oder demnächst automatisch gelöscht werden. Fristen: Einstellungen → Mailing → Einsendungen bzw. Datenschutz → Aufbewahrung. Der laufende Ungelesen-Stand steht am Briefsymbol in der Kopfzeile und erscheint hier nicht.",
   },
 ];
 

@@ -569,9 +569,14 @@ export class JobsService implements OnModuleInit {
       : `Keine fälligen Einsendungen (${parts.join(', ')}).`;
   }
 
-  /** Meldet zu lange ungelesene Einsendungen. Die Meldung selbst baut
-   * `notifications` aus derselben Zahl – hier wird nur protokolliert,
-   * damit der Lauf im Job-Protokoll sichtbar ist. */
+  /** Meldet zu lange ungelesene Einsendungen.
+   *
+   * WICHTIG, weil es leicht zu verwechseln ist: dieser Job verschickt
+   * NICHTS. Die eigentliche Erinnerung ist die Systembenachrichtigung, die
+   * `NotificationsService` aus derselben Zahl baut; hier wird nur
+   * protokolliert, damit der Lauf im Job-Protokoll sichtbar ist. Eine Mail
+   * geht ausschließlich raus, wenn ein Job FEHLSCHLÄGT (siehe
+   * notifyOnFailure). */
   private async remindUnreadFormSubmissions(): Promise<string> {
     const settings = await this.settings.get();
     const days = settings.formSubmissionUnreadReminderDays;

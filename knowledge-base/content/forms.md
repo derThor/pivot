@@ -1175,11 +1175,21 @@ Vorher lag beides in der Glocke, und die Erinnerung „N Einsendungen seit
 beschreibt, sondern einen Zustand. Genau das ist die Aufgabe eines Zählers
 in der Kopfzeile.
 
-**Geblieben ist in der Glocke** die Warnung vor der automatischen Löschung
-(`submissions-due-deletion`) – das ist ein Ereignis mit Frist, kein Stand.
-Der Schalter unter Benachrichtigungen heißt entsprechend nicht mehr
-„Einsendungen liegen ungelesen", sondern „Einsendungen werden bald
-gelöscht".
+**In der Glocke bleiben die beiden WARNUNGEN:** Einsendungen, die länger
+als die eingestellte Frist ungelesen liegen (`submissions-unread`), und
+solche, die demnächst automatisch gelöscht werden
+(`submissions-due-deletion`). Beide haben eine Frist und sind damit
+Ereignisse, kein Stand.
+
+**Ein Zwischenschritt, der falsch war:** Zuerst hatte ich die
+Überfälligkeits-Meldung ganz entfernt und dabei behauptet, die Frist bleibe
+„für die E-Mail des Jobs" in Gebrauch. Das stimmte nicht – der Job
+`form-submission-unread-reminder` **verschickt nichts**, er schreibt nur
+eine Zeile ins Job-Protokoll (eine Mail geht ausschließlich raus, wenn ein
+Job FEHLSCHLÄGT). Damit hatte ich die einzige echte Erinnerung ersatzlos
+gestrichen; das Briefsymbol zeigt zwar den Stand, erinnert aber niemanden,
+der nicht hinschaut. Nach Rückfrage des Nutzers wieder hergestellt
+(Entscheidung, 2026-09-03: „glocke bei überfälligkeit, keine mail").
 
 Bereits erzeugte Postfach-Zeilen der alten Meldung räumt `sync()` von
 selbst ab: es löscht Einträge, zu denen es keinen Kandidaten mehr gibt.
