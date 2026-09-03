@@ -175,7 +175,21 @@ export function resolveBlockLayout(
 ): { align: ImageAlign; width: number; hasIntraBlockImage: boolean } {
   const imageFields = contentFields.filter((f) => f.type === "image");
   if (imageFields.length > 0 && contentFields.length > 1) {
-    return { align: "none", width: 100, hasIntraBlockImage: true };
+    // Blockinternes Bild: das Bild richtet sich INNERHALB des Blocks aus
+    // (Float neben Text, Kachel-Raster, Cover-Hintergrund) – dafür steht
+    // `hasIntraBlockImage`.
+    //
+    // Der Block selbst bekommt seit 2026-09-03 trotzdem seine eigene
+    // Ausrichtung aus `layout` (Nutzervorgabe: "auf jeden Block soll die
+    // Ausrichtung gesetzt werden, so dass ich überall Vollbild usw.
+    // anwenden kann"). Vorher stand hier fest `none`/100 – Cover und
+    // Kacheln konnten dadurch überhaupt nicht ausgerichtet werden.
+    //
+    // Rückwärtskompatibel: bestehende Blöcke haben kein `layout`, das
+    // ergibt weiterhin `none`/100.
+    const align = layout?.align ?? "none";
+    const width = align === "full" ? 100 : (layout?.width ?? 100);
+    return { align: healAlign(align, width), width, hasIntraBlockImage: true };
   }
   if (imageFields.length === 1) {
     const img = toImageValue(values[imageFields[0].name]);

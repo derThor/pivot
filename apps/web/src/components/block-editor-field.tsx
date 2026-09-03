@@ -984,10 +984,17 @@ export function BlockEditorField({
               resolved.values,
               instance.layout,
             );
-            // Kein eigenes Bild-Feld (Rich-Text, CTA-Button, Zitat, …):
-            // Ausrichtung/Größe des ganzen Blocks kommen aus
-            // `instance.layout` – eigener Zieh-Griff + Menü unten.
-            const hasBlockLayoutControls = !imageField;
+            // Ausrichtung/Größe des ganzen Blocks aus `instance.layout` –
+            // eigener Zieh-Griff + Menü unten. Seit 2026-09-03 für JEDEN
+            // Baustein (Nutzervorgabe: "auf jeden Block soll die
+            // Ausrichtung gesetzt werden") – außer beim reinen
+            // Bild-Baustein: der besteht nur aus dem Bild, dort wären zwei
+            // Ausrichtungs-Menüs nebeneinander dasselbe zweimal. Cover und
+            // Kacheln hatten vorher gar keine.
+            const isPureImageBlock = Boolean(
+              imageField && contentFields.length === 1,
+            );
+            const hasBlockLayoutControls = !isPureImageBlock;
             const currentAlign =
               ALIGN_OPTIONS.find(
                 (o) =>
@@ -1263,11 +1270,18 @@ export function BlockEditorField({
                                 draggable={false}
                                 className="size-full object-cover"
                               />
-                              {/* Kleiner Button in der Ecke statt (wie vorher)
-                                die ganze Kachel als Overlay abzudecken – ein
-                                `inset-0`-Button über der kompletten Fläche
-                                ließ praktisch keinen Platz mehr übrig, um
-                                den Baustein per Drag&Drop zu greifen. */}
+                              {/* Ganze Kachel als Ziel (Nutzervorgabe,
+                                2026-09-03: "bei Kachel ist Ersetzen oben in
+                                der Ecke, soll vollflächig in der Kachel
+                                sein") – dieselbe Bedienung wie bei den
+                                übrigen Bildern.
+
+                                Der frühere Eck-Knopf war eine Notlösung aus
+                                der Zeit, als der Baustein noch am Körper
+                                gezogen wurde und ein `inset-0`-Overlay
+                                keine Greiffläche übrig ließ. Gezogen wird
+                                längst am eigenen Griff, damit ist der
+                                Grund entfallen. */}
                               <button
                                 type="button"
                                 draggable={false}
@@ -1278,7 +1292,7 @@ export function BlockEditorField({
                                     fieldName: field.name,
                                   });
                                 }}
-                                className="absolute top-1.5 right-1.5 rounded-md bg-black/60 px-1.5 py-1 text-xs font-medium text-white opacity-0 transition-opacity group-hover/tile:opacity-100"
+                                className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm font-medium text-white opacity-0 transition-opacity group-hover/tile:opacity-100"
                               >
                                 Ersetzen
                               </button>

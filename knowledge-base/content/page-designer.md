@@ -538,3 +538,43 @@ so, erst beim Review aufgefallen).
 Read-Endpoints, 404 für unbekannte Id, und ein Round-Trip-Test, der
 Content mit mehreren geordneten Modul-Instanzen anlegt und prüft, dass
 `data.blocks` (Reihenfolge + Werte) unverändert zurückkommt.
+
+## Update 2026-09-03: Ausrichtung für JEDEN Baustein
+
+**Nutzervorgabe:** *„auf jeden Block soll die Ausrichtung gesetzt werden.
+so dass ich überall Vollbild usw. anwenden kann. aktuell bei Cover nicht
+vorhanden. und bei Kacheln Drag and Drop Größe hinzufügen und auch
+Ausrichtung."*
+
+### Warum Cover und Kacheln vorher keine hatten
+
+`resolveBlockLayout()` gab für jeden Baustein mit Bild UND weiteren
+Feldern fest `none`/100 zurück. Die Regel stammt vom „Bild + Text"-Fall:
+dort richtet sich das BILD innerhalb des Blocks aus (Float neben dem
+Text), der Block selbst bleibt neutral. Cover und Kacheln fielen unter
+dieselbe Regel, obwohl ihr Bild gar nicht fließt – es liegt vollflächig
+dahinter bzw. im Raster. Sie waren damit die einzigen Bausteine ganz ohne
+Ausrichtung.
+
+Jetzt liest dieser Zweig `layout` wie alle anderen. `hasIntraBlockImage`
+bleibt erhalten – das Bild richtet sich weiterhin im Block aus –, aber der
+Block bekommt zusätzlich seine eigene Ausrichtung. **Rückwärtskompatibel:**
+bestehende Blöcke haben kein `layout`, das ergibt weiter `none`/100.
+
+Im Editor hängen Ausrichtungs-Menü und Zieh-Griff am selben Schalter,
+Kacheln und Cover haben damit beides. Ausgenommen bleibt nur der reine
+Bild-Baustein (Bild ohne weitere Felder): dort stünden zwei
+Ausrichtungs-Menüs nebeneinander und meinten dasselbe.
+
+### Ersetzen in der Kachel
+
+*„bei Kachel ist Ersetzen oben in der Ecke, soll vollflächig in der Kachel
+sein"* – umgesetzt. Der frühere Eck-Knopf war eine Notlösung aus der Zeit,
+als ein Baustein noch am Körper gezogen wurde und ein `inset-0`-Overlay
+keine Greiffläche übrig ließ. Gezogen wird längst am eigenen Griff, damit
+ist der Grund entfallen; die Bedienung entspricht jetzt den übrigen
+Bildern.
+
+Geprüft: ein „Bild + Text"-Baustein mit `layout.align: "bleed"` trägt auf
+der Website die Ausbruch-Klassen – vorher war das an dieser Stelle
+unmöglich.
