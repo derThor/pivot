@@ -59,7 +59,12 @@ export default async function RootLayout({
       // projektübergreifend gleich.
       className={fontVariables}
     >
-      <body className="flex min-h-screen flex-col">
+      {/* `overflow-x-clip` gehört hierher und nicht auf die Inhaltsbahn:
+          randlose Blöcke sind `100vw` breit, und `100vw` schließt die
+          senkrechte Bildlaufleiste mit ein – sie ragen also um deren
+          Breite über den sichtbaren Bereich hinaus. Ohne das Abschneiden
+          entstünde dadurch eine waagerechte Bildlaufleiste. */}
+      <body className="flex min-h-screen flex-col overflow-x-clip">
         <SiteHeader
           siteTitle={site.siteTitle}
           navigation={site.mainNavigation}
@@ -75,12 +80,12 @@ export default async function RootLayout({
             der Hero und das Branchen-Band – kann heute kein Baustein: die
             Breite liegt hier und nicht im Baustein. Das aufzubrechen wäre
             ein eigener Schritt am Designer, kein Nebeneffekt der Hülle. */}
-        {/* `overflow-x-clip` ist die Voraussetzung für randlose Blöcke:
-            die brechen mit `100vw` aus dieser Bahn aus, und `100vw`
-            schließt die Bildlaufleiste mit ein. Ohne das Abschneiden
-            entstünde eine waagerechte Bildlaufleiste (siehe
-            blockLayoutClasses in @pivot/blocks). */}
-        <main className="mx-auto w-full max-w-[var(--content-width,1180px)] flex-1 overflow-x-clip px-6 py-14 sm:px-8">
+        {/* Die Bahn selbst darf NICHT abschneiden – sonst wäre sie genau
+            die Grenze, die randlose Blöcke überwinden sollen (Fehlerbild
+            2026-09-03: der Block war 100vw breit, wurde aber auf
+            Bahnbreite beschnitten). Abgeschnitten wird am <body>, der
+            über die volle Fensterbreite geht. */}
+        <main className="mx-auto w-full max-w-[var(--content-width,1180px)] flex-1 px-6 py-14 sm:px-8">
           {children}
         </main>
 

@@ -665,3 +665,19 @@ Fensterrändern sitzt, hat dort nichts zu runden.
 
 Im Backend fängt `allowBleed={false}` das ab – dort säße ein Bild in
 voller Fensterbreite quer über Sidebar und Formularspalten.
+
+### Vierte Falle: das Abschneiden saß an der falschen Stelle
+
+`overflow-x: clip` stand zuerst auf `<main>` – also auf genau der Bahn,
+die ein randloser Block überwinden soll. Der Block war korrekt `100vw`
+breit und wurde anschließend auf Bahnbreite **beschnitten**; sichtbar war
+er dadurch nur ein paar Pixel breiter als der Fließtext (die Bahn schneidet
+an ihrer Polsterkante ab, nicht an der Textkante).
+
+Abgeschnitten wird jetzt am `<body>`, der über die volle Fensterbreite
+geht. Dort erfüllt es weiterhin seinen Zweck – die Bildlaufleiste, die in
+`100vw` mitzählt, erzeugt keine waagerechte Leiste mehr –, ohne den
+Ausbruch selbst zu verhindern.
+
+**Merksatz:** Das Abschneiden muss immer WEITER AUSSEN sitzen als die
+Grenze, die überwunden werden soll.
