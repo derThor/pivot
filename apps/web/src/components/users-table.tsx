@@ -40,12 +40,13 @@ export function UsersTable({
       <Table>
         <TableHeader>
           <TableRow>
-            {/* "2FA" und "Status" sind aus mehreren Feldern
-                zusammengesetzt (aktiv, gesperrt, anonymisiert, gelöscht) –
-                dafür gibt es keine einzelne Spalte zum Sortieren. */}
+            {/* "Status" zeigt vier Zustände aus drei Feldern
+                (anonymisiert → gelöscht → aktiv → deaktiviert) – sortiert
+                wird über alle drei nacheinander, was die Liste genau so
+                gruppiert, wie die Spalte sie anzeigt. */}
             <SortableHead field="name">Benutzer</SortableHead>
-            <TableHead>2FA</TableHead>
-            <TableHead>Status</TableHead>
+            <SortableHead field="twoFactor">2FA</SortableHead>
+            <SortableHead field="status">Status</SortableHead>
             <SortableHead field="lastLoginAt">Zuletzt online</SortableHead>
             <TableHead className="text-center">Aktionen</TableHead>
           </TableRow>

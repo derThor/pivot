@@ -132,12 +132,30 @@ export class UsersService {
       this.prisma.user.findMany({
         where,
         select: publicSelect,
-        orderBy: resolveOrderBy<Prisma.UserOrderByWithRelationInput>(
+        orderBy: resolveOrderBy<
+          | Prisma.UserOrderByWithRelationInput
+          | Prisma.UserOrderByWithRelationInput[]
+        >(
           {
             name: (dir) => ({ lastName: dir }),
             email: (dir) => ({ email: dir }),
             createdAt: (dir) => ({ createdAt: dir }),
             lastLoginAt: (dir) => ({ lastLoginAt: dir }),
+            twoFactor: (dir) => ({ twoFactorEnabled: dir }),
+            // Die Status-Spalte zeigt vier Zustände, die aus drei Feldern
+            // entstehen (anonymisiert → gelöscht → aktiv → deaktiviert).
+            // Sortiert wird deshalb über alle drei nacheinander: das
+            // gruppiert die Liste genau so, wie die Spalte sie anzeigt.
+            //
+            // `nulls: 'last'` ist nötig, weil "nicht gelöscht" als NULL
+            // gespeichert ist – ohne die Angabe stünden je nach Richtung
+            // erst alle Nicht-Gelöschten oder alle Gelöschten, was die
+            // Gruppierung wieder zerreißt.
+            status: (dir) => [
+              { isActive: dir },
+              { deletedAt: { sort: dir, nulls: 'last' } },
+              { anonymizedAt: { sort: dir, nulls: 'last' } },
+            ],
           },
           { createdAt: 'desc' },
           query.sortBy,

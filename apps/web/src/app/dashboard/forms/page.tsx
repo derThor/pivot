@@ -6,13 +6,32 @@ import type { FormStatus } from "@/lib/api-server";
 export default async function FormsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string; q?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    status?: string;
+    q?: string;
+    sortBy?: string;
+    sortDir?: string;
+  }>;
 }) {
-  const { page: pageParam, status, q } = await searchParams;
+  const {
+    page: pageParam,
+    status,
+    q,
+    sortBy,
+    sortDir: sortDirParam,
+  } = await searchParams;
+  const sortDir = sortDirParam === "asc" ? "asc" : "desc";
   const page = Number(pageParam) || 1;
 
   const [result, stats] = await Promise.all([
-    getForms({ page, status: status as FormStatus | undefined, q }),
+    getForms({
+      page,
+      status: status as FormStatus | undefined,
+      q,
+      sortBy,
+      sortDir,
+    }),
     getFormStats(),
   ]);
 

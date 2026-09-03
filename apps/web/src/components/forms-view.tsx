@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SortableHead } from "@/components/sortable-head";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Inbox, Plus, Search } from "lucide-react";
@@ -151,11 +152,15 @@ export function FormsView({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Status</TableHead>
+              {/* "Felder" und "Einsendungen" sind gezählte Werte (Länge
+                  des Feld-JSONs bzw. Anzahl verknüpfter Einsendungen) –
+                  danach zu sortieren hieße, alle Formulare zu laden und im
+                  Speicher zu zählen. */}
+              <SortableHead field="name">Name</SortableHead>
+              <SortableHead field="status">Status</SortableHead>
               <TableHead>Felder</TableHead>
               <TableHead>Einsendungen</TableHead>
-              <TableHead>Zuletzt geändert</TableHead>
+              <SortableHead field="updatedAt">Zuletzt geändert</SortableHead>
               <TableHead className="text-center">Aktionen</TableHead>
             </TableRow>
           </TableHeader>
