@@ -660,8 +660,9 @@
 
 /* Nutzerdefinierter Innen-/Außenabstand eines Bausteins, je Seite einzeln
    (Seiten-Designer, siehe block-field-output.tsx `BlockSpacingWrapper`) –
-   Mobil-Wert gilt als Standard (mobile-first), ab 640px übernimmt der
-   Desktop-Wert je Seite, sofern gesetzt (sonst bleibt der Mobil-Wert). Nur
+   Mobil-Wert gilt als Standard (mobile-first), ab 768px übernimmt der
+   Tablet-Wert und ab 1024px der Desktop-Wert je Seite, sofern gesetzt
+   (sonst bleibt der jeweils kleinere Wert stehen). Nur
    die tatsächlich vom Nutzer gesetzten CSS-Variablen wirken sich aus (kein
    Fallback auf 0), damit ein Baustein ohne eigene Angabe nicht plötzlich
    seinen Abstand verliert. */
@@ -675,36 +676,77 @@
   margin-bottom: var(--block-margin-bottom-mobile);
   margin-left: var(--block-margin-left-mobile);
 }
-@media (width >= 40rem) {
+/* Drei Stufen seit 2026-09-03 (Nutzervorgabe: "bei seiten bei allen
+   bausteinen innen/außenabstand auch tablet hinzufügen"): mobil ist der
+   Grundwert, Tablet greift ab 48rem (768px), Desktop ab 64rem (1024px).
+   Jede Stufe erbt ohne eigenen Wert die nächstkleinere – Desktop-Werte
+   gelten dadurch erst ab 1024px statt wie früher ab 640px. */
+@media (width >= 48rem) {
   .block-spacing {
     padding-top: var(
-      --block-padding-top-desktop,
+      --block-padding-top-tablet,
       var(--block-padding-top-mobile)
     );
     padding-right: var(
-      --block-padding-right-desktop,
+      --block-padding-right-tablet,
       var(--block-padding-right-mobile)
     );
     padding-bottom: var(
-      --block-padding-bottom-desktop,
+      --block-padding-bottom-tablet,
       var(--block-padding-bottom-mobile)
     );
     padding-left: var(
-      --block-padding-left-desktop,
+      --block-padding-left-tablet,
       var(--block-padding-left-mobile)
     );
-    margin-top: var(--block-margin-top-desktop, var(--block-margin-top-mobile));
+    margin-top: var(--block-margin-top-tablet, var(--block-margin-top-mobile));
     margin-right: var(
-      --block-margin-right-desktop,
+      --block-margin-right-tablet,
       var(--block-margin-right-mobile)
     );
     margin-bottom: var(
-      --block-margin-bottom-desktop,
+      --block-margin-bottom-tablet,
       var(--block-margin-bottom-mobile)
     );
     margin-left: var(
-      --block-margin-left-desktop,
+      --block-margin-left-tablet,
       var(--block-margin-left-mobile)
+    );
+  }
+}
+@media (width >= 64rem) {
+  .block-spacing {
+    padding-top: var(
+      --block-padding-top-desktop,
+      var(--block-padding-top-tablet, var(--block-padding-top-mobile))
+    );
+    padding-right: var(
+      --block-padding-right-desktop,
+      var(--block-padding-right-tablet, var(--block-padding-right-mobile))
+    );
+    padding-bottom: var(
+      --block-padding-bottom-desktop,
+      var(--block-padding-bottom-tablet, var(--block-padding-bottom-mobile))
+    );
+    padding-left: var(
+      --block-padding-left-desktop,
+      var(--block-padding-left-tablet, var(--block-padding-left-mobile))
+    );
+    margin-top: var(
+      --block-margin-top-desktop,
+      var(--block-margin-top-tablet, var(--block-margin-top-mobile))
+    );
+    margin-right: var(
+      --block-margin-right-desktop,
+      var(--block-margin-right-tablet, var(--block-margin-right-mobile))
+    );
+    margin-bottom: var(
+      --block-margin-bottom-desktop,
+      var(--block-margin-bottom-tablet, var(--block-margin-bottom-mobile))
+    );
+    margin-left: var(
+      --block-margin-left-desktop,
+      var(--block-margin-left-tablet, var(--block-margin-left-mobile))
     );
   }
 }

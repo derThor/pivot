@@ -96,6 +96,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     return (
       <ContentArticle
         content={page}
+        spacing={page.spacing}
         moduleTypes={moduleTypes}
         globalModules={globalModules}
       />

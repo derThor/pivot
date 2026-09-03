@@ -244,6 +244,16 @@ export interface NavigationItemNode {
   /** Darstellung der Übersichtsseite – nur bei Kategorie-Ziel relevant. */
   categoryLayout: "LIST" | "BLOCKS";
   appearance: "LINK" | "TEXT_BUTTON" | "ACCENT_BUTTON";
+  /** Abstand oben/unten der Zielseite in Pixeln, getrennt nach
+   * Breakpoint (Nutzervorgabe, 2026-09-03) – bei jedem Menüpunkt setzbar,
+   * unabhängig vom Ziel. `null` = Vorgabe des Templates; jede Stufe erbt
+   * ohne eigenen Wert die nächstkleinere. */
+  marginTopMobile: number | null;
+  marginBottomMobile: number | null;
+  marginTopTablet: number | null;
+  marginBottomTablet: number | null;
+  marginTopDesktop: number | null;
+  marginBottomDesktop: number | null;
   sortOrder: number;
   parentId: string | null;
   children: NavigationItemNode[];

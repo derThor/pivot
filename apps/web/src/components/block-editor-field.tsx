@@ -32,6 +32,7 @@ import {
   SeparatorHorizontal,
   Smartphone,
   Square,
+  Tablet,
   Trash2,
   Video as VideoIcon,
 } from "lucide-react";
@@ -369,6 +370,18 @@ const SPACING_SIDE_LABELS: Record<SpacingSide, string> = {
 const SPACING_PRESETS = [0, 8, 16, 24, 32, 48, 64];
 
 type SpacingBreakpoint = keyof ResponsiveSpacing;
+
+/** Die drei Stufen des Abstände-Dialogs (Tablet seit 2026-09-03,
+ * Nutzervorgabe). Reihenfolge = Reihenfolge der Reiter. */
+const SPACING_TABS: {
+  value: SpacingBreakpoint;
+  label: string;
+  icon: typeof Smartphone;
+}[] = [
+  { value: "mobile", label: "Mobil", icon: Smartphone },
+  { value: "tablet", label: "Tablet", icon: Tablet },
+  { value: "desktop", label: "Desktop", icon: Monitor },
+];
 
 /** Einzelnes Zahlenfeld im Box-Modell – Position im Grid vermittelt die
  * Seite, daher kein sichtbares Label je Feld (nur `aria-label`). */
@@ -1895,39 +1908,32 @@ export function BlockEditorField({
           <DialogHeader className="shrink-0">
             <DialogTitle>Abstände</DialogTitle>
             <DialogDescription>
-              Leer heißt: Wert wird vererbt. Desktop greift ab 640px
-              Bildschirmbreite.
+              Leer heißt: Wert wird von der nächstkleineren Stufe vererbt.
+              Tablet greift ab 768px, Desktop ab 1024px Bildschirmbreite.
             </DialogDescription>
           </DialogHeader>
           {spacingInstance && (
             <div className="flex flex-col gap-4 overflow-y-auto">
               <div className="flex gap-1 rounded-lg border border-border bg-muted p-1">
-                <button
-                  type="button"
-                  onClick={() => setSpacingTab("mobile")}
-                  className={cn(
-                    "flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors",
-                    spacingTab === "mobile"
-                      ? "border-primary bg-card shadow-sm"
-                      : "border-transparent text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <Smartphone className="size-4" />
-                  Mobil
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSpacingTab("desktop")}
-                  className={cn(
-                    "flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors",
-                    spacingTab === "desktop"
-                      ? "border-primary bg-card shadow-sm"
-                      : "border-transparent text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <Monitor className="size-4" />
-                  Desktop
-                </button>
+                {SPACING_TABS.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.value}
+                      type="button"
+                      onClick={() => setSpacingTab(tab.value)}
+                      className={cn(
+                        "flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors",
+                        spacingTab === tab.value
+                          ? "border-primary bg-card shadow-sm"
+                          : "border-transparent text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      <Icon className="size-4" />
+                      {tab.label}
+                    </button>
+                  );
+                })}
               </div>
 
               <SpacingBoxEditor

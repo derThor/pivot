@@ -10,6 +10,7 @@ import type {
 import type { GlobalModule } from "@pivot/blocks";
 import { ContentBlocks } from "@/components/content-blocks";
 import { resolveImageSrc } from "@pivot/blocks";
+import { pageSpacingStyle } from "@/lib/page-spacing";
 
 const dateFormatter = new Intl.DateTimeFormat("de-DE", { dateStyle: "long" });
 
@@ -292,7 +293,10 @@ export function CategoryArchive({
   moduleTypes: ModuleType[];
   globalModules: GlobalModule[];
 }) {
-  const { category, layout, featured, items, meta } = archive;
+  const { category, layout, featured, items, meta, spacing } = archive;
+  // Am Menüpunkt gesetzter Abstand oben/unten (Nutzervorgabe,
+  // 2026-09-03) – gilt für beide Darstellungen gleichermaßen.
+  const spacingStyle = pageSpacingStyle(spacing);
   const basePath = `/${category.slug}`;
   const isBlog = layout === "BLOCKS";
 
@@ -311,7 +315,10 @@ export function CategoryArchive({
 
   if (isBlog) {
     return (
-      <div className="flex flex-col gap-10">
+      <div
+        className={cn("flex flex-col gap-10", spacingStyle && "page-spacing")}
+        style={spacingStyle}
+      >
         {items.length === 0 ? (
           <p className="text-muted-foreground">
             In dieser Kategorie sind noch keine Beiträge veröffentlicht.
@@ -338,7 +345,10 @@ export function CategoryArchive({
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div
+      className={cn("flex flex-col gap-8", spacingStyle && "page-spacing")}
+      style={spacingStyle}
+    >
       <header className="flex flex-col gap-3">
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
           {category.name}

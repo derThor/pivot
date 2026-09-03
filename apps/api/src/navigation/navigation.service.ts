@@ -27,6 +27,12 @@ const itemSelect = {
   categoryId: true,
   categoryLayout: true,
   appearance: true,
+  marginTopMobile: true,
+  marginBottomMobile: true,
+  marginTopTablet: true,
+  marginBottomTablet: true,
+  marginTopDesktop: true,
+  marginBottomDesktop: true,
   category: {
     select: { id: true, name: true, slug: true },
   },
@@ -185,6 +191,12 @@ export class NavigationService {
         externalUrl: dto.externalUrl ?? null,
         parentId: dto.parentId ?? null,
         openInNewTab: dto.openInNewTab ?? false,
+        marginTopMobile: dto.marginTopMobile ?? null,
+        marginBottomMobile: dto.marginBottomMobile ?? null,
+        marginTopTablet: dto.marginTopTablet ?? null,
+        marginBottomTablet: dto.marginBottomTablet ?? null,
+        marginTopDesktop: dto.marginTopDesktop ?? null,
+        marginBottomDesktop: dto.marginBottomDesktop ?? null,
         sortOrder: (maxSortOrder._max.sortOrder ?? -1) + 1,
       },
       select: itemSelect,
@@ -284,6 +296,26 @@ export class NavigationService {
           ...(dto.parentId !== undefined && { parentId: dto.parentId }),
           ...(dto.openInNewTab !== undefined && {
             openInNewTab: dto.openInNewTab,
+          }),
+          // `!== undefined` und nicht `??`: `null` ist hier ein gültiger
+          // Wert und bedeutet "zurück auf die Vorgabe des Templates".
+          ...(dto.marginTopMobile !== undefined && {
+            marginTopMobile: dto.marginTopMobile,
+          }),
+          ...(dto.marginBottomMobile !== undefined && {
+            marginBottomMobile: dto.marginBottomMobile,
+          }),
+          ...(dto.marginTopTablet !== undefined && {
+            marginTopTablet: dto.marginTopTablet,
+          }),
+          ...(dto.marginBottomTablet !== undefined && {
+            marginBottomTablet: dto.marginBottomTablet,
+          }),
+          ...(dto.marginTopDesktop !== undefined && {
+            marginTopDesktop: dto.marginTopDesktop,
+          }),
+          ...(dto.marginBottomDesktop !== undefined && {
+            marginBottomDesktop: dto.marginBottomDesktop,
           }),
         },
         select: itemSelect,

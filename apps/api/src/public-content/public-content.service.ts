@@ -11,6 +11,17 @@ const DEFAULT_LOCALE = 'de';
 
 const FEED_ITEM_LIMIT_FALLBACK_PAGE_SIZE = 10;
 
+// Antwortform bleibt auch dann gleich, wenn es gar keinen Inhalt gibt:
+// das Frontend soll `spacing` nie auf `undefined` prüfen müssen.
+const EMPTY_SPACING = {
+  topMobile: null,
+  bottomMobile: null,
+  topTablet: null,
+  bottomTablet: null,
+  topDesktop: null,
+  bottomDesktop: null,
+} as const;
+
 export interface CategoryRef {
   id: string;
   name: string;
@@ -364,8 +375,15 @@ export class PublicContentService {
       },
       select: contentFullSelect,
     });
-    if (!content) return { content: null };
-    return { content: { ...mapRelations(content), path: '/' } };
+    if (!content) return { content: null, spacing: EMPTY_SPACING };
+    // Der Abstand hängt am Menüpunkt, nicht am Inhalt (siehe
+    // resolveNavItem()) – für die Startseite ist das genau der als
+    // Startseite markierte Punkt.
+    const navItem = await this.resolveNavItem({ contentId: content.id });
+    return {
+      content: { ...mapRelations(content), path: '/' },
+      spacing: this.navSpacing(navItem),
+    };
   }
 
   /** Freie Seite (Content ohne Kategorie) – URL-Schema
@@ -384,17 +402,19 @@ export class PublicContentService {
     // Nullable statt 404 – gleicher Grund wie bei getHome(): eine
     // zurückgezogene Seite blieb sonst über den Data Cache des Frontends
     // weiter sichtbar.
-    if (!content) return { content: null };
+    if (!content) return { content: null, spacing: EMPTY_SPACING };
     // Ist diese Seite die Startseite, ist `/` ihr kanonischer Pfad – sonst
     // wäre derselbe Inhalt unter `/` und `/{slug}` mit zwei
     // unterschiedlichen Canonicals erreichbar (Duplicate Content).
     const homepageContentId = await this.findHomepageContentId();
     const mapped = mapRelations(content);
+    const navItem = await this.resolveNavItem({ contentId: content.id });
     return {
       content: {
         ...mapped,
         path: homepageContentId === content.id ? '/' : buildContentPath(mapped),
       },
+      spacing: this.navSpacing(navItem),
     };
   }
 
@@ -474,6 +494,7 @@ export class PublicContentService {
       return {
         category: null,
         layout: null,
+        spacing: EMPTY_SPACING,
         featured: null,
         items: [],
         meta: null,
@@ -484,7 +505,8 @@ export class PublicContentService {
     // deshalb vor der Abfrage feststehen: die Blog-Darstellung schreibt
     // jeden Beitrag aus und braucht seine Bausteine, die Liste kommt mit
     // der Zusammenfassung aus (Nutzervorgabe, 2026-09-03).
-    const layout = await this.resolveArchiveLayout(category.id);
+    const navItem = await this.resolveNavItem({ categoryId: category.id });
+    const layout = navItem?.categoryLayout ?? CategoryArchiveLayout.LIST;
     const select =
       layout === CategoryArchiveLayout.BLOCKS
         ? contentBlogSelect
@@ -531,6 +553,7 @@ export class PublicContentService {
         rssEnabled: category.rssEnabled,
       },
       layout,
+      spacing: this.navSpacing(navItem),
       featured: featured ? mapRelations(featured) : null,
       items: items.map((item) => mapRelations(item)),
       meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
@@ -550,40 +573,77 @@ export class PublicContentService {
     return this.categories.generateFeed(category.id);
   }
 
-  /** Welche Darstellung (Liste/Blöcke) die Übersichtsseite bekommt.
+  /** Der Menüpunkt, über den ein Ziel veröffentlicht ist.
    *
-   * Die Einstellung sitzt am MENÜPUNKT, nicht an der Kategorie
-   * (Nutzerentscheidung, 2026-09-02) – die öffentliche URL ist aber nur
-   * `/{slug}` und weiß nicht, über welchen Menüpunkt jemand gekommen ist.
-   * Deshalb wird hier nachgeschlagen, welcher Menüpunkt auf diese
-   * Kategorie zeigt.
+   * Zwei Einstellungen sitzen am MENÜPUNKT statt am Inhalt: die
+   * Darstellung der Kategorie-Übersicht (`categoryLayout`,
+   * Nutzerentscheidung 2026-09-02) und der Außenabstand oben/unten
+   * (`marginTop`/`marginBottom`, Nutzervorgabe 2026-09-03). Der Grund ist
+   * derselbe: dasselbe Ziel darf an zwei Stellen im Menü unterschiedlich
+   * aussehen.
+   *
+   * Die öffentliche URL ist aber nur `/{slug}` und weiß nicht, über
+   * welchen Menüpunkt jemand gekommen ist. Deshalb wird hier
+   * nachgeschlagen, welcher Menüpunkt auf dieses Ziel zeigt.
    *
    * Reihenfolge, damit das Ergebnis bei mehreren Treffern stabil und
    * nachvollziehbar bleibt: zuerst ein Punkt aus dem in den Einstellungen
    * gewählten Hauptmenü (`AppSettings.mainNavigationId`) – das ist das
    * Menü, das die Website tatsächlich anzeigt –, sonst der älteste
-   * Menüpunkt überhaupt. Zeigt gar kein Menüpunkt auf die Kategorie
-   * (Übersichtsseite direkt aufgerufen), gilt der Default `LIST`. */
-  private async resolveArchiveLayout(
-    categoryId: string,
-  ): Promise<CategoryArchiveLayout> {
+   * Menüpunkt überhaupt. `null`, wenn gar kein Menüpunkt auf das Ziel
+   * zeigt; dann gelten überall die Vorgaben. */
+  private async resolveNavItem(
+    target: { contentId: string } | { categoryId: string },
+  ) {
+    const select = {
+      categoryLayout: true,
+      marginTopMobile: true,
+      marginBottomMobile: true,
+      marginTopTablet: true,
+      marginBottomTablet: true,
+      marginTopDesktop: true,
+      marginBottomDesktop: true,
+    } as const;
     const settings = await this.prisma.appSettings.findFirst({
       select: { mainNavigationId: true },
     });
     if (settings?.mainNavigationId) {
       const inMain = await this.prisma.navigationItem.findFirst({
-        where: { categoryId, navigationId: settings.mainNavigationId },
+        where: { ...target, navigationId: settings.mainNavigationId },
         orderBy: { createdAt: 'asc' },
-        select: { categoryLayout: true },
+        select,
       });
-      if (inMain) return inMain.categoryLayout;
+      if (inMain) return inMain;
     }
-    const anyItem = await this.prisma.navigationItem.findFirst({
-      where: { categoryId },
+    return this.prisma.navigationItem.findFirst({
+      where: target,
       orderBy: { createdAt: 'asc' },
-      select: { categoryLayout: true },
+      select,
     });
-    return anyItem?.categoryLayout ?? CategoryArchiveLayout.LIST;
+  }
+
+  /** Außenabstand der Zielseite in Pixeln, getrennt nach Breakpoint;
+   * `null` = Vorgabe des Templates. Immer alle vier Werte, damit das
+   * Frontend nicht zwischen "nicht gesetzt" und "nicht mitgeliefert"
+   * unterscheiden muss. */
+  private navSpacing(
+    item: {
+      marginTopMobile: number | null;
+      marginBottomMobile: number | null;
+      marginTopTablet: number | null;
+      marginBottomTablet: number | null;
+      marginTopDesktop: number | null;
+      marginBottomDesktop: number | null;
+    } | null,
+  ) {
+    return {
+      topMobile: item?.marginTopMobile ?? null,
+      bottomMobile: item?.marginBottomMobile ?? null,
+      topTablet: item?.marginTopTablet ?? null,
+      bottomTablet: item?.marginBottomTablet ?? null,
+      topDesktop: item?.marginTopDesktop ?? null,
+      bottomDesktop: item?.marginBottomDesktop ?? null,
+    };
   }
 
   /** Einzelner Beitrag innerhalb einer Kategorie – URL-Schema

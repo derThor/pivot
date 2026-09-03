@@ -26,6 +26,7 @@ export default async function HomePage() {
   return (
     <ContentArticle
       content={home}
+      spacing={home.spacing}
       moduleTypes={moduleTypes}
       globalModules={globalModules}
     />

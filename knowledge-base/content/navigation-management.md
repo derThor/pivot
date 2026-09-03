@@ -605,3 +605,55 @@ selbst die Veröffentlichung ihrer Übersichtsseite – Details und die
 verbleibende Grenze (eine Kategorie hat nur EINE URL, zwei Menüpunkte auf
 dieselbe Kategorie können deshalb nicht unterschiedlich aussehen) stehen
 in [public-website.md](../frontend/public-website.md).
+
+
+## Update 2026-09-03: Abstand der Zielseite am Menüpunkt (mobil/tablet/desktop)
+
+Nutzervorgabe, in drei Schritten präzisiert: *"unter menü im bearbeiten
+popup bau margin top und bottom angaben an"*, dann *"bei jedem menüpunkt
+unabhängig von der auswahl"*, dann *"margin top und bottom mobile und
+desktop"* und *"bau noch tablet ein"*.
+
+**Was es ist:** Im Bearbeiten-Dialog eines Menüpunkts steht unter der
+Darstellung ein Abschnitt **"Abstand der Seite"** mit drei Reitern (Mobil /
+Tablet / Desktop) und je zwei Feldern (Oben / Unten, in Pixeln). Der Wert
+gilt für die **Seite, auf die der Menüpunkt zeigt** – eine freie Seite,
+die Startseite oder die Übersichtsseite einer Kategorie.
+
+**Warum am Menüpunkt und nicht am Inhalt:** derselbe Grund wie bei
+`categoryLayout` (siehe Update 2026-09-02) – dasselbe Ziel darf über zwei
+Menüpunkte unterschiedlich aussehen. Preis dafür ist derselbe: die
+öffentliche URL ist nur `/{slug}` und kennt den Menüpunkt nicht, deshalb
+löst das Backend auf, welcher Menüpunkt gilt. Diese Auflösung stand vorher
+schon für die Darstellung im Code und heißt jetzt
+`PublicContentService.resolveNavItem()` – Hauptmenü zuerst
+(`AppSettings.mainNavigationId`), sonst der älteste Menüpunkt, sonst gar
+keiner (dann bleiben alle Vorgaben des Templates stehen).
+
+**Datenmodell:** sechs Spalten an `NavigationItem`
+(`marginTop|BottomMobile|Tablet|Desktop`), alle `Int?`. `null` heißt
+"kein eigener Wert" und ist bewusst etwas anderes als `0` (= bündig unter
+der Kopfzeile). Im Dialog entspricht `null` dem leeren Feld.
+
+**Ausgabe:** `/public/pages/:slug`, `/public/home` und
+`/public/categories/:slug` liefern zusätzlich ein `spacing`-Objekt (immer
+alle sechs Werte, auch wenn es die Seite gar nicht gibt – so muss das
+Frontend nie zwischen "nicht gesetzt" und "nicht mitgeliefert"
+unterscheiden). `apps/site` setzt daraus CSS-Variablen und die Klasse
+`.page-spacing` (globals.css).
+
+**Zwei Entscheidungen, die beim Nachbauen leicht falsch laufen:**
+
+- **`padding` statt `margin`.** `<main>` hat oben weder Polsterung noch
+  Rahmen; ein `margin-top` am Kind schlägt dort nach außen durch (Margin
+  Collapsing) und verschiebt die ganze Bahn samt Hintergrund statt den
+  Inhalt. Sichtbar ist das Ergebnis identisch.
+- **CSS-Variablen statt fester Inline-Werte.** Ein Inline-`padding-top`
+  kennt keinen Breakpoint. Die Klasse `.page-spacing` löst die drei Stufen
+  über Media Queries auf – Tablet ab 48rem (768px), Desktop ab 64rem
+  (1024px), jede Stufe erbt ohne eigenen Wert die nächstkleinere.
+
+**Ohne Wirkung** bei einem Menüpunkt auf eine externe URL (dort rendert
+die eigene Website nichts) und auf einzelnen Beiträgen einer Kategorie
+(`/{kategorie}/{beitrag}`): der Menüpunkt zeigt auf die Übersichtsseite,
+nicht auf jeden Beitrag darunter.

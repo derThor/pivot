@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Monitor, Smartphone, Tablet } from "lucide-react";
 
 import { toastCreated, toastEdited } from "@/components/app-toast";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ import type {
   NavigationItemNode,
 } from "@/lib/api-server";
 import { bff } from "@/lib/bff";
+import { cn } from "@/lib/utils";
 
 const targetTypeOptions: Record<string, string> = {
   content: "Inhalt",
@@ -83,6 +85,48 @@ const APPEARANCE_DESCRIPTION: Record<string, string> = {
 
 /** Welche Zielart der Dialog beim Öffnen zeigt. Ausschlaggebend ist das
  * tatsächlich gesetzte Feld – `content` ist der Standard beim Anlegen. */
+/** Eingabefeld → API-Wert. Leeres Feld heißt "kein eigener Wert", das
+ * Backend setzt dann `null` und die Seite behält den Abstand des
+ * Templates – deshalb `null` und nicht 0 (0 hieße "bündig"). Unsinnige
+ * Eingaben (Text, negative Zahlen) werden ebenfalls zu `null` statt eine
+ * Fehlermeldung auszulösen: das Feld ist ein Feinschliff, kein Pflichtfeld. */
+function parseSpacing(value: string): number | null {
+  if (value.trim() === "") return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return null;
+  return Math.min(1000, Math.round(parsed));
+}
+
+/** Die drei Stufen des Abstands-Felds. Reihenfolge = Reihenfolge der
+ * Reiter im Dialog (Nutzervorgabe, 2026-09-03: "bau noch tablet ein"). */
+const SPACING_TABS = [
+  { value: "mobile" as const, label: "Mobil", icon: Smartphone },
+  { value: "tablet" as const, label: "Tablet", icon: Tablet },
+  { value: "desktop" as const, label: "Desktop", icon: Monitor },
+];
+
+type SpacingTab = (typeof SPACING_TABS)[number]["value"];
+
+/** API-Werte → Formularzustand (`null` wird zum leeren Feld). */
+function spacingFrom(item?: NavigationItemNode) {
+  const text = (value: number | null | undefined) =>
+    value != null ? String(value) : "";
+  return {
+    mobile: {
+      top: text(item?.marginTopMobile),
+      bottom: text(item?.marginBottomMobile),
+    },
+    tablet: {
+      top: text(item?.marginTopTablet),
+      bottom: text(item?.marginBottomTablet),
+    },
+    desktop: {
+      top: text(item?.marginTopDesktop),
+      bottom: text(item?.marginBottomDesktop),
+    },
+  };
+}
+
 function initialTargetType(item?: NavigationItemNode): string {
   if (item?.categoryId) return "category";
   if (item?.externalUrl) return "external";
@@ -274,6 +318,19 @@ export function NavigationItemDialog({
   >(item?.appearance ?? "LINK");
   const [externalUrl, setExternalUrl] = useState(item?.externalUrl ?? "");
   const [openInNewTab, setOpenInNewTab] = useState(item?.openInNewTab ?? false);
+  // Sechs Abstandswerte in einer Form, die dem Dialog entspricht: pro
+  // Breakpoint oben/unten. Als Text gehalten und nicht als Zahl, weil ""
+  // ein eigener Zustand ist (= Vorgabe des Templates) und sich von 0
+  // unterscheidet.
+  const [spacingTab, setSpacingTab] = useState<SpacingTab>("mobile");
+  const [spacing, setSpacing] = useState(() => spacingFrom(item));
+
+  function setSpacingValue(side: "top" | "bottom", value: string) {
+    setSpacing((prev) => ({
+      ...prev,
+      [spacingTab]: { ...prev[spacingTab], [side]: value },
+    }));
+  }
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -301,6 +358,7 @@ export function NavigationItemDialog({
     setCategoryLayout(item?.categoryLayout ?? "LIST");
     setAppearance(item?.appearance ?? "LINK");
     setExternalUrl(item?.externalUrl ?? "");
+    setSpacing(spacingFrom(item));
     setOpenInNewTab(item?.openInNewTab ?? false);
     setError(null);
   }
@@ -321,6 +379,12 @@ export function NavigationItemDialog({
             label,
             openInNewTab,
             appearance,
+            marginTopMobile: parseSpacing(spacing.mobile.top),
+            marginBottomMobile: parseSpacing(spacing.mobile.bottom),
+            marginTopTablet: parseSpacing(spacing.tablet.top),
+            marginBottomTablet: parseSpacing(spacing.tablet.bottom),
+            marginTopDesktop: parseSpacing(spacing.desktop.top),
+            marginBottomDesktop: parseSpacing(spacing.desktop.bottom),
             ...(!isEditing && { parentId }),
             // Die drei Ziele schließen sich aus – die jeweils anderen
             // werden explizit auf `null` gesetzt, sonst bliebe beim
@@ -484,6 +548,84 @@ export function NavigationItemDialog({
             <p className="text-xs text-muted-foreground">
               {APPEARANCE_DESCRIPTION[appearance]} Im Footer bleibt jeder Punkt
               ein Link.
+            </p>
+          </div>
+          {/* Abstand der ZIELSEITE, nicht des Menüpunkts selbst
+              (Nutzervorgabe, 2026-09-03: "bei jedem menüpunkt unabhängig
+              von der auswahl", "margin top und bottom mobile und desktop",
+              "bau noch tablet ein"). Bewusst hier und nicht am Inhalt: dieselbe Seite
+              darf über zwei Menüpunkte unterschiedlich viel Luft bekommen
+              – genau wie die Darstellung der Kategorie.
+
+              Tabs statt vier Feldern nebeneinander, wie im Abstände-Dialog
+              des Designers: dieselbe Bedienung für dieselbe Sache. */}
+          <div className="flex flex-col gap-2">
+            <Label>Abstand der Seite</Label>
+            <div className="flex gap-1 rounded-lg border border-border bg-muted p-1">
+              {SPACING_TABS.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    onClick={() => setSpacingTab(tab.value)}
+                    className={cn(
+                      "flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors",
+                      spacingTab === tab.value
+                        ? "border-primary bg-card shadow-sm"
+                        : "border-transparent text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <Icon className="size-4" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Label
+                  htmlFor="nav-item-margin-top"
+                  className="text-sm font-normal text-muted-foreground"
+                >
+                  Oben
+                </Label>
+                <Input
+                  id="nav-item-margin-top"
+                  type="number"
+                  min={0}
+                  max={1000}
+                  value={spacing[spacingTab].top}
+                  placeholder="–"
+                  onChange={(e) => setSpacingValue("top", e.target.value)}
+                  className="h-9 w-20 px-2 text-center text-sm"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Label
+                  htmlFor="nav-item-margin-bottom"
+                  className="text-sm font-normal text-muted-foreground"
+                >
+                  Unten
+                </Label>
+                <Input
+                  id="nav-item-margin-bottom"
+                  type="number"
+                  min={0}
+                  max={1000}
+                  value={spacing[spacingTab].bottom}
+                  placeholder="–"
+                  onChange={(e) => setSpacingValue("bottom", e.target.value)}
+                  className="h-9 w-20 px-2 text-center text-sm"
+                />
+              </div>
+              <span className="text-sm text-muted-foreground">px</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Luft über und unter der Seite, auf die dieser Punkt zeigt. Leer
+              heißt: Vorgabe des Templates – jede Stufe erbt dann die
+              nächstkleinere. Tablet greift ab 768px, Desktop ab 1024px
+              Bildschirmbreite. Bei einer externen URL ohne Wirkung.
             </p>
           </div>
           <div className="flex items-center gap-2.5">

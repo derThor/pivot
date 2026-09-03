@@ -204,19 +204,54 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   );
 }
 
+/** Abstand oben/unten der Zielseite eines Menüpunkts, in Pixeln, getrennt
+ * nach Breakpoint (Nutzervorgabe, 2026-09-03: "bei jedem menüpunkt
+ * unabhängig von der auswahl", "mobile und desktop", "bau noch tablet
+ * ein"). `null` = kein eigener Wert, dann bleibt es beim Template; jede
+ * Stufe erbt ohne eigenen Wert die nächstkleinere.
+ *
+ * Gesetzt wird das am Menüpunkt, nicht am Inhalt – das Backend löst auf,
+ * welcher Menüpunkt auf die aufgerufene Seite zeigt (siehe
+ * PublicContentService.resolveNavItem()). */
+export interface PageSpacing {
+  topMobile: number | null;
+  bottomMobile: number | null;
+  topTablet: number | null;
+  bottomTablet: number | null;
+  topDesktop: number | null;
+  bottomDesktop: number | null;
+}
+
+const NO_SPACING: PageSpacing = {
+  topMobile: null,
+  bottomMobile: null,
+  topTablet: null,
+  bottomTablet: null,
+  topDesktop: null,
+  bottomDesktop: null,
+};
+
 /** Inhalt der Startseite – der Menüpunkt, der im Backend als Startseite
  * markiert ist (Navigation → Menüpunkt, Nutzervorgabe 2026-08-31).
  * `null`, solange keiner markiert ist: dann bleibt `/` eine 404. */
 export async function getHome() {
-  const res = await getJson<{ content: PublicContent | null }>("/public/home");
-  return res?.content ?? null;
+  const res = await getJson<{
+    content: PublicContent | null;
+    spacing?: PageSpacing;
+  }>("/public/home");
+  if (!res?.content) return null;
+  return { ...res.content, spacing: res.spacing ?? NO_SPACING };
 }
 
 export async function getPage(slug: string) {
-  const res = await getJson<{ content: PublicContent | null }>(
-    `/public/pages/${encodeURIComponent(slug)}`,
-  );
-  return res?.content ?? null;
+  const res = await getJson<{
+    content: PublicContent | null;
+    spacing?: PageSpacing;
+  }>(`/public/pages/${encodeURIComponent(slug)}`);
+  if (!res?.content) return null;
+  // Der Abstand hängt am Menüpunkt und kommt deshalb neben dem Inhalt an;
+  // hier zusammengeführt, damit die Aufrufer weiter nur EIN Objekt haben.
+  return { ...res.content, spacing: res.spacing ?? NO_SPACING };
 }
 
 /** Inhalt über einen Vorschau-Token (`?preview=…`) statt über den Slug –
@@ -282,6 +317,7 @@ export interface PublicCategoryArchive {
     rssEnabled: boolean;
   };
   layout: CategoryArchiveLayout;
+  spacing: PageSpacing;
   /** Nur befüllt, wenn die Kategorie `showFeaturedLarge` gesetzt hat. */
   featured: PublicArchivePost | null;
   items: PublicArchivePost[];
@@ -297,7 +333,8 @@ export async function getCategoryArchive(slug: string, page: number) {
     `/public/categories/${encodeURIComponent(slug)}?page=${page}`,
   );
   if (!res || res.category === null) return null;
-  return res as PublicCategoryArchive;
+  const archive = res as PublicCategoryArchive;
+  return { ...archive, spacing: archive.spacing ?? NO_SPACING };
 }
 
 /** Einzelner Beitrag innerhalb einer Kategorie (`/{kategorie}/{slug}`). */

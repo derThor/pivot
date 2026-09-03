@@ -733,3 +733,30 @@ Klasse als öffentlich markiert ist. `@Public()` steht jetzt an den beiden
 Lese-Routen; das Ordnen verlangt `content:update`.
 
 Geprüft: Lesen ohne Anmeldung 200, Umsortieren ohne Anmeldung 401.
+
+
+## Update 2026-09-03 (2): Dritte Stufe "Tablet" bei den Abständen
+
+Nutzervorgabe: *"bei seiten bei allen bausteinen innen/außenabstand auch
+tablet hinzufügen"* – im Anschluss an dieselbe Erweiterung beim Menüpunkt
+(siehe [navigation-management.md](./navigation-management.md)).
+
+Der Abstände-Dialog hat seitdem drei Reiter statt zwei: **Mobil / Tablet /
+Desktop** (`ResponsiveSpacing` in `packages/blocks/src/types.ts` bekam
+`tablet?: BoxSpacing`). Die Reiter kommen jetzt aus einer Liste
+(`SPACING_TABS`) statt aus zwei ausgeschriebenen Knöpfen, damit eine
+vierte Stufe kein drittes Copy-Paste wird.
+
+**Folge, die man kennen muss:** die Breakpoints haben sich verschoben.
+Vorher galt der Desktop-Wert ab **640px**, jetzt greift Tablet ab **768px**
+und Desktop erst ab **1024px**; jede Stufe erbt ohne eigenen Wert die
+nächstkleinere. Bereits gesetzte Desktop-Werte wirken dadurch zwischen
+768px und 1024px nicht mehr – dort gilt der Tablet-Wert, und solange der
+leer ist, der Mobil-Wert. Das ist gewollt (drei Stufen brauchen drei
+Bereiche), aber es verändert bestehende Seiten in diesem Fensterbereich.
+
+Die Regel `.block-spacing` steht in **beiden** globals.css (`apps/web` für
+den Designer, `apps/site` für die Website) und muss dort synchron bleiben –
+genau diese Doppelung war am 2026-09-03 schon einmal ein Fehlerbild
+("Abstand im Designer gesetzt, Website unverändert"), weil die Regel in
+`apps/site` fehlte.

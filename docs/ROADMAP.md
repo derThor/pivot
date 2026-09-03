@@ -918,6 +918,18 @@ Architektur, Entscheidungen und Stolpersteine:
       aus; `<main>` schneidet dafür waagerecht ab. Im Backend wird
       "Randlos" wie "Volle Breite" gezeigt, sonst säße der Block quer über
       die Anwendung
+- [x] Abstand einer Seite am Menüpunkt (2026-09-03) – im Bearbeiten-Dialog
+      jedes Menüpunkts, unabhängig vom Ziel: "Abstand der Seite" mit den
+      Reitern Mobil/Tablet/Desktop und je einem Wert oben und unten. Wirkt
+      auf die Seite, auf die der Punkt zeigt (freie Seite, Startseite,
+      Kategorie-Übersicht), umgesetzt als `padding` über CSS-Variablen –
+      Begründung und Grenzen in
+      knowledge-base/content/navigation-management.md
+- [x] Dritte Stufe "Tablet" bei den Abständen der Bausteine (2026-09-03) –
+      der Abstände-Dialog im Designer hat seitdem drei Reiter. Achtung:
+      Desktop-Werte greifen dadurch erst ab 1024px statt ab 640px, dazwischen
+      gilt der Tablet- bzw. der Mobil-Wert (siehe
+      knowledge-base/content/page-designer.md)
 - [ ] Modultypen für die Landingpage-Abschnitte, die die vorhandenen zwölf
       nicht abbilden: Feature-Kacheln mit Nummerierung, Branchen-Band,
       Ablauf-Schritte, Preistabelle

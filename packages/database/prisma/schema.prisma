@@ -1327,6 +1327,30 @@ model NavigationItem {
   // Im Footer ohne Wirkung: dort sind alle Punkte Links.
   appearance NavigationItemAppearance @default(LINK)
 
+  // Außenabstand der Seite, auf die dieser Menüpunkt zeigt, in Pixeln
+  // (Nutzervorgabe, 2026-09-03) – für JEDEN Menüpunkt, unabhängig vom
+  // gewählten Ziel: sowohl eine Seite als auch eine Kategorie-
+  // Übersichtsseite beginnt sonst bündig unter der Kopfzeile.
+  //
+  // Am MENÜPUNKT und nicht am Inhalt, aus demselben Grund wie
+  // `categoryLayout`: dasselbe Ziel darf an zwei Stellen im Menü
+  // unterschiedlich aussehen.
+  //
+  // Getrennt nach Breakpoint (Nutzervorgabe: "mobile und desktop", dann
+  // "bau noch tablet ein"): `…Mobile` ist der Grundwert, `…Tablet` greift
+  // ab 768px, `…Desktop` ab 1024px. Ohne eigenen Wert erbt jede Stufe die
+  // nächstkleinere – Desktop also vom Tablet, Tablet vom Mobilwert.
+  //
+  // `null` = kein eigener Wert, dann bleibt der Abstand des Templates –
+  // das ist etwas anderes als 0 (bündig). Bewusst nur oben und unten:
+  // links und rechts bestimmt die Inhaltsbahn.
+  marginTopMobile     Int?
+  marginBottomMobile  Int?
+  marginTopTablet     Int?
+  marginBottomTablet  Int?
+  marginTopDesktop    Int?
+  marginBottomDesktop Int?
+
   parentId String?
   parent   NavigationItem?  @relation("NavigationItemHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
   children NavigationItem[] @relation("NavigationItemHierarchy")

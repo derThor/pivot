@@ -152,7 +152,7 @@ export function spacingStyleVars(
   kind: "padding" | "margin",
 ): Record<string, string> {
   const vars: Record<string, string> = {};
-  for (const breakpoint of ["mobile", "desktop"] as const) {
+  for (const breakpoint of ["mobile", "tablet", "desktop"] as const) {
     const box = value?.[breakpoint];
     if (!box) continue;
     for (const side of SPACING_SIDES) {

@@ -87,8 +87,15 @@ export const SPACING_SIDES: readonly SpacingSide[] = [
 
 export type BoxSpacing = Partial<Record<SpacingSide, number>>;
 
+/** Abstände je Bildschirmbreite. Mobil ist der Grundwert; `tablet` greift
+ * ab 768px, `desktop` ab 1024px, und jede Stufe erbt ohne eigenen Wert die
+ * nächstkleinere (Rückfall in den CSS-Variablen, siehe `.block-spacing` in
+ * globals.css). Tablet kam am 2026-09-03 dazu (Nutzervorgabe: "bei seiten
+ * bei allen bausteinen innen/außenabstand auch tablet hinzufügen") –
+ * seitdem beginnt Desktop bei 1024px statt bei 640px. */
 export interface ResponsiveSpacing {
   mobile?: BoxSpacing;
+  tablet?: BoxSpacing;
   desktop?: BoxSpacing;
 }
 

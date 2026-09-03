@@ -6,9 +6,12 @@ import {
 import {
   IsBoolean,
   IsEnum,
+  IsInt,
   IsOptional,
   IsString,
   IsUrl,
+  Max,
+  Min,
   MinLength,
 } from 'class-validator';
 
@@ -82,4 +85,49 @@ export class CreateNavigationItemDto {
   @IsOptional()
   @IsBoolean()
   openInNewTab?: boolean;
+
+  // Sechs Abstandswerte (oben/unten × mobil/tablet/desktop, Nutzervorgabe
+  // 2026-09-03). Gelten für JEDES Ziel; null/weglassen = Vorgabe des
+  // Templates, jede Stufe erbt ohne eigenen Wert die nächstkleinere.
+  @ApiPropertyOptional({ nullable: true, minimum: 0, maximum: 1000 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1000)
+  marginTopMobile?: number | null;
+
+  @ApiPropertyOptional({ nullable: true, minimum: 0, maximum: 1000 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1000)
+  marginBottomMobile?: number | null;
+
+  @ApiPropertyOptional({ nullable: true, minimum: 0, maximum: 1000 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1000)
+  marginTopTablet?: number | null;
+
+  @ApiPropertyOptional({ nullable: true, minimum: 0, maximum: 1000 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1000)
+  marginBottomTablet?: number | null;
+
+  @ApiPropertyOptional({ nullable: true, minimum: 0, maximum: 1000 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1000)
+  marginTopDesktop?: number | null;
+
+  @ApiPropertyOptional({ nullable: true, minimum: 0, maximum: 1000 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1000)
+  marginBottomDesktop?: number | null;
 }
