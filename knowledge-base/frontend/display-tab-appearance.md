@@ -181,3 +181,52 @@ neben der bereits vorhandenen "LOGO"-Beschriftung der Box selbst).
   erfasst (siehe oben).
 - Akzentfarbe wirkt nur im Dashboard, nicht auf Login/Registrierung oder
   in System-E-Mails.
+
+
+## Update 2026-09-03: Vorschau-Fläche folgt dem Logo, nicht dem Modus
+
+Nutzerhinweis mit Bildvorlage: *"im dunkelmodus muss das feld für das
+helle logo heller sein, sonst kann das logo nicht korrekt dargestellt
+werden"*. In der dunklen Verwaltung stand das Hellmodus-Logo (dunkel
+gezeichnet) auf dunklem Grund und war praktisch unsichtbar.
+
+Die Regel dahinter: **ein Logo ist für genau eine Umgebung gezeichnet.**
+Die Vorschau muss deshalb immer die Umgebung zeigen, für die das Logo
+gedacht ist – nicht die, in der die Verwaltung gerade läuft. Beide Felder
+sind jetzt fest eingefärbt (`bg-white` bzw. `bg-neutral-900` über
+`previewClassName`), in beiden Modi gleich. Der Dunkelmodus-Eintrag machte
+das schon, dem Hellmodus-Eintrag fehlte das Gegenstück.
+
+Mitgenommen: die Textfarbe gehört zur Fläche. Das Platzhalter-Symbol (noch
+kein Logo hochgeladen) stand vorher auf `text-muted-foreground` und war
+damit auf der jeweils gegenläufigen Fläche kaum zu sehen – es erbt die
+Farbe jetzt vom Container (`currentColor`), die Aufrufer geben sie
+zusammen mit dem Grund mit.
+
+**Nicht betroffen:** Favicon und Standard-Social-Media-Bild. Die sind für
+keine bestimmte Umgebung gezeichnet und behalten die dem Modus folgende
+Standardfläche.
+
+
+## Update 2026-09-03 (2): Akzentfarbe in mehreren Reihen
+
+Nutzervorgabe mit Bildvorlage: *"akzentfarbe mehrere reihen, so das die
+kachel so hoch ist wie logo. nutze mehrere neue farben"*. Die Kachel stand
+neben der Logo-Kachel und war mit ihrer einen Reihe halb so hoch.
+
+`ACCENT_PRESETS` umfasst jetzt 14 Farben statt vier (Lime, Grün, Smaragd,
+Petrol, Himmelblau, Blau, Indigo, Violett, Pink, Rot, Orange, Gelb,
+Anthrazit, Navy). Sie brechen in einem `flex-wrap`-Raster über drei Reihen
+um; der Hex-Wert steht per `mt-auto ml-auto` unten rechts statt rechts
+neben den Farben. `h-full`/`flex-1` sind von der `FormItem` bis zur Box
+durchgereicht, damit die Kachel die Höhe der Logo-Kachel auch dann
+mitgeht, wenn die Farben eine Reihe weniger brauchen.
+
+**Nicht beliebig sortierbar:** `ACCENT_PRESETS[0]` ist der Standard – wird
+er gewählt, speichert das Formular `null` statt eines Hex-Werts. Lime muss
+deshalb vorn bleiben.
+
+Gleichzeitig wurde die Vorschau-Fläche des Hellmodus-Logos von `bg-white`
+auf `bg-neutral-200` gesetzt (*"der bg für helles logo dunkler"*) – hell
+genug, damit ein dunkles Logo darauf steht, aber kein Leuchtfeld im
+dunklen Formular.

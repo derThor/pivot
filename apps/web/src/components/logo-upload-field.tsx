@@ -26,8 +26,13 @@ export function LogoUploadField({
   label: string;
   currentUrl: string | null;
   folderId: string | null;
-  // Dark-Mode-Logos sind oft hell/weiß gezeichnet – auf der (immer
-  // hellen) Vorschau-Fläche sonst kaum zu erkennen.
+  // Grund UND Textfarbe der Vorschau-Fläche. Ein Logo ist für genau eine
+  // Umgebung gezeichnet: das Hellmodus-Logo ist dunkel und braucht immer
+  // eine helle Fläche, das Dunkelmodus-Logo ist hell und braucht immer eine
+  // dunkle – unabhängig davon, in welchem Modus die Verwaltung gerade läuft
+  // (Nutzervorgabe, 2026-09-03: "im dunkelmodus muss das feld für das helle
+  // logo heller sein"). Die Textfarbe gehört mit dazu, sonst steht das
+  // Platzhalter-Symbol ohne Logo unsichtbar auf der Fläche.
   previewClassName?: string;
 }) {
   const router = useRouter();
@@ -131,7 +136,7 @@ export function LogoUploadField({
       <div className="flex items-center gap-2">
         <span
           className={cn(
-            "flex h-8 w-full flex-1 items-center justify-start overflow-hidden rounded-md border bg-background px-2",
+            "flex h-8 w-full flex-1 items-center justify-start overflow-hidden rounded-md border bg-background px-2 text-muted-foreground",
             previewClassName,
           )}
         >
@@ -143,7 +148,9 @@ export function LogoUploadField({
               className="h-full w-auto object-contain"
             />
           ) : (
-            <ImageIcon className="size-4 text-muted-foreground" />
+            // Farbe geerbt (`currentColor`), damit sie über
+            // `previewClassName` zur jeweiligen Fläche passt.
+            <ImageIcon className="size-4" />
           )}
         </span>
         <label className="has-disabled:pointer-events-none has-disabled:opacity-50">

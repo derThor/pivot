@@ -89,10 +89,29 @@ import type {
 // (Nutzervorgabe, 2026-08-17). Lime ist die bestehende Markenfarbe – ein
 // Klick darauf setzt `accentColor` zurück auf `null` (Standard) statt den
 // Hex-Wert explizit zu speichern.
+// Farbvorrat für den Akzent. Die ersten vier standen hier von Anfang an,
+// der Rest kam am 2026-09-03 dazu (Nutzervorgabe: "nutze mehrere neue
+// farben") – zusammen füllen sie mehrere Reihen, damit die Kachel so hoch
+// steht wie die Logo-Kachel daneben.
+//
+// [0] ist der Standard: wird er gewählt, speichert das Formular `null`
+// statt des Hex-Werts (kein Akzent gesetzt = Vorgabe der Anwendung).
+// Diese Sonderrolle hängt am Index, die Reihenfolge ist also nicht
+// beliebig – Lime bleibt vorn.
 const ACCENT_PRESETS = [
   { label: "Lime (Standard)", hex: "#BCE64D" },
+  { label: "Grün", hex: "#7BC96F" },
+  { label: "Smaragd", hex: "#2FA36B" },
+  { label: "Petrol", hex: "#17A2A2" },
+  { label: "Himmelblau", hex: "#7FC5F0" },
   { label: "Blau", hex: "#93B7EE" },
+  { label: "Indigo", hex: "#5B6BE1" },
+  { label: "Violett", hex: "#9B7BE8" },
+  { label: "Pink", hex: "#E87BB0" },
+  { label: "Rot", hex: "#E4695E" },
   { label: "Orange", hex: "#E8A33D" },
+  { label: "Gelb", hex: "#F2CE4B" },
+  { label: "Anthrazit", hex: "#4A5568" },
   { label: "Navy", hex: "#151E2E" },
 ] as const;
 
@@ -1094,9 +1113,10 @@ export function SettingsForm({
                           />
                           <p className="text-sm text-muted-foreground">
                             Kürzer als eine Minute ist nicht wählbar: die Seiten
-                            der Webseite sind selbst auf eine Minute eingestellt,
-                            und dieser Wert steht dort fest im Code. Ein
-                            kleinerer Wert hier würde also nichts bewirken.
+                            der Webseite sind selbst auf eine Minute
+                            eingestellt, und dieser Wert steht dort fest im
+                            Code. Ein kleinerer Wert hier würde also nichts
+                            bewirken.
                           </p>
                         </FormItem>
                       )}
@@ -1424,6 +1444,7 @@ export function SettingsForm({
                             label="Firmenlogo (Hellmodus)"
                             currentUrl={settings.companyLogoUrl}
                             folderId={logoFolderId}
+                            previewClassName="bg-neutral-200 text-neutral-500"
                           />
                         </div>
                         <div className="flex flex-col gap-1.5 border-t border-border pt-3">
@@ -1436,7 +1457,7 @@ export function SettingsForm({
                             label="Firmenlogo (Dunkelmodus)"
                             currentUrl={settings.companyLogoUrlDark}
                             folderId={logoFolderId}
-                            previewClassName="bg-neutral-900"
+                            previewClassName="bg-neutral-900 text-neutral-400"
                           />
                         </div>
                       </div>
@@ -1460,13 +1481,22 @@ export function SettingsForm({
                         const isLightCustom =
                           (r * 299 + g * 587 + b * 114) / 1000 > 150;
                         return (
-                          <FormItem>
-                            <div className="flex flex-col gap-2">
+                          // `h-full`/`flex-1` bis nach unten durchgereicht:
+                          // die Kachel soll auf dieselbe Höhe wie die
+                          // Logo-Kachel daneben kommen, auch wenn die Farben
+                          // eine Reihe weniger brauchen.
+                          <FormItem className="h-full">
+                            <div className="flex h-full flex-col gap-2">
                               <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                                 Akzentfarbe
                               </span>
-                              <div className="flex items-center gap-3 rounded-lg border border-border bg-muted p-4">
-                                <div className="flex items-center gap-2">
+                              {/* Umbrechendes Raster statt einer Zeile
+                                  (Nutzervorgabe, 2026-09-03: "mehrere
+                                  reihen, so das die kachel so hoch ist wie
+                                  logo") – die Kachel steht neben der
+                                  Logo-Kachel und war halb so hoch. */}
+                              <div className="flex flex-1 flex-col gap-3 rounded-lg border border-border bg-muted p-4">
+                                <div className="flex flex-wrap items-center gap-2">
                                   {ACCENT_PRESETS.map((preset) => {
                                     const isSelected =
                                       current.toLowerCase() ===
@@ -1523,7 +1553,7 @@ export function SettingsForm({
                                     />
                                   </label>
                                 </div>
-                                <span className="ml-auto shrink-0 font-mono text-sm text-muted-foreground">
+                                <span className="mt-auto ml-auto shrink-0 font-mono text-sm text-muted-foreground">
                                   {current.toLowerCase()}
                                 </span>
                               </div>
@@ -1672,7 +1702,9 @@ export function SettingsForm({
                     name="siteTagline"
                     render={({ field }) => (
                       <FormItem className="flex flex-col gap-1.5">
-                        <Label htmlFor="siteTagline">Webseiten-Untertitel</Label>
+                        <Label htmlFor="siteTagline">
+                          Webseiten-Untertitel
+                        </Label>
                         <FormControl>
                           <Input
                             id="siteTagline"
@@ -1762,8 +1794,8 @@ export function SettingsForm({
                       Kopf- und Fußbereich
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Aus diesen Menüs baut die Webseite ihren Header und Footer.
-                      Gepflegt werden sie unter Inhalte → Menüs; die
+                      Aus diesen Menüs baut die Webseite ihren Header und
+                      Footer. Gepflegt werden sie unter Inhalte → Menüs; die
                       Spaltenüberschrift im Footer ist der Name des Menüs. Die
                       Spalte „Rechtliches“ entsteht automatisch aus den
                       vorhandenen Rechtstexten.
