@@ -591,16 +591,16 @@ Werten ausdrücklich drin, worauf sie sich beziehen.
 
 ### Die Bahnbreite gehört dem Template
 
- in  (also in der projekteigenen Datei) legt
+`--content-width` in `globals.css` (also in der projekteigenen Datei) legt
 fest, wie breit die Inhaltsbahn ist – 1180px in beiden bestehenden
 Templates. Layout, Header und Footer lesen denselben Wert, wer die Bahn
 ändern will, ändert genau diese eine Zeile. Die Nutzung erfolgt als
- MIT Rückfallwert: ein Template ohne
+`max-w-[var(--content-width,1180px)]` MIT Rückfallwert: ein Template ohne
 diesen Token liefert sonst gar keine Begrenzung mehr.
 
-Damit sitzt die Einstellung an der Stelle, an der man ohnehin über die
-Breite eines Blocks entscheidet. Ein zweites Feld „volle Fensterbreite"
-neben „Volle Breite" hätte zwei Regler für dieselbe Frage bedeutet.
+Beide Werte stehen in derselben Ausrichtungs-Auswahl, in der man ohnehin
+über die Breite eines Blocks entscheidet. Ein zusätzliches, eigenes Feld
+hätte zwei Regler für dieselbe Frage bedeutet.
 
 ### Warum ein CSS-Ausbruch und keine Umstellung der Bahn
 
