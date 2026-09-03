@@ -818,23 +818,23 @@ Der Kategoriename steht ohnehin im Browser-Tab und im Menüpunkt, über den
 man hergekommen ist; der RSS-Feed bleibt über den `<link>` im `<head>`
 auffindbar, nur der sichtbare Hinweis entfällt in dieser Darstellung.
 
-### Abstaende der Bausteine wirkten nur im Backend
+### Abstände der Bausteine wirkten nur im Backend
 
 Nutzer-Bugreport: im Designer 120px oben gesetzt, auf der Webseite passiert
 nichts.
 
 Ursache: der Designer schreibt die Werte als CSS-Variablen an den
 Baustein (BlockSpacingWrapper), ausgewertet werden sie erst durch die
-Regel . Die stand nur in . Auf der
+Regel `.block-spacing`. Die stand nur in `apps/web/src/app/globals.css`. Auf der
 Webseite waren die Variablen also gesetzt und wurden von niemandem
-gelesen -- kein Fehler, der auffaellt: die Seite sieht einfach aus wie
+gelesen -- kein Fehler, der auffällt: die Seite sieht einfach aus wie
 vorher.
 
 Die Regel steht jetzt auch im Stylesheet der Webseite. Bewusst dupliziert
 statt geteilt: beide Anwendungen haben getrennte Stylesheets ohne
-gemeinsame CSS-Datei, und ein Import quer ueber die App-Grenze waere der
+gemeinsame CSS-Datei, und ein Import quer ueber die App-Grenze wäre der
 schlechtere Tausch.
 
 **Merksatz:** Alles, was der Designer als Klasse oder Variable ausgibt,
-braucht auf BEIDEN Seiten eine auswertende Regel. Beim Ergaenzen einer
-solchen Ausgabe immer pruefen, ob das Website-Stylesheet sie kennt.
+braucht auf BEIDEN Seiten eine auswertende Regel. Beim Ergänzen einer
+solchen Ausgabe immer prüfen, ob das Website-Stylesheet sie kennt.
