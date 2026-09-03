@@ -38,6 +38,20 @@ export async function generateMetadata({
   return {
     title: archive.category.name,
     description: archive.category.description ?? undefined,
+    // Feed-Reader und Browser finden den RSS-Feed über diesen <link> im
+    // <head> – der sichtbare Link im Archiv ist nur die Zugabe für
+    // Menschen (Schritt 5 des Frontend-Plans). Nur wenn die Kategorie
+    // ihren Feed überhaupt anbietet, sonst zeigte er ins Leere (die
+    // Feed-Route antwortet dann mit 404).
+    ...(archive.category.rssEnabled && {
+      alternates: {
+        types: {
+          "application/rss+xml": [
+            { url: `/${slug}/feed.xml`, title: archive.category.name },
+          ],
+        },
+      },
+    }),
   };
 }
 

@@ -222,12 +222,18 @@ export function CategoryArchive({
         pageCount={meta.pageCount}
       />
 
-      {/* `site` steckt vorerst nur den RSS-Hinweis – der eigentliche
-          Feed-`<link>` im `<head>` folgt mit Schritt 5 des Frontend-Plans. */}
-      {category.rssEnabled && site.publicBaseUrl && (
-        <p className="text-sm text-muted-foreground">
-          Diese Kategorie bietet einen RSS-Feed an.
-        </p>
+      {/* Sichtbarer Link zusaetzlich zum <link> im <head> (siehe
+          generateMetadata der Seite): Feed-Reader finden den Feed ueber
+          den Kopf, Menschen ueber diesen Link. Anders als frueher haengt
+          er NICHT mehr an publicBaseUrl – der Pfad ist relativ und
+          funktioniert damit auch ohne gepflegte Basis-URL. */}
+      {category.rssEnabled && (
+        <a
+          href={`/${category.slug}/feed.xml`}
+          className="text-sm text-muted-foreground underline underline-offset-2 hover:text-accent-link"
+        >
+          RSS-Feed dieser Kategorie
+        </a>
       )}
     </div>
   );

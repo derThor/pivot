@@ -886,8 +886,9 @@ Architektur, Entscheidungen und Stolpersteine:
       Einstellungen → Frontend, dazu die beiden Footer-Menüs und die
       Footer-Zusatzzeile. `mainNavigationId` war seit seiner Anlage nie
       gesetzt, weil es kein Eingabefeld dafür gab.
-- [ ] RSS-`<link>` bei `rssEnabled` und abschließender SEO-Feinschliff
-      (Restpunkte aus Schritt 5)
+- [x] RSS-`<link>` bei `rssEnabled` (2026-09-03) – Feed-Route nach Slug in
+      der API, `/{kategorie}/feed.xml` auf der Website, `<link>` im `<head>`
+      und sichtbarer Link im Archiv. Damit ist Schritt 5 abgeschlossen
 - [x] Header und Footer nach dem Entwurf des Nutzers ("Pivot Landing",
       2026-09-02) – eigenes Design-System in `globals.css` (Off-White,
       Lime-Akzent, Manrope + IBM Plex Mono über `next/font`), Logo aus dem

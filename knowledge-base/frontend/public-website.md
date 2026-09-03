@@ -712,3 +712,31 @@ trägt seine beiden PNG-Fassungen ein, strasev (noch) nichts.
 **Das projekteigene Set ist damit:** `app/globals.css` (Farben, Bahnbreite),
 `template/fonts.ts` (Schriften), `template/brand.ts` (Logo),
 `public/brand/**` (die Dateien). Alles andere ist geteilt.
+
+## Update 2026-09-03 (6): RSS-Feed der Kategorie erreichbar
+
+Der letzte Rest von Schritt 5. Der Feed selbst existierte längst
+(`CategoriesService.generateFeed()`, erreichbar unter
+`/categories/:id/feed.xml`) – von der Website aus aber nicht, denn die
+kennt nur Slugs. Im Archiv stand deshalb nur der Satz „Diese Kategorie
+bietet einen RSS-Feed an." ohne Verweis.
+
+**Drei Teile, jeder an seiner richtigen Stelle:**
+
+| | |
+| --- | --- |
+| `GET /public/categories/:slug/feed.xml` | löst nur den Slug auf und gibt an `generateFeed()` ab – der Feed wird weiterhin an genau EINER Stelle gebaut |
+| `/{kategorie}/feed.xml` in `apps/site` | reicht durch, statt ihn ein zweites Mal zu bauen (dieselbe Entscheidung wie bei der Sitemap) |
+| `<link rel="alternate">` im `<head>` | nur wenn `Category.rssEnabled` – sonst zeigte er ins Leere |
+
+Die Route muss VOR `categories/:slug` stehen, sonst sähe Nest „feed.xml"
+als zweiten Pfadteil jener Route.
+
+Der sichtbare Link im Archiv hängt nicht mehr an `publicBaseUrl`: der Pfad
+ist relativ und funktioniert damit auch ohne gepflegte Basis-URL. Für
+Feed-Reader zählt ohnehin der `<link>` im Kopf, der sichtbare ist die
+Zugabe für Menschen.
+
+Geprüft: Feed nach Slug 200 bei eingeschaltetem RSS, **404 bei
+ausgeschaltetem** (ein Reader soll dann nichts abonnieren können);
+`<link>` und sichtbarer Link erscheinen nur im ersten Fall.

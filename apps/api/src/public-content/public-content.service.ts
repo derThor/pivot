@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CategoryArchiveLayout, ContentStatus } from '@pivot/database';
 import { PrismaService } from '../prisma/prisma.service';
+import { CategoriesService } from '../categories/categories.service';
 
 // v1 geht von genau einer Sprache pro Installation aus (siehe
 // knowledge-base/frontend/public-website.md-Plan, "bewusst nicht Teil
@@ -87,7 +88,10 @@ function buildContentPath(content: {
 
 @Injectable()
 export class PublicContentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly categories: CategoriesService,
+  ) {}
 
   /** Branding/SEO-Grundwerte fürs `<head>` der öffentlichen Website (siehe
    * AppSettings-Felder, Update 2026-08-31 – Frontend-Architekturplan). */
@@ -504,6 +508,19 @@ export class PublicContentService {
       items: items.map((item) => mapRelations(item)),
       meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
     };
+  }
+
+  /** RSS-Feed einer Kategorie über ihren Slug. Löst nur den Slug auf und
+   * gibt an `CategoriesService.generateFeed()` ab – der Feed wird an
+   * genau einer Stelle gebaut, egal ob er über die Id (Backend) oder den
+   * Slug (Website) angefordert wird. */
+  async getCategoryFeed(slug: string): Promise<string | null> {
+    const category = await this.prisma.category.findUnique({
+      where: { slug },
+      select: { id: true, deletedAt: true },
+    });
+    if (!category || category.deletedAt) return null;
+    return this.categories.generateFeed(category.id);
   }
 
   /** Welche Darstellung (Liste/Blöcke) die Übersichtsseite bekommt.

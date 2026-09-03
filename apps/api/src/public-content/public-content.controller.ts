@@ -5,6 +5,7 @@ import {
   Header,
   HttpCode,
   HttpStatus,
+  NotFoundException,
   Param,
   Post,
   Query,
@@ -94,6 +95,23 @@ export class PublicContentController {
   @Get('preview/:token')
   getPreview(@Param('token') token: string) {
     return this.publicContentService.getPreview(token);
+  }
+
+  /** RSS-Feed einer Kategorie – anders als `/categories/:id/feed.xml`
+   * über den SLUG, denn die öffentliche Website kennt nur Slugs. Erzeugt
+   * wird derselbe Feed, es gibt also keine zweite Sammel-Logik.
+   *
+   * Muss VOR `categories/:slug` stehen, sonst würde Nest "feed.xml" als
+   * zweiten Pfadteil dieser Route sehen. */
+  @Public()
+  @Get('categories/:slug/feed.xml')
+  @Header('Content-Type', 'application/rss+xml; charset=utf-8')
+  async categoryFeed(@Param('slug') slug: string) {
+    const xml = await this.publicContentService.getCategoryFeed(slug);
+    if (!xml) {
+      throw new NotFoundException('Kein RSS-Feed für diese Kategorie.');
+    }
+    return xml;
   }
 
   @Public()
