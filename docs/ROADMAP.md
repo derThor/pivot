@@ -911,9 +911,12 @@ Architektur, Entscheidungen und Stolpersteine:
 - [x] Eigene visuelle Gestaltung des Frontends – Hülle steht (siehe oben);
       offen bleibt die Gestaltung der INHALTE, siehe die beiden Punkte
       darunter
-- [ ] Randlose Abschnitte über die volle Fensterbreite (Hero,
-      Branchen-Band): die Inhaltsbahn (1180px) liegt in der Hülle, nicht im
-      Baustein – das aufzubrechen ist ein eigener Schritt am Designer
+- [x] Randlose Abschnitte über die volle Fensterbreite (2026-09-03) – als
+      weiterer Wert "Randlos" in der vorhandenen Ausrichtung am Block. Der
+      Block bricht per `100vw` + `calc(50% - 50vw)` aus der Inhaltsbahn
+      aus; `<main>` schneidet dafür waagerecht ab. Im Backend wird
+      "Randlos" wie "Volle Breite" gezeigt, sonst säße der Block quer über
+      die Anwendung
 - [ ] Modultypen für die Landingpage-Abschnitte, die die vorhandenen zwölf
       nicht abbilden: Feature-Kacheln mit Nummerierung, Branchen-Band,
       Ablauf-Schritte, Preistabelle

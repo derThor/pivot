@@ -251,5 +251,21 @@ export function blockLayoutClasses(align: ImageAlign, width: number = 100) {
     align === "right" && cn("float-right mb-3", hasHorizontalMargin && "ml-4"),
     align === "center" && "mx-auto clear-both",
     (align === "none" || align === "full") && "clear-both",
+    // Randlos: der Block bricht aus der zentrierten Inhaltsbahn aus und
+    // nimmt die volle Fensterbreite ein. `50% - 50vw` ist der Abstand von
+    // der linken Bahnkante zum Fensterrand – dieselbe Rechnung rechts.
+    //
+    // Bewusst NICHT über eine Umstellung der Bahn selbst gelöst (Container
+    // aus dem Layout in jeden Baustein verschieben): das hätte jede Seite
+    // und jede Liste angefasst, für eine Eigenschaft, die einzelne Blöcke
+    // brauchen.
+    //
+    // `100vw` schließt die Bildlaufleiste mit ein, der Block ragt also um
+    // deren Breite über den sichtbaren Bereich hinaus. Deshalb MUSS ein
+    // Vorfahr horizontal abschneiden – in apps/site tut das `<main>`
+    // (overflow-x-clip). Ohne das entstünde eine waagerechte
+    // Bildlaufleiste, und die soll es hier nie geben.
+    align === "bleed" &&
+      "clear-both w-screen max-w-none ml-[calc(50%-50vw)] mr-[calc(50%-50vw)]",
   );
 }

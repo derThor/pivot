@@ -42,7 +42,12 @@ export interface MediaVariant {
   size: number;
 }
 
-export type ImageAlign = "none" | "full" | "left" | "center" | "right";
+/** `bleed` ist die einzige Ausrichtung, die aus der Inhaltsbahn
+ * ausbricht: der Block geht über die volle FENSTERbreite, nicht nur über
+ * die volle Spaltenbreite (das ist `full`). Gedacht für Aufmacher und
+ * farbige Bänder (Nutzervorgabe, 2026-09-03). */
+export type ImageAlign =
+  "none" | "full" | "bleed" | "left" | "center" | "right";
 
 export interface ImageFieldValue {
   url: string;

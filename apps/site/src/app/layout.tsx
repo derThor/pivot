@@ -75,7 +75,12 @@ export default async function RootLayout({
             der Hero und das Branchen-Band – kann heute kein Baustein: die
             Breite liegt hier und nicht im Baustein. Das aufzubrechen wäre
             ein eigener Schritt am Designer, kein Nebeneffekt der Hülle. */}
-        <main className="mx-auto w-full max-w-[1180px] flex-1 px-6 py-14 sm:px-8">
+        {/* `overflow-x-clip` ist die Voraussetzung für randlose Blöcke:
+            die brechen mit `100vw` aus dieser Bahn aus, und `100vw`
+            schließt die Bildlaufleiste mit ein. Ohne das Abschneiden
+            entstünde eine waagerechte Bildlaufleiste (siehe
+            blockLayoutClasses in @pivot/blocks). */}
+        <main className="mx-auto w-full max-w-[1180px] flex-1 overflow-x-clip px-6 py-14 sm:px-8">
           {children}
         </main>
 

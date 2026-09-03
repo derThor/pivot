@@ -566,3 +566,60 @@ Ziel-Repos.
 Dateien kommen damit auch nicht mehr automatisch an und müssen einzeln
 geholt werden (`git checkout upstream/master -- <datei>`). Das ist der
 Preis dafür, dass ein Merge nie wieder eine fremde Marke einschleppt.
+
+## Update 2026-09-03 (4): Randlose Abschnitte über die volle Fensterbreite
+
+**Nutzervorgabe:** *„vor allem randlose abschnitte über volle
+fensterbreite"* – der offene Punkt aus dem Hüllen-Umbau, wo festgehalten
+war: die Inhaltsbahn (1180px) liegt in der Hülle, nicht im Baustein.
+
+### Wie es gesetzt wird
+
+Als **weiterer Wert der vorhandenen Ausrichtung** am Block, nicht als
+neues Feld:
+
+| Wert | Wirkung |
+| --- | --- |
+| Volle Breite | 100 % der Inhaltsbahn (1180px) |
+| **Randlos** | 100 % der **Fensterbreite** – bricht aus der Bahn aus |
+
+Damit sitzt die Einstellung an der Stelle, an der man ohnehin über die
+Breite eines Blocks entscheidet. Ein zweites Feld „volle Fensterbreite"
+neben „Volle Breite" hätte zwei Regler für dieselbe Frage bedeutet.
+
+### Warum ein CSS-Ausbruch und keine Umstellung der Bahn
+
+Der saubere Weg wäre gewesen, den Container aus `layout.tsx` in jeden
+Baustein zu verschieben – dann bestimmt jeder Block seine Breite selbst.
+Das hätte aber **jede Seite und jede Liste** angefasst (Startseite, freie
+Seiten, Kategorie-Archiv, Beitragsseiten, Artikel-Kopf), für eine
+Eigenschaft, die einzelne Blöcke brauchen.
+
+Stattdessen bricht der Block aus:
+
+```css
+width: 100vw;
+margin-left:  calc(50% - 50vw);
+margin-right: calc(50% - 50vw);
+```
+
+`50% - 50vw` ist genau der Abstand von der Bahnkante zum Fensterrand.
+Nachgerechnet auch mit `border-box` und dem Innenabstand der Bahn: der
+linke Rand landet exakt bei 0.
+
+**Die eine Voraussetzung:** `100vw` schließt die Bildlaufleiste mit ein,
+der Block ragt also um deren Breite hinaus. Deshalb hat `<main>` in
+`apps/site` jetzt `overflow-x-clip`. Ohne das entstünde eine waagerechte
+Bildlaufleiste – und die soll es hier nie geben.
+
+### Im Backend wird „Randlos" wie „Volle Breite" gezeigt
+
+Im Seiten-Designer und in der Vorschau säße ein 100vw-Block quer über die
+ganze Anwendung, über Sidebar und Formularspalten hinweg. Beide Stellen
+bilden `bleed` deshalb auf `full` ab (`editorAlign()`); die gespeicherte
+Ausrichtung bleibt unberührt. Wie es wirklich aussieht, zeigt die
+Vorschau im Frontend.
+
+Geprüft an einer echten Seite: der Block trägt
+`w-screen ml-[calc(50%-50vw)] mr-[calc(50%-50vw)]`, das CSS enthält beide
+Berechnungen und `overflow-x: clip`.

@@ -117,7 +117,13 @@ export function ContentPreviewRender({
                       key={instance.id}
                       className={cn(
                         "block-layout",
-                        blockLayoutClasses(layout.align, layout.width),
+                        // Wie im Editor: "Randlos" wird hier als volle
+                        // Breite des Vorschaubereichs gezeigt, nicht als
+                        // volle Fensterbreite (siehe block-editor-field).
+                        blockLayoutClasses(
+                          layout.align === "bleed" ? "full" : layout.align,
+                          layout.width,
+                        ),
                       )}
                       style={{ width: `${layout.width}%` }}
                     >

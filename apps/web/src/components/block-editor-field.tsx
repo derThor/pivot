@@ -18,6 +18,7 @@ import {
   LayoutTemplate,
   Link2,
   Maximize2,
+  MoveHorizontal,
   Monitor,
   MousePointerClick,
   Pencil,
@@ -85,6 +86,15 @@ import { cn } from "@/lib/utils";
 import { toGallerySettings } from "@/lib/gallery-settings";
 import type { GlobalModule, ModuleType } from "@/lib/api-server";
 
+// "Randlos" bricht auf der Website mit 100vw aus der Inhaltsbahn aus.
+// Im Backend säße der Block damit quer über die ganze Anwendung – über
+// Sidebar und Formularspalten hinweg. Hier wird er deshalb wie "Volle
+// Breite" dargestellt: volle Breite dessen, worin er gerade steckt. Die
+// gespeicherte Ausrichtung bleibt unberührt (Nutzervorgabe, 2026-09-03).
+function editorAlign(align: ImageAlign): ImageAlign {
+  return align === "bleed" ? "full" : align;
+}
+
 const ALIGN_OPTIONS: {
   value: ImageAlign;
   label: string;
@@ -92,6 +102,11 @@ const ALIGN_OPTIONS: {
 }[] = [
   { value: "none", label: "Keine", icon: Square },
   { value: "full", label: "Volle Breite", icon: Maximize2 },
+  // Randlos = über die volle FENSTERbreite, nicht nur über die Spalte
+  // (Nutzervorgabe, 2026-09-03). Direkt neben "Volle Breite", weil beide
+  // dieselbe Frage beantworten und der Unterschied sonst nirgends
+  // auffiele.
+  { value: "bleed", label: "Randlos", icon: MoveHorizontal },
   { value: "left", label: "Linksbündig", icon: AlignLeft },
   { value: "center", label: "Zentrieren", icon: AlignCenter },
   { value: "right", label: "Rechtsbündig", icon: AlignRight },
@@ -985,7 +1000,10 @@ export function BlockEditorField({
                   style={{ width: `${blockLayout.width}%` }}
                   className={cn(
                     "block-layout group relative rounded-lg border border-transparent px-3 py-3 transition-colors hover:border-border focus-within:border-orange-400",
-                    blockLayoutClasses(blockLayout.align, blockLayout.width),
+                    blockLayoutClasses(
+                      editorAlign(blockLayout.align),
+                      blockLayout.width,
+                    ),
                     draggingInstanceId === instance.id && "opacity-40",
                   )}
                 >
