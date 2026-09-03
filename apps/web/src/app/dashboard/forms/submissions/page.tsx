@@ -37,7 +37,6 @@ export default async function AllFormSubmissionsPage({
             pageCount: result?.meta.pageCount ?? 1,
           }}
           showForm
-          basePath="/dashboard/forms/submissions"
           retentionDays={privacy?.retentionFormSubmissionsDays ?? null}
           now={now}
         />

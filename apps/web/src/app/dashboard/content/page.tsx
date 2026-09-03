@@ -38,6 +38,8 @@ export default async function ContentPage({
     sortBy,
     sortDir: sortDirParam,
   } = await searchParams;
+  // Roher Stand der URL für die Paginierungs-Links (siehe buildHref).
+  const rawSearchParams = await searchParams;
   // Unbekannte Richtung fällt auf "absteigend" zurück; welche Felder
   // erlaubt sind, entscheidet die API über ihre Positivliste.
   const sortDir = sortDirParam === "asc" ? "asc" : "desc";
@@ -137,12 +139,17 @@ export default async function ContentPage({
             page={content.meta.page}
             pageCount={content.meta.pageCount}
             buildHref={(p) => {
-              // Status/Suche müssen beim Blättern erhalten bleiben – ein
-              // reines `?page=…` hätte den Filter bei jedem Seitenwechsel
-              // stillschweigend zurückgesetzt.
-              const params = new URLSearchParams();
-              if (status) params.set("status", status);
-              if (search) params.set("q", search);
+              // Aus dem ECHTEN Stand der URL gebaut, nicht aus einer
+              // handgepflegten Aufzählung: die zählte vorher nur Status und
+              // Suche auf, und als die Sortierung dazukam, fiel sie beim
+              // Blättern still weg (Fehlerbild 2026-09-03). So kann kein
+              // künftiger Parameter mehr vergessen werden.
+              const params = new URLSearchParams(
+                Object.entries(rawSearchParams).filter(
+                  (entry): entry is [string, string] =>
+                    typeof entry[1] === "string",
+                ),
+              );
               params.set("page", String(p));
               return `?${params.toString()}`;
             }}

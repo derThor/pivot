@@ -15,6 +15,8 @@ export default async function TagsPage({
   }>;
 }) {
   const { page: pageParam, sortBy, sortDir: sortDirParam } = await searchParams;
+  // Roher Stand der URL für die Paginierungs-Links (siehe buildHref).
+  const rawSearchParams = await searchParams;
   const sortDir = sortDirParam === "asc" ? "asc" : "desc";
   const page = Number(pageParam) || 1;
   const [settings, allTags] = await Promise.all([
@@ -45,7 +47,16 @@ export default async function TagsPage({
           <PaginationControls
             page={pagedTags.meta.page}
             pageCount={pagedTags.meta.pageCount}
-            buildHref={(p) => `?page=${p}`}
+            buildHref={(p) => {
+              const params = new URLSearchParams(
+                Object.entries(rawSearchParams).filter(
+                  (entry): entry is [string, string] =>
+                    typeof entry[1] === "string",
+                ),
+              );
+              params.set("page", String(p));
+              return `?${params.toString()}`;
+            }}
           />
         )}
       </PageContent>

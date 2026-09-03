@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SortableHead } from "@/components/sortable-head";
+import { useKeepQuery } from "@/lib/use-keep-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
@@ -167,7 +168,6 @@ export function SubmissionsExplorer({
   meta,
   fields,
   showForm = false,
-  basePath,
   retentionDays = null,
   now,
 }: {
@@ -177,7 +177,6 @@ export function SubmissionsExplorer({
    * Sammelübersicht bringt jede Zeile ihre Felder über `form` mit. */
   fields?: FormFieldOption[];
   showForm?: boolean;
-  basePath: string;
   /** `AppSettings.retentionFormSubmissionsDays` (Datenschutz-Einstellung) –
    * `null` = unbegrenzt, dann kein "Abgelaufen"-Badge. Löschen bleibt
    * bewusst manuell, das Badge markiert nur, was fällig wäre. */
@@ -188,6 +187,7 @@ export function SubmissionsExplorer({
   now: number;
 }) {
   const router = useRouter();
+  const buildPageHref = useKeepQuery();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Ein gemeinsamer Dialog für alle Zeilen (Muster: webhooks-manager.tsx)
   // statt eines eigenen pro Zeile – `RowActionButtons` bringt keinen
@@ -432,7 +432,9 @@ export function SubmissionsExplorer({
       <PaginationControls
         page={meta.page}
         pageCount={meta.pageCount}
-        buildHref={(p) => `${basePath}?page=${p}`}
+        // Aus dem echten Stand der URL, damit die Sortierung das
+        // Blaettern ueberlebt (Fehlerbild 2026-09-03).
+        buildHref={buildPageHref}
       />
 
       <ConfirmDeleteDialog

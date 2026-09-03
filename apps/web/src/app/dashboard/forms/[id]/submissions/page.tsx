@@ -42,7 +42,6 @@ export default async function FormSubmissionsPage({
             pageCount: result?.meta.pageCount ?? 1,
           }}
           fields={form.fields}
-          basePath={`/dashboard/forms/${id}/submissions`}
           retentionDays={privacy?.retentionFormSubmissionsDays ?? null}
           now={now}
         />

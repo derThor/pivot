@@ -36,6 +36,8 @@ export default async function UsersPage({
     sortBy,
     sortDir: sortDirParam,
   } = await searchParams;
+  // Roher Stand der URL für die Paginierungs-Links (siehe buildHref).
+  const rawSearchParams = await searchParams;
   const sortDir = sortDirParam === "asc" ? "asc" : "desc";
   const page = Number(pageParam) || 1;
   const roleId = role && role !== "all" ? role : undefined;
@@ -143,7 +145,19 @@ export default async function UsersPage({
             <PaginationControls
               page={users.meta.page}
               pageCount={users.meta.pageCount}
-              buildHref={(p) => `?page=${p}`}
+              // Vorher `?page=${p}` – damit verlor jeder Seitenwechsel
+              // Rolle, Status und Suchbegriff. Aus dem echten Stand der URL
+              // gebaut bleibt alles erhalten.
+              buildHref={(p) => {
+                const params = new URLSearchParams(
+                  Object.entries(rawSearchParams).filter(
+                    (entry): entry is [string, string] =>
+                      typeof entry[1] === "string",
+                  ),
+                );
+                params.set("page", String(p));
+                return `?${params.toString()}`;
+              }}
             />
           </>
         )}

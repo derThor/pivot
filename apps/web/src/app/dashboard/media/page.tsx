@@ -27,17 +27,22 @@ export default async function MediaPage({
     maxSize?: string;
     tags?: string;
     unused?: string;
+    sortBy?: string;
+    sortDir?: string;
   }>;
 }) {
   const {
     folder,
     page: pageParam,
+    sortBy,
+    sortDir: sortDirParam,
     type,
     minSize,
     maxSize,
     tags,
     unused,
   } = await searchParams;
+  const sortDir = sortDirParam === "asc" ? "asc" : "desc";
   const currentFolderId = folder ?? null;
   const page = Number(pageParam) || 1;
   const tagIds = tags ? tags.split(",").filter(Boolean) : undefined;
@@ -65,6 +70,8 @@ export default async function MediaPage({
         minSize: minSize ? Number(minSize) : undefined,
         maxSize: maxSize ? Number(maxSize) : undefined,
         tagIds,
+        sortBy,
+        sortDir,
       });
 
   const extraParams = new URLSearchParams();
@@ -72,6 +79,10 @@ export default async function MediaPage({
   if (minSize) extraParams.set("minSize", minSize);
   if (maxSize) extraParams.set("maxSize", maxSize);
   if (tags) extraParams.set("tags", tags);
+  // Sortierung ueberlebt das Blaettern nur, wenn sie in den Seitenlinks
+  // mitgetragen wird (extraQuery haengt an jedem Paginierungs-Link).
+  if (sortBy) extraParams.set("sortBy", sortBy);
+  if (sortDirParam) extraParams.set("sortDir", sortDirParam);
   const extraQuery = extraParams.toString() ? `&${extraParams.toString()}` : "";
 
   return (
