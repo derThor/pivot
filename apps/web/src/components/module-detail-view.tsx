@@ -242,6 +242,33 @@ export function ModuleDetailView({
         </div>
 
         <div className="flex flex-col gap-4">
+          <Card className="gap-3 rounded-xl shadow-sm">
+            <CardHeader>
+              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                Modul
+              </p>
+            </CardHeader>
+            <CardContent className="flex flex-col divide-y divide-border px-6 py-0 text-sm">
+              <div className="flex items-center justify-between py-3">
+                <span className="text-muted-foreground">Version</span>
+                <span>{appVersion ?? "–"}</span>
+              </div>
+              <div className="flex items-center justify-between py-3">
+                <span className="text-muted-foreground">Kategorie</span>
+                <span>{CATEGORY_LABEL[module.category]}</span>
+              </div>
+              <div className="flex items-center justify-between py-3">
+                <span className="text-muted-foreground">Datenquelle</span>
+                <span>Lokal</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <ModuleAutoInstallToggle
+            moduleKey={module.key}
+            autoInstallForNewMandants={autoInstallForNewMandants}
+          />
+
           <Card className="rounded-xl shadow-sm">
             <CardHeader>
               <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -271,33 +298,6 @@ export function ModuleDetailView({
               )}
             </CardContent>
           </Card>
-
-          <Card className="gap-3 rounded-xl shadow-sm">
-            <CardHeader>
-              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                Modul
-              </p>
-            </CardHeader>
-            <CardContent className="flex flex-col divide-y divide-border px-6 py-0 text-sm">
-              <div className="flex items-center justify-between py-3">
-                <span className="text-muted-foreground">Version</span>
-                <span>{appVersion ?? "–"}</span>
-              </div>
-              <div className="flex items-center justify-between py-3">
-                <span className="text-muted-foreground">Kategorie</span>
-                <span>{CATEGORY_LABEL[module.category]}</span>
-              </div>
-              <div className="flex items-center justify-between py-3">
-                <span className="text-muted-foreground">Datenquelle</span>
-                <span>Lokal</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <ModuleAutoInstallToggle
-            moduleKey={module.key}
-            autoInstallForNewMandants={autoInstallForNewMandants}
-          />
         </div>
       </div>
     </div>

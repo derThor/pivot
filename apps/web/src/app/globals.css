@@ -263,6 +263,36 @@
 [data-pivot-theme="dark"] .pivot-logo {
   filter: url(#pivot-logo-dark);
 }
+/* Nutzervorgabe, 2026-09-03: "mache im dark mode bei allen dunklen buttons
+   einen etwas helleren border drum". Auf dunklem Grund steht eine dunkle
+   Knopffläche fast unsichtbar in ihrer Umgebung – aufgefallen an der
+   aktiven Pille des SegmentedPicker (SURFACE auf SUB1), die sich vom
+   Träger darunter kaum abhob.
+
+   LINE2 statt LINE, also genau der Ton, den `--color-button-border` im
+   Light Mode ohnehin für Knöpfe vorgibt – kein neu erfundener Wert, nur
+   derselbe Zweck auch im Dark Mode. Er ist eine Stufe heller als der
+   allgemeine Rahmen (LINE), damit ein Knopf sich von einer Karte
+   unterscheidet.
+
+   Bewusst unlayered und nicht in `@layer base`: die Basisklasse der
+   Button-Komponente setzt `border-transparent`, eine Utility – aus dem
+   base-Layer heraus käme man dagegen nicht an.
+
+   Nur gefüllte DUNKLE Flächen: `bg-primary` (Lime) bleibt außen vor, dort
+   wäre ein Rahmen ein Fremdkörper, und durchsichtige Knöpfe (ghost, link)
+   sollen weiterhin keine Kontur haben. Trifft auch die `outline`-Variante,
+   deren Rahmen vorher auf LINE stand – gewollt, das ist derselbe zu
+   dunkle Ton. */
+[data-pivot-theme="dark"]
+  :is(button, [data-slot="button"]):is(
+    .bg-card,
+    .bg-muted,
+    .bg-secondary,
+    .bg-dark-surface
+  ) {
+  border: 1px solid var(--pivot-line2);
+}
 
 /* Nutzervorgabe, 2026-08-26: exakte Badge-/Chip-Farbwerte (Bildvorlage) –
    als eigene, unlayered CSS-Klassen statt Tailwind-Utilities, damit die
