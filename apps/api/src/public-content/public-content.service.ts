@@ -51,6 +51,7 @@ const contentFullSelect = {
   ogTitle: true,
   ogDescription: true,
   twitterCard: true,
+  hideTitle: true,
   robotsIndex: true,
   robotsFollow: true,
   contentType: { select: { slug: true, schema: true } },

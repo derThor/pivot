@@ -142,3 +142,31 @@ wie in `trash-view.tsx` und `users-filter-bar.tsx`. Bewusst konsistent
 gehalten statt hier als Einzelfall ein abweichendes Verhalten
 einzuführen; falls das bei größeren Beständen spürbar wird, gehört ein
 Debounce an alle drei Stellen gleichzeitig.
+
+## Update 2026-09-03: „Titel ausblenden"
+
+**Nutzervorgabe:** *„noch eine Option hinzufügen: Titel ausblenden unter
+Seite Einrichtung & SEO"* – direkt nach den randlosen Abschnitten, und aus
+demselben Anlass: eine Seite, die mit einem Aufmacher über die volle
+Fensterbreite beginnt, trägt ihren Titel meist schon im Bild. Die
+Überschrift darüber stünde dann doppelt.
+
+`Content.hideTitle` (Vorgabe `false`), Schalter im Editor unter
+**Einrichtung & SEO** neben „Indexierung erlauben".
+
+**Ausgeblendet wird ausschließlich die sichtbare Überschrift.** Der Titel
+bleibt gesetzt und wird weiter gebraucht:
+
+| Stelle | bleibt |
+| --- | --- |
+| Browser-Tab (`<title>`) | ja |
+| Suchmaschinen / OpenGraph | ja |
+| Listen und Suche im Backend | ja |
+| Sichtbare `<h1>` auf der Seite | **nein** |
+
+**Der Anreißtext verschwindet mit.** Er ist die Unterzeile zur Überschrift
+und stünde ohne sie zusammenhanglos über dem ersten Baustein. Der
+Editor-Text sagt das ausdrücklich, damit es niemanden überrascht.
+
+Geprüft: mit `hideTitle` liefert die Seite keine `<h1>` mehr, der
+`<title>` im Kopf bleibt unverändert („dddd – Pivot.").

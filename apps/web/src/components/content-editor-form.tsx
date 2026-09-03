@@ -78,6 +78,7 @@ interface SeoValues {
   twitterCard: string;
   robotsIndex: boolean;
   robotsFollow: boolean;
+  hideTitle: boolean;
 }
 
 function toSeoValues(content: ContentDetail | undefined): SeoValues {
@@ -92,6 +93,7 @@ function toSeoValues(content: ContentDetail | undefined): SeoValues {
     twitterCard: content?.twitterCard ?? "none",
     robotsIndex: content?.robotsIndex ?? true,
     robotsFollow: content?.robotsFollow ?? true,
+    hideTitle: content?.hideTitle ?? false,
   };
 }
 
@@ -1354,6 +1356,32 @@ export function ContentEditorForm({
                                 setSeoValues((prev) => ({
                                   ...prev,
                                   canonicalUrl: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between gap-4 py-2">
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <Label htmlFor="seo-hide-title">
+                                  Titel ausblenden
+                                </Label>
+                                <InfoTooltip text="Blendet nur die sichtbare Überschrift aus. Der Titel bleibt gesetzt und wird weiter für den Browser-Tab, die Suchmaschinen und die Listen im Backend genutzt." />
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                Für Seiten, die mit einem Aufmacher beginnen und
+                                den Titel schon im Bild tragen. Der Anreißtext
+                                verschwindet mit.
+                              </p>
+                            </div>
+                            <Switch
+                              id="seo-hide-title"
+                              checked={seoValues.hideTitle}
+                              onCheckedChange={(checked) =>
+                                setSeoValues((prev) => ({
+                                  ...prev,
+                                  hideTitle: checked,
                                 }))
                               }
                             />

@@ -1047,6 +1047,15 @@ model Content {
   // nach Bildvorlage) – per Stern-Symbol umschaltbar, siehe
   // ContentService.toggleFeatured(). Rein redaktionelles Hervorheben
   // innerhalb einer Rubrik, keine Verbindung zu Status/Veröffentlichung.
+  // Blendet die Überschrift der Seite auf der öffentlichen Website aus
+  // (Nutzervorgabe, 2026-09-03). Gedacht für Seiten, die mit einem
+  // randlosen Aufmacher beginnen und den Titel bereits im Bild tragen –
+  // dort stünde die H1 darüber doppelt.
+  //
+  // Der Titel bleibt gesetzt und wird weiter gebraucht: für die Listen im
+  // Backend, den Browser-Tab (<title>) und die Suchmaschinen. Ausgeblendet
+  // wird ausschließlich die sichtbare Überschrift.
+  hideTitle      Boolean       @default(false)
   isFeatured     Boolean       @default(false)
   scheduledFor   DateTime?
   publishedAt    DateTime?

@@ -428,6 +428,7 @@ export interface ContentDetail extends ContentListItem {
   twitterCard: string | null;
   robotsIndex: boolean;
   robotsFollow: boolean;
+  hideTitle: boolean;
   scheduledFor: string | null;
   lockedBy: AuthorRef | null;
   lockedAt: string | null;

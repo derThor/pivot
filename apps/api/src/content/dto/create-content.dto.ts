@@ -84,6 +84,14 @@ export class CreateContentDto {
   @IsIn(['summary', 'summary_large_image'])
   twitterCard?: string | null;
 
+  @ApiPropertyOptional({
+    description:
+      'Blendet die sichtbare Überschrift auf der öffentlichen Website aus. Der Titel bleibt gesetzt und wird weiter für Backend-Listen, <title> und Suchmaschinen genutzt.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  hideTitle?: boolean;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()

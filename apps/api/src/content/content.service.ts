@@ -301,6 +301,7 @@ export class ContentService {
         ogDescription: dto.ogDescription,
         ogImageUrl: dto.ogImageUrl,
         twitterCard: dto.twitterCard,
+        hideTitle: dto.hideTitle ?? false,
         robotsIndex: dto.robotsIndex ?? true,
         robotsFollow: dto.robotsFollow ?? true,
         scheduledFor: dto.scheduledFor ? new Date(dto.scheduledFor) : null,

@@ -99,6 +99,9 @@ export interface PublicContent {
   twitterCard: string | null;
   robotsIndex: boolean;
   robotsFollow: boolean;
+  /** Blendet die sichtbare Überschrift aus – der Titel selbst bleibt für
+   * `<title>` und Suchmaschinen erhalten. */
+  hideTitle: boolean;
   /** Kanonischer Pfad, serverseitig berechnet (Kategorie-Präfix bzw.
    * flach – und `/` für die als Startseite markierte Seite, siehe
    * PublicContentService). */
