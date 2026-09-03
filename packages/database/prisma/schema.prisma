@@ -985,6 +985,15 @@ model ModuleType {
   slug      String   @unique
   icon      String?
   schema    Json
+  // Reihenfolge in der Baustein-Palette des Seiten-Designers
+  // (Nutzervorgabe, 2026-09-03: "Reihenfolge der Bausteine im Designer per
+  // Drag and Drop festlegen"). Vorher standen sie alphabetisch – die
+  // meistgenutzten Bausteine landeten dadurch zufällig verteilt.
+  //
+  // Alle mit 0 vorbelegt; solange niemand etwas verschoben hat, entscheidet
+  // weiterhin der Name (zweites Sortierkriterium in findAll()).
+  sortOrder Int      @default(0)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

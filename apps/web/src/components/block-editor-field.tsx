@@ -1,6 +1,8 @@
 "use client";
 
 import { Fragment, useRef, useState, type ReactNode } from "react";
+import { toastWarning } from "@/components/app-toast";
+import { bff } from "@/lib/bff";
 import Link from "next/link";
 import {
   AlignCenter,
@@ -626,6 +628,48 @@ export function BlockEditorField({
   // geschrumpfte) Breite als 100%-Basis für weiteres Ziehen nehmen.
   const columnRef = useRef<HTMLDivElement>(null);
 
+  // Umsortieren der Baustein-Palette (Nutzervorgabe, 2026-09-03).
+  const [paletteDropTargetId, setPaletteDropTargetId] = useState<string | null>(
+    null,
+  );
+  // Eigene Reihenfolge, damit die verschobene Kachel SOFORT an ihrer neuen
+  // Stelle steht. Ohne das säße sie bis zum Neuladen der Seite noch alt –
+  // bei einer Bewegung, die man mehrmals hintereinander macht, wäre das
+  // unbrauchbar. `null` heißt "noch nichts verschoben, nimm die Reihenfolge
+  // vom Server".
+  const [paletteOrder, setPaletteOrder] = useState<string[] | null>(null);
+
+  const orderedModuleTypes = paletteOrder
+    ? [...moduleTypes].sort(
+        (a, b) => paletteOrder.indexOf(a.id) - paletteOrder.indexOf(b.id),
+      )
+    : moduleTypes;
+
+  /** Schiebt `draggedId` an die Stelle von `targetId` und speichert die
+   * neue Reihenfolge. Gerechnet wird immer auf der VOLLSTÄNDIGEN Liste,
+   * nicht auf der gefilterten – sonst würde eine aktive Suche die
+   * Positionen der ausgeblendeten Bausteine durcheinanderbringen. */
+  async function reorderPalette(draggedId: string, targetId: string) {
+    if (draggedId === targetId) return;
+    const ids = orderedModuleTypes.map((t) => t.id);
+    const from = ids.indexOf(draggedId);
+    const to = ids.indexOf(targetId);
+    if (from < 0 || to < 0) return;
+    ids.splice(to, 0, ids.splice(from, 1)[0]);
+    setPaletteOrder(ids);
+    const res = await fetch(bff("/api/module-types/reorder"), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids }),
+    });
+    if (!res.ok) {
+      // Serverseitig nicht angekommen: zurück auf den Stand vom Server,
+      // statt eine Reihenfolge anzuzeigen, die nirgends gespeichert ist.
+      setPaletteOrder(null);
+      toastWarning("Reihenfolge konnte nicht gespeichert werden.");
+    }
+  }
+
   const isDragging = draggingPaletteId !== null || draggingInstanceId !== null;
 
   // Vorab berechnete Ausrichtung jeder Instanz – wird gebraucht, um beim
@@ -651,7 +695,9 @@ export function BlockEditorField({
     return align === "left" || align === "right";
   }
 
-  const filteredTypes = moduleTypes.filter((mt) =>
+  // Auf der eigenen Reihenfolge filtern, nicht auf der vom Server –
+  // sonst spraenge eine gerade verschobene Kachel beim Tippen zurueck.
+  const filteredTypes = orderedModuleTypes.filter((mt) =>
     mt.name.toLowerCase().includes(search.toLowerCase()),
   );
 
@@ -963,10 +1009,45 @@ export function BlockEditorField({
                       `new:${moduleType.id}`,
                     );
                   }}
-                  onDragEnd={() => setDraggingPaletteId(null)}
+                  onDragEnd={() => {
+                    setDraggingPaletteId(null);
+                    setPaletteDropTargetId(null);
+                  }}
+                  // Ablegen auf einer ANDEREN Kachel ordnet die Palette um
+                  // (Nutzervorgabe, 2026-09-03: "Reihenfolge der Bausteine
+                  // im Designer per Drag and Drop festlegen"). Dieselbe
+                  // Ziehbewegung hat damit zwei Bedeutungen – auf die
+                  // Fläche gezogen fügt sie einen Baustein ein, auf eine
+                  // Kachel gezogen sortiert sie. Das Ziel entscheidet,
+                  // nicht ein Umschalter.
+                  onDragOver={(e) => {
+                    if (
+                      !draggingPaletteId ||
+                      draggingPaletteId === moduleType.id
+                    ) {
+                      return;
+                    }
+                    e.preventDefault();
+                    setPaletteDropTargetId(moduleType.id);
+                  }}
+                  onDragLeave={() =>
+                    setPaletteDropTargetId((current) =>
+                      current === moduleType.id ? null : current,
+                    )
+                  }
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setPaletteDropTargetId(null);
+                    const raw = e.dataTransfer.getData("text/plain");
+                    if (!raw.startsWith("new:")) return;
+                    void reorderPalette(raw.slice(4), moduleType.id);
+                  }}
                   className={cn(
                     "flex cursor-grab flex-col items-center gap-1.5 rounded-lg border border-border bg-card p-3 text-center transition-colors hover:border-primary active:cursor-grabbing",
                     draggingPaletteId === moduleType.id && "opacity-50",
+                    paletteDropTargetId === moduleType.id &&
+                      "border-primary ring-2 ring-primary/40",
                   )}
                 >
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/25 text-pivot-navy">

@@ -685,3 +685,51 @@ am knappsten ist. Der Beobachter erfasst auch Drehung und Zoom.
 Rückfall ist `0px`: bis zur ersten Messung ist der Aufmacher lieber etwas
 zu hoch als zu kurz. Im Seiten-Designer gibt es die Variable nicht, dort
 bleibt es bei vollen `100vh`.
+
+## Update 2026-09-03 (3): Reihenfolge der Baustein-Palette
+
+**Nutzervorgabe:** *„Reihenfolge der Bausteine im Designer per Drag and
+Drop festlegen"* – vorher stand die Palette alphabetisch, die
+meistgenutzten Bausteine landeten dadurch zufällig verteilt.
+
+### Eine Ziehbewegung, zwei Bedeutungen
+
+Die Kacheln waren schon ziehbar, um einen Baustein einzufügen. Statt eines
+Umschalters („jetzt sortieren") entscheidet jetzt das **Ziel**:
+
+| Kachel gezogen auf … | Wirkung |
+| --- | --- |
+| die Fläche rechts | Baustein einfügen (wie bisher) |
+| eine andere Kachel | Palette umsortieren |
+
+Das kommt ohne zusätzliche Bedienung aus und ist schwer misszuverstehen –
+wer auf einer Kachel loslässt, meint offensichtlich die Palette.
+
+### Details
+
+- **`ModuleType.sortOrder`**, alle mit `0` vorbelegt. Solange niemand etwas
+  verschoben hat, entscheidet weiterhin der Name (zweites Kriterium in
+  `findAll()`) – die Palette sieht also unverändert aus, bis sie jemand
+  bewusst ordnet.
+- **Die vollständige Id-Liste** geht an den Server, nicht „verschiebe X
+  hinter Y": so kann kein Zwischenzustand mit doppelten Positionen
+  entstehen, und der Server muss nichts nachrechnen. Gespeichert wird in
+  EINER Transaktion.
+- **Gerechnet wird auf der vollständigen Liste**, nicht auf der gefilterten
+  – sonst würde eine aktive Suche die Positionen der ausgeblendeten
+  Bausteine durcheinanderbringen.
+- **Sofort sichtbar:** die neue Reihenfolge steht lokal, bevor der Server
+  antwortet. Bei einer Bewegung, die man mehrmals hintereinander macht,
+  wäre Warten auf den Server unbrauchbar. Schlägt das Speichern fehl,
+  springt die Palette auf den Server-Stand zurück und meldet es.
+
+### Sicherheitsfund am Rande
+
+`ModuleTypesController` trug `@Public()` auf KLASSENEBENE (Lesen ist
+bewusst offen, weil die anonyme Vorschau Modul-Schemas braucht). Mit der
+neuen schreibenden Route wäre das ein offenes Scheunentor gewesen – die
+Berechtigungsprüfung an der Methode läuft gar nicht erst an, wenn die
+Klasse als öffentlich markiert ist. `@Public()` steht jetzt an den beiden
+Lese-Routen; das Ordnen verlangt `content:update`.
+
+Geprüft: Lesen ohne Anmeldung 200, Umsortieren ohne Anmeldung 401.
