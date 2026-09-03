@@ -1,9 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { SortQueryDto } from '../../common/dto/sort-query.dto';
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { CategorySortOrder, ContentStatus } from '@pivot/database';
 
-export class QueryContentDto {
+export class QueryContentDto extends SortQueryDto {
   @ApiPropertyOptional({ enum: ContentStatus })
   @IsOptional()
   @IsEnum(ContentStatus)

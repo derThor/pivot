@@ -3,6 +3,7 @@
 import { FileText } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { SortableHead } from "@/components/sortable-head";
 import {
   Table,
   TableBody,
@@ -43,11 +44,17 @@ export function ContentTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Titel</TableHead>
-            <TableHead>Pfad</TableHead>
+            {/* Sortierbar sind die Spalten, hinter denen ein echtes Feld
+                steht (siehe Positivliste in ContentService.findAll).
+                "Abschnitte" ist eine gezählte Anzahl aus dem JSON-Inhalt –
+                danach ließe sich nur sortieren, indem man alle Seiten
+                lädt und im Speicher zählt. Das bleibt deshalb bewusst
+                unsortierbar, statt bei 10.000 Seiten umzufallen. */}
+            <SortableHead field="title">Titel</SortableHead>
+            <SortableHead field="slug">Pfad</SortableHead>
             <TableHead>Abschnitte</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Zuletzt bearbeitet</TableHead>
+            <SortableHead field="status">Status</SortableHead>
+            <SortableHead field="updatedAt">Zuletzt bearbeitet</SortableHead>
             <TableHead className="text-center">Aktionen</TableHead>
           </TableRow>
         </TableHeader>

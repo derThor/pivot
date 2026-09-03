@@ -8,6 +8,7 @@ import {
 import { randomBytes } from 'node:crypto';
 import { ContentStatus, ContentVersionTrigger, Prisma } from '@pivot/database';
 import { PrismaService } from '../prisma/prisma.service';
+import { resolveOrderBy } from '../common/sort';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { SiteCacheService } from '../site-cache/site-cache.service';
@@ -94,6 +95,8 @@ export class ContentService {
       categoryId,
       search,
       sortOrder,
+      sortBy,
+      sortDir,
     } = query;
     const where = {
       deletedAt: null,
@@ -117,10 +120,23 @@ export class ContentService {
     // ist zwar an der Kategorie speicherbar, mangels eines
     // Reihenfolge-Felds auf `ContentCategory` aber noch nicht umgesetzt
     // und fällt bewusst auf NEWEST zurück, statt einen Fehler zu werfen.
-    const orderBy =
-      sortOrder === 'OLDEST'
-        ? ({ updatedAt: 'asc' } as const)
-        : ({ updatedAt: 'desc' } as const);
+    // Die Standard-Reihenfolge bleibt, was die Kategorie vorgibt
+    // (NEWEST/OLDEST). Klickt jemand einen Spaltenkopf an, gewinnt seine
+    // Wahl – sie ist die konkretere Absicht.
+    const orderBy = resolveOrderBy<Prisma.ContentOrderByWithRelationInput>(
+      {
+        title: (dir) => ({ title: dir }),
+        slug: (dir) => ({ slug: dir }),
+        status: (dir) => ({ status: dir }),
+        updatedAt: (dir) => ({ updatedAt: dir }),
+        publishedAt: (dir) => ({ publishedAt: dir }),
+        contentType: (dir) => ({ contentType: { name: dir } }),
+        author: (dir) => ({ author: { lastName: dir } }),
+      },
+      sortOrder === 'OLDEST' ? { updatedAt: 'asc' } : { updatedAt: 'desc' },
+      sortBy,
+      sortDir,
+    );
 
     const [items, total] = await Promise.all([
       this.prisma.content.findMany({

@@ -23,13 +23,24 @@ const STATUS_FILTERS: ContentStatus[] = [
 export default async function ContentPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string; q?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    status?: string;
+    q?: string;
+    sortBy?: string;
+    sortDir?: string;
+  }>;
 }) {
   const {
     page: pageParam,
     status: statusParam,
     q: queryParam,
+    sortBy,
+    sortDir: sortDirParam,
   } = await searchParams;
+  // Unbekannte Richtung fällt auf "absteigend" zurück; welche Felder
+  // erlaubt sind, entscheidet die API über ihre Positivliste.
+  const sortDir = sortDirParam === "asc" ? "asc" : "desc";
   const page = Number(pageParam) || 1;
   // Unbekannter Wert in der URL fällt still auf "Alle" zurück, statt eine
   // leere Liste oder einen 400er aus der API zu erzeugen.
@@ -56,6 +67,8 @@ export default async function ContentPage({
     pageSize: settings?.defaultPageSize ?? 10,
     status,
     search,
+    sortBy,
+    sortDir,
   });
   const entries = content?.items ?? [];
 

@@ -282,6 +282,9 @@ export function getContentList(params?: {
   sortOrder?: CategorySortOrder;
   page?: number;
   pageSize?: number;
+  /** Sortierung über einen Spaltenkopf (siehe SortableHead). */
+  sortBy?: string;
+  sortDir?: "asc" | "desc";
 }) {
   const search = new URLSearchParams();
   if (params?.status) search.set("status", params.status);
@@ -290,6 +293,8 @@ export function getContentList(params?: {
   if (params?.sortOrder) search.set("sortOrder", params.sortOrder);
   if (params?.page) search.set("page", String(params.page));
   if (params?.pageSize) search.set("pageSize", String(params.pageSize));
+  if (params?.sortBy) search.set("sortBy", params.sortBy);
+  if (params?.sortDir) search.set("sortDir", params.sortDir);
   const query = search.toString();
 
   return apiFetch<ContentListResponse>(`/content${query ? `?${query}` : ""}`);
