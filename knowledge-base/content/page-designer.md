@@ -760,3 +760,18 @@ den Designer, `apps/site` für die Website) und muss dort synchron bleiben –
 genau diese Doppelung war am 2026-09-03 schon einmal ein Fehlerbild
 ("Abstand im Designer gesetzt, Website unverändert"), weil die Regel in
 `apps/site` fehlte.
+
+
+## Update 2026-09-03 (3): Innenabstand-Box im Dunkelmodus
+
+Nutzerhinweis mit Bildvorlage: *"dunkelmodus auch hier anwenden"* – die
+grüne "Innenabstand"-Fläche im Abstände-Dialog war als einziges Element
+des Dialogs noch hell (`border-green-300 bg-green-50`) und leuchtete im
+dunklen Dialog heraus.
+
+Sie bekommt jetzt `dark:border-[#2f6a4d] dark:bg-[#1b3b2a]` und die
+Beschriftung `dark:text-[#8df0b4]` – exakt die Werte der Variante
+`success` aus `ui/system-message.tsx` statt einer neu gemischten
+Abstufung. Alle übrigen Teile der Box (Außenrahmen, "Inhalt"-Feld,
+Eingabefelder, Verkettungs-Knopf) hingen schon an Theme-Tokens
+(`bg-muted`, `bg-card`, `border-border`) und waren deshalb nie betroffen.

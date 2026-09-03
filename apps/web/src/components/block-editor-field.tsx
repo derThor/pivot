@@ -518,9 +518,15 @@ function SpacingBoxEditor({
               onChange={(v) => setMarginSide("left", v)}
             />
 
-            <div className="rounded-xl border border-green-300 bg-green-50 p-3">
+            {/* Dunkelmodus (Nutzervorgabe, 2026-09-03: "dunkelmodus auch hier
+              anwenden") – die grüne Fläche blieb sonst hell und leuchtete im
+              dunklen Dialog. Exakt die Grün-Werte der Variante "success" aus
+              ui/system-message.tsx statt einer neu erfundenen Abstufung:
+              die Farben dort sind app-weit die verbindlichen (siehe
+              knowledge-base/frontend/toast-and-system-messages.md). */}
+            <div className="rounded-xl border border-green-300 bg-green-50 p-3 dark:border-[#2f6a4d] dark:bg-[#1b3b2a]">
               <div className="mb-3 flex items-center justify-between gap-2">
-                <span className="text-xs font-semibold tracking-wide text-green-700 uppercase">
+                <span className="text-xs font-semibold tracking-wide text-green-700 uppercase dark:text-[#8df0b4]">
                   Innenabstand{" "}
                   <span className="font-normal normal-case">padding</span>
                 </span>
