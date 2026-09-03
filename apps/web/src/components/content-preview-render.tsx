@@ -139,6 +139,7 @@ export function ContentPreviewRender({
                           <CoverOutput
                             contentFields={contentFields}
                             values={resolved.values}
+                            height={instance.layout?.height}
                           />
                         ) : (
                           <div className="flow-root space-y-3">

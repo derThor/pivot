@@ -17,8 +17,10 @@ import {
   LayoutGrid,
   LayoutTemplate,
   Link2,
+  Crop,
   Maximize2,
   MoveHorizontal,
+  MoveVertical,
   Monitor,
   MousePointerClick,
   Pencil,
@@ -68,8 +70,10 @@ import {
   toVideoValue,
   videoEmbedSrc,
   SPACING_SIDES,
+  type BlockHeightValue,
   type BlockLayoutValue,
   type BoxSpacing,
+  type ImageFit,
   type ImageAlign,
   type ImageFieldValue,
   type ResponsiveSpacing,
@@ -94,6 +98,30 @@ import type { GlobalModule, ModuleType } from "@/lib/api-server";
 function editorAlign(align: ImageAlign): ImageAlign {
   return align === "bleed" ? "full" : align;
 }
+
+/** Höhen-Vorgaben für den Cover-Baustein (Nutzervorgabe, 2026-09-03).
+ * Feste Werte statt eines freien Zahlenfelds – dieselbe Konvention wie bei
+ * den übrigen Vorgabe-Auswahlen der Anwendung. "Automatisch" nimmt den
+ * Wert wieder heraus, dann gilt die Mindesthöhe des Bausteins. */
+const COVER_HEIGHT_OPTIONS: {
+  value: BlockHeightValue | undefined;
+  label: string;
+}[] = [
+  { value: undefined, label: "Automatisch" },
+  { value: 240, label: "Klein (240 px)" },
+  { value: 400, label: "Mittel (400 px)" },
+  { value: 560, label: "Groß (560 px)" },
+  { value: "screen", label: "Volle Fensterhöhe" },
+];
+
+/** Wie das Hintergrundbild seine Fläche füllt – entspricht CSS
+ * `object-fit`. Die Beschriftungen nennen die Wirkung, nicht den
+ * CSS-Namen: was passiert, ist wichtiger als wie es heißt. */
+const IMAGE_FIT_OPTIONS: { value: ImageFit; label: string }[] = [
+  { value: "cover", label: "Füllend (beschneidet)" },
+  { value: "contain", label: "Ganz sichtbar (mit Rand)" },
+  { value: "fill", label: "Verzerrt auf die Fläche" },
+];
 
 const ALIGN_OPTIONS: {
   value: ImageAlign;
@@ -1152,6 +1180,83 @@ export function BlockEditorField({
                         </Button>
                       </>
                     )}
+                    {/* Cover-eigene Bedienung (Nutzervorgabe, 2026-09-03:
+                        "bei Cover die Angabe der Höhe mit rein und die
+                        Bildausrichtung Cover usw. als Auswahl"). Beide nur
+                        hier, weil sie nur beim Cover eine Bedeutung haben:
+                        der Baustein ist die einzige Fläche, deren Höhe man
+                        frei bestimmt, und das einzige Bild, das als
+                        Hintergrund liegt statt im Fluss zu stehen. */}
+                    {isCover && !isGlobal && (
+                      <>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label="Höhe"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            }
+                          >
+                            <MoveVertical />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            {COVER_HEIGHT_OPTIONS.map((option) => (
+                              <DropdownMenuItem
+                                key={String(option.value)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  updateInstanceLayout(instance.id, {
+                                    ...instance.layout,
+                                    height: option.value,
+                                  });
+                                }}
+                              >
+                                {option.label}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        {imageField && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              render={
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  aria-label="Bildausrichtung"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              }
+                            >
+                              <Crop />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              {IMAGE_FIT_OPTIONS.map((option) => (
+                                <DropdownMenuItem
+                                  key={option.value}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateField(instance.id, imageField.name, {
+                                      ...toImageValue(
+                                        resolved.values[imageField.name],
+                                      ),
+                                      fit: option.value,
+                                    });
+                                  }}
+                                >
+                                  {option.label}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </>
+                    )}
                     {hasBlockLayoutControls && (
                       <DropdownMenu>
                         <DropdownMenuTrigger
@@ -1316,6 +1421,7 @@ export function BlockEditorField({
                       <CoverOutput
                         contentFields={contentFields}
                         values={instance.values}
+                        height={instance.layout?.height}
                       />
                     )}
                     {moduleType &&

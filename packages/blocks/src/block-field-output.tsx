@@ -8,7 +8,12 @@ import {
   DEFAULT_GALLERY_SETTINGS,
   type GallerySettings,
 } from "./gallery-settings";
-import type { BlockLayoutValue, ContentTypeField } from "./types";
+import type {
+  BlockHeightValue,
+  BlockLayoutValue,
+  ContentTypeField,
+  ImageFit,
+} from "./types";
 import {
   focalObjectPosition,
   isGalleryRepeater,
@@ -90,12 +95,24 @@ export function DividerOutput() {
 // Untertext und optionaler Button, alle mittig übereinander. Feldrollen
 // werden über Typ/Variant statt fester Feldnamen bestimmt, damit der
 // Baustein wie alle anderen rein über sein Schema erkannt wird.
+/** CSS-Klasse je Bild-Füllung. Als feste Zuordnung statt zusammengebauter
+ * Klassennamen, damit Tailwind sie im Quelltext findet. */
+const FIT_CLASS: Record<ImageFit, string> = {
+  cover: "object-cover",
+  contain: "object-contain",
+  fill: "object-fill",
+};
+
 export function CoverOutput({
   contentFields,
   values,
+  height,
 }: {
   contentFields: ContentTypeField[];
   values: Record<string, unknown>;
+  /** Höhe aus `BlockLayoutValue` (Nutzervorgabe, 2026-09-03). Ohne
+   * Angabe bleibt es bei der bisherigen Mindesthöhe von 320px. */
+  height?: BlockHeightValue;
 }) {
   const imageField = contentFields.find(
     (f) => f.type === "image" && f.variant === "cover",
@@ -115,15 +132,35 @@ export function CoverOutput({
   const subtext = subtextField ? String(values[subtextField.name] ?? "") : "";
   const buttonLabel = buttonField ? String(values[buttonField.name] ?? "") : "";
 
+  // `minHeight` statt `height`: der Text im Cover darf die Fläche
+  // wachsen lassen, wenn er länger ist als die eingestellte Höhe – sonst
+  // stünde er über den Rand hinaus.
+  const heightStyle =
+    height === "screen"
+      ? { minHeight: "100vh" }
+      : typeof height === "number"
+        ? { minHeight: `${height}px` }
+        : undefined;
+
   return (
-    <div className="relative flex min-h-80 items-center justify-center overflow-hidden rounded-md bg-muted">
+    <div
+      style={heightStyle}
+      className={cn(
+        "relative flex items-center justify-center overflow-hidden rounded-md bg-muted",
+        // Vorgabe nur, solange nichts eingestellt ist.
+        height === undefined && "min-h-80",
+      )}
+    >
       {img?.url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={resolveImageSrc(img.url)}
           alt=""
           style={{ objectPosition: focalObjectPosition(img) }}
-          className="absolute inset-0 size-full object-cover"
+          className={cn(
+            "absolute inset-0 size-full",
+            FIT_CLASS[img.fit ?? "cover"],
+          )}
         />
       ) : (
         <ImageIcon className="absolute size-10 text-muted-foreground" />

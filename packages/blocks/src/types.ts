@@ -49,8 +49,14 @@ export interface MediaVariant {
 export type ImageAlign =
   "none" | "full" | "bleed" | "left" | "center" | "right";
 
+/** Wie ein Bild seine Fläche füllt – dieselbe Bedeutung wie CSS
+ * `object-fit`. `cover` (Vorgabe) beschneidet, `contain` zeigt das ganze
+ * Bild und lässt Rand, `fill` verzerrt. */
+export type ImageFit = "cover" | "contain" | "fill";
+
 export interface ImageFieldValue {
   url: string;
+  fit?: ImageFit;
   width?: number;
   align?: ImageAlign;
   mediaId?: string;
@@ -86,8 +92,14 @@ export interface ResponsiveSpacing {
   desktop?: BoxSpacing;
 }
 
+/** Höhe eines Blocks. Zahl = Pixel, `"screen"` = volle Fensterhöhe
+ * (Nutzervorgabe, 2026-09-03, für den Cover-Baustein). Ohne Angabe gilt
+ * die Vorgabe des jeweiligen Bausteins. */
+export type BlockHeightValue = number | "screen";
+
 export interface BlockLayoutValue {
   width?: number;
+  height?: BlockHeightValue;
   align?: ImageAlign;
   padding?: ResponsiveSpacing;
   margin?: ResponsiveSpacing;

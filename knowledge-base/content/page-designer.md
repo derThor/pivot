@@ -578,3 +578,46 @@ Bildern.
 Geprüft: ein „Bild + Text"-Baustein mit `layout.align: "bleed"` trägt auf
 der Website die Ausbruch-Klassen – vorher war das an dieser Stelle
 unmöglich.
+
+## Update 2026-09-03 (2): Höhe und Bildfüllung beim Cover
+
+**Nutzervorgabe:** *„mach bei Cover die Angabe der Höhe mit rein und die
+Bildausrichtung Cover usw. als Auswahl."*
+
+Beide Bedienelemente sitzen in der Werkzeugleiste des Bausteins, direkt
+neben der Ausrichtung, und erscheinen nur beim Cover – sie haben nur dort
+eine Bedeutung: er ist der einzige Baustein, dessen Höhe man frei bestimmt,
+und sein Bild ist das einzige, das als Hintergrund liegt statt im Fluss zu
+stehen.
+
+| Höhe | Bildfüllung |
+| --- | --- |
+| Automatisch (Vorgabe, min. 320px) | Füllend (beschneidet) – Vorgabe |
+| Klein 240px / Mittel 400px / Groß 560px | Ganz sichtbar (mit Rand) |
+| Volle Fensterhöhe | Verzerrt auf die Fläche |
+
+**Wo die Werte liegen** – bewusst an den vorhandenen Mechanismen statt an
+einem dritten:
+
+- Die Höhe in `BlockLayoutValue.height` (`number | "screen"`), also dort,
+  wo auch Breite und Ausrichtung eines Blocks stehen. Damit ist sie
+  überall schon durchgereicht, und ein anderer Baustein könnte sie später
+  ohne neue Verkabelung nutzen.
+- Die Füllung in `ImageFieldValue.fit`, also am Bild selbst – neben
+  `align`, `width` und dem Fokuspunkt.
+
+Ein Option-Feld im Modul-Typ wäre die dritte Möglichkeit gewesen und
+scheidet aus: `option: true` filtern alle Renderer heraus, aber es gibt
+**keine Oberfläche**, die solche Felder bearbeitet – der Kommentar in
+`types.ts` beschreibt eine Absicht, kein vorhandenes Popup.
+
+**`minHeight` statt `height`:** ein längerer Text im Cover darf die Fläche
+wachsen lassen, sonst stünde er über den Rand hinaus.
+
+Die Beschriftungen nennen die Wirkung statt des CSS-Namens („Füllend
+(beschneidet)" statt „cover") – was passiert, ist wichtiger als wie es
+heißt. Wie bei `align` ist auch `fit` gegen eine Whitelist geprüft, damit
+kein Fremdwert als CSS-Klasse landet.
+
+Geprüft an einer echten Seite: `min-height:100vh` und `object-contain`
+kommen in der Ausgabe an.

@@ -88,6 +88,12 @@ export function toImageValue(raw: unknown): ImageFieldValue {
         align === "right"
           ? align
           : "none",
+      // Wie bei `align`: Whitelist, damit kein Fremdwert als CSS-Klasse
+      // landet. Eine neue Variante MUSS hier mit aufgenommen werden.
+      fit:
+        obj.fit === "cover" || obj.fit === "contain" || obj.fit === "fill"
+          ? obj.fit
+          : undefined,
       mediaId: typeof obj.mediaId === "string" ? obj.mediaId : undefined,
       variants: Array.isArray(obj.variants)
         ? (obj.variants as ImageFieldValue["variants"])
