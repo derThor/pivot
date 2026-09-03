@@ -74,8 +74,15 @@ export function toImageValue(raw: unknown): ImageFieldValue {
     return {
       url: typeof obj.url === "string" ? obj.url : "",
       width: typeof obj.width === "number" ? obj.width : undefined,
+      // Whitelist statt Durchreichen: ein unbekannter Wert aus alten
+      // Daten soll nicht als CSS-Klasse landen. Beim Ergaenzen einer
+      // Ausrichtung MUSS sie hier mit aufgenommen werden – "bleed" fehlte
+      // zunaechst und wurde still zu "none" (Nutzer-Bugreport,
+      // 2026-09-03: "volle fensterbreite gestellt, nichts hat sich
+      // veraendert").
       align:
         align === "full" ||
+        align === "bleed" ||
         align === "left" ||
         align === "center" ||
         align === "right"
@@ -179,6 +186,23 @@ export function resolveBlockLayout(
   const align = layout?.align ?? "none";
   const width = align === "full" ? 100 : (layout?.width ?? 100);
   return { align: healAlign(align, width), width, hasIntraBlockImage: false };
+}
+
+// Inline-Breite eines Block-Wrappers – gehört zwingend zu
+// `blockLayoutClasses()` und darf nicht von Hand danebengesetzt werden.
+//
+// Grund (Nutzer-Bugreport, 2026-09-03: "volle fensterbreite gestellt,
+// nichts hat sich verändert"): "Randlos" setzt die Breite über die Klasse
+// `w-screen`. Eine Inline-Angabe `width: 100%` schlägt jede Klasse – der
+// Block blieb dadurch in der Inhaltsbahn stehen, obwohl die Ausrichtung
+// korrekt gespeichert und ausgewertet war. Bei `bleed` darf hier also
+// KEINE Breite stehen.
+export function blockLayoutStyle(
+  align: ImageAlign,
+  width: number = 100,
+): { width: string } | undefined {
+  if (align === "bleed") return undefined;
+  return { width: `${width}%` };
 }
 
 // Erkennt Module mit mehreren Bild-Feldern (z.B. den "Kacheln"-Baustein)

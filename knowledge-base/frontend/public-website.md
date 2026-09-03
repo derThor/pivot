@@ -638,3 +638,30 @@ Vorschau im Frontend.
 Geprüft an einer echten Seite: der Block trägt
 `w-screen ml-[calc(50%-50vw)] mr-[calc(50%-50vw)]`, das CSS enthält beide
 Berechnungen und `overflow-x: clip`.
+
+### Drei Fallen auf dem Weg dorthin
+
+Der Wert war korrekt gespeichert, die Seite änderte sich trotzdem nicht.
+Drei unabhängige Stellen haben ihn jeweils still verschluckt – jede
+einzeln plausibel, zusammen ein Fehlerbild ohne jede Meldung:
+
+1. **`toImageValue()` filtert die Ausrichtung gegen eine Whitelist.**
+   Unbekannte Werte werden zu `"none"` – gut gegen Müll aus alten Daten,
+   aber beim Ergänzen einer Ausrichtung MUSS sie dort mit aufgenommen
+   werden. Das war die eigentliche Ursache.
+2. **Eine Inline-Breite schlägt jede Klasse.** Der Block-Wrapper setzte
+   `style={{ width: "100%" }}` neben `w-screen`; inline gewinnt. Dafür
+   gibt es jetzt `blockLayoutStyle()`, das bei `bleed` gar keine Breite
+   liefert – damit die nächste Renderstelle nicht dieselbe Falle nachbaut.
+3. **Bei Bausteinen mit mehreren Feldern gilt das Bild als blockintern.**
+   Der mitgelieferte „Bild"-Baustein hat einen Alt-Text, deshalb bleibt
+   der Wrapper neutral und die Ausrichtung wird am `<img>` selbst
+   angewandt (`resolveBlockLayout`). „Randlos" musste also an BEIDEN
+   Stellen umgesetzt werden – am Wrapper und am Bild. Ohne das lief es
+   genau bei den Bausteinen ins Leere, für die man es am ehesten benutzt.
+
+Randlose Bilder verlieren dabei die Ecken-Rundung: was bündig an beiden
+Fensterrändern sitzt, hat dort nichts zu runden.
+
+Im Backend fängt `allowBleed={false}` das ab – dort säße ein Bild in
+voller Fensterbreite quer über Sidebar und Formularspalten.

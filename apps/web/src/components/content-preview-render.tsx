@@ -144,6 +144,7 @@ export function ContentPreviewRender({
                           <div className="flow-root space-y-3">
                             {contentFields.map((moduleField) => (
                               <BlockFieldOutput
+                                allowBleed={false}
                                 key={moduleField.name}
                                 field={moduleField}
                                 value={resolved.values[moduleField.name]}

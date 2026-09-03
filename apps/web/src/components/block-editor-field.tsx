@@ -1392,6 +1392,7 @@ export function BlockEditorField({
                             if (field.type !== "image") {
                               return (
                                 <BlockFieldOutput
+                                  allowBleed={false}
                                   key={field.name}
                                   field={field}
                                   value={instance.values[field.name]}
@@ -1456,6 +1457,7 @@ export function BlockEditorField({
                       <div className="flow-root space-y-3">
                         {contentFields.map((field) => (
                           <BlockFieldOutput
+                            allowBleed={false}
                             key={field.name}
                             field={field}
                             value={resolved.values[field.name]}

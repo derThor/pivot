@@ -170,11 +170,17 @@ export function BlockFieldOutput({
   // Implementierung). Ohne Angabe wird der Formular-Baustein einfach
   // nicht gerendert, statt eine Ausnahme zu werfen.
   renderForm,
+  // false im Backend (Seiten-Designer und Vorschau): dort säße ein Bild
+  // in voller Fensterbreite quer über die ganze Anwendung, über Sidebar
+  // und Formularspalten hinweg. Es wird dann wie "volle Breite"
+  // dargestellt; der gespeicherte Wert bleibt unberührt.
+  allowBleed = true,
 }: {
   field: ContentTypeField;
   value: unknown;
   showPlaceholders?: boolean;
   applyOwnLayout?: boolean;
+  allowBleed?: boolean;
   interactive?: boolean;
   gallerySettings?: GallerySettings;
   swiperAllowTouchMove?: boolean;
@@ -199,6 +205,18 @@ export function BlockFieldOutput({
       );
     }
     const width = img.align === "full" ? 100 : (img.width ?? 100);
+    // "Volle Fensterbreite" muss auch HIER greifen, nicht nur am
+    // Block-Wrapper (Nutzer-Bugreport, 2026-09-03: "volle fensterbreite
+    // gestellt, nichts hat sich verändert"). Hat ein Modul außer dem Bild
+    // noch weitere Felder – der mitgelieferte "Bild"-Baustein hat einen
+    // Alt-Text –, gilt das Bild als blockintern: der Wrapper bleibt
+    // neutral und die Ausrichtung wird am Bild selbst angewandt (siehe
+    // resolveBlockLayout). Ohne diesen Zweig lief "randlos" bei genau den
+    // Bausteinen ins Leere, für die man es am ehesten benutzt.
+    //
+    // Die Inline-Breite entfällt dabei bewusst: sie würde `w-screen`
+    // schlagen, weil Inline-Angaben jede Klasse überstimmen.
+    const isBleed = img.align === "bleed" && allowBleed;
     return (
       <picture>
         {(["avif", "webp"] as const).map((format) => {
@@ -218,11 +236,14 @@ export function BlockFieldOutput({
           src={resolveImageSrc(img.url)}
           alt=""
           style={{
-            ...(applyOwnLayout && { width: `${width}%` }),
+            ...(applyOwnLayout && !isBleed && { width: `${width}%` }),
             objectPosition: focalObjectPosition(img),
           }}
           className={cn(
-            "block max-h-[36rem] rounded-md object-cover",
+            "block max-h-[36rem] object-cover",
+            // Randlos verliert die Ecken-Rundung: ein Element, das bündig
+            // an beiden Fensterrändern sitzt, hat dort nichts zu runden.
+            !isBleed && "rounded-md",
             !applyOwnLayout && "w-full",
             applyOwnLayout &&
               cn(
@@ -233,6 +254,8 @@ export function BlockFieldOutput({
                 img.align === "left" && "float-left mr-4 mb-2",
                 img.align === "right" && "float-right ml-4 mb-2",
                 img.align === "center" && "mx-auto",
+                isBleed &&
+                  "w-screen max-w-none ml-[calc(50%-50vw)] mr-[calc(50%-50vw)]",
               ),
           )}
         />

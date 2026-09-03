@@ -6,6 +6,7 @@ import {
   RichTextDisplay,
   TilesGridOutput,
   blockLayoutClasses,
+  blockLayoutStyle,
   cn,
   isCoverModuleType,
   isDividerModule,
@@ -91,7 +92,7 @@ export function ContentBlocks({
                       "block-layout",
                       blockLayoutClasses(layout.align, layout.width),
                     )}
-                    style={{ width: `${layout.width}%` }}
+                    style={blockLayoutStyle(layout.align, layout.width)}
                   >
                     <BlockSpacingWrapper layout={instance.layout}>
                       {isDividerModule(contentFields) ? (
