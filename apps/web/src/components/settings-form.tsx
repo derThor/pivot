@@ -353,8 +353,12 @@ const SECTIONS: {
     icon: Bell,
   },
   {
+    // "Backend" im Titel seit 2026-09-05 (Nutzervorgabe): seit Frontend
+    // ein eigener Oberpunkt mit einem Bereich "Darstellung" ist, gäbe es
+    // die Beschriftung sonst zweimal in derselben Sidebar – einmal für
+    // die Verwaltung, einmal für die öffentliche Webseite.
     id: "display",
-    title: "Darstellung",
+    title: "Darstellung Backend",
     subtitle: "Logo, Akzentfarbe, Dichte",
     icon: Contrast,
   },

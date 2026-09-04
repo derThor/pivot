@@ -471,11 +471,10 @@ Beschriftung ergänzt) – mitsamt den Stückzahlen, damit im Protokoll steht,
 wie viel herausgegangen ist, nicht nur dass exportiert wurde. Der
 Hinweistext in der Zeile sagt beides offen.
 
-
 ## Update 2026-09-05: "Frontend" wird eigener Oberpunkt mit drei Bereichen
 
-Nutzervorgabe: *"das frontend will ich als eigenen punkt haben. also als
-oberpunkt"*, danach die Entscheidung für Unterpunkte statt einer einzigen
+Nutzervorgabe: _"das frontend will ich als eigenen punkt haben. also als
+oberpunkt"_, danach die Entscheidung für Unterpunkte statt einer einzigen
 Karte.
 
 Vorher hing "Frontend" als dritter Bereich unter "Allgemein" und trug
@@ -486,15 +485,20 @@ Wachstum absehbar.
 
 Jetzt: eigene Gruppe `frontend` mit drei Bereichen –
 
-| Bereich | Inhalt |
-| --- | --- |
-| Grundlagen & SEO | Titel, Untertitel, Favicon, Social-Bild, Basis-URL, SEO-Beschreibung |
-| Darstellung | Abstand der Seite (Mobil/Tablet/Desktop) + Schalter für die Startseite |
-| Kopf- & Fußbereich | Hauptmenü, zwei Footer-Menüs, Footer-Zusatzzeile |
+| Bereich            | Inhalt                                                                 |
+| ------------------ | ---------------------------------------------------------------------- |
+| Grundlagen & SEO   | Titel, Untertitel, Favicon, Social-Bild, Basis-URL, SEO-Beschreibung   |
+| Darstellung        | Abstand der Seite (Mobil/Tablet/Desktop) + Schalter für die Startseite |
+| Kopf- & Fußbereich | Hauptmenü, zwei Footer-Menüs, Footer-Zusatzzeile                       |
 
 Anders als Caching, Jobs und Mailing (eigene Gruppe mit **einem** Bereich
 und deshalb ohne zweite Sidebar-Spalte) bekommt Frontend die zweite Ebene
 – genau dafür ist `showSectionColumn` da.
+
+Der bisherige Bereich "Darstellung" unter _Allgemein_ heißt seitdem
+**"Darstellung Backend"** (Nutzervorgabe): sonst stünde dieselbe
+Beschriftung zweimal in derselben Sidebar – einmal für die Verwaltung,
+einmal für die öffentliche Webseite.
 
 **Beim Erweitern beachten:** ein neues Feld gehört in den Bereich, dessen
 Frage es beantwortet ("wie heißt die Seite" / "wie sieht sie aus" / "was
