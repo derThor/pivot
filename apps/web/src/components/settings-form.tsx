@@ -19,7 +19,9 @@ import {
   Menu,
   Monitor,
   Palette,
+  PanelTop,
   Plug,
+  Ruler,
   Shield,
   ShieldCheck,
   Smartphone,
@@ -288,7 +290,9 @@ type SectionId =
   | "access"
   | "security"
   | "display"
-  | "frontend"
+  | "frontend-basics"
+  | "frontend-display"
+  | "frontend-navigation"
   | "integrations"
   | "webhooks"
   | "notifications"
@@ -349,10 +353,26 @@ const SECTIONS: {
     icon: Contrast,
   },
   {
-    id: "frontend",
-    title: "Frontend",
-    subtitle: "Öffentliche Webseite",
+    // Seit 2026-09-05 drei Bereiche statt eines: die eine Frontend-Karte
+    // war auf über zehn Felder gewachsen (Nutzervorgabe: "das frontend
+    // will ich als eigenen punkt haben. also als oberpunkt", dann die
+    // Entscheidung für Unterpunkte).
+    id: "frontend-basics",
+    title: "Grundlagen & SEO",
+    subtitle: "Titel, Favicon, Metadaten",
     icon: Globe,
+  },
+  {
+    id: "frontend-display",
+    title: "Darstellung",
+    subtitle: "Abstand der Seite",
+    icon: Ruler,
+  },
+  {
+    id: "frontend-navigation",
+    title: "Kopf- & Fußbereich",
+    subtitle: "Menüs & Footer-Zeile",
+    icon: PanelTop,
   },
   {
     id: "integrations",
@@ -452,7 +472,18 @@ const GROUPS: {
     title: "Allgemein",
     subtitle: "Module & Darstellung",
     icon: Menu,
-    sections: ["access", "display", "frontend"],
+    sections: ["access", "display"],
+  },
+  {
+    // Eigener Oberpunkt statt eines Bereichs unter "Allgemein"
+    // (Nutzervorgabe, 2026-09-05). Anders als Caching/Jobs/Mailing MIT
+    // zweiter Sidebar-Ebene: die öffentliche Webseite hat genug
+    // Einstellungen für drei Bereiche, und sie wächst weiter.
+    id: "frontend",
+    title: "Frontend",
+    subtitle: "Öffentliche Webseite",
+    icon: Globe,
+    sections: ["frontend-basics", "frontend-display", "frontend-navigation"],
   },
   {
     id: "security",
@@ -1806,14 +1837,13 @@ export function SettingsForm({
               </>
             )}
 
-            {activeSection === "frontend" && (
+            {activeSection === "frontend-basics" && (
               <Card className="rounded-xl shadow-sm">
                 <CardHeader>
-                  <CardTitle>Frontend</CardTitle>
+                  <CardTitle>Grundlagen &amp; SEO</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Grundwerte für die öffentliche Webseite dieser Installation
-                    sowie die Menüs, aus denen ihr Kopf- und Fußbereich
-                    entsteht.
+                    Wie sich die öffentliche Webseite dieser Installation nennt
+                    und wie sie in Suchmaschinen und sozialen Netzen erscheint.
                   </p>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -1927,7 +1957,21 @@ export function SettingsForm({
                       </FormItem>
                     )}
                   />
-                  <Separator className="sm:col-span-2" />
+                </CardContent>
+              </Card>
+            )}
+
+            {activeSection === "frontend-display" && (
+              <Card className="rounded-xl shadow-sm">
+                <CardHeader>
+                  <CardTitle>Darstellung</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Gilt für alle Seiten der öffentlichen Webseite. Einzelne
+                    Seiten können davon abweichen – der Wert am Menüpunkt sticht
+                    den globalen.
+                  </p>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <PageSpacingFields control={form.control} />
                   <FormField
                     control={form.control}
@@ -1943,19 +1987,23 @@ export function SettingsForm({
                       </FormItem>
                     )}
                   />
-                  <Separator className="sm:col-span-2" />
-                  <div className="flex flex-col gap-1 sm:col-span-2">
-                    <h3 className="text-sm font-semibold">
-                      Kopf- und Fußbereich
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Aus diesen Menüs baut die Webseite ihren Header und
-                      Footer. Gepflegt werden sie unter Inhalte → Menüs; die
-                      Spaltenüberschrift im Footer ist der Name des Menüs. Die
-                      Spalte „Rechtliches“ entsteht automatisch aus den
-                      vorhandenen Rechtstexten.
-                    </p>
-                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {activeSection === "frontend-navigation" && (
+              <Card className="rounded-xl shadow-sm">
+                <CardHeader>
+                  <CardTitle>Kopf- und Fußbereich</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Aus diesen Menüs baut die Webseite ihren Header und Footer.
+                    Gepflegt werden sie unter Inhalte → Menüs; die
+                    Spaltenüberschrift im Footer ist der Name des Menüs. Die
+                    Spalte „Rechtliches“ entsteht automatisch aus den
+                    vorhandenen Rechtstexten.
+                  </p>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <NavigationSelectField
                     control={form.control}
                     name="mainNavigationId"

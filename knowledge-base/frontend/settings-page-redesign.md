@@ -470,3 +470,33 @@ Aufruf wird protokolliert (`settings.content_exported`, deutsche
 Beschriftung ergänzt) – mitsamt den Stückzahlen, damit im Protokoll steht,
 wie viel herausgegangen ist, nicht nur dass exportiert wurde. Der
 Hinweistext in der Zeile sagt beides offen.
+
+
+## Update 2026-09-05: "Frontend" wird eigener Oberpunkt mit drei Bereichen
+
+Nutzervorgabe: *"das frontend will ich als eigenen punkt haben. also als
+oberpunkt"*, danach die Entscheidung für Unterpunkte statt einer einzigen
+Karte.
+
+Vorher hing "Frontend" als dritter Bereich unter "Allgemein" und trug
+alles in einer Karte: Titel, Untertitel, Favicon, Social-Bild, Basis-URL,
+SEO-Beschreibung, Seitenabstand (drei Reiter), Startseiten-Schalter, drei
+Menüs und die Footer-Zeile. Über zehn Felder in einer Karte, mit weiterem
+Wachstum absehbar.
+
+Jetzt: eigene Gruppe `frontend` mit drei Bereichen –
+
+| Bereich | Inhalt |
+| --- | --- |
+| Grundlagen & SEO | Titel, Untertitel, Favicon, Social-Bild, Basis-URL, SEO-Beschreibung |
+| Darstellung | Abstand der Seite (Mobil/Tablet/Desktop) + Schalter für die Startseite |
+| Kopf- & Fußbereich | Hauptmenü, zwei Footer-Menüs, Footer-Zusatzzeile |
+
+Anders als Caching, Jobs und Mailing (eigene Gruppe mit **einem** Bereich
+und deshalb ohne zweite Sidebar-Spalte) bekommt Frontend die zweite Ebene
+– genau dafür ist `showSectionColumn` da.
+
+**Beim Erweitern beachten:** ein neues Feld gehört in den Bereich, dessen
+Frage es beantwortet ("wie heißt die Seite" / "wie sieht sie aus" / "was
+steht im Kopf und Fuß"), nicht ans Ende der ersten Karte. Die alte Karte
+war genau so gewachsen.
