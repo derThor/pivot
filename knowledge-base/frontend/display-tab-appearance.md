@@ -182,12 +182,11 @@ neben der bereits vorhandenen "LOGO"-Beschriftung der Box selbst).
 - Akzentfarbe wirkt nur im Dashboard, nicht auf Login/Registrierung oder
   in System-E-Mails.
 
-
 ## Update 2026-09-03: Vorschau-Fläche folgt dem Logo, nicht dem Modus
 
-Nutzerhinweis mit Bildvorlage: *"im dunkelmodus muss das feld für das
+Nutzerhinweis mit Bildvorlage: _"im dunkelmodus muss das feld für das
 helle logo heller sein, sonst kann das logo nicht korrekt dargestellt
-werden"*. In der dunklen Verwaltung stand das Hellmodus-Logo (dunkel
+werden"_. In der dunklen Verwaltung stand das Hellmodus-Logo (dunkel
 gezeichnet) auf dunklem Grund und war praktisch unsichtbar.
 
 Die Regel dahinter: **ein Logo ist für genau eine Umgebung gezeichnet.**
@@ -207,31 +206,30 @@ zusammen mit dem Grund mit.
 keine bestimmte Umgebung gezeichnet und behalten die dem Modus folgende
 Standardfläche.
 
-
 ## Update 2026-09-03 (2): Akzentfarbe in mehreren Reihen
 
-Nutzervorgabe mit Bildvorlage: *"akzentfarbe mehrere reihen, so das die
-kachel so hoch ist wie logo. nutze mehrere neue farben"*. Die Kachel stand
+Nutzervorgabe mit Bildvorlage: _"akzentfarbe mehrere reihen, so das die
+kachel so hoch ist wie logo. nutze mehrere neue farben"_. Die Kachel stand
 neben der Logo-Kachel und war mit ihrer einen Reihe halb so hoch.
 
 `ACCENT_PRESETS` umfasst jetzt 17 Farben statt vier. Die Zahl ist zweimal
-gewandert: erst hoch auf 32 (*"noch mehr farben bis unten hin"*, *"mehr
-farben"*), dann wieder herunter, als klar wurde, dass 32 Felder die Kachel
+gewandert: erst hoch auf 32 (_"noch mehr farben bis unten hin"_, _"mehr
+farben"_), dann wieder herunter, als klar wurde, dass 32 Felder die Kachel
 auf schmaleren Fenstern über die Logo-Kachel hinaus wachsen lassen
-(*"reduziere irgendwann die farben, es soll kein riesen kachel mit viel
-leeraum sein"*). 17 plus der Knopf für die eigene Farbe ergeben 18 Felder:
+(_"reduziere irgendwann die farben, es soll kein riesen kachel mit viel
+leeraum sein"_). 17 plus der Knopf für die eigene Farbe ergeben 18 Felder:
 auf breiten Kacheln zwei Reihen, auf schmalen drei – in beiden Fällen in
 der Nähe der Logo-Kachel. Wer erweitert, sollte das im Blick behalten. Sortiert nach Farbfamilie (Grün → Türkis → Blau → Violett → Rot →
 Orange/Gelb → Neutrale), damit es nicht wie eine Zufallsauswahl wirkt. Sie
 brechen in einem `flex-wrap`-Raster um und stehen darin senkrecht mittig
-(`flex-1 content-center`, Nutzervorgabe *"platziere die farben mittig in
-der höhe"* – `content-center` wirkt nur, weil der Container umbricht); der Hex-Wert steht per `mt-auto ml-auto` unten rechts statt rechts
+(`flex-1 content-center`, Nutzervorgabe _"platziere die farben mittig in
+der höhe"_ – `content-center` wirkt nur, weil der Container umbricht); der Hex-Wert steht per `mt-auto ml-auto` unten rechts statt rechts
 neben den Farben. `h-full`/`flex-1` sind von der `FormItem` bis zur Box
 durchgereicht, damit die Kachel die Höhe der Zeile auch dann mitgeht, wenn
 ihr Inhalt kürzer ist.
 
-**Beide Kacheln sind immer gleich hoch** (Nutzervorgabe: *"mach, das die
-beiden kacheln immer gleich hoch sind, bis sie umbrechen"*). Dieselbe
+**Beide Kacheln sind immer gleich hoch** (Nutzervorgabe: _"mach, das die
+beiden kacheln immer gleich hoch sind, bis sie umbrechen"_). Dieselbe
 `h-full`/`flex-1`-Kette liegt seitdem auch auf der Logo-Kachel – die
 Grid-Zellen strecken sich ohnehin auf die Zeilenhöhe, ohne die
 Durchreichung stünde die kürzere Fläche aber oben in einer zu hohen Zelle.
@@ -247,21 +245,20 @@ deshalb vorn bleiben.
 Gleichzeitig bekam die Vorschau-Fläche des Hellmodus-Logos eine eigene
 Farbe – hell genug, damit ein dunkles Logo darauf steht, aber kein
 Leuchtfeld im dunklen Formular. Über `bg-white`, `bg-neutral-200` und
-`-300` (*"der bg für helles logo dunkler"*, *"etwas dunkler"*) steht sie
+`-300` (_"der bg für helles logo dunkler"_, _"etwas dunkler"_) steht sie
 jetzt auf dem vorgegebenen `#969696` – ein fester Hex-Wert und bewusst
 keine Tailwind-Stufe, weil genau dieser Ton gewünscht war.
 
-**Nur im Dark Mode** (*"#969696 diese farbe nur im dunkelmodus, sonst wie
-vorher"*): im Light Mode bleibt es beim normalen `bg-background`, dort
+**Nur im Dark Mode** (_"#969696 diese farbe nur im dunkelmodus, sonst wie
+vorher"_): im Light Mode bleibt es beim normalen `bg-background`, dort
 stand das dunkle Logo ja nie im Weg. Anders als beim Dunkelmodus-Logo, das
 seine dunkle Fläche in BEIDEN Modi behält – hell auf hell wäre auch im
 Light Mode unlesbar.
 
-
 ## Update 2026-09-03: Festes Favicon für die Verwaltung
 
-Nutzervorgabe mit Bildvorlage: *"backend soll immer dieses favicon
-haben"*. Die Verwaltung trägt seitdem `apps/web/src/app/icon.png` (das
+Nutzervorgabe mit Bildvorlage: _"backend soll immer dieses favicon
+haben"_. Die Verwaltung trägt seitdem `apps/web/src/app/icon.png` (das
 Pivot-Zeichen, 512×512, lime auf Navy); die frühere `favicon.ico` ist
 entfallen.
 
@@ -281,7 +278,27 @@ Dateinamen. Beide Dateien nebeneinander liegen zu lassen wäre unklar
 **Für abgeleitete Installationen (strasev & Co.):** `apps/web` ist
 gemeinsamer Code, das Zeichen kommt beim nächsten Abgleich also überall an
 – und genau so ist es gewollt. Die Regel dazu, vom Nutzer bestätigt
-(2026-09-03): *"backend ist immer pivot. frontend ist individuell"*. Die
+(2026-09-03): _"backend ist immer pivot. frontend ist individuell"_. Die
 Verwaltung trägt in jeder Installation die Pivot-Marke; projekteigen ist
 allein die Frontend-Vorlage (`apps/site/src/template/*`). Marken-Dateien
 in `apps/web` also NICHT projekteigen machen.
+
+## Update 2026-09-05 (3): Darstellung Backend wirkt nur aufs Backend
+
+Nutzervorgabe: _"die akzentfarbe aus darstellung backend darf nur im
+backend angewendet werden. also alles aus Darstellung backend darf sich
+nur aufs backend auswirken"_.
+
+Betroffen war genau ein Feld: `accentColor`. Es stand in
+`PublicContentService.getSite()` und setzte auf der Website
+`--color-accent`. Beides ist entfernt – die Website bezieht ihre vier
+Akzent-Töne jetzt aus dem Manifest ihres Templates (siehe
+[template-manifest.md](./template-manifest.md)).
+
+Die übrigen Felder des Bereichs (Seitengröße, Tastenkürzel, Bewegung
+reduzieren, Sidebar eingeklappt, Tabellendichte und die beiden Logos)
+waren nie im öffentlichen Payload – die Logos der Website kommen aus
+`template/brand.ts`, nicht aus den Einstellungen.
+
+**Prüfstein für neue Felder in diesem Bereich:** taucht ein Wert in
+`getSite()` auf, gehört er nicht hierher.

@@ -57,14 +57,15 @@ export default async function RootLayout({
     templateManifest,
     site.templateSettings,
   );
-  const themeStyle = {
-    ...templateCssVars(templateManifest, templateValues),
-    // Die Akzentfarbe bleibt bewusst eine eigene Einstellung
-    // (`AppSettings.accentColor`, auch in der Verwaltung sichtbar) und
-    // steht NICHT im Manifest: sie gäbe es sonst zweimal. Sie kommt
-    // zuletzt und sticht damit einen gleichnamigen Template-Wert.
-    ...(site.accentColor ? { "--color-accent": site.accentColor } : {}),
-  } as CSSProperties;
+  // Nur Werte aus dem Manifest DIESES Templates. Die Akzentfarbe unter
+  // Einstellungen → Darstellung Backend wirkt bewusst NICHT mehr hierher
+  // (Nutzervorgabe, 2026-09-05: "alles aus Darstellung Backend darf sich
+  // nur aufs backend auswirken") – die Website hat ihre eigene, im
+  // Manifest deklarierte Akzentfarbe.
+  const themeStyle = templateCssVars(
+    templateManifest,
+    templateValues,
+  ) as CSSProperties;
 
   return (
     <html

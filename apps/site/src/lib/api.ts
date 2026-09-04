@@ -49,7 +49,6 @@ export interface SiteSettings {
   defaultSeoDescription: string | null;
   defaultOgImageUrl: string | null;
   publicBaseUrl: string | null;
-  accentColor: string | null;
   companyName: string | null;
   // Steuern die Zwischenspeicherung DIESER Website, siehe getCacheConfig().
   frontendCacheEnabled: boolean;
@@ -197,7 +196,6 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       defaultSeoDescription: null,
       defaultOgImageUrl: null,
       publicBaseUrl: null,
-      accentColor: null,
       companyName: null,
       frontendCacheEnabled: true,
       frontendCacheTtlSeconds: 60,

@@ -111,6 +111,47 @@ export const templateManifest: TemplateManifest = {
       default: "#ebebe6",
       cssVar: "--color-border",
     },
+    // Die Akzentfarbe der WEBSITE steht seit 2026-09-05 hier und nicht
+    // mehr in den Einstellungen: "alles aus Darstellung Backend darf sich
+    // nur aufs backend auswirken" (Nutzervorgabe). Die vier Töne gehören
+    // zusammen – wer den Akzent auf ein dunkles Blau stellt, braucht auch
+    // eine helle Schrift darauf, sonst ist der Knopf unlesbar.
+    {
+      key: "colorAccent",
+      type: "color",
+      label: "Akzent",
+      description: "Knöpfe und Hervorhebungen.",
+      group: "Farben",
+      default: "#c6e86a",
+      cssVar: "--color-accent",
+    },
+    {
+      key: "colorAccentStrong",
+      type: "color",
+      label: "Akzent beim Überfahren",
+      group: "Farben",
+      default: "#b7dd54",
+      cssVar: "--color-accent-strong",
+    },
+    {
+      key: "colorAccentInk",
+      type: "color",
+      label: "Schrift auf Akzentfläche",
+      description:
+        "Muss zum Akzent passen: auf hellem Lime eine dunkle Schrift, auf dunklem Grund eine helle.",
+      group: "Farben",
+      default: "#0e1116",
+      cssVar: "--color-accent-ink",
+    },
+    {
+      key: "colorAccentLink",
+      type: "color",
+      label: "Linkfarbe",
+      description: "Links im Text und im Menü beim Überfahren.",
+      group: "Farben",
+      default: "#5c7a12",
+      cssVar: "--color-accent-link",
+    },
     {
       key: "colorSurfaceDark",
       type: "color",

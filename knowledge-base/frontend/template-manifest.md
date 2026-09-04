@@ -7,18 +7,18 @@
 
 Die Verwaltung ist für alle Installationen dieselbe, das Frontend-Template
 ist pro Projekt ein anderes (siehe die Regel in
-[display-tab-appearance.md](./display-tab-appearance.md): *"backend ist
-immer pivot. frontend ist individuell"*). Trotzdem standen die
+[display-tab-appearance.md](./display-tab-appearance.md): _"backend ist
+immer pivot. frontend ist individuell"_). Trotzdem standen die
 Gestaltungswerte des Templates – Inhaltsbreite, Farben, Verhalten des
 Kopfbereichs – als feste Hex-Werte in `apps/site/src/app/globals.css`, und
 jede neue Einstellung hätte eine neue Spalte plus Formularfeld in
 `apps/web` gebraucht. Für ein zweites Projekt mit anderen Werten wäre das
 nicht aufgegangen.
 
-Nutzervorgabe dazu (2026-09-05): *"ich möchte eine komplett individuelle
+Nutzervorgabe dazu (2026-09-05): _"ich möchte eine komplett individuelle
 mechanik, mit der ich individuell für jedes template eigene bedingungen
 anlegen kann. ich möchte nichts starres bauen, das nur für pivot geht.
-beim frontend muss das für jedes template, egal wie es aussieht, gehen."*
+beim frontend muss das für jedes template, egal wie es aussieht, gehen."_
 
 ## Die Lösung: das Template beschreibt sich selbst
 
@@ -48,12 +48,12 @@ GET  /public/site  →  layout.tsx       CSS-Variablen auf <html>
 
 ## Die vier Dateien
 
-| Datei | Rolle |
-| --- | --- |
-| `packages/blocks/src/template-manifest.ts` | Das Vokabular: Feldtypen, Bereichsform, `resolveTemplateSettings()`, `templateCssVars()`. Von beiden Apps benutzt. |
-| `apps/site/src/template/manifest.ts` | **Projekteigen.** Was DIESES Template hat. |
-| `apps/site/src/app/api/template/route.ts` | Gibt das Manifest als JSON aus (`force-static`). |
-| `apps/web/src/components/template-settings-fields.tsx` | Der generische Renderer unter Einstellungen → Frontend → Darstellung. |
+| Datei                                                  | Rolle                                                                                                              |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `packages/blocks/src/template-manifest.ts`             | Das Vokabular: Feldtypen, Bereichsform, `resolveTemplateSettings()`, `templateCssVars()`. Von beiden Apps benutzt. |
+| `apps/site/src/template/manifest.ts`                   | **Projekteigen.** Was DIESES Template hat.                                                                         |
+| `apps/site/src/app/api/template/route.ts`              | Gibt das Manifest als JSON aus (`force-static`).                                                                   |
+| `apps/web/src/components/template-settings-fields.tsx` | Der generische Renderer unter Einstellungen → Frontend → Darstellung.                                              |
 
 ## Was starr ist – und warum es das sein muss
 
@@ -85,10 +85,14 @@ Bausteine.
   CSS-Variable auf `<html>`; alles andere (Schalter, Auswahl) liest das
   Template selbst aus `site.templateSettings` – so wie
   `headerSticky`/`headerStyle` im `SiteHeader`.
-- **Die Akzentfarbe steht bewusst NICHT im Manifest.** Sie ist eine eigene
-  Einstellung (`AppSettings.accentColor`) und gäbe es sonst zweimal. Im
-  Layout wird sie zuletzt gesetzt und sticht damit einen gleichnamigen
-  Template-Wert.
+- **Die Akzentfarbe der Website steht im Manifest, die des Backends in den
+  Einstellungen.** Getrennt, seit die Trennlinie gezogen wurde
+  (Nutzervorgabe, 2026-09-05): _"alles aus Darstellung Backend darf sich
+  nur aufs backend auswirken"_. `AppSettings.accentColor` wird deshalb gar
+  nicht mehr an die Website ausgeliefert – das Feld ist aus
+  `/public/site` entfernt. Im Manifest hängen die vier Akzent-Töne
+  zusammen (Akzent, Hover, Schrift darauf, Linkfarbe): wer den Akzent auf
+  ein dunkles Blau stellt, braucht auch eine helle Schrift darauf.
 - **Kein Manifest ist kein Fehler.** Läuft die Website nicht oder bringt
   ein Template keins mit, antwortet die Verwaltungs-Route mit
   `{ manifest: null }` und die Oberfläche zeigt einen Hinweis. Der Rest
