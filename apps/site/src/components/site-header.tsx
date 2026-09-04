@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { cn } from "@pivot/blocks";
 
@@ -64,6 +65,7 @@ export function SiteHeader({
   navigation,
   sticky = true,
   style = "blur",
+  children,
 }: {
   siteTitle: string | null;
   navigation: SiteNavigation | null;
@@ -73,6 +75,13 @@ export function SiteHeader({
    * von vorher – ohne gespeicherte Werte ändert sich nichts. */
   sticky?: boolean;
   style?: "blur" | "solid";
+  /**
+   * Inhalt des Bereichs "Kopfbereich" aus dem Designer (Stufe 2,
+   * 2026-09-05). Ist er gefüllt, ersetzt er Logo/Menü/Knöpfe – der Rahmen
+   * (Kleben, Weichzeichnen, Höhenmessung) bleibt in jedem Fall dieser
+   * Komponente, weil Bausteine kein Verhalten haben.
+   */
+  children?: ReactNode;
 }) {
   const items = navigation?.items ?? [];
   const links = items.filter((item) => item.appearance === "LINK");
@@ -91,27 +100,36 @@ export function SiteHeader({
       )}
     >
       <HeaderHeightSync />
-      <div className="mx-auto flex w-full max-w-[var(--content-width,1180px)] flex-wrap items-center gap-x-8 gap-y-3 px-6 py-3.5 sm:px-8">
-        <Link href="/" className="mr-auto flex items-center">
-          <SiteLogo variant="light" siteTitle={siteTitle} priority />
-        </Link>
+      {children ? (
+        // Bausteine aus dem Bereich "Kopfbereich" – sie bestimmen den
+        // Aufbau vollständig, deshalb keine eingebaute Bahn drumherum
+        // außer der Breitenbegrenzung.
+        <div className="mx-auto w-full max-w-[var(--content-width,1180px)] px-6 sm:px-8">
+          {children}
+        </div>
+      ) : (
+        <div className="mx-auto flex w-full max-w-[var(--content-width,1180px)] flex-wrap items-center gap-x-8 gap-y-3 px-6 py-3.5 sm:px-8">
+          <Link href="/" className="mr-auto flex items-center">
+            <SiteLogo variant="light" siteTitle={siteTitle} priority />
+          </Link>
 
-        {links.length > 0 && (
-          <nav className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            {links.map((item) => (
-              <NavLink key={item.id} item={item} />
-            ))}
-          </nav>
-        )}
+          {links.length > 0 && (
+            <nav className="flex flex-wrap items-center gap-x-6 gap-y-2">
+              {links.map((item) => (
+                <NavLink key={item.id} item={item} />
+              ))}
+            </nav>
+          )}
 
-        {actions.length > 0 && (
-          <div className="flex items-center gap-3">
-            {actions.map((item) => (
-              <NavLink key={item.id} item={item} />
-            ))}
-          </div>
-        )}
-      </div>
+          {actions.length > 0 && (
+            <div className="flex items-center gap-3">
+              {actions.map((item) => (
+                <NavLink key={item.id} item={item} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </header>
   );
 }

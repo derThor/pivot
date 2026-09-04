@@ -1054,6 +1054,45 @@ model ModuleType {
 // Request live aufgelöst (siehe apps/web BlockEditorField/BlockFieldOutput
 // `resolveInstanceValues`), nicht als Kopie in die einbindenden Seiten
 // geschrieben – Änderungen wirken sich dadurch sofort überall aus.
+/// Inhalt eines Bereichs, den das Frontend-Template deklariert hat
+/// (Kopfbereich, Fußbereich, Aktionsband … – siehe `regions` im Manifest,
+/// apps/site/src/template/manifest.ts). Stufe 2 der Template-Mechanik,
+/// Nutzervorgabe 2026-09-05: *"können wir das bausteinmäßig machen … also
+/// sowas wie header content und footer"*.
+///
+/// Ein Bereich ist inhaltlich dasselbe wie eine Seite: eine Liste von
+/// Bausteinen unter `data.blocks`, gerendert vom selben Renderer.
+///
+/// **Warum ein eigenes Modell und kein `Content` mit eigenem Typ:** eine
+/// Seite hat Slug, Status, Kategorien, SEO-Felder, Versionen und einen
+/// Papierkorb – für einen Bereich ist davon nichts sinnvoll (er hat keine
+/// eigene URL und wird nicht "veröffentlicht", er ist einfach da). Ein
+/// Content-Datensatz mit einem Dutzend bedeutungsloser Spalten wäre eine
+/// Einladung zu Fehlern, etwa einem Bereich im Papierkorb.
+///
+/// Der Preis: keine Versionshistorie für Bereiche. Bewusst – siehe
+/// knowledge-base/frontend/template-manifest.md.
+model TemplateRegionContent {
+  id String @id @default(cuid())
+
+  /// Schlüssel aus dem Manifest (`header`, `footer`, …). Eindeutig: pro
+  /// Installation gibt es genau EINEN Inhalt je Bereich.
+  ///
+  /// Steht ein Schlüssel hier, den das Manifest (nicht mehr) kennt, wird
+  /// er nirgends gerendert, aber auch nicht gelöscht – dasselbe Prinzip
+  /// wie bei den Template-Einstellungen.
+  key String @unique
+
+  /// Bausteine des Bereichs, gleiche Form wie `Content.data`
+  /// (`{ blocks: ModuleInstance[] }`).
+  data Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("template_region_contents")
+}
+
 model GlobalModule {
   id          String    @id @default(cuid())
   name        String

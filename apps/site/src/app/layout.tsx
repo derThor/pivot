@@ -5,11 +5,17 @@ import {
   resolveTemplateSettings,
   templateCssVars,
 } from "@pivot/blocks";
-import { getSiteSettings } from "@/lib/api";
+import {
+  getBlockContext,
+  getSiteSettings,
+  getTemplateRegions,
+  regionBlocks,
+} from "@/lib/api";
 import { fontVariables } from "@/template/fonts";
 import { templateManifest } from "@/template/manifest";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { TemplateRegion } from "@/components/template-region";
 import "./globals.css";
 
 // Siehe REVALIDATE_SECONDS in lib/api.ts – hier bewusst als Literal, weil
@@ -48,7 +54,17 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
-  const site = await getSiteSettings();
+  // Bereiche des Templates (Stufe 2, 2026-09-05): sind Bausteine
+  // hinterlegt, ersetzen sie die eingebaute Fassung von Kopf- bzw.
+  // Fußbereich. Leer = eingebaute Fassung, damit eine bestehende Website
+  // durch das Einführen der Mechanik unverändert bleibt.
+  const [site, regions, blockContext] = await Promise.all([
+    getSiteSettings(),
+    getTemplateRegions(),
+    getBlockContext(),
+  ]);
+  const headerBlocks = regionBlocks(regions.header);
+  const footerBlocks = regionBlocks(regions.footer);
   // Die Gestaltungswerte dieses Templates: was das Manifest deklariert,
   // gemischt mit dem, was in den Einstellungen gespeichert ist (2026-09-05).
   // Alles mit `cssVar` landet als CSS-Variable auf <html> – das Template
@@ -90,7 +106,18 @@ export default async function RootLayout({
           // bekommen (siehe template-manifest.ts).
           sticky={templateValues.headerSticky !== false}
           style={templateValues.headerStyle === "solid" ? "solid" : "blur"}
-        />
+        >
+          {/* Sind im Bereich "Kopfbereich" Bausteine hinterlegt, füllen sie
+              den Balken – sonst bleibt die eingebaute Fassung (Logo, Menü,
+              Handlungsaufrufe) stehen. */}
+          {headerBlocks.length > 0 ? (
+            <TemplateRegion
+              data={regions.header!.data}
+              moduleTypes={blockContext.moduleTypes}
+              globalModules={blockContext.globalModules}
+            />
+          ) : null}
+        </SiteHeader>
 
         {/* Der Inhalt kommt vollständig aus dem Seiten-Designer
             (Nutzervorgabe, 2026-09-02: "alle Inhalte sollen über den
@@ -117,7 +144,22 @@ export default async function RootLayout({
           {children}
         </main>
 
-        <SiteFooter site={site} legalLinks={site.legalLinks} />
+        {/* Fußbereich: gepflegte Bausteine schlagen die eingebaute
+            Fassung. Anders als beim Kopfbereich braucht es hier keinen
+            Rahmen mit Verhalten – nur die dunkle Fläche und die Bahn. */}
+        {footerBlocks.length > 0 ? (
+          <footer className="bg-surface-dark text-surface-dark-foreground">
+            <div className="mx-auto w-full max-w-[var(--content-width,1180px)] px-6 py-14 sm:px-8">
+              <TemplateRegion
+                data={regions.footer!.data}
+                moduleTypes={blockContext.moduleTypes}
+                globalModules={blockContext.globalModules}
+              />
+            </div>
+          </footer>
+        ) : (
+          <SiteFooter site={site} legalLinks={site.legalLinks} />
+        )}
       </body>
     </html>
   );

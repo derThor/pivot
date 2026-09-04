@@ -58,7 +58,7 @@ Details: [rbac-rework.md](../knowledge-base/auth/rbac-rework.md),
 
 - [x] Content bearbeiten (Edit-Formular für bestehende Einträge; Backend
       `PATCH /content/:id` existiert bereits) und löschen (`DELETE
-    /content/:id` existiert bereits) im Frontend nutzen
+  /content/:id` existiert bereits) im Frontend nutzen
 - [x] Medien bearbeiten (Alt-Text ändern) und löschen – Backend-Endpoint
       `DELETE /media/:id` fehlt noch komplett, nicht nur die UI
 - [x] Benutzer vollständig bearbeiten (Name/E-Mail/Aktiv-Status, nicht nur
@@ -95,7 +95,7 @@ Details: [rbac-rework.md](../knowledge-base/auth/rbac-rework.md),
 - [x] Rich-Text/Block-Editor für Content-Body (Tiptap Core + StarterKit,
       HTML-String-Ausgabe)
 - [x] Versions-Diff & Rollback-UI (`GET /content/:id/versions`, `POST
-    .../rollback`) – seit dem Redesign (2026-08-30) als Liste+Detail-
+  .../rollback`) – seit dem Redesign (2026-08-30) als Liste+Detail-
       Explorer (Sidebar + Vorschau-/Änderungen-Tabs), Feld-Diff
       standardmäßig gegen die direkte Vorversion statt gegen den
       aktuellen Stand, echte Status-/Sicherung-Badges über neue
@@ -140,7 +140,7 @@ Details: [rich-text-and-versioning.md](../knowledge-base/content/rich-text-and-v
 - [x] Autosave während der Bearbeitung – lokal im Browser
       (`localStorage`), debounced 1.5s nach Änderung, admin-abschaltbar
       über `Einstellungen → Zugriff & Funktionen → Autosave im
-    Content-Editor` (2026-08-06)
+  Content-Editor` (2026-08-06)
 - [x] Wiederherstellung nicht gespeicherter Entwürfe – Banner beim
       Öffnen eines Inhalts, falls ein neuerer lokaler Entwurf existiert
       (Wiederherstellen/Verwerfen) (2026-08-06)
@@ -527,7 +527,7 @@ platzierten "2FA"-Spalte in der Benutzer-Tabelle.
       `canAccessDashboard` = mind. eine Rolle erlaubt es;
       `CreateUserDto`/`UpdateUserDto` nutzen `roleIds: string[]`
 - [x] Backend: Sitzungs-Endpoints (2026-08-16) – `GET/DELETE
-    /users/:id/sessions`, `POST /users/:id/sessions/revoke-others`,
+  /users/:id/sessions`, `POST /users/:id/sessions/revoke-others`,
       `RefreshToken.userAgent`/`ipAddress`, `summarizeUserAgent()`
 - [x] Backend: `PATCH /users/:id` um `department`/`phone`/`roleIds`/
       `mustChangePassword` erweitert (2026-08-16)
@@ -558,14 +558,14 @@ platzierten "2FA"-Spalte in der Benutzer-Tabelle.
       [user-activity-log.md](../knowledge-base/auth/user-activity-log.md).
 
       **Laufende Konvention (Nutzervorgabe 2026-08-17):** jede künftige
-          Aktion, die für einen Nutzer relevant ist (neue Sicherheits-Funktion,
-          neue Content-/Medien-Aktion, neue Admin-Aktion an einem Konto),
-          bekommt beim Bauen einen passenden `AuditLogService.record()`-Aufruf
-          UND einen zugehörigen Fall in
-          `apps/web/src/components/user-activity-timeline.tsx`s
-          `describeActivity()` – die Zeitleiste soll nicht stillschweigend
-          hinter neuen Features zurückbleiben. Bei jedem neuen Feature mit
-          einer nutzerbezogenen Aktion kurz prüfen, ob es hier reingehört.
+              Aktion, die für einen Nutzer relevant ist (neue Sicherheits-Funktion,
+              neue Content-/Medien-Aktion, neue Admin-Aktion an einem Konto),
+              bekommt beim Bauen einen passenden `AuditLogService.record()`-Aufruf
+              UND einen zugehörigen Fall in
+              `apps/web/src/components/user-activity-timeline.tsx`s
+              `describeActivity()` – die Zeitleiste soll nicht stillschweigend
+              hinter neuen Features zurückbleiben. Bei jedem neuen Feature mit
+              einer nutzerbezogenen Aktion kurz prüfen, ob es hier reingehört.
 
 - [x] Frontend: 2FA-Toggle im Tab "Zugang & Sicherheit" als deaktivierter
       Platzhalter-Switch (2026-08-16; echte Umsetzung folgt separat in
@@ -764,7 +764,7 @@ für Details. Zwei Folgevorhaben dabei zunächst vom Nutzer als
       backend und frontend. frontend ist die webseite für den
       endanwender und nicht die oberfläche des backends" → Dashboard-UI
       war gemeint, kein separates öffentliches Frontend): `POST
-    /deletion-requests/self-service` (ohne `@RequirePermission`,
+  /deletion-requests/self-service` (ohne `@RequirePermission`,
       jeder eingeloggte Nutzer; Name/E-Mail aus dem eigenen Konto,
       `linkedUserId` sofort gesetzt) + Karte "Meine Daten" in Mein
       Konto → Sicherheit (`self-service-request-card.tsx`).
@@ -774,7 +774,7 @@ für Details. Zwei Folgevorhaben dabei zunächst vom Nutzer als
       hängt unter jedem Formular auf der Website, sichtbar nur bei
       Datenschutz → Betroffenenrechte → "Selbstauskunft im Formular-Footer
       anbieten". `POST /deletion-requests/public` (`@Public()`, auf 3
-      Anfragen/Minute gedrosselt) legt eine Anfrage vom Typ *Auskunft* mit
+      Anfragen/Minute gedrosselt) legt eine Anfrage vom Typ _Auskunft_ mit
       Quelle "Selbstauskunft (Formular)" an – ohne `linkedUserId` und
       **ohne jede Datenausgabe**: wer hier abfragt, hat sich nicht
       ausgewiesen, und schon ein "zu dieser Adresse liegt nichts vor" wäre
@@ -924,11 +924,12 @@ Architektur, Entscheidungen und Stolpersteine:
       daraus generisch. Werte in `AppSettings.templateSettings` (Json),
       Farben/Größen landen als CSS-Variablen auf `<html>`. Details und
       die bewussten Grenzen: knowledge-base/frontend/template-manifest.md
-- [ ] Template-Manifest Stufe 2: Bereiche mit Bausteinen füllen –
-      Kopf-/Fußbereich (und was ein Template sonst deklariert) als
-      Baustein-Sammlung im vorhandenen Designer statt als React-Code.
-      Braucht Bausteine für Logo, Menü und Knopf sowie einen Rahmen, der
-      das Verhalten behält (Kleben, Burger-Menü, `--header-height`)
+- [~] Template-Manifest Stufe 2: Bereiche mit Bausteinen füllen
+  (2026-09-05) – Mechanismus steht: Inhalte → Bereiche, eigener
+  Endpunkt, eigenes Modell, gefüllter Bereich ersetzt die eingebaute
+  Fassung von Kopf-/Fußbereich. OFFEN: Bausteine für Logo, Menü und
+  Knopf (dafür braucht das Baustein-Schema ein `navigation`-Feld),
+  Burger-Menü im Rahmen, Warnung bei fehlendem Pflicht-Baustein
 - [x] Abstand einer Seite am Menüpunkt (2026-09-03) – im Bearbeiten-Dialog
       jedes Menüpunkts, unabhängig vom Ziel: "Abstand der Seite" mit den
       Reitern Mobil/Tablet/Desktop und je einem Wert oben und unten. Wirkt
@@ -1041,7 +1042,7 @@ Plan inkl. Token-Design, Sicherheitsüberlegungen und offenen Punkten:
 - [x] `Website`-Datenmodell (`packages/database/prisma/schema.prisma`)
 - [x] Token-Ausstellung: `POST /license/check` (Pull-Endpunkt, Site-API-Key-
       Auth, Ed25519-Signierung über `apps/api/src/websites/
-    license-token.util.ts`, generischer 401 für unbekannte Domain/falschen
+  license-token.util.ts`, generischer 401 für unbekannte Domain/falschen
       Key, monotoner `seq`-Zähler) – live gegen echte Requests verifiziert
       (korrekter/falscher Key, unbekannte Domain, Signaturprüfung,
       Manipulationserkennung, `seq`-Inkrement, Statuswechsel, Validierung,

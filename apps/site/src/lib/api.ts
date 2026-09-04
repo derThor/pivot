@@ -384,6 +384,42 @@ export async function getBlockContext() {
   };
 }
 
+/** Inhalt eines Template-Bereichs (Kopfbereich, Fußbereich, …) – dieselbe
+ * Form wie `Content.data`: eine Liste von Bausteinen. */
+export interface TemplateRegionContent {
+  key: string;
+  data: Record<string, unknown>;
+  updatedAt: string | null;
+}
+
+/**
+ * Alle im Backend gepflegten Bereiche, als Karte nach Schlüssel.
+ *
+ * Ein Bereich ohne Eintrag (oder mit leerer Baustein-Liste) ist der
+ * Normalfall, solange niemand ihn bearbeitet hat – das Template zeigt dann
+ * seine eingebaute Fassung. Erst wenn Bausteine drin sind, übernimmt der
+ * Bereich (siehe layout.tsx). So bleibt eine bestehende Website beim
+ * Einführen dieser Mechanik unverändert.
+ */
+export async function getTemplateRegions(): Promise<
+  Record<string, TemplateRegionContent>
+> {
+  const regions = await getJson<TemplateRegionContent[]>(
+    "/public/template-regions",
+  );
+  return Object.fromEntries(
+    (regions ?? []).map((region) => [region.key, region]),
+  );
+}
+
+/** Die Bausteine eines Bereichs – leer, wenn er nie bearbeitet wurde. */
+export function regionBlocks(
+  region: TemplateRegionContent | undefined,
+): unknown[] {
+  const blocks = (region?.data as { blocks?: unknown[] } | undefined)?.blocks;
+  return Array.isArray(blocks) ? blocks : [];
+}
+
 /** Absolute URL für canonical/OG – ohne gepflegte `publicBaseUrl` gibt es
  * keine gültige absolute URL, dann bleibt das Feld bewusst leer statt eine
  * Domain zu erfinden (gleiches Prinzip wie bei Sitemap/RSS). */

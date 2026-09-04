@@ -15,6 +15,7 @@ import { Public } from '../auth/decorators/public.decorator';
 import { PublicContentService } from './public-content.service';
 import { GlobalModulesService } from '../global-modules/global-modules.service';
 import { SiteCacheService } from '../site-cache/site-cache.service';
+import { TemplateRegionsService } from '../template-regions/template-regions.service';
 
 /** Content-Delivery-API für die öffentliche Website ("Frontend", siehe
  * knowledge-base/frontend/taxonomy-management.md, Update 2026-08-31 –
@@ -29,6 +30,7 @@ export class PublicContentController {
     private readonly publicContentService: PublicContentService,
     private readonly globalModulesService: GlobalModulesService,
     private readonly siteCache: SiteCacheService,
+    private readonly templateRegions: TemplateRegionsService,
   ) {}
 
   @Public()
@@ -53,6 +55,16 @@ export class PublicContentController {
   @Get('global-modules')
   getGlobalModules() {
     return this.globalModulesService.findAll();
+  }
+
+  /** Inhalte der Template-Bereiche (Kopfbereich, Fußbereich, …) für die
+   * Website. Öffentlich aus demselben Grund wie die globalen Module: sie
+   * stehen auf jeder ausgelieferten Seite und dürfen nicht von einer
+   * Anmeldung abhängen. */
+  @Public()
+  @Get('template-regions')
+  getTemplateRegions() {
+    return this.templateRegions.findAll();
   }
 
   // Startseite: der Inhalt des Menüpunkts, der im Backend als Startseite

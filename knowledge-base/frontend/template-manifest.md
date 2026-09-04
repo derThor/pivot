@@ -1,7 +1,8 @@
 # Template-Manifest: Frontend-Einstellungen ohne Code in der Verwaltung
 
-**Stand:** 2026-09-05, Stufe 1 (Einstellungen) umgesetzt, Stufe 2
-(Bereiche) geplant.
+**Stand:** 2026-09-05 – Stufe 1 (Einstellungen) und der Mechanismus von
+Stufe 2 (Bereiche) sind umgesetzt; die Bausteine für Kopf/Fuß fehlen noch,
+siehe unten.
 
 ## Das Problem
 
@@ -117,3 +118,68 @@ haben kein Verhalten.
   "später".
 - Neue Feldtypen gehören ins Vokabular in `packages/blocks`, nicht in
   einen Sonderzweig im Renderer.
+
+## Stufe 2: Bereiche mit Bausteinen füllen (2026-09-05)
+
+Umgesetzt ist der Mechanismus, noch nicht die Bausteine, die einen
+Kopfbereich wirklich brauchbar machen (Logo, Menü, Knopf – siehe „Was noch
+fehlt“ unten).
+
+### Der Weg eines Bereichs
+
+```
+manifest.regions[]              das Template sagt, welche es gibt
+      │
+      ▼
+Inhalte → Bereiche              Liste links, Designer rechts
+      │                         (regions-explorer.tsx)
+      ▼
+PUT /template-regions/:key      Bausteine als { blocks: [...] }
+      │
+      ▼
+TemplateRegionContent (DB)      key @unique, data Json
+      │
+      ▼
+GET /public/template-regions    öffentlich, wie die globalen Module
+      │
+      ▼
+layout.tsx                      Bereich gefüllt → ersetzt die eingebaute
+                                Fassung; leer → alles bleibt wie bisher
+```
+
+### Entscheidungen
+
+- **Eigenes Modell statt `Content` mit eigenem Typ.** Eine Seite hat Slug,
+  Status, Kategorien, SEO, Versionen und Papierkorb – für einen Bereich
+  ist davon nichts sinnvoll. Preis: **keine Versionshistorie** für
+  Bereiche. Bewusst, weil ein Bereich klein ist und selten geändert wird;
+  wenn das drückt, ist es nachrüstbar.
+- **Die API prüft NICHT gegen das Manifest.** Sie kennt es nicht (es lebt
+  im Frontend) und verwahrt nur Bausteine unter einem Schlüssel. Ein
+  Bereich, den das Manifest nicht mehr kennt, bleibt liegen statt gelöscht
+  zu werden – wie bei den Einstellungen.
+- **Leer heißt „eingebaute Fassung“.** Erst wenn Bausteine drin sind,
+  übernimmt der Bereich. Dadurch ändert das Einführen der Mechanik an
+  einer bestehenden Website exakt nichts, und ein versehentlich geleerter
+  Bereich macht die Website nicht kopflos.
+- **Der Rahmen bleibt Code.** `SiteHeader` behält Kleben, Weichzeichnen und
+  die Höhenmessung (`--header-height`) und nimmt die Bausteine als
+  `children`. Bausteine haben kein Verhalten – ein per Baustein gebautes
+  Burger-Menü gibt es nicht.
+- **Rechte:** `content:read` / `content:update`, kein eigenes Recht. Wer
+  Seiten baut, gestaltet auch Kopf und Fuß (gleiche Überlegung wie bei der
+  Palette-Reihenfolge). Ein eigenes Recht ließe sich später ergänzen, ohne
+  dass sich an den Endpunkten etwas ändert.
+
+### Was noch fehlt
+
+1. **Bausteine für Kopf und Fuß**: Logo, Menü (rendert eine gewählte
+   Navigation), Knopf, Footer-Menüspalte, Rechtstexte-Liste. Ohne sie
+   lassen sich Bereiche nur mit den vorhandenen Inhalts-Bausteinen füllen
+   – für einen Fußbereich reicht das knapp, für einen Kopfbereich nicht.
+   Dafür braucht der Baustein-Schema-Typ ein Feld `navigation`, das es
+   heute nur im Template-Manifest gibt.
+2. **Burger-Menü auf dem Handy** – gehört in den Rahmen, nicht in die
+   Bausteine.
+3. **Leitplanken**: Warnung, wenn ein `required`-Baustein fehlt (die
+   Oberfläche zeigt den Hinweis, prüft aber nicht den Inhalt).

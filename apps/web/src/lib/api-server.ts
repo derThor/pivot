@@ -1,3 +1,4 @@
+import type { TemplateManifest } from "@pivot/blocks";
 import { cookies } from "next/headers";
 import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "./auth";
 import type { SearchResult } from "./search";
@@ -1896,4 +1897,43 @@ export interface AppNotification {
 
 export function getNotifications() {
   return apiFetch<AppNotification[]>("/notifications");
+}
+
+/**
+ * Das Manifest des Frontend-Templates dieser Installation – serverseitig,
+ * für Seiten, die die Bereichsliste schon beim Rendern brauchen
+ * (Inhalte → Bereiche).
+ *
+ * Die Staffelung der Adresse entspricht `resolveSiteBaseUrl` in
+ * `lib/site-base-url.ts`, kommt hier aber ohne `Request` aus: gepflegte
+ * Basis-URL, sonst `SITE_URL`, sonst der Entwicklungs-Port. Der letzte
+ * Schritt dort (gleiche Origin) entfällt – ohne Request gibt es keine.
+ *
+ * `null` ist kein Fehler: die Website kann gerade nicht laufen, oder ihr
+ * Template bringt kein Manifest mit. Die Seite zeigt dann einen Hinweis.
+ */
+export async function getTemplateManifest(): Promise<TemplateManifest | null> {
+  const settings = await getPublicSettings();
+  const base =
+    settings?.publicBaseUrl?.replace(/\/+$/, "") ||
+    process.env.SITE_URL?.replace(/\/+$/, "") ||
+    (process.env.NODE_ENV !== "production" ? "http://localhost:3002" : null);
+  if (!base) return null;
+  try {
+    const res = await fetch(`${base}/api/template`, { cache: "no-store" });
+    if (!res.ok) return null;
+    return (await res.json()) as TemplateManifest;
+  } catch {
+    return null;
+  }
+}
+
+/** Bausteine eines Bereichs (`{ blocks: [...] }`), leer wenn nie
+ * bearbeitet. */
+export async function getTemplateRegion(key: string) {
+  return apiFetch<{
+    key: string;
+    data: Record<string, unknown>;
+    updatedAt: string | null;
+  }>(`/template-regions/${encodeURIComponent(key)}`);
 }

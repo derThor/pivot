@@ -26,6 +26,7 @@ import {
   Trash2,
   ClipboardList,
   Inbox,
+  LayoutTemplate,
   Server,
   Globe,
   Blocks,
@@ -279,6 +280,17 @@ export const navGroups = [
         url: "/dashboard/navigation",
         icon: Compass,
         permission: "navigation:read",
+      },
+      {
+        // Bereiche des Frontend-Templates (Kopf-/Fußbereich …), gefüllt
+        // mit Bausteinen. Bewusst unter INHALTE und nicht unter
+        // Einstellungen: es ist redaktionelle Arbeit im Designer, keine
+        // Konfiguration. Recht: `content:read` – wer Seiten baut,
+        // gestaltet auch Kopf und Fuß (siehe TemplateRegionsController).
+        title: "Bereiche",
+        url: "/dashboard/regions",
+        icon: LayoutTemplate,
+        permission: "content:read",
       },
       {
         title: "Papierkorb",
