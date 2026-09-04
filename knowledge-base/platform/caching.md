@@ -164,3 +164,28 @@ Auch die API fällt in der Entwicklung auf `http://localhost:3002` zurück
 und würde sonst die Website der **ersten** Installation leeren. strasev
 setzt deshalb `SITE_URL=http://localhost:3012` – seit 2026-09-03 in
 `apps/api/.env` **und** `apps/web/.env.local`, denn beide Seiten stoßen an.
+
+### Was bewusst KEINEN Auslöser hat: Formulare
+
+Nutzerfrage, 2026-09-04, nach einer falschen Einschätzung von mir
+("Formulare haben keinen Auslöser, soll ich das nachrüsten?"). Nachgesehen:
+**es gibt nichts nachzurüsten**, und ein Auslöser wäre sogar schädlich –
+er würde bei jeder Formularänderung den gesamten Website-Cache wegwerfen,
+ohne dass sich an der Sache etwas ändert.
+
+Formulare liegen nämlich gar nicht im Cache. `PublicForm`
+(`apps/site/src/components/public-form.tsx`) ist eine **Client**-Komponente
+und holt die Definition erst im Browser über
+`/api/forms/public/[id]` – und diese Route läuft mit `cache: "no-store"`.
+Sie existiert nur, weil die API per `CORS_ORIGIN` genau eine Herkunft
+erlaubt: ein Durchreicher, kein Zwischenspeicher. Eine Feldänderung ist
+deshalb beim nächsten Laden sofort sichtbar.
+
+Im Cache liegt nur die Seite drumherum mit der Referenz auf das Formular
+(`formId` im Baustein). Welches Formular eine Seite einbindet, ist eine
+Inhaltsänderung – und die stößt die Invalidierung ohnehin an.
+
+**Merksatz für die Suche nach weiteren Lücken:** die Frage ist nicht "wird
+das Ding auf der Website angezeigt?", sondern "wird es SERVERSEITIG
+gerendert oder mit `next: { revalidate }` geladen?". Alles, was der Browser
+selbst nachlädt, braucht keinen Auslöser.
