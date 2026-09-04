@@ -19,7 +19,10 @@ import {
   type GlobalModule,
 } from "@pivot/blocks";
 import { PublicForm } from "@/components/public-form";
-import type { ModuleType } from "@/lib/api";
+import Link from "next/link";
+import { NavMenu } from "@/components/nav-menu";
+import { SiteLogo } from "@/components/site-logo";
+import type { ModuleType, SiteNavigation } from "@/lib/api";
 
 interface ModuleInstance {
   id: string;
@@ -56,10 +59,17 @@ export function ContentBlocks({
   data,
   moduleTypes,
   globalModules,
+  navigations,
+  siteTitle,
 }: {
   data: Record<string, unknown>;
   moduleTypes: ModuleType[];
   globalModules: GlobalModule[];
+  /** Menüs nach Id – nur nötig, wenn ein Menü-Baustein vorkommt (also in
+   * Template-Bereichen). Seiten reichen sie nicht durch. */
+  navigations?: Record<string, SiteNavigation>;
+  /** Rückfall des Logo-Bausteins, wenn das Template kein Bildlogo führt. */
+  siteTitle?: string | null;
 }) {
   const moduleTypeById = new Map(
     moduleTypes.map((moduleType) => [moduleType.id, moduleType]),
@@ -130,6 +140,24 @@ export function ContentBlocks({
                               )}
                               renderForm={(id) => (
                                 <PublicForm key={id} formId={id} />
+                              )}
+                              // Menü- und Logo-Baustein (Template-Bereiche,
+                              // 2026-09-05): beide speichern nur einen
+                              // Verweis – wie sie aussehen, weiß allein
+                              // diese Website.
+                              renderNavigation={(id) => (
+                                <NavMenu
+                                  key={id}
+                                  navigation={navigations?.[id] ?? null}
+                                />
+                              )}
+                              renderLogo={(variant) => (
+                                <Link href="/" className="flex items-center">
+                                  <SiteLogo
+                                    variant={variant}
+                                    siteTitle={siteTitle ?? null}
+                                  />
+                                </Link>
                               )}
                             />
                           ))}

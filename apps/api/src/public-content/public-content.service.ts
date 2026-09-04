@@ -254,6 +254,26 @@ export class PublicContentService {
    * Hauptmenü und die beiden Footer-Spalten). Liefert `null` statt eines
    * Fehlers, weil eine nicht gesetzte Menü-Einstellung der Normalfall ist
    * und kein Fehler. */
+  /** Alle Menüs, fertig aufgelöst – für den Menü-Baustein in einem
+   * Template-Bereich (Stufe 2, 2026-09-05). Der Baustein speichert die Id
+   * des gewählten Menüs; welche das ist, weiß die Website erst beim
+   * Rendern, deshalb kommen alle auf einmal statt einer Abfrage je
+   * Baustein.
+   *
+   * Unbedenklich: es sind genau die Menüs, die der Kopf- und Fußbereich
+   * ohnehin öffentlich ausgibt (nicht erreichbare Ziele filtert
+   * `resolveNavigation()` bereits heraus). */
+  async getAllNavigations() {
+    const navigations = await this.prisma.navigation.findMany({
+      select: { id: true },
+      orderBy: { name: 'asc' },
+    });
+    const resolved = await Promise.all(
+      navigations.map((navigation) => this.resolveNavigation(navigation)),
+    );
+    return resolved.filter((navigation) => navigation !== null);
+  }
+
   private async resolveNavigation(
     where: { slug: string } | { id: string | null },
   ) {

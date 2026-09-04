@@ -384,6 +384,15 @@ export async function getBlockContext() {
   };
 }
 
+/** Alle Menüs nach Id – für den Menü-Baustein in Template-Bereichen. Wird
+ * nur im Layout geholt (dort stehen die Bereiche), nicht pro Seite. */
+export async function getAllNavigations(): Promise<
+  Record<string, SiteNavigation>
+> {
+  const navigations = await getJson<SiteNavigation[]>("/public/navigations");
+  return Object.fromEntries((navigations ?? []).map((nav) => [nav.id, nav]));
+}
+
 /** Inhalt eines Template-Bereichs (Kopfbereich, Fußbereich, …) – dieselbe
  * Form wie `Content.data`: eine Liste von Bausteinen. */
 export interface TemplateRegionContent {

@@ -600,6 +600,33 @@ async function main() {
       schema: { fields: [] },
     },
     {
+      // Bausteine für Template-Bereiche (Kopf-/Fußbereich, 2026-09-05).
+      // Auf einer normalen Seite sind sie erlaubt, aber selten sinnvoll –
+      // gedacht sind sie für Inhalte → Bereiche.
+      //
+      // Das Logo selbst gehört zum Template der jeweiligen Installation
+      // (apps/site/src/template/brand.ts) und wird deshalb NICHT hier
+      // hochgeladen. Gespeichert wird nur, für welchen Grund es gedacht
+      // ist: der Kopfbereich ist hell, der Fußbereich dunkel.
+      name: "Logo",
+      slug: "logo",
+      icon: "Sparkles",
+      schema: {
+        fields: [{ name: "variante", type: "logo", example: "light" }],
+      },
+    },
+    {
+      // Menü-Baustein: speichert nur die Id des gewählten Menüs, die
+      // Darstellung macht die Website (renderNavigation). Gepflegt werden
+      // Menüs unverändert unter Inhalte → Menüs.
+      name: "Menü",
+      slug: "menu",
+      icon: "Compass",
+      schema: {
+        fields: [{ name: "menü", type: "navigation", required: true }],
+      },
+    },
+    {
       // Repeater-Feldtyp (variable Anzahl Einträge) ohne Bild-Unterfeld ->
       // wird generisch als Akkordeon gerendert (`BlockFieldOutput`,
       // Gegenstück zu `isGalleryRepeater`).

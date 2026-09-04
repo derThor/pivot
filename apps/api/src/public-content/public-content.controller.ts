@@ -61,6 +61,13 @@ export class PublicContentController {
    * Website. Öffentlich aus demselben Grund wie die globalen Module: sie
    * stehen auf jeder ausgelieferten Seite und dürfen nicht von einer
    * Anmeldung abhängen. */
+  /** Alle Menüs für den Menü-Baustein in Template-Bereichen. */
+  @Public()
+  @Get('navigations')
+  getNavigations() {
+    return this.publicContentService.getAllNavigations();
+  }
+
   @Public()
   @Get('template-regions')
   getTemplateRegions() {

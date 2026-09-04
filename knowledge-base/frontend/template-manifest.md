@@ -173,13 +173,45 @@ layout.tsx                      Bereich gefüllt → ersetzt die eingebaute
 
 ### Was noch fehlt
 
-1. **Bausteine für Kopf und Fuß**: Logo, Menü (rendert eine gewählte
-   Navigation), Knopf, Footer-Menüspalte, Rechtstexte-Liste. Ohne sie
-   lassen sich Bereiche nur mit den vorhandenen Inhalts-Bausteinen füllen
-   – für einen Fußbereich reicht das knapp, für einen Kopfbereich nicht.
-   Dafür braucht der Baustein-Schema-Typ ein Feld `navigation`, das es
-   heute nur im Template-Manifest gibt.
+1. ~~Bausteine für Kopf und Fuß~~ – Logo und Menü sind gebaut (siehe
+   unten). Offen bleiben Footer-Menüspalte und Rechtstexte-Liste; ein
+   Knopf existiert bereits als `cta-button`.
 2. **Burger-Menü auf dem Handy** – gehört in den Rahmen, nicht in die
    Bausteine.
 3. **Leitplanken**: Warnung, wenn ein `required`-Baustein fehlt (die
    Oberfläche zeigt den Hinweis, prüft aber nicht den Inhalt).
+
+### Bausteine für Kopf und Fuß (2026-09-05, Nachtrag)
+
+Zwei neue Bausteine und dafür zwei neue Feldtypen im Baustein-Schema –
+nach demselben Muster wie der Formular-Baustein: das Feld speichert nur
+einen Verweis, wie es AUSSIEHT weiß allein die Website und reicht eine
+`render…`-Funktion herein.
+
+| Baustein | Feld                          | Rendert                                                        |
+| -------- | ----------------------------- | -------------------------------------------------------------- |
+| Logo     | `logo` (Wert: `light`/`dark`) | Das Logo des Templates (`template/brand.ts`), verlinkt auf `/` |
+| Menü     | `navigation` (Wert: Menü-Id)  | Die gewählte Navigation über `NavMenu`                         |
+
+**Warum das Logo kein Bild-Feld ist:** das Logo gehört dem Template, nicht
+dem Inhalt (siehe die Marken-Regel in
+[display-tab-appearance.md](./display-tab-appearance.md)). Wäre es ein
+Bild-Feld, würde jede Installation ihr Logo doppelt pflegen – einmal im
+Template, einmal im Baustein. Gespeichert wird deshalb nur, für welchen
+Grund es gedacht ist: Kopfbereich hell, Fußbereich dunkel.
+
+**Neu für die Website:** `GET /public/navigations` liefert alle Menüs
+aufgelöst. Der Baustein kennt nur eine Id, und welche Menüs auf einer
+Seite vorkommen, weiß man erst beim Rendern – deshalb alle auf einmal
+statt einer Abfrage je Baustein. Die Menüs sind ohnehin öffentlich
+(Kopf-/Fußbereich geben sie aus).
+
+**Nebenbei entdoppelt:** `NavLink` und die Menüleiste standen im
+`SiteHeader`; mit dem Menü-Baustein wären sie ein zweites Mal nötig
+gewesen. Beides liegt jetzt in `components/nav-menu.tsx`, der eingebaute
+Kopfbereich benutzt dieselbe Komponente.
+
+**Praxistest (2026-09-05):** Kopfbereich aus Logo (30% links) + Menü (70%
+rechts) gebaut – die Website zeigte beides an Stelle der eingebauten
+Fassung, inklusive Akzentknopf für den Menüpunkt mit `ACCENT_BUTTON`. Nach
+dem Löschen des Bereichs war der eingebaute Kopf wieder da.

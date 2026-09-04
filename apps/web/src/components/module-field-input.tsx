@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ChevronUp,
   ClipboardList,
+  Compass,
   Image as ImageIcon,
   Plus,
   Trash2,
@@ -23,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SegmentedPicker } from "@/components/segmented-picker";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { ImagePickerDialog } from "@/components/image-picker-dialog";
 import { VideoPickerDialog } from "@/components/video-picker-dialog";
@@ -114,6 +116,74 @@ function FormFieldSelect({
   );
 }
 
+/** Menü-Auswahl für ein Baustein-Feld vom Typ `navigation` (Menü-Baustein
+ * in Template-Bereichen, 2026-09-05). Aufbau bewusst 1:1 wie
+ * `FormFieldSelect` darüber – dieselbe Aufgabe, dieselbe Bedienung. */
+function NavigationFieldSelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [navigations, setNavigations] = useState<
+    { id: string; name: string }[] | null
+  >(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch(bff("/api/navigations"))
+      .then((res) => (res.ok ? res.json() : { items: [] }))
+      .then((body: { items?: { id: string; name: string }[] }) => {
+        if (active) setNavigations(body.items ?? []);
+      })
+      .catch(() => active && setNavigations([]));
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (navigations === null) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Compass className="size-4" />
+        Menüs werden geladen …
+      </div>
+    );
+  }
+
+  if (navigations.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-1 rounded-md border border-dashed py-8 text-center text-sm text-muted-foreground">
+        <Compass className="size-5" />
+        Kein Menü vorhanden.
+        <span>Lege eines unter „Menüs&quot; an.</span>
+      </div>
+    );
+  }
+
+  const items = Object.fromEntries(navigations.map((n) => [n.id, n.name]));
+
+  return (
+    <Select
+      value={value}
+      onValueChange={(v) => onChange(v ?? "")}
+      items={items}
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Menü wählen" />
+      </SelectTrigger>
+      <SelectContent>
+        {navigations.map((navigation) => (
+          <SelectItem key={navigation.id} value={navigation.id}>
+            {navigation.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 export function ModuleFieldInput({
   field,
   value,
@@ -182,6 +252,46 @@ export function ModuleFieldInput({
       <div className="flex flex-col gap-1.5">
         <Label required={field.required}>Formular</Label>
         <FormFieldSelect value={stringValue} onChange={(v) => onChange(v)} />
+      </div>
+    );
+  }
+
+  if (field.type === "navigation") {
+    return (
+      <div className="flex flex-col gap-1.5">
+        <Label required={field.required}>Menü</Label>
+        <NavigationFieldSelect
+          value={stringValue}
+          onChange={(v) => onChange(v)}
+        />
+        <p className="text-xs text-muted-foreground">
+          Gepflegt wird das Menü unter Inhalte → Menüs; hier wird nur
+          ausgewählt, welches an dieser Stelle erscheint.
+        </p>
+      </div>
+    );
+  }
+
+  if (field.type === "logo") {
+    // Das Logo selbst gehört zum Template dieser Webseite
+    // (apps/site/src/template/brand.ts) und wird hier NICHT hochgeladen –
+    // gewählt wird nur, für welchen Grund es gedacht ist.
+    const variant = stringValue === "dark" ? "dark" : "light";
+    return (
+      <div className="flex flex-col gap-1.5">
+        <Label>Logo</Label>
+        <SegmentedPicker
+          options={[
+            { label: "Für hellen Grund", value: "light" },
+            { label: "Für dunklen Grund", value: "dark" },
+          ]}
+          value={variant}
+          onChange={(v) => onChange(v)}
+        />
+        <p className="text-xs text-muted-foreground">
+          Das Logo selbst gehört zum Template der Webseite. Ohne hinterlegtes
+          Bild erscheint der Webseiten-Titel als Wortmarke.
+        </p>
       </div>
     );
   }

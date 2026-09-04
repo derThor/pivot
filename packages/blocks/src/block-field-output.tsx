@@ -213,6 +213,8 @@ export function BlockFieldOutput({
   // Implementierung). Ohne Angabe wird der Formular-Baustein einfach
   // nicht gerendert, statt eine Ausnahme zu werfen.
   renderForm,
+  renderNavigation,
+  renderLogo,
   // false im Backend (Seiten-Designer und Vorschau): dort säße ein Bild
   // in voller Fensterbreite quer über die ganze Anwendung, über Sidebar
   // und Formularspalten hinweg. Es wird dann wie "volle Breite"
@@ -228,12 +230,45 @@ export function BlockFieldOutput({
   gallerySettings?: GallerySettings;
   swiperAllowTouchMove?: boolean;
   renderForm?: (formId: string) => ReactNode;
+  /** Menü-Baustein: die Website löst die Id zu einer Menüleiste auf. */
+  renderNavigation?: (navigationId: string) => ReactNode;
+  /** Logo-Baustein: die Website zeichnet das Logo ihres Templates. */
+  renderLogo?: (variant: "light" | "dark") => ReactNode;
 }) {
   const stringValue = typeof value === "string" ? value : "";
 
   if (field.type === "form") {
     if (!showPlaceholders && !stringValue) return null;
     return renderForm ? renderForm(stringValue) : null;
+  }
+
+  if (field.type === "navigation") {
+    // Menü-Baustein (Template-Bereiche, 2026-09-05): das Feld speichert
+    // nur die Id des gewählten Menüs. Wie es aussieht, weiß allein die
+    // Website – sie reicht `renderNavigation` herein. Gleiches Muster wie
+    // beim Formular-Baustein darüber; im Designer bleibt es beim
+    // Platzhalter, weil dort keine Menüpunkte aufgelöst werden.
+    if (renderNavigation && stringValue) return renderNavigation(stringValue);
+    if (!showPlaceholders) return null;
+    return (
+      <div className="rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">
+        {stringValue ? "Menü" : "Kein Menü gewählt"}
+      </div>
+    );
+  }
+
+  if (field.type === "logo") {
+    // Logo-Baustein: das Logo gehört dem TEMPLATE (siehe
+    // apps/site/src/template/brand.ts), nicht dem Inhalt – gespeichert
+    // wird nur, für welchen Grund es gedacht ist.
+    const variant = stringValue === "dark" ? "dark" : "light";
+    if (renderLogo) return renderLogo(variant);
+    if (!showPlaceholders) return null;
+    return (
+      <div className="rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">
+        Logo ({variant === "dark" ? "für dunklen Grund" : "für hellen Grund"})
+      </div>
+    );
   }
 
   if (field.type === "image") {

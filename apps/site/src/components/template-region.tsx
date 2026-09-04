@@ -1,6 +1,6 @@
 import type { GlobalModule } from "@pivot/blocks";
 import { ContentBlocks } from "@/components/content-blocks";
-import type { ModuleType } from "@/lib/api";
+import type { ModuleType, SiteNavigation } from "@/lib/api";
 
 /**
  * Ein Template-Bereich (Kopfbereich, Fußbereich, …), gefüllt mit den
@@ -20,11 +20,16 @@ export function TemplateRegion({
   data,
   moduleTypes,
   globalModules,
+  navigations,
+  siteTitle,
   className,
 }: {
   data: Record<string, unknown>;
   moduleTypes: ModuleType[];
   globalModules: GlobalModule[];
+  /** Für den Menü- und den Logo-Baustein, siehe ContentBlocks. */
+  navigations?: Record<string, SiteNavigation>;
+  siteTitle?: string | null;
   className?: string;
 }) {
   return (
@@ -33,6 +38,8 @@ export function TemplateRegion({
         data={data}
         moduleTypes={moduleTypes}
         globalModules={globalModules}
+        navigations={navigations}
+        siteTitle={siteTitle}
       />
     </div>
   );

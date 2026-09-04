@@ -6,6 +6,7 @@ import {
   templateCssVars,
 } from "@pivot/blocks";
 import {
+  getAllNavigations,
   getBlockContext,
   getSiteSettings,
   getTemplateRegions,
@@ -58,10 +59,12 @@ export default async function RootLayout({
   // hinterlegt, ersetzen sie die eingebaute Fassung von Kopf- bzw.
   // Fußbereich. Leer = eingebaute Fassung, damit eine bestehende Website
   // durch das Einführen der Mechanik unverändert bleibt.
-  const [site, regions, blockContext] = await Promise.all([
+  const [site, regions, blockContext, navigations] = await Promise.all([
     getSiteSettings(),
     getTemplateRegions(),
     getBlockContext(),
+    // Für den Menü-Baustein: er speichert nur eine Id, aufgelöst wird hier.
+    getAllNavigations(),
   ]);
   const headerBlocks = regionBlocks(regions.header);
   const footerBlocks = regionBlocks(regions.footer);
@@ -115,6 +118,8 @@ export default async function RootLayout({
               data={regions.header!.data}
               moduleTypes={blockContext.moduleTypes}
               globalModules={blockContext.globalModules}
+              navigations={navigations}
+              siteTitle={site.siteTitle}
             />
           ) : null}
         </SiteHeader>
@@ -154,6 +159,8 @@ export default async function RootLayout({
                 data={regions.footer!.data}
                 moduleTypes={blockContext.moduleTypes}
                 globalModules={blockContext.globalModules}
+                navigations={navigations}
+                siteTitle={site.siteTitle}
               />
             </div>
           </footer>

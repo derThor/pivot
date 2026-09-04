@@ -9,7 +9,6 @@ import {
   Bell,
   Blocks,
   ChevronRight,
-  Clock,
   Construction,
   Contrast,
   DatabaseZap,
@@ -482,7 +481,10 @@ const GROUPS: {
     title: "Allgemein",
     subtitle: "Module & Darstellung",
     icon: Menu,
-    sections: ["access", "display"],
+    // Wartungsseite seit 2026-09-05 hier statt in einer eigenen Gruppe
+    // "Betrieb" (Nutzervorgabe): die Gruppe hatte nur diesen einen Bereich
+    // und stand damit gleichwertig neben Sicherheit und Verbindungen.
+    sections: ["access", "display", "maintenance-page"],
   },
   {
     // Eigener Oberpunkt statt eines Bereichs unter "Allgemein"
@@ -519,13 +521,6 @@ const GROUPS: {
     subtitle: "Vorlagen & Templates",
     icon: Mail,
     sections: ["mailing"],
-  },
-  {
-    id: "operations",
-    title: "Betrieb",
-    subtitle: "Wartungsseite",
-    icon: Clock,
-    sections: ["maintenance-page"],
   },
   {
     // Eigener Oberpunkt statt eines Bereichs unter "Betrieb"
