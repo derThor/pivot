@@ -1,4 +1,5 @@
 export * from "./types";
+export * from "./template-manifest";
 export * from "./cn";
 export * from "./media";
 export * from "./gallery-settings";

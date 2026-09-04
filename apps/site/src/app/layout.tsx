@@ -1,8 +1,13 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { Metadata } from "next";
-import { resolveImageSrc } from "@pivot/blocks";
+import {
+  resolveImageSrc,
+  resolveTemplateSettings,
+  templateCssVars,
+} from "@pivot/blocks";
 import { getSiteSettings } from "@/lib/api";
 import { fontVariables } from "@/template/fonts";
+import { templateManifest } from "@/template/manifest";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import "./globals.css";
@@ -44,11 +49,22 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
   const site = await getSiteSettings();
-  // Akzentfarbe der Installation überschreibt das Theme-Token zur Laufzeit;
-  // alle `*-accent`-Utilities lesen dieselbe Variable.
-  const themeStyle = site.accentColor
-    ? ({ "--color-accent": site.accentColor } as CSSProperties)
-    : undefined;
+  // Die Gestaltungswerte dieses Templates: was das Manifest deklariert,
+  // gemischt mit dem, was in den Einstellungen gespeichert ist (2026-09-05).
+  // Alles mit `cssVar` landet als CSS-Variable auf <html> – das Template
+  // benutzt seine Variablen wie bisher und merkt vom Mechanismus nichts.
+  const templateValues = resolveTemplateSettings(
+    templateManifest,
+    site.templateSettings,
+  );
+  const themeStyle = {
+    ...templateCssVars(templateManifest, templateValues),
+    // Die Akzentfarbe bleibt bewusst eine eigene Einstellung
+    // (`AppSettings.accentColor`, auch in der Verwaltung sichtbar) und
+    // steht NICHT im Manifest: sie gäbe es sonst zweimal. Sie kommt
+    // zuletzt und sticht damit einen gleichnamigen Template-Wert.
+    ...(site.accentColor ? { "--color-accent": site.accentColor } : {}),
+  } as CSSProperties;
 
   return (
     <html
@@ -68,6 +84,11 @@ export default async function RootLayout({
         <SiteHeader
           siteTitle={site.siteTitle}
           navigation={site.mainNavigation}
+          // Werte aus dem Manifest dieses Templates – ohne `cssVar` liest
+          // das Template sie selbst aus, statt sie als CSS-Variable zu
+          // bekommen (siehe template-manifest.ts).
+          sticky={templateValues.headerSticky !== false}
+          style={templateValues.headerStyle === "solid" ? "solid" : "blur"}
         />
 
         {/* Der Inhalt kommt vollständig aus dem Seiten-Designer

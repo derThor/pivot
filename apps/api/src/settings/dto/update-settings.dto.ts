@@ -5,6 +5,7 @@ import {
   IsIn,
   IsInt,
   IsISO8601,
+  IsObject,
   IsOptional,
   IsString,
   IsUrl,
@@ -364,6 +365,20 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsBoolean()
   pageSpacingOnHomepage?: boolean;
+
+  // Werte der templateeigenen Einstellungen (Manifest des Frontends,
+  // 2026-09-05). Bewusst als freies Objekt: welche Schlüssel es gibt,
+  // weiß nur das Template. Geprüft wird gegen dessen Manifest, nicht
+  // hier – die API kennt es nicht.
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: true,
+    description:
+      'Werte der vom Frontend-Template deklarierten Einstellungen (Schlüssel = key aus dessen Manifest).',
+  })
+  @IsOptional()
+  @IsObject()
+  templateSettings?: Record<string, unknown>;
 
   @ApiPropertyOptional({ nullable: true })
   @IsOptional()

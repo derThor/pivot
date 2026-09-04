@@ -1,4 +1,8 @@
-import type { ContentTypeField, GlobalModule } from "@pivot/blocks";
+import type {
+  ContentTypeField,
+  GlobalModule,
+  TemplateSettingsValues,
+} from "@pivot/blocks";
 
 // Serverseitige Basis-URL der eigenen Installation – nie NEXT_PUBLIC_,
 // alle Aufrufe hier laufen ausschließlich in Server Components/Route
@@ -51,6 +55,11 @@ export interface SiteSettings {
   frontendCacheEnabled: boolean;
   frontendCacheTtlSeconds: number;
   footerNote: string | null;
+  /** Werte der Einstellungen, die DIESES Template deklariert hat (siehe
+   * src/template/manifest.ts). Schlüssel = `key` aus dem Manifest;
+   * unbekannte Schlüssel können darin stehen, wenn das Manifest ein Feld
+   * einmal hatte und nicht mehr hat. */
+  templateSettings: TemplateSettingsValues | null;
   mainNavigationId: string | null;
   footerNavigationPrimaryId: string | null;
   footerNavigationSecondaryId: string | null;
@@ -193,6 +202,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       frontendCacheEnabled: true,
       frontendCacheTtlSeconds: 60,
       footerNote: null,
+      templateSettings: null,
       mainNavigationId: null,
       footerNavigationPrimaryId: null,
       footerNavigationSecondaryId: null,

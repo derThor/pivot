@@ -144,6 +144,10 @@ export class PublicContentService {
         // öffentlichen Hülle und nicht der geschützten Einstellungen.
         frontendCacheEnabled: true,
         frontendCacheTtlSeconds: true,
+        // Werte der templateeigenen Einstellungen (2026-09-05). Gehören in
+        // die öffentliche Hülle, weil das Template sie zum Rendern
+        // braucht – die API weiß nicht einmal, was darin steht.
+        templateSettings: true,
       },
     });
     const empty = {
@@ -161,6 +165,7 @@ export class PublicContentService {
       companyName: null,
       frontendCacheEnabled: true,
       frontendCacheTtlSeconds: 60,
+      templateSettings: null,
     };
     const base = settings ?? empty;
     // Header und Footer der Website hängen an genau diesem Aufruf

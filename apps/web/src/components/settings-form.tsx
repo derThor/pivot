@@ -41,6 +41,7 @@ import {
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { SegmentedPicker } from "@/components/segmented-picker";
 import { SwitchRow } from "@/components/switch-row";
+import { TemplateSettingsFields } from "@/components/template-settings-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,6 +76,7 @@ import { MailingSettingsCard } from "@/components/mailing-settings-card";
 import { PaginationControls } from "@/components/pagination-controls";
 import { cn } from "@/lib/utils";
 import { bff } from "@/lib/bff";
+import type { TemplateSettingsValues } from "@pivot/blocks";
 import type {
   AppSettings,
   JobRunsResponse,
@@ -183,6 +185,10 @@ const settingsSchema = z.object({
   pageSpacingTopDesktop: z.number().int().min(0).max(1000).nullable(),
   pageSpacingBottomDesktop: z.number().int().min(0).max(1000).nullable(),
   pageSpacingOnHomepage: z.boolean(),
+  // Bewusst ungeprüft: welche Schlüssel es gibt, weiß nur das Manifest des
+  // Templates (siehe TemplateSettingsFields) – eine Prüfung hier wäre eine
+  // zweite, immer veraltete Wahrheit.
+  templateSettings: z.record(z.string(), z.unknown()).nullable(),
   footerNote: z.string().nullable(),
 });
 
@@ -826,6 +832,7 @@ export function SettingsForm({
     pageSpacingTopDesktop: settings.pageSpacingTopDesktop,
     pageSpacingBottomDesktop: settings.pageSpacingBottomDesktop,
     pageSpacingOnHomepage: settings.pageSpacingOnHomepage,
+    templateSettings: settings.templateSettings,
     footerNote: settings.footerNote,
   };
 
@@ -1983,6 +1990,26 @@ export function SettingsForm({
                           description="Aus, wenn die Startseite mit einem randlosen Aufmacher beginnt, der bündig unter der Kopfzeile sitzen soll. Ein am Startseiten-Menüpunkt gesetzter Abstand bleibt davon unberührt."
                           checked={field.value}
                           onCheckedChange={field.onChange}
+                        />
+                      </FormItem>
+                    )}
+                  />
+                  <Separator className="sm:col-span-2" />
+                  {/* Ab hier bestimmt das Template, was zu sehen ist – die
+                      Felder kommen aus seinem Manifest, nicht aus diesem
+                      Code (Nutzerentscheidung, 2026-09-05). */}
+                  <FormField
+                    control={form.control}
+                    name="templateSettings"
+                    render={({ field }) => (
+                      <FormItem className="sm:col-span-2">
+                        <TemplateSettingsFields
+                          values={
+                            (field.value as TemplateSettingsValues | null) ??
+                            null
+                          }
+                          onChange={field.onChange}
+                          navigations={navigations}
                         />
                       </FormItem>
                     )}

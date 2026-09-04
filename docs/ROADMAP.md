@@ -918,6 +918,17 @@ Architektur, Entscheidungen und Stolpersteine:
       aus; `<main>` schneidet dafür waagerecht ab. Im Backend wird
       "Randlos" wie "Volle Breite" gezeigt, sonst säße der Block quer über
       die Anwendung
+- [x] Template-Manifest: Frontend-Einstellungen ohne Code in der Verwaltung
+      (2026-09-05, Stufe 1) – das Template beschreibt sich selbst
+      (`apps/site/src/template/manifest.ts`), die Verwaltung rendert
+      daraus generisch. Werte in `AppSettings.templateSettings` (Json),
+      Farben/Größen landen als CSS-Variablen auf `<html>`. Details und
+      die bewussten Grenzen: knowledge-base/frontend/template-manifest.md
+- [ ] Template-Manifest Stufe 2: Bereiche mit Bausteinen füllen –
+      Kopf-/Fußbereich (und was ein Template sonst deklariert) als
+      Baustein-Sammlung im vorhandenen Designer statt als React-Code.
+      Braucht Bausteine für Logo, Menü und Knopf sowie einen Rahmen, der
+      das Verhalten behält (Kleben, Burger-Menü, `--header-height`)
 - [x] Abstand einer Seite am Menüpunkt (2026-09-03) – im Bearbeiten-Dialog
       jedes Menüpunkts, unabhängig vom Ziel: "Abstand der Seite" mit den
       Reitern Mobil/Tablet/Desktop und je einem Wert oben und unten. Wirkt

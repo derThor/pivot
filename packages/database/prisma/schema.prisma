@@ -276,6 +276,22 @@ model AppSettings {
   // Betrifft nur den GLOBALEN Wert. Ein am Startseiten-Menüpunkt gesetzter
   // Abstand ist eine ausdrückliche Ansage und wirkt weiterhin.
   pageSpacingOnHomepage    Boolean     @default(true)
+
+  // Werte der Einstellungen, die das FRONTEND-TEMPLATE selbst deklariert
+  // (Nutzerentscheidung, 2026-09-05). Schlüssel = `key` aus dessen
+  // Manifest (`apps/site/src/template/manifest.ts`, ausgeliefert unter
+  // `GET /api/template`).
+  //
+  // Bewusst EINE Json-Spalte und keine Spalte je Feld: welche Felder es
+  // gibt, weiß nur das Template, und das ist pro Installation ein anderes.
+  // Eine Schemaänderung für jede Farbe eines fremden Templates wäre der
+  // sichere Weg in ein unpflegbares Modell.
+  //
+  // Preis dieser Wahl, bewusst in Kauf genommen: keine Typprüfung in der
+  // Datenbank. Geprüft wird gegen das Manifest – in der Verwaltung beim
+  // Rendern und in der API beim Speichern (unbekannte Schlüssel bleiben
+  // erhalten, siehe resolveTemplateSettings()).
+  templateSettings Json?
   // Ein/Aus je Systembenachrichtigung-Kategorie (Nutzervorgabe, 2026-08-16:
   // Karte auf /dashboard/system-messages) – bestimmt, ob die jeweilige
   // Kategorie überhaupt als Banner/Glocken-Zähler auftaucht, unabhängig

@@ -122,6 +122,10 @@ export function humanizeSettingsField(field: string) {
 function formatSettingsValue(value: unknown): string | null {
   if (value === null || value === undefined || value === "") return null;
   if (typeof value === "boolean") return value ? "aktiviert" : "deaktiviert";
+  // Objekte (seit 2026-09-05 die Template-Einstellungen) haben keinen
+  // sinnvollen Einzeiler – `String({})` ergäbe "[object Object]". Ohne
+  // Wert lautet der Satz schlicht "… geändert".
+  if (typeof value === "object") return null;
   return String(value);
 }
 

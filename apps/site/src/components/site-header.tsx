@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cn } from "@pivot/blocks";
 
 import { SiteLogo } from "@/components/site-logo";
 
@@ -61,15 +62,34 @@ function NavLink({ item }: { item: SiteNavigationItem }) {
 export function SiteHeader({
   siteTitle,
   navigation,
+  sticky = true,
+  style = "blur",
 }: {
   siteTitle: string | null;
   navigation: SiteNavigation | null;
+  /** Beide Werte kommen aus den Einstellungen, die DIESES Template in
+   * seinem Manifest deklariert hat (`headerSticky`, `headerStyle`, siehe
+   * template/manifest.ts). Die Vorgaben hier entsprechen dem Verhalten
+   * von vorher – ohne gespeicherte Werte ändert sich nichts. */
+  sticky?: boolean;
+  style?: "blur" | "solid";
 }) {
   const items = navigation?.items ?? [];
   const links = items.filter((item) => item.appearance === "LINK");
   const actions = items.filter((item) => item.appearance !== "LINK");
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur-md">
+    <header
+      className={cn(
+        "z-50 border-b border-border",
+        sticky && "sticky top-0",
+        // Weichgezeichnet nur dann sinnvoll, wenn der Balken beim Scrollen
+        // stehen bleibt – über einem mitlaufenden Balken gibt es nichts
+        // durchscheinen zu lassen.
+        sticky && style === "blur"
+          ? "bg-background/85 backdrop-blur-md"
+          : "bg-background",
+      )}
+    >
       <HeaderHeightSync />
       <div className="mx-auto flex w-full max-w-[var(--content-width,1180px)] flex-wrap items-center gap-x-8 gap-y-3 px-6 py-3.5 sm:px-8">
         <Link href="/" className="mr-auto flex items-center">

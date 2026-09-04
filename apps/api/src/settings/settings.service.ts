@@ -1,5 +1,6 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Prisma } from '@pivot/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { SiteCacheService } from '../site-cache/site-cache.service';
@@ -129,6 +130,10 @@ const FIELD_LABELS: Record<string, string> = {
   pageSpacingTopDesktop: 'Seitenabstand oben (Desktop)',
   pageSpacingBottomDesktop: 'Seitenabstand unten (Desktop)',
   pageSpacingOnHomepage: 'Seitenabstand auch auf der Startseite',
+  // Ein Sammelbegriff und keine Liste je Feld: die Felder gehören dem
+  // Template, die API kennt ihre Namen nicht. Welche sich geändert haben,
+  // steht im Detail des Protokolleintrags.
+  templateSettings: 'Template-Einstellungen',
 };
 
 // Firma-Stammdaten-Felder (Verwaltung → Firma, "Letzte Änderungen"-Karte,
@@ -237,6 +242,7 @@ const SITE_RELEVANT_SETTING_KEYS = [
   'pageSpacingTopDesktop',
   'pageSpacingBottomDesktop',
   'pageSpacingOnHomepage',
+  'templateSettings',
 ] as const satisfies readonly (keyof UpdateSettingsDto)[];
 
 @Injectable()
@@ -440,9 +446,19 @@ export class SettingsService {
 
   async update(dto: UpdateSettingsDto, actingUserId?: string) {
     const existing = await this.get(); // stellt sicher, dass die Zeile existiert
+    // `templateSettings` ist ein freies Objekt (die Felder gehören dem
+    // Frontend-Template, siehe dessen Manifest) und muss für Prisma
+    // ausdrücklich als Json-Wert durchgereicht werden – ohne die Trennung
+    // hier passt das ganze DTO nicht mehr auf den Update-Typ.
+    const { templateSettings, ...scalars } = dto;
     const updated = await this.prisma.appSettings.update({
       where: { id: 1 },
-      data: dto,
+      data: {
+        ...scalars,
+        ...(templateSettings !== undefined && {
+          templateSettings: templateSettings as Prisma.InputJsonValue,
+        }),
+      },
     });
 
     if (SITE_RELEVANT_SETTING_KEYS.some((key) => key in dto)) {
@@ -482,7 +498,17 @@ export class SettingsService {
         }
         const before = existing[key as keyof typeof existing];
         const after = updated[key as keyof typeof updated];
-        if (before === after) continue;
+        // Json-Felder (Template-Einstellungen) sind Objekte: ein
+        // Referenzvergleich wäre IMMER ungleich und schriebe bei jedem
+        // Speichern einen Protokolleintrag, auch ohne Änderung.
+        const unchanged =
+          before !== null &&
+          after !== null &&
+          typeof before === 'object' &&
+          typeof after === 'object'
+            ? JSON.stringify(before) === JSON.stringify(after)
+            : before === after;
+        if (unchanged) continue;
         await this.auditLog.record({
           action: 'settings.field_updated',
           entityType: SETTINGS_ENTITY_TYPE,

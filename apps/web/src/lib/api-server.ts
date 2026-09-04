@@ -836,6 +836,10 @@ export interface AppSettings {
   /** Gilt der globale Abstand auch auf der Startseite? Ein am
    * Startseiten-Menüpunkt gesetzter Wert bleibt davon unberührt. */
   pageSpacingOnHomepage: boolean;
+  /** Werte der Einstellungen, die das Frontend-Template dieser
+   * Installation deklariert (2026-09-05). Schlüssel = `key` aus dessen
+   * Manifest – die Verwaltung kennt sie nicht, sie rendert generisch. */
+  templateSettings: Record<string, unknown> | null;
   backendCacheEnabled: boolean;
   backendCacheTtlSeconds: number;
   frontendCacheEnabled: boolean;
