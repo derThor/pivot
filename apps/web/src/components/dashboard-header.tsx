@@ -293,9 +293,11 @@ export function DashboardHeader({
 
                     Bewusst KEIN DropdownMenuItem: ein Klick darauf würde
                     das Menü schließen, und man will das Umschalten sehen. */}
-                <div className="flex items-center justify-between gap-3 px-4 py-3">
-                  <span className="text-sm font-medium">Dunkelmodus</span>
-                  <ThemeToggle />
+                <div className="px-4 py-3">
+                  {/* Die Beschriftung nennt den AKTUELLEN Modus und wechselt
+                      mit ihm – sie steckt deshalb in der Komponente, die
+                      den Zustand kennt. */}
+                  <ThemeToggle withLabel />
                 </div>
                 {canViewSettings && (
                   <>

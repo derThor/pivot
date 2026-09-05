@@ -43,7 +43,18 @@ function hasThemeCookie() {
  * Kommentar) – der `useEffect` synchronisiert React nur EINMAL nach dem
  * Mount aus dem bereits vorhandenen DOM-Zustand, damit Server- und
  * Client-Erst-Render identisch bleiben (kein Hydration-Mismatch). */
-export function ThemeToggle({ className }: { className?: string }) {
+export function ThemeToggle({
+  className,
+  withLabel = false,
+}: {
+  className?: string;
+  /** Stellt den Namen des AKTUELLEN Modus vor den Schalter
+   * (Nutzervorgabe, 2026-09-05: "ändere den namen dunkelmodus beim wechsel
+   * auf den entsprechenden modus"). Die Beschriftung gehört deshalb in
+   * diese Komponente und nicht an den Aufrufer: nur hier ist bekannt,
+   * welcher Modus gerade gilt. */
+  withLabel?: boolean;
+}) {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
@@ -90,7 +101,7 @@ export function ThemeToggle({ className }: { className?: string }) {
     writeThemeCookie(next ? "dark" : "light");
   }
 
-  return (
+  const toggleButton = (
     <button
       type="button"
       role="switch"
@@ -123,5 +134,16 @@ export function ThemeToggle({ className }: { className?: string }) {
         {isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
       </span>
     </button>
+  );
+
+  if (!withLabel) return toggleButton;
+
+  return (
+    <span className="flex w-full items-center justify-between gap-3">
+      <span className="text-sm font-medium">
+        {isDark ? "Dunkelmodus" : "Hellmodus"}
+      </span>
+      {toggleButton}
+    </span>
   );
 }

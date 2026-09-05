@@ -239,8 +239,11 @@ melden Arbeit, der Schalter ist eine persönliche Vorliebe dieses Kontos –
 und genau dafür ist das Popup da (Mein Konto, Sicherheit,
 Benachrichtigungen).
 
-Er sitzt jetzt als eigene Zeile („Dunkelmodus" links, Schalter rechts)
-über der Einstellungen-Zeile. **Bewusst kein `DropdownMenuItem`:** ein
+Er sitzt jetzt als eigene Zeile über der Einstellungen-Zeile. Die
+Beschriftung nennt den AKTUELLEN Modus und wechselt mit ihm
+(„Hellmodus" / „Dunkelmodus", Nutzervorgabe direkt im Anschluss) – sie
+steckt deshalb IN der Schalter-Komponente (`withLabel`) und nicht beim
+Aufrufer: nur dort ist bekannt, welcher Modus gerade gilt. **Bewusst kein `DropdownMenuItem`:** ein
 Klick darauf würde das Menü schließen, und man will das Umschalten sehen.
 
 Auf Mobil bleibt es beim zweiten Platz in der Sidebar (`app-sidebar.tsx`) –
