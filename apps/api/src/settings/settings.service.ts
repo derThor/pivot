@@ -134,6 +134,7 @@ const FIELD_LABELS: Record<string, string> = {
   // Template, die API kennt ihre Namen nicht. Welche sich geändert haben,
   // steht im Detail des Protokolleintrags.
   templateSettings: 'Template-Einstellungen',
+  templateManifest: 'Template-Manifest',
 };
 
 // Firma-Stammdaten-Felder (Verwaltung → Firma, "Letzte Änderungen"-Karte,
@@ -243,6 +244,7 @@ const SITE_RELEVANT_SETTING_KEYS = [
   'pageSpacingBottomDesktop',
   'pageSpacingOnHomepage',
   'templateSettings',
+  'templateManifest',
 ] as const satisfies readonly (keyof UpdateSettingsDto)[];
 
 @Injectable()
@@ -450,13 +452,21 @@ export class SettingsService {
     // Frontend-Template, siehe dessen Manifest) und muss für Prisma
     // ausdrücklich als Json-Wert durchgereicht werden – ohne die Trennung
     // hier passt das ganze DTO nicht mehr auf den Update-Typ.
-    const { templateSettings, ...scalars } = dto;
+    const { templateSettings, templateManifest, ...scalars } = dto;
     const updated = await this.prisma.appSettings.update({
       where: { id: 1 },
       data: {
         ...scalars,
         ...(templateSettings !== undefined && {
           templateSettings: templateSettings as Prisma.InputJsonValue,
+        }),
+        ...(templateManifest !== undefined && {
+          // `null` bedeutet hier ausdrücklich "zurück auf die Datei des
+          // Templates" – deshalb Prisma.DbNull statt eines JSON-null.
+          templateManifest:
+            templateManifest === null
+              ? Prisma.DbNull
+              : (templateManifest as Prisma.InputJsonValue),
         }),
       },
     });

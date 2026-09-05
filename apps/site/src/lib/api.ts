@@ -1,6 +1,7 @@
 import type {
   ContentTypeField,
   GlobalModule,
+  TemplateManifest,
   TemplateSettingsValues,
 } from "@pivot/blocks";
 
@@ -59,6 +60,9 @@ export interface SiteSettings {
    * unbekannte Schlüssel können darin stehen, wenn das Manifest ein Feld
    * einmal hatte und nicht mehr hat. */
   templateSettings: TemplateSettingsValues | null;
+  /** Hochgeladenes Manifest – sticht die Datei dieses Templates
+   * (src/template/manifest.ts). `null` = die Datei gilt. */
+  templateManifest: TemplateManifest | null;
   mainNavigationId: string | null;
   footerNavigationPrimaryId: string | null;
   footerNavigationSecondaryId: string | null;
@@ -201,6 +205,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       frontendCacheTtlSeconds: 60,
       footerNote: null,
       templateSettings: null,
+      templateManifest: null,
       mainNavigationId: null,
       footerNavigationPrimaryId: null,
       footerNavigationSecondaryId: null,

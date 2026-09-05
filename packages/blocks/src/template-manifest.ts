@@ -265,3 +265,110 @@ export function templateCssVars(
   }
   return vars;
 }
+
+/** Ergebnis einer Manifest-Prüfung: leer = in Ordnung. */
+export interface TemplateManifestIssue {
+  path: string;
+  message: string;
+}
+
+const FIELD_TYPES: TemplateFieldType[] = [
+  "text",
+  "textarea",
+  "number",
+  "color",
+  "select",
+  "boolean",
+  "image",
+  "navigation",
+  "spacing",
+];
+
+/**
+ * Prüft ein von außen gekommenes Manifest gegen das Vokabular – gedacht
+ * für den Upload in der Verwaltung (2026-09-05).
+ *
+ * Bewusst NICHT geprüft wird, ob das Template die genannten CSS-Variablen
+ * überhaupt benutzt oder die Bereiche rendert: das weiß nur das Template
+ * selbst. Ein Feld auf eine unbenutzte Variable zeigen zu lassen ist
+ * folgenlos, nicht falsch – deshalb ist das eine Sache für den Hinweistext
+ * in der Oberfläche, nicht für eine Fehlermeldung.
+ */
+export function validateTemplateManifest(
+  value: unknown,
+): TemplateManifestIssue[] {
+  const issues: TemplateManifestIssue[] = [];
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return [{ path: "", message: "Das Manifest muss ein Objekt sein." }];
+  }
+  const manifest = value as Partial<TemplateManifest>;
+  if (typeof manifest.name !== "string" || !manifest.name.trim()) {
+    issues.push({ path: "name", message: "Name fehlt." });
+  }
+  if (!Array.isArray(manifest.regions)) {
+    issues.push({ path: "regions", message: "regions muss eine Liste sein." });
+  } else {
+    const seen = new Set<string>();
+    manifest.regions.forEach((region, index) => {
+      const at = `regions[${index}]`;
+      if (!region || typeof region.key !== "string" || !region.key.trim()) {
+        issues.push({ path: at, message: "key fehlt." });
+        return;
+      }
+      if (seen.has(region.key)) {
+        issues.push({ path: at, message: `key "${region.key}" doppelt.` });
+      }
+      seen.add(region.key);
+      if (typeof region.label !== "string" || !region.label.trim()) {
+        issues.push({ path: at, message: "label fehlt." });
+      }
+    });
+  }
+  if (!Array.isArray(manifest.settings)) {
+    issues.push({
+      path: "settings",
+      message: "settings muss eine Liste sein.",
+    });
+    return issues;
+  }
+  const seenKeys = new Set<string>();
+  manifest.settings.forEach((field, index) => {
+    const at = `settings[${index}]`;
+    if (!field || typeof field.key !== "string" || !field.key.trim()) {
+      issues.push({ path: at, message: "key fehlt." });
+      return;
+    }
+    if (seenKeys.has(field.key)) {
+      issues.push({ path: at, message: `key "${field.key}" doppelt.` });
+    }
+    seenKeys.add(field.key);
+    if (typeof field.label !== "string" || !field.label.trim()) {
+      issues.push({ path: `${at} (${field.key})`, message: "label fehlt." });
+    }
+    if (!FIELD_TYPES.includes(field.type)) {
+      issues.push({
+        path: `${at} (${field.key})`,
+        message: `Unbekannter Feldtyp "${String(field.type)}". Erlaubt: ${FIELD_TYPES.join(", ")}.`,
+      });
+    }
+    if (field.type === "select") {
+      const options = (field as { options?: unknown }).options;
+      const valid =
+        Array.isArray(options) &&
+        options.length > 0 &&
+        options.every(
+          (option) =>
+            Array.isArray(option) &&
+            option.length === 2 &&
+            option.every((entry) => typeof entry === "string"),
+        );
+      if (!valid) {
+        issues.push({
+          path: `${at} (${field.key})`,
+          message: "select braucht options als Liste von [wert, beschriftung].",
+        });
+      }
+    }
+  });
+  return issues;
+}

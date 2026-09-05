@@ -147,6 +147,8 @@ export class PublicContentService {
         // die öffentliche Hülle, weil das Template sie zum Rendern
         // braucht – die API weiß nicht einmal, was darin steht.
         templateSettings: true,
+        // Sticht die Manifest-Datei des Templates, siehe dort.
+        templateManifest: true,
       },
     });
     const empty = {
@@ -164,6 +166,7 @@ export class PublicContentService {
       frontendCacheEnabled: true,
       frontendCacheTtlSeconds: 60,
       templateSettings: null,
+      templateManifest: null,
     };
     const base = settings ?? empty;
     // Header und Footer der Website hängen an genau diesem Aufruf

@@ -841,6 +841,9 @@ export interface AppSettings {
    * Installation deklariert (2026-09-05). Schlüssel = `key` aus dessen
    * Manifest – die Verwaltung kennt sie nicht, sie rendert generisch. */
   templateSettings: Record<string, unknown> | null;
+  /** Hochgeladenes Manifest; sticht die Datei des Frontend-Projekts.
+   * `null` = die Datei gilt. */
+  templateManifest: TemplateManifest | null;
   backendCacheEnabled: boolean;
   backendCacheTtlSeconds: number;
   frontendCacheEnabled: boolean;

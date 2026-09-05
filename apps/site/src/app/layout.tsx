@@ -72,8 +72,13 @@ export default async function RootLayout({
   // gemischt mit dem, was in den Einstellungen gespeichert ist (2026-09-05).
   // Alles mit `cssVar` landet als CSS-Variable auf <html> – das Template
   // benutzt seine Variablen wie bisher und merkt vom Mechanismus nichts.
+  // Ein in der Verwaltung hochgeladenes Manifest sticht die Datei dieses
+  // Projekts (2026-09-05); ohne eines gilt die Datei. Die Datei bleibt
+  // dabei die Wahrheit darüber, was WIRKT – ein hochgeladenes Feld auf
+  // eine unbenutzte CSS-Variable bleibt folgenlos.
+  const manifest = site.templateManifest ?? templateManifest;
   const templateValues = resolveTemplateSettings(
-    templateManifest,
+    manifest,
     site.templateSettings,
   );
   // Nur Werte aus dem Manifest DIESES Templates. Die Akzentfarbe unter
@@ -81,10 +86,7 @@ export default async function RootLayout({
   // (Nutzervorgabe, 2026-09-05: "alles aus Darstellung Backend darf sich
   // nur aufs backend auswirken") – die Website hat ihre eigene, im
   // Manifest deklarierte Akzentfarbe.
-  const themeStyle = templateCssVars(
-    templateManifest,
-    templateValues,
-  ) as CSSProperties;
+  const themeStyle = templateCssVars(manifest, templateValues) as CSSProperties;
 
   return (
     <html

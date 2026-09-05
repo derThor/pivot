@@ -292,6 +292,19 @@ model AppSettings {
   // Rendern und in der API beim Speichern (unbekannte Schlüssel bleiben
   // erhalten, siehe resolveTemplateSettings()).
   templateSettings Json?
+
+  // Ein HOCHGELADENES Template-Manifest (2026-09-05). Es sticht die Datei
+  // im Frontend-Projekt (`apps/site/src/template/manifest.ts`), die damit
+  // zur Vorgabe wird: `null` = die Datei gilt.
+  //
+  // Zweck: ein Template anpassen, ohne es neu zu deployen – Felder
+  // umbenennen, gruppieren, ergänzen. Was der hochgeladene Stand NICHT
+  // kann: dem Template neue Fähigkeiten geben. Eine deklarierte
+  // CSS-Variable, die das Template nirgends benutzt, bleibt folgenlos;
+  // ein Bereich, den es nicht rendert, erscheint nicht. Die Datei bleibt
+  // die Wahrheit darüber, was WIRKT (siehe
+  // knowledge-base/frontend/template-manifest.md).
+  templateManifest Json?
   // Ein/Aus je Systembenachrichtigung-Kategorie (Nutzervorgabe, 2026-08-16:
   // Karte auf /dashboard/system-messages) – bestimmt, ob die jeweilige
   // Kategorie überhaupt als Banner/Glocken-Zähler auftaucht, unabhängig

@@ -380,6 +380,22 @@ export class UpdateSettingsDto {
   @IsObject()
   templateSettings?: Record<string, unknown>;
 
+  // Hochgeladenes Manifest; sticht die Datei im Frontend-Projekt.
+  // `null` setzt zurück auf diese Datei. Geprüft wird gegen das
+  // Vokabular in der Verwaltung (validateTemplateManifest) – die API
+  // kennt es nicht und würde sonst eine zweite, veraltende Prüfung
+  // pflegen.
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: true,
+    nullable: true,
+    description:
+      'Hochgeladenes Template-Manifest; null = die Datei des Frontend-Projekts gilt.',
+  })
+  @IsOptional()
+  @IsObject()
+  templateManifest?: Record<string, unknown> | null;
+
   @ApiPropertyOptional({ nullable: true })
   @IsOptional()
   @IsString()

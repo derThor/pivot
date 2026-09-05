@@ -40,6 +40,7 @@ import {
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { SegmentedPicker } from "@/components/segmented-picker";
 import { SwitchRow } from "@/components/switch-row";
+import { TemplateManifestCard } from "@/components/template-manifest-card";
 import { TemplateSettingsFields } from "@/components/template-settings-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,7 +76,7 @@ import { MailingSettingsCard } from "@/components/mailing-settings-card";
 import { PaginationControls } from "@/components/pagination-controls";
 import { cn } from "@/lib/utils";
 import { bff } from "@/lib/bff";
-import type { TemplateSettingsValues } from "@pivot/blocks";
+import type { TemplateManifest, TemplateSettingsValues } from "@pivot/blocks";
 import type {
   AppSettings,
   JobRunsResponse,
@@ -188,6 +189,9 @@ const settingsSchema = z.object({
   // Templates (siehe TemplateSettingsFields) – eine Prüfung hier wäre eine
   // zweite, immer veraltete Wahrheit.
   templateSettings: z.record(z.string(), z.unknown()).nullable(),
+  // Ebenfalls ungeprüft: gegen das Vokabular prüft TemplateManifestCard
+  // beim Übernehmen (validateTemplateManifest).
+  templateManifest: z.record(z.string(), z.unknown()).nullable(),
   footerNote: z.string().nullable(),
 });
 
@@ -832,6 +836,12 @@ export function SettingsForm({
     pageSpacingBottomDesktop: settings.pageSpacingBottomDesktop,
     pageSpacingOnHomepage: settings.pageSpacingOnHomepage,
     templateSettings: settings.templateSettings,
+    // Das Formular hält es als freies Objekt (geprüft wird beim
+    // Übernehmen in TemplateManifestCard, siehe dort).
+    templateManifest: settings.templateManifest as Record<
+      string,
+      unknown
+    > | null,
     footerNote: settings.footerNote,
   };
 
@@ -1989,6 +1999,21 @@ export function SettingsForm({
                           description="Aus, wenn die Startseite mit einem randlosen Aufmacher beginnt, der bündig unter der Kopfzeile sitzen soll. Ein am Startseiten-Menüpunkt gesetzter Abstand bleibt davon unberührt."
                           checked={field.value}
                           onCheckedChange={field.onChange}
+                        />
+                      </FormItem>
+                    )}
+                  />
+                  <Separator className="sm:col-span-2" />
+                  <FormField
+                    control={form.control}
+                    name="templateManifest"
+                    render={({ field }) => (
+                      <FormItem className="sm:col-span-2">
+                        <TemplateManifestCard
+                          value={
+                            (field.value as TemplateManifest | null) ?? null
+                          }
+                          onChange={field.onChange}
                         />
                       </FormItem>
                     )}
