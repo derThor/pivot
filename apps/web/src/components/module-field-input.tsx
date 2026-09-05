@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SegmentedPicker } from "@/components/segmented-picker";
+import { Skeleton } from "@/components/ui/skeleton";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { ImagePickerDialog } from "@/components/image-picker-dialog";
 import { VideoPickerDialog } from "@/components/video-picker-dialog";
@@ -75,14 +76,7 @@ function FormFieldSelect({
     };
   }, []);
 
-  if (forms === null) {
-    return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <ClipboardList className="size-4" />
-        Formulare werden geladen …
-      </div>
-    );
-  }
+  if (forms === null) return <Skeleton className="h-9 w-full" />;
 
   if (forms.length === 0) {
     return (
@@ -143,14 +137,7 @@ function NavigationFieldSelect({
     };
   }, []);
 
-  if (navigations === null) {
-    return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Compass className="size-4" />
-        Menüs werden geladen …
-      </div>
-    );
-  }
+  if (navigations === null) return <Skeleton className="h-9 w-full" />;
 
   if (navigations.length === 0) {
     return (

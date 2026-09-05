@@ -702,8 +702,8 @@ Flächen.
 
 ## Update 2026-09-01: Sidebar-Icons – grau im Light, grün im Dark
 
-Zweistufige Nutzervorgabe am selben Tag: erst *"alle icon grün"*, direkt
-danach *"im light modus sollen die icons und schrift grau sein"*.
+Zweistufige Nutzervorgabe am selben Tag: erst _"alle icon grün"_, direkt
+danach _"im light modus sollen die icons und schrift grau sein"_.
 Endstand ist deshalb **grau im Light-, grün im Dark-Modus** – der
 Zwischenstand "immer grün" ist überholt.
 
@@ -746,7 +746,38 @@ Unverändert bleiben außerdem die **Auf-/Zuklapp-Chevrons** rechts an
 Menüs, kein Icon eines Eintrags.
 
 **Verhältnis zur Regel "Icon-Boxen bleiben grau"**: die gilt weiterhin
-für Icon-*Kacheln mit Hintergrund-Chip* in Listen und Kachelrastern (grau
+für Icon-_Kacheln mit Hintergrund-Chip_ in Listen und Kachelrastern (grau
 im Normalzustand, accent-grün nur bei aktiv/ausgewählt/freigeschaltet).
 Die Sidebar-Icons haben ausdrücklich **keinen** Chip (siehe Kommentar an
 `navIconChipClass`) und sind von dieser Regel nicht betroffen.
+
+## Update 2026-09-05: Platzhalter statt „wird geladen"-Sätzen
+
+Nutzervorgabe: _"mach ein skeleton bei dingen, die geladen werden im
+backend und verzögert kommen. wie z.B. frontend darstellung das
+manifest"_.
+
+Betroffen ist alles, was die Verwaltung **im Browser nachholt** statt
+serverseitig mitzuliefern:
+
+| Stelle                                 | vorher                       | jetzt                        |
+| -------------------------------------- | ---------------------------- | ---------------------------- |
+| Einstellungen → Frontend → Darstellung | „Template wird gelesen …"    | Raster aus Feld-Platzhaltern |
+| Template-Liste                         | „Templates werden geladen …" | Zeilen-Platzhalter           |
+| Formular-/Menü-Auswahl im Baustein     | Zeile mit Icon und Text      | Platzhalter in Feldhöhe      |
+| Formular einfügen (Dialog)             | „Formulare werden geladen …" | Zeilen-Platzhalter           |
+| Formular-Editor, Seitenauswahl         | „Seiten werden geladen …"    | Feld-Platzhalter             |
+
+Die Formen liegen in `components/loading-skeletons.tsx` und halten die
+Höhen der echten Elemente (Eingabefeld 2.25rem, Listenzeile mit
+Icon-Kästchen), damit beim Eintreffen der Daten nichts springt.
+
+**Warum überhaupt nachgeladen wird** – und damit, wo Platzhalter nötig
+sind: das Template-Manifest lebt in der Website, nicht in der Verwaltung
+(siehe [template-manifest.md](./template-manifest.md)); Formulare, Menüs
+und Templates werden erst beim Öffnen des jeweiligen Bereichs geholt, statt
+jede Seite damit zu beladen.
+
+**Faustregel für Neues:** kommt etwas per `fetch` im Browser, gehört ein
+Platzhalter in der Form des Kommenden hin – kein Satz. Ein Satz beschreibt,
+ein Platzhalter zeigt.

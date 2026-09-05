@@ -36,6 +36,7 @@ import {
   toastDeleted,
   toastEdited,
 } from "@/components/app-toast";
+import { FieldSkeleton } from "@/components/loading-skeletons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -590,9 +591,7 @@ function PrivacyPagePicker({
   }, []);
 
   if (pages === null) {
-    return (
-      <p className="text-sm text-muted-foreground">Seiten werden geladen …</p>
-    );
+    return <FieldSkeleton />;
   }
 
   const items = Object.fromEntries([

@@ -5,6 +5,7 @@ import { CheckCircle2, Palette, Pencil, Trash2, Upload } from "lucide-react";
 import type { TemplateManifest } from "@pivot/blocks";
 
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
+import { ListRowsSkeleton } from "@/components/loading-skeletons";
 import { TemplateManifestDialog } from "@/components/template-manifest-dialog";
 import { SystemMessage } from "@/components/ui/system-message";
 import { Button } from "@/components/ui/button";
@@ -157,9 +158,7 @@ export function FrontendTemplatesCard() {
       )}
 
       {items === null ? (
-        <p className="text-sm text-muted-foreground">
-          Templates werden geladen …
-        </p>
+        <ListRowsSkeleton rows={2} />
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-1 rounded-lg border border-dashed py-8 text-center text-sm text-muted-foreground">
           <Palette className="size-5" />

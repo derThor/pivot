@@ -20,6 +20,7 @@ import {
   type BreakpointTab,
 } from "@/components/breakpoint-tabs";
 import { ImagePickerDialog } from "@/components/image-picker-dialog";
+import { FieldGridSkeleton } from "@/components/loading-skeletons";
 import { SwitchRow } from "@/components/switch-row";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -344,11 +345,11 @@ export function TemplateSettingsFields({
   }, []);
 
   if (state === "loading") {
-    return (
-      <p className="text-sm text-muted-foreground sm:col-span-2">
-        Template wird gelesen …
-      </p>
-    );
+    // Platzhalter in der Form des Kommenden: das Manifest wird bei der
+    // Website erfragt, kommt also erst nach dem ersten Rendern. Die Anzahl
+    // ist geraten – sie soll die Fläche halten, nicht das Ergebnis
+    // vorhersagen.
+    return <FieldGridSkeleton className="sm:col-span-2" />;
   }
 
   // Ungespeichertes Manifest aus dem Formular sticht das vom Server

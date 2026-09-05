@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 
+import { ListRowsSkeleton } from "@/components/loading-skeletons";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -50,9 +51,7 @@ export function InsertFormBlockDialog({
         </DialogHeader>
         <div className="flex flex-col gap-3">
           {forms === null ? (
-            <p className="text-sm text-muted-foreground">
-              Formulare werden geladen …
-            </p>
+            <ListRowsSkeleton rows={2} />
           ) : forms.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Noch keine veröffentlichten Formulare vorhanden.
