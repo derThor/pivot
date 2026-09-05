@@ -293,11 +293,19 @@ export function DashboardHeader({
 
                     Bewusst KEIN DropdownMenuItem: ein Klick darauf würde
                     das Menü schließen, und man will das Umschalten sehen. */}
-                <div className="px-4 py-3">
-                  {/* Die Beschriftung nennt den AKTUELLEN Modus und wechselt
-                      mit ihm – sie steckt deshalb in der Komponente, die
-                      den Zustand kennt. */}
-                  <ThemeToggle withLabel />
+                {/* Gleiche Einrückung wie die Menüeinträge darunter
+                    (Nutzervorgabe, 2026-09-05): `p-2` außen wie bei den
+                    anderen Blöcken, `px-3.5` innen wie in
+                    DropdownMenuItem – sonst stünde "Dunkelmodus" sechs
+                    Pixel weiter links als "Einstellungen".
+
+                    Die Beschriftung nennt den AKTUELLEN Modus und wechselt
+                    mit ihm – sie steckt deshalb in der Komponente, die den
+                    Zustand kennt. */}
+                <div className="p-2">
+                  <div className="px-3.5 py-1">
+                    <ThemeToggle withLabel />
+                  </div>
                 </div>
                 {canViewSettings && (
                   <>
