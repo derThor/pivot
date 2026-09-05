@@ -16,6 +16,7 @@ import { PublicContentService } from './public-content.service';
 import { GlobalModulesService } from '../global-modules/global-modules.service';
 import { SiteCacheService } from '../site-cache/site-cache.service';
 import { TemplateRegionsService } from '../template-regions/template-regions.service';
+import { FrontendTemplatesService } from '../frontend-templates/frontend-templates.service';
 
 /** Content-Delivery-API für die öffentliche Website ("Frontend", siehe
  * knowledge-base/frontend/taxonomy-management.md, Update 2026-08-31 –
@@ -31,6 +32,7 @@ export class PublicContentController {
     private readonly globalModulesService: GlobalModulesService,
     private readonly siteCache: SiteCacheService,
     private readonly templateRegions: TemplateRegionsService,
+    private readonly frontendTemplates: FrontendTemplatesService,
   ) {}
 
   @Public()
@@ -66,6 +68,21 @@ export class PublicContentController {
   @Get('navigations')
   getNavigations() {
     return this.publicContentService.getAllNavigations();
+  }
+
+  /** Das aktive Frontend-Template samt CSS. `null`, solange keines
+   * hochgeladen/aktiviert ist – dann gilt das im Frontend-Projekt
+   * eingebaute. Öffentlich, weil die Website es zum Rendern JEDER Seite
+   * braucht. */
+  @Public()
+  @Get('frontend-template')
+  async getFrontendTemplate() {
+    // Als Objekt und nicht als nacktes `null`: ein leerer Antwortkörper
+    // lässt sich nicht als JSON lesen, die Website lief damit in einen
+    // Fehler (Fund beim Zurückschalten aufs eingebaute Template,
+    // 2026-09-05). Gleiche Form wie `{ content: null }` bei den
+    // Inhalts-Endpunkten.
+    return { template: await this.frontendTemplates.findActive() };
   }
 
   @Public()

@@ -3,12 +3,15 @@
 import { useEffect, useState } from "react";
 import { ImageIcon, Trash2 } from "lucide-react";
 import {
+  BUILTIN_TEMPLATE_KEY,
   isTemplateFieldVisible,
   resolveTemplateSettings,
+  templateSettingsFor,
+  withTemplateSettings,
   type TemplateField,
   type TemplateManifest,
   type TemplateSettingValue,
-  type TemplateSettingsValues,
+  type TemplateSettingsStore,
   type TemplateSpacingValue,
 } from "@pivot/blocks";
 
@@ -301,15 +304,24 @@ function TemplateFieldControl({
  * ein Hinweis und der Rest der Seite bleibt bedienbar.
  */
 export function TemplateSettingsFields({
-  values,
+  store,
   onChange,
   navigations,
+  override,
 }: {
-  values: TemplateSettingsValues | null;
-  onChange: (next: TemplateSettingsValues) => void;
+  /** Der GESAMTE Werte-Speicher (Template-Schlüssel → Werte). Welcher Topf
+   * gilt, entscheidet das aktive Template – siehe templateSettingsFor in
+   * @pivot/blocks. Ohne diese Trennung gewinnen die gespeicherten Werte
+   * des vorigen Templates über die Vorgaben des neuen. */
+  store: TemplateSettingsStore | null;
+  onChange: (next: TemplateSettingsStore) => void;
   navigations: NavigationSummary[];
+  /** In den Einstellungen hinterlegtes Manifest (ungespeicherter Stand des
+   * Formulars) – sticht das vom Server gemeldete. */
+  override?: TemplateManifest | null;
 }) {
   const [manifest, setManifest] = useState<TemplateManifest | null>(null);
+  const [templateKey, setTemplateKey] = useState<string>(BUILTIN_TEMPLATE_KEY);
   const [state, setState] = useState<"loading" | "ready" | "unavailable">(
     "loading",
   );
@@ -339,7 +351,11 @@ export function TemplateSettingsFields({
     );
   }
 
-  if (state === "unavailable" || !manifest) {
+  // Ungespeichertes Manifest aus dem Formular sticht das vom Server
+  // gemeldete – so sieht man den eigenen Entwurf sofort wirken.
+  const effective = override ?? manifest;
+
+  if (state === "unavailable" || !effective) {
     return (
       <p className="text-sm text-muted-foreground sm:col-span-2">
         Die Webseite konnte nicht nach ihren Gestaltungswerten gefragt werden.
@@ -351,13 +367,16 @@ export function TemplateSettingsFields({
 
   // Vorgaben des Manifests unter die gespeicherten Werte legen, damit
   // Felder nie leer wirken, obwohl das Template einen Wert benutzt.
-  const resolved = resolveTemplateSettings(manifest, values);
+  const resolved = resolveTemplateSettings(
+    effective,
+    templateSettingsFor(store, templateKey),
+  );
 
   // Reihenfolge der Gruppen = Reihenfolge ihres ersten Feldes im Manifest.
   // Das Template bestimmt damit auch den Aufbau der Seite, nicht nur ihren
   // Inhalt.
   const groups: { title: string | null; fields: TemplateField[] }[] = [];
-  for (const field of manifest.settings) {
+  for (const field of effective.settings) {
     if (!isTemplateFieldVisible(field, resolved)) continue;
     const title = field.group ?? null;
     const existing = groups.find((group) => group.title === title);
@@ -369,7 +388,7 @@ export function TemplateSettingsFields({
     <div className="flex flex-col gap-6 sm:col-span-2">
       <p className="text-sm text-muted-foreground">
         Diese Werte stammen aus dem Template{" "}
-        <span className="font-medium text-foreground">{manifest.name}</span>.
+        <span className="font-medium text-foreground">{effective.name}</span>.
         Ein leeres Feld bedeutet: es gilt die Vorgabe des Templates.
       </p>
       {groups.map((group) => (
@@ -387,9 +406,14 @@ export function TemplateSettingsFields({
                 value={resolved[field.key] ?? null}
                 navigations={navigations}
                 onChange={(next) =>
-                  // Immer den vollständigen Satz zurückgeben: die Werte
-                  // liegen als EIN Json-Feld in der Datenbank.
-                  onChange({ ...resolved, [field.key]: next })
+                  // Immer den vollständigen Satz des AKTIVEN Templates
+                  // zurückgeben, in seinen eigenen Topf gelegt.
+                  onChange(
+                    withTemplateSettings(store, templateKey, {
+                      ...resolved,
+                      [field.key]: next,
+                    }),
+                  )
                 }
               />
             ))}

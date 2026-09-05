@@ -59,7 +59,9 @@ export interface SiteSettings {
    * src/template/manifest.ts). Schlüssel = `key` aus dem Manifest;
    * unbekannte Schlüssel können darin stehen, wenn das Manifest ein Feld
    * einmal hatte und nicht mehr hat. */
-  templateSettings: TemplateSettingsValues | null;
+  /** Werte JE TEMPLATE (Schlüssel = Template-Key bzw. "__builtin"),
+   * siehe templateSettingsFor in @pivot/blocks. */
+  templateSettings: Record<string, unknown> | null;
   /** Hochgeladenes Manifest – sticht die Datei dieses Templates
    * (src/template/manifest.ts). `null` = die Datei gilt. */
   templateManifest: TemplateManifest | null;
@@ -387,6 +389,29 @@ export async function getBlockContext() {
     moduleTypes: moduleTypes ?? [],
     globalModules: globalModules ?? [],
   };
+}
+
+/** Das aktive, hochgeladene Frontend-Template. `null` = es gilt das in
+ * diesem Projekt eingebaute (src/template/*). */
+export interface ActiveFrontendTemplate {
+  id: string;
+  key: string;
+  name: string;
+  version: string | null;
+  manifest: TemplateManifest;
+  /** Reines CSS, beim Import geprüft (kein @import, keine externen
+   * Adressen) und mit umgeschriebenen Asset-Pfaden. */
+  css: string;
+  /** Vorlagen für Bereiche – nur beim Aktivieren interessant, die
+   * Website rendert immer die gepflegten Inhalte. */
+  regions: Record<string, unknown> | null;
+}
+
+export async function getActiveFrontendTemplate(): Promise<ActiveFrontendTemplate | null> {
+  const res = await getJson<{ template: ActiveFrontendTemplate | null }>(
+    "/public/frontend-template",
+  );
+  return res?.template ?? null;
 }
 
 /** Alle Menüs nach Id – für den Menü-Baustein in Template-Bereichen. Wird

@@ -4,13 +4,19 @@ import { PublicContentController } from './public-content.controller';
 import { GlobalModulesModule } from '../global-modules/global-modules.module';
 import { CategoriesModule } from '../categories/categories.module';
 import { TemplateRegionsModule } from '../template-regions/template-regions.module';
+import { FrontendTemplatesModule } from '../frontend-templates/frontend-templates.module';
 
 @Module({
   // `GlobalModulesModule` exportiert seinen Service – gebraucht für
   // `GET /public/global-modules` (siehe Controller-Kommentar).
   // CategoriesModule fuer den RSS-Feed nach Slug: der Feed wird dort
   // erzeugt, hier wird nur der Slug aufgeloest (siehe getCategoryFeed).
-  imports: [GlobalModulesModule, CategoriesModule, TemplateRegionsModule],
+  imports: [
+    GlobalModulesModule,
+    CategoriesModule,
+    TemplateRegionsModule,
+    FrontendTemplatesModule,
+  ],
   controllers: [PublicContentController],
   providers: [PublicContentService],
 })

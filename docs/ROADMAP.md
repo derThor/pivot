@@ -924,6 +924,13 @@ Architektur, Entscheidungen und Stolpersteine:
       daraus generisch. Werte in `AppSettings.templateSettings` (Json),
       Farben/Größen landen als CSS-Variablen auf `<html>`. Details und
       die bewussten Grenzen: knowledge-base/frontend/template-manifest.md
+- [x] Template-Manifest Stufe 3: Templates als Paket hochladen
+      (2026-09-05) – ZIP mit template.json, theme.css, regions.json und
+      assets/, Liste unter Einstellungen → Frontend, genau eines aktiv,
+      Umschalten im Livebetrieb ohne Deploy. CSS wird beim Import geprüft
+      (kein @import, keine externen Adressen) und dockt an den
+      Ankerklassen des Systems an (`pv-*`, für Bausteine aus dem Modul-Typ
+      abgeleitet). Werte liegen je Template getrennt
 - [~] Template-Manifest Stufe 2: Bereiche mit Bausteinen füllen
   (2026-09-05) – Mechanismus steht: Inhalte → Bereiche, eigener
   Endpunkt, eigenes Modell, gefüllter Bereich ersetzt die eingebaute

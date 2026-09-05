@@ -215,3 +215,101 @@ Kopfbereich benutzt dieselbe Komponente.
 rechts) gebaut – die Website zeigte beides an Stelle der eingebauten
 Fassung, inklusive Akzentknopf für den Menüpunkt mit `ACCENT_BUTTON`. Nach
 dem Löschen des Bereichs war der eingebaute Kopf wieder da.
+
+## Stufe 3: Templates als Paket hochladen (2026-09-05)
+
+Nutzervorgabe: _"baue eine uploadfunktion, das man ein frontend-template
+hinzufügen kann. das dies in einer liste auftaucht und man dieses
+aktivieren und deaktivieren kann. das auch immer nur eins aktiv sein kann.
+so das ich im livebetrieb einfach ein anderes template hochladen kann und
+damit die gesamte seite anders aussehen lassen kann."_
+
+### Was in einem Paket steckt – und warum nicht mehr
+
+```
+mein-template.zip
+├ template.json     Name, Version, Manifest
+├ theme.css         reines CSS
+├ regions.json      (optional) Vorlagen für Kopf-/Fußbereich
+└ assets/           Bilder und Schriften
+```
+
+CSS und Daten brauchen **keinen Build** – deshalb wirkt ein Wechsel
+sofort, ohne Deploy. React-Komponenten müssten kompiliert werden und
+können nie Teil eines Uploads sein. Ein Template ändert damit das
+**Aussehen**, nicht Aufbau oder Verhalten: Farben, Typografie, Abstände,
+Rundungen, Rasterspalten – aber nicht, dass ein Kachel-Baustein plötzlich
+als Karussell rendert.
+
+### Der Gestaltungs-Vertrag
+
+Damit fremdes CSS zuverlässig greift, tragen die gemeinsamen Komponenten
+stabile Klassen (`pv-header`, `pv-nav`, `pv-block`, `pv-footer` …, siehe
+`packages/blocks/src/style-hooks.ts`). Für die **Bausteine ist die Liste
+abgeleitet**, nicht gepflegt: jeder bekommt `pv-block-<slug>` aus seinem
+Modul-Typ (Nutzerhinweis: _"das system kennt seine komponenten ja"_). Ein
+neuer Baustein steht damit sofort im Katalog.
+
+Die Klassen tragen **keine eigene Gestaltung** – sie sind reine Griffe,
+damit ein Template sie ohne Spezifitäts-Kampf überschreiben kann.
+
+### CSS-Prüfung beim Import
+
+Erlaubt ist praktisch alles außer **Verweisen nach draußen**
+(Nutzerentscheidung): kein `@import`, kein `url()` auf einen fremden
+Server. Sonst meldete jeder Seitenaufruf sich bei Dritten – im CSS
+versteckt und von außen nicht zu sehen. Schriften und Bilder kommen aus
+`assets/`; ihre Pfade werden beim Import einmal auf
+`/uploads/templates/<key>/…` umgeschrieben, nicht bei jedem Aufruf.
+
+Geprüft wird auf Textebene statt mit einem CSS-Parser: die Regel ist
+bewusst grob, im Zweifel abgelehnt. `assertSafeCss()` ist ohne Umgebung
+testbar – das war der Grund, das Auspacken von Datenbank und Dateisystem
+zu trennen.
+
+### Werte liegen JE TEMPLATE
+
+Beim ersten echten Test fiel auf: mit einem gemeinsamen Werte-Topf
+gewinnen die gespeicherten Farben des vorigen Templates über die Vorgaben
+des neuen, sobald beide denselben Schlüssel benutzen – ein hochgeladenes
+dunkles Template blieb dadurch hell. `AppSettings.templateSettings` hält
+die Werte deshalb nach Template getrennt (`{ "__builtin": {…},
+"nachtblau": {…} }`, siehe `templateSettingsFor()`). Ein Zurückschalten
+stellt die vorher gepflegten Werte wieder her.
+
+Die alte, flache Form wird beim Lesen als Werte des eingebauten Templates
+verstanden – daran erkennbar, dass die Werte keine Objekte sind.
+
+### Rangfolge des Manifests
+
+1. aktives hochgeladenes Template,
+2. in den Einstellungen hinterlegtes Manifest,
+3. die Datei des Frontend-Projekts.
+
+Dieselbe Reihenfolge in `apps/site/src/app/layout.tsx` und in der
+Verwaltungs-Route `/admin/api/template` – wer eine ändert, muss die andere
+mitziehen.
+
+### Kleinigkeiten mit Folgen
+
+- Das **aktive Template lässt sich nicht löschen**. Sonst stünde die
+  Webseite ohne Gestaltung da, ohne dass es jemand wollte.
+- Ein erneuter Upload mit gleichem Schlüssel **ersetzt** das vorhandene
+  und behält den Aktiv-Zustand – wer eine Korrektur seines laufenden
+  Templates hochlädt, will sie sofort sehen.
+- `/public/frontend-template` antwortet mit `{ template: null }` statt mit
+  nacktem `null`: ein leerer Antwortkörper ist kein JSON, die Website lief
+  damit in einen 500er (Fund beim Zurückschalten).
+- **SVG ist als Asset nicht erlaubt.** Es kann Skript enthalten; die
+  Medienbibliothek behandelt SVGs deshalb schon heute gesondert
+  (Content-Disposition: attachment), was für eine Schrift oder ein
+  CSS-Hintergrundbild nutzlos wäre.
+
+### Praxistest (2026-09-05)
+
+Paket „Nachtblau" (dunkler Grund, blauer Akzent, 1320px Bahn) gebaut,
+importiert, aktiviert: die Website lieferte
+`--color-background:#0b1020 … --content-width:1320px` und das eingehängte
+`<style data-template="nachtblau">`. Nach dem Zurückschalten wieder
+Pivots Werte. Die CSS-Prüfung lehnte `@import`, `https://…` und `//…`
+zuverlässig ab und ließ `url("./assets/…")` durch.

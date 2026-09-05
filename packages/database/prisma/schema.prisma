@@ -1085,6 +1085,54 @@ model ModuleType {
 ///
 /// Der Preis: keine Versionshistorie für Bereiche. Bewusst – siehe
 /// knowledge-base/frontend/template-manifest.md.
+/// Ein hochgeladenes Frontend-Template (Nutzervorgabe, 2026-09-05: *"das
+/// man ein frontend-template hinzufügen kann … aktivieren und
+/// deaktivieren … nur eins aktiv … im livebetrieb"*).
+///
+/// Ein Paket besteht aus `template.json` (Name + Manifest), `theme.css`
+/// (reines CSS), optional `regions.json` (Vorlagen für Kopf-/Fußbereich)
+/// und einem `assets/`-Ordner. Warum genau das und nichts weiter: CSS und
+/// Daten brauchen keinen Build und wirken deshalb sofort – React-Code
+/// müsste kompiliert werden und kann nie Teil eines Uploads sein. Ein
+/// Template ändert also das AUSSEHEN, nicht Aufbau oder Verhalten (siehe
+/// knowledge-base/frontend/template-manifest.md).
+model FrontendTemplate {
+  id String @id @default(cuid())
+
+  /// Aus `template.json` oder dem Dateinamen. Eindeutig, damit ein
+  /// erneuter Upload desselben Templates es ersetzt statt zu doppeln.
+  key     String  @unique
+  name    String
+  version String?
+
+  /// Selbstbeschreibung: Felder und Bereiche (Format siehe
+  /// packages/blocks/src/template-manifest.ts). Hier bearbeitbar, ohne das
+  /// Paket neu zu bauen.
+  manifest Json
+
+  /// Der Inhalt von `theme.css`, bereits geprüft (kein @import, keine
+  /// externen Adressen) und mit auf diese Installation umgeschriebenen
+  /// Asset-Pfaden. Wird als <style> in die Seite gehängt.
+  css String
+
+  /// Vorlagen für Bereiche (`{ header: { blocks: [...] }, ... }`). Werden
+  /// beim Aktivieren NUR in leere Bereiche übernommen – bereits gebaute
+  /// Inhalte überschreibt ein Template-Wechsel nicht.
+  regions Json?
+
+  /// Genau eines ist aktiv. Der Service setzt das in einer Transaktion um
+  /// (erst alle aus, dann eines an); eine Datenbank-Regel dafür gibt es
+  /// bewusst nicht – "höchstens ein true" ist als partieller Index in
+  /// Prisma nicht ausdrückbar, gleiche Lage wie bei
+  /// NavigationItem.isHomepage.
+  isActive Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("frontend_templates")
+}
+
 model TemplateRegionContent {
   id String @id @default(cuid())
 

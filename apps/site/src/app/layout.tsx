@@ -1,11 +1,14 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { Metadata } from "next";
 import {
+  BUILTIN_TEMPLATE_KEY,
   resolveImageSrc,
   resolveTemplateSettings,
   templateCssVars,
+  templateSettingsFor,
 } from "@pivot/blocks";
 import {
+  getActiveFrontendTemplate,
   getAllNavigations,
   getBlockContext,
   getSiteSettings,
@@ -59,13 +62,18 @@ export default async function RootLayout({
   // hinterlegt, ersetzen sie die eingebaute Fassung von Kopf- bzw.
   // Fußbereich. Leer = eingebaute Fassung, damit eine bestehende Website
   // durch das Einführen der Mechanik unverändert bleibt.
-  const [site, regions, blockContext, navigations] = await Promise.all([
-    getSiteSettings(),
-    getTemplateRegions(),
-    getBlockContext(),
-    // Für den Menü-Baustein: er speichert nur eine Id, aufgelöst wird hier.
-    getAllNavigations(),
-  ]);
+  const [site, regions, blockContext, navigations, activeTemplate] =
+    await Promise.all([
+      getSiteSettings(),
+      getTemplateRegions(),
+      getBlockContext(),
+      // Für den Menü-Baustein: er speichert nur eine Id, aufgelöst wird hier.
+      getAllNavigations(),
+      // Ein hochgeladenes, aktives Template (Einstellungen → Frontend →
+      // Templates). Es bringt Manifest und CSS mit und sticht damit beides
+      // aus diesem Projekt – ohne Deploy, weil CSS keinen Build braucht.
+      getActiveFrontendTemplate(),
+    ]);
   const headerBlocks = regionBlocks(regions.header);
   const footerBlocks = regionBlocks(regions.footer);
   // Die Gestaltungswerte dieses Templates: was das Manifest deklariert,
@@ -76,10 +84,19 @@ export default async function RootLayout({
   // Projekts (2026-09-05); ohne eines gilt die Datei. Die Datei bleibt
   // dabei die Wahrheit darüber, was WIRKT – ein hochgeladenes Feld auf
   // eine unbenutzte CSS-Variable bleibt folgenlos.
-  const manifest = site.templateManifest ?? templateManifest;
+  // Rangfolge: aktives hochgeladenes Template → in den Einstellungen
+  // hinterlegtes Manifest → die Datei dieses Projekts.
+  const manifest =
+    activeTemplate?.manifest ?? site.templateManifest ?? templateManifest;
+  // Werte liegen JE TEMPLATE (siehe templateSettingsFor): sonst gewinnen
+  // die gespeicherten Farben des vorigen Templates über die Vorgaben des
+  // neuen, sobald beide denselben Schlüssel benutzen.
   const templateValues = resolveTemplateSettings(
     manifest,
-    site.templateSettings,
+    templateSettingsFor(
+      site.templateSettings,
+      activeTemplate?.key ?? BUILTIN_TEMPLATE_KEY,
+    ),
   );
   // Nur Werte aus dem Manifest DIESES Templates. Die Akzentfarbe unter
   // Einstellungen → Darstellung Backend wirkt bewusst NICHT mehr hierher
@@ -97,6 +114,21 @@ export default async function RootLayout({
       // projektübergreifend gleich.
       className={fontVariables}
     >
+      {/* Das CSS des aktiven Templates. Bewusst inline und NICHT als
+          eigene Datei: es ist wenige Kilobyte groß, muss zum gerade
+          aktiven Stand passen und darf beim Umschalten keinen Moment
+          veraltet ausgeliefert werden. Es steht NACH dem Stylesheet der
+          App, gewinnt also bei gleicher Spezifität – gestylt wird gegen
+          die Ankerklassen (siehe STYLE_HOOKS in @pivot/blocks).
+
+          Geprüft wurde es beim Import (kein @import, keine externen
+          Adressen, siehe assertSafeCss in der API), nicht hier. */}
+      {activeTemplate?.css && (
+        <style
+          data-template={activeTemplate.key}
+          dangerouslySetInnerHTML={{ __html: activeTemplate.css }}
+        />
+      )}
       {/* `overflow-x-clip` gehört hierher und nicht auf die Inhaltsbahn:
           randlose Blöcke sind `100vw` breit, und `100vw` schließt die
           senkrechte Bildlaufleiste mit ein – sie ragen also um deren

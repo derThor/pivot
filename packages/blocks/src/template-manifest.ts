@@ -372,3 +372,72 @@ export function validateTemplateManifest(
   });
   return issues;
 }
+
+/**
+ * Der Schlüssel des im Frontend-Projekt eingebauten Templates. Werte
+ * dafür liegen im selben Speicher wie die der hochgeladenen, nur unter
+ * diesem Namen – so gibt es genau EINEN Ort für Template-Werte.
+ */
+export const BUILTIN_TEMPLATE_KEY = "__builtin";
+
+/**
+ * `AppSettings.templateSettings` hält die Werte **je Template**:
+ * `{ "__builtin": { … }, "nachtblau": { … } }`.
+ *
+ * Warum getrennt (Fund beim ersten echten Test, 2026-09-05): mit einem
+ * gemeinsamen Topf gewinnen die gespeicherten Werte des vorigen Templates
+ * über die Vorgaben des neuen, sobald beide denselben Schlüssel benutzen –
+ * ein hochgeladenes dunkles Template blieb dadurch hell. Getrennt zeigt
+ * jedes Template beim Aktivieren seine eigenen Vorgaben, und ein
+ * Zurückschalten stellt die vorher gepflegten Werte wieder her.
+ *
+ * Der Speicher enthält für kurze Zeit noch die ALTE, flache Form
+ * (Schlüssel → Wert statt Template → Werte). Sie wird beim Lesen als
+ * Werte des eingebauten Templates verstanden – daran erkennbar, dass die
+ * Werte keine Objekte sind.
+ */
+export type TemplateSettingsStore = Record<string, unknown>;
+
+function isBucketShape(store: TemplateSettingsStore): boolean {
+  const values = Object.values(store);
+  if (values.length === 0) return true;
+  return values.every(
+    (value) =>
+      typeof value === "object" && value !== null && !Array.isArray(value),
+  );
+}
+
+/** Die Werte EINES Templates aus dem Speicher. */
+export function templateSettingsFor(
+  store: TemplateSettingsStore | null | undefined,
+  templateKey: string,
+): TemplateSettingsValues {
+  if (!store) return {};
+  if (!isBucketShape(store)) {
+    // Alte, flache Form: sie gehörte dem eingebauten Template.
+    return templateKey === BUILTIN_TEMPLATE_KEY
+      ? (store as TemplateSettingsValues)
+      : {};
+  }
+  const bucket = store[templateKey];
+  return typeof bucket === "object" && bucket !== null
+    ? (bucket as TemplateSettingsValues)
+    : {};
+}
+
+/** Werte eines Templates in den Speicher schreiben, ohne die anderen
+ * anzufassen. */
+export function withTemplateSettings(
+  store: TemplateSettingsStore | null | undefined,
+  templateKey: string,
+  values: TemplateSettingsValues,
+): TemplateSettingsStore {
+  const base: TemplateSettingsStore =
+    store && isBucketShape(store)
+      ? { ...store }
+      : store
+        ? { [BUILTIN_TEMPLATE_KEY]: store }
+        : {};
+  base[templateKey] = values;
+  return base;
+}

@@ -40,6 +40,7 @@ import {
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
 import { SegmentedPicker } from "@/components/segmented-picker";
 import { SwitchRow } from "@/components/switch-row";
+import { FrontendTemplatesCard } from "@/components/frontend-templates-card";
 import { TemplateManifestCard } from "@/components/template-manifest-card";
 import { TemplateSettingsFields } from "@/components/template-settings-fields";
 import { Button } from "@/components/ui/button";
@@ -2004,6 +2005,8 @@ export function SettingsForm({
                     )}
                   />
                   <Separator className="sm:col-span-2" />
+                  <FrontendTemplatesCard />
+                  <Separator className="sm:col-span-2" />
                   <FormField
                     control={form.control}
                     name="templateManifest"
@@ -2028,12 +2031,19 @@ export function SettingsForm({
                     render={({ field }) => (
                       <FormItem className="sm:col-span-2">
                         <TemplateSettingsFields
-                          values={
-                            (field.value as TemplateSettingsValues | null) ??
+                          store={
+                            (field.value as Record<string, unknown> | null) ??
                             null
                           }
                           onChange={field.onChange}
                           navigations={navigations}
+                          // Ungespeichertes Manifest aus dem Formular sticht
+                          // das vom Server gemeldete.
+                          override={
+                            (form.watch(
+                              "templateManifest",
+                            ) as TemplateManifest | null) ?? null
+                          }
                         />
                       </FormItem>
                     )}
