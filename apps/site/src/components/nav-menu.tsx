@@ -7,10 +7,11 @@ import type { SiteNavigation, SiteNavigationItem } from "@/lib/api";
  * Die beiden Knopf-Varianten stehen im Entwurf rechts vom eigentlichen
  * Menü – "Anmelden" und "Demo buchen". */
 const APPEARANCE_CLASS = {
-  LINK: "text-[14.5px] font-medium text-muted-foreground hover:text-accent-link",
-  TEXT_BUTTON: "px-3.5 py-2 text-[14.5px] font-semibold hover:text-accent-link",
+  LINK: "pv-nav-link text-[14.5px] font-medium text-muted-foreground hover:text-accent-link",
+  TEXT_BUTTON:
+    "pv-nav-button px-3.5 py-2 text-[14.5px] font-semibold hover:text-accent-link",
   ACCENT_BUTTON:
-    "rounded-full bg-accent px-5 py-2.5 text-[14.5px] font-bold text-accent-ink hover:bg-accent-strong",
+    "pv-nav-button rounded-full bg-accent px-5 py-2.5 text-[14.5px] font-bold text-accent-ink hover:bg-accent-strong",
 } as const;
 
 export function NavLink({ item }: { item: SiteNavigationItem }) {
@@ -64,7 +65,10 @@ export function NavMenu({
 
   return (
     <div
-      className={cn("flex flex-wrap items-center gap-x-6 gap-y-2", className)}
+      className={cn(
+        "pv-nav flex flex-wrap items-center gap-x-6 gap-y-2",
+        className,
+      )}
     >
       {links.length > 0 && (
         <nav className="flex flex-wrap items-center gap-x-6 gap-y-2">

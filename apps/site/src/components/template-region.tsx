@@ -1,4 +1,4 @@
-import type { GlobalModule } from "@pivot/blocks";
+import { cn, type GlobalModule } from "@pivot/blocks";
 import { ContentBlocks } from "@/components/content-blocks";
 import type { ModuleType, SiteNavigation } from "@/lib/api";
 
@@ -33,7 +33,7 @@ export function TemplateRegion({
   className?: string;
 }) {
   return (
-    <div className={className}>
+    <div className={cn("pv-region", className)}>
       <ContentBlocks
         data={data}
         moduleTypes={moduleTypes}

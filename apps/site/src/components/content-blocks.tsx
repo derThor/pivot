@@ -5,6 +5,7 @@ import {
   DividerOutput,
   RichTextDisplay,
   TilesGridOutput,
+  blockHookClass,
   blockLayoutClasses,
   blockLayoutStyle,
   cn,
@@ -101,6 +102,12 @@ export function ContentBlocks({
                     key={instance.id}
                     className={cn(
                       "block-layout",
+                      // Ankerklassen für hochgeladene Templates: `pv-block`
+                      // für alle, `pv-block-<slug>` je Bausteinart. Der
+                      // Slug kommt aus dem Modul-Typ, die Liste dazu
+                      // erzeugt das System selbst (blockStyleHooks).
+                      "pv-block",
+                      blockHookClass(moduleType.slug),
                       blockLayoutClasses(layout.align, layout.width),
                     )}
                     style={blockLayoutStyle(layout.align, layout.width)}

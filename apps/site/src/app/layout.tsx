@@ -147,7 +147,7 @@ export default async function RootLayout({
             2026-09-03: der Block war 100vw breit, wurde aber auf
             Bahnbreite beschnitten). Abgeschnitten wird am <body>, der
             über die volle Fensterbreite geht. */}
-        <main className="mx-auto w-full max-w-[var(--content-width,1180px)] flex-1 px-6 pb-14 sm:px-8">
+        <main className="pv-main mx-auto w-full max-w-[var(--content-width,1180px)] flex-1 px-6 pb-14 sm:px-8">
           {children}
         </main>
 
@@ -155,7 +155,7 @@ export default async function RootLayout({
             Fassung. Anders als beim Kopfbereich braucht es hier keinen
             Rahmen mit Verhalten – nur die dunkle Fläche und die Bahn. */}
         {footerBlocks.length > 0 ? (
-          <footer className="bg-surface-dark text-surface-dark-foreground">
+          <footer className="pv-footer bg-surface-dark text-surface-dark-foreground">
             <div className="mx-auto w-full max-w-[var(--content-width,1180px)] px-6 py-14 sm:px-8">
               <TemplateRegion
                 data={regions.footer!.data}

@@ -1,4 +1,5 @@
 export * from "./types";
+export * from "./style-hooks";
 export * from "./template-manifest";
 export * from "./template-manifest-draft";
 export * from "./cn";

@@ -26,7 +26,10 @@ export function ContentArticle({
   const spacingStyle = pageSpacingStyle(spacing);
   return (
     <article
-      className={cn("flex flex-col gap-8", spacingStyle && "page-spacing")}
+      className={cn(
+        "pv-article flex flex-col gap-8",
+        spacingStyle && "page-spacing",
+      )}
       style={spacingStyle}
     >
       {/* "Titel ausblenden" (Nutzervorgabe, 2026-09-03): gedacht für

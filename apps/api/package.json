@@ -33,6 +33,8 @@
     "@nestjs/swagger": "^11.4.6",
     "@nestjs/throttler": "^6.5.0",
     "@pivot/database": "workspace:*",
+    "@types/adm-zip": "^0.5.8",
+    "adm-zip": "^0.6.0",
     "archiver": "^7.0.1",
     "argon2": "^0.41.1",
     "class-transformer": "^0.5.1",

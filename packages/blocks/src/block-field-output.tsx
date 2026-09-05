@@ -42,7 +42,7 @@ export function BlockSpacingWrapper({
 }) {
   return (
     <div
-      className={cn("block-spacing", className)}
+      className={cn("pv-block-spacing block-spacing", className)}
       style={
         {
           ...spacingStyleVars(layout?.padding, "padding"),

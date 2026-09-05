@@ -48,7 +48,9 @@ export function SiteHeader({
   return (
     <header
       className={cn(
-        "z-50 border-b border-border",
+        // Ankerklasse für hochgeladene Templates (siehe STYLE_HOOKS in
+        // @pivot/blocks) – sie trägt bewusst keine eigene Gestaltung.
+        "pv-header z-50 border-b border-border",
         sticky && "sticky top-0",
         // Weichgezeichnet nur dann sinnvoll, wenn der Balken beim Scrollen
         // stehen bleibt – über einem mitlaufenden Balken gibt es nichts
@@ -63,11 +65,11 @@ export function SiteHeader({
         // Bausteine aus dem Bereich "Kopfbereich" – sie bestimmen den
         // Aufbau vollständig, deshalb keine eingebaute Bahn drumherum
         // außer der Breitenbegrenzung.
-        <div className="mx-auto w-full max-w-[var(--content-width,1180px)] px-6 sm:px-8">
+        <div className="pv-header-inner mx-auto w-full max-w-[var(--content-width,1180px)] px-6 sm:px-8">
           {children}
         </div>
       ) : (
-        <div className="mx-auto flex w-full max-w-[var(--content-width,1180px)] flex-wrap items-center gap-x-8 gap-y-3 px-6 py-3.5 sm:px-8">
+        <div className="pv-header-inner mx-auto flex w-full max-w-[var(--content-width,1180px)] flex-wrap items-center gap-x-8 gap-y-3 px-6 py-3.5 sm:px-8">
           <Link href="/" className="mr-auto flex items-center">
             <SiteLogo variant="light" siteTitle={siteTitle} priority />
           </Link>
