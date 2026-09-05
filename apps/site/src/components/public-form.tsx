@@ -260,7 +260,7 @@ export function PublicForm({ formId }: { formId: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} className="pv-form flex flex-col gap-4">
       <div className="flex flex-wrap gap-4">
         {form.fields.map((field) => {
           const widthStyle = {

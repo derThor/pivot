@@ -345,3 +345,27 @@ einen Eintrag erzeugen, der nirgends auftaucht.
 Der Vorgabewert wird nach dem FELDTYP gelesen (Zahl → Zahl, Schalter →
 Boolean): sonst stünde später ein String in einem Zahlenfeld, und die
 Website rechnete damit.
+
+### Nachgezogen am 2026-09-05 (Selbstprüfung)
+
+Zwei Dinge waren nicht in Ordnung und sind behoben:
+
+**Der Gestaltungs-Vertrag hat gelogen.** `pv-archive`, `pv-post` und
+`pv-form` standen im Katalog, aber nicht im Markup – ein Template hätte
+dagegen geschrieben und nichts wäre passiert. Ein Vertrag, der Klassen
+verspricht, die es nicht gibt, ist schlimmer als keiner. Alle drei sind
+jetzt gesetzt (Kategorie-Übersicht, Beitrag in der Blog-Darstellung,
+Formular). **Prüfung beim Erweitern:** Katalog und Markup gegeneinander
+abgleichen, etwa mit
+`grep -o 'pv-[a-z-]*' apps/site/src packages/blocks/src`.
+
+**`regions.json` wurde gespeichert, aber nie angewandt.** Ein Feld ohne
+Wirkung – genau das, was dieses Projekt sonst vermeidet. Beim Aktivieren
+werden die Vorlagen jetzt übernommen, aber **nur in leere Bereiche**: wer
+seinen Kopfbereich eingerichtet hat, verliert ihn nicht, weil er ein
+anderes Template ausprobiert. Die Antwort meldet zurück, welche Bereiche
+vorbelegt wurden (`filledRegions`).
+
+Geprüft mit einem zweiten Paket, dessen `regions.json` einen Fußbereich
+mitbringt: nach dem Aktivieren stand der Vorlagen-Baustein auf der
+Website; ein bereits gefüllter Bereich blieb unangetastet.

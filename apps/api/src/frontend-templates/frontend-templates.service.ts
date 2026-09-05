@@ -128,11 +128,59 @@ export class FrontendTemplatesService {
       this.prisma.frontendTemplate.update({
         where: { id },
         data: { isActive: true },
-        select: templateSelect,
+        select: { ...templateSelect, regions: true },
       }),
     ]);
+    // Vorlagen des Pakets in LEERE Bereiche übernehmen – gebaute Inhalte
+    // bleiben unangetastet (siehe applyRegionPresets).
+    const filledRegions = await this.applyRegionPresets(activated.regions);
     this.siteCache.invalidate('frontend-template.activated');
-    return activated;
+    return { ...activated, filledRegions };
+  }
+
+  /**
+   * Übernimmt die Bereichs-Vorlagen eines Pakets – **nur in leere
+   * Bereiche**.
+   *
+   * Ein Template-Wechsel darf gebaute Inhalte nicht überschreiben: wer
+   * seinen Kopfbereich eingerichtet hat, verliert ihn sonst beim
+   * Ausprobieren eines anderen Templates. Leere Bereiche dagegen mit einer
+   * sinnvollen Startbelegung zu füllen ist genau der Zweck der Vorlagen.
+   *
+   * Ergebnis wird gemeldet, damit die Oberfläche sagen kann, was passiert
+   * ist ("2 Bereiche vorbelegt") statt es still zu tun.
+   */
+  private async applyRegionPresets(
+    regions: Prisma.JsonValue | null,
+  ): Promise<string[]> {
+    if (!regions || typeof regions !== 'object' || Array.isArray(regions)) {
+      return [];
+    }
+    const filled: string[] = [];
+    for (const [key, preset] of Object.entries(regions)) {
+      if (!preset || typeof preset !== 'object' || Array.isArray(preset)) {
+        continue;
+      }
+      const blocks = (preset as { blocks?: unknown }).blocks;
+      if (!Array.isArray(blocks) || blocks.length === 0) continue;
+
+      const existing = await this.prisma.templateRegionContent.findUnique({
+        where: { key },
+        select: { data: true },
+      });
+      const existingBlocks = (
+        existing?.data as { blocks?: unknown[] } | null | undefined
+      )?.blocks;
+      if (Array.isArray(existingBlocks) && existingBlocks.length > 0) continue;
+
+      await this.prisma.templateRegionContent.upsert({
+        where: { key },
+        create: { key, data: preset as Prisma.InputJsonValue },
+        update: { data: preset as Prisma.InputJsonValue },
+      });
+      filled.push(key);
+    }
+    return filled;
   }
 
   /** Zurück auf das im Frontend-Projekt eingebaute Template. */

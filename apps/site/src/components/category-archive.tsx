@@ -97,7 +97,7 @@ function BlogPost({
   const visibleBlocks = isTruncated ? blocks.slice(0, cutIndex) : blocks;
 
   return (
-    <article className="flex flex-col gap-4 border-b border-border pb-10 last:border-0">
+    <article className="pv-post flex flex-col gap-4 border-b border-border pb-10 last:border-0">
       <header className="flex flex-col gap-1">
         {date && (
           <time
@@ -316,7 +316,10 @@ export function CategoryArchive({
   if (isBlog) {
     return (
       <div
-        className={cn("flex flex-col gap-10", spacingStyle && "page-spacing")}
+        className={cn(
+          "pv-archive flex flex-col gap-10",
+          spacingStyle && "page-spacing",
+        )}
         style={spacingStyle}
       >
         {items.length === 0 ? (
@@ -346,7 +349,10 @@ export function CategoryArchive({
 
   return (
     <div
-      className={cn("flex flex-col gap-8", spacingStyle && "page-spacing")}
+      className={cn(
+        "pv-archive flex flex-col gap-8",
+        spacingStyle && "page-spacing",
+      )}
       style={spacingStyle}
     >
       <header className="flex flex-col gap-3">
