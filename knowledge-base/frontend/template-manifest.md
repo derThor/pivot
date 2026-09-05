@@ -313,3 +313,35 @@ importiert, aktiviert: die Website lieferte
 `<style data-template="nachtblau">`. Nach dem Zurückschalten wieder
 Pivots Werte. Die CSS-Prüfung lehnte `@import`, `https://…` und `//…`
 zuverlässig ab und ließ `url("./assets/…")` durch.
+
+### Manifeste in der Oberfläche bearbeiten (2026-09-05, Nachtrag)
+
+Nutzervorgabe: _"bau das so um, das jedes manifest dynamisch bearbeitet
+werden kann in der ui"_. Vorher gab es nur ein JSON-Textfeld, und nur für
+das eingebaute Template.
+
+Jetzt ein gemeinsamer Editor-Dialog (`template-manifest-dialog.tsx` +
+`template-manifest-editor.tsx`) an zwei Stellen:
+
+- **Eingebautes Template**: Einstellungen → Frontend → „Manifest
+  bearbeiten“; gespeichert wird als Übersteuerung in den Einstellungen.
+- **Jedes hochgeladene Template**: in der Liste der Knopf „Manifest“;
+  gespeichert wird am Template selbst (`PATCH /frontend-templates/:id`).
+
+Der Dialog weiß nicht, WOHIN gespeichert wird – das übergibt der Aufrufer
+als `onSave`. Dadurch gibt es den Editor genau einmal.
+
+**Zwei Ansichten auf dasselbe Objekt:** die Felder-Ansicht für den
+Normalfall (Beschriftung, Gruppe, Typ, CSS-Variable, Vorgabewert; Felder
+hinzufügen und entfernen) und die JSON-Ansicht für alles, was ein Formular
+schlecht abbildet – Optionen einer Auswahl, `showIf`-Bedingungen,
+Pflicht-Bausteine eines Bereichs. Ein Wechsel zwischen beiden verliert
+nichts.
+
+**Bereiche lassen sich umbenennen, aber nicht anlegen.** Ein Bereich
+erscheint nur, wenn das Template ihn rendert – ihn hier zu erfinden würde
+einen Eintrag erzeugen, der nirgends auftaucht.
+
+Der Vorgabewert wird nach dem FELDTYP gelesen (Zahl → Zahl, Schalter →
+Boolean): sonst stünde später ein String in einem Zahlenfeld, und die
+Website rechnete damit.

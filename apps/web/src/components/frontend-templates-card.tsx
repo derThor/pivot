@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Palette, Trash2, Upload } from "lucide-react";
+import { CheckCircle2, Palette, Pencil, Trash2, Upload } from "lucide-react";
 import type { TemplateManifest } from "@pivot/blocks";
 
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
+import { TemplateManifestDialog } from "@/components/template-manifest-dialog";
 import { SystemMessage } from "@/components/ui/system-message";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -209,6 +210,34 @@ export function FrontendTemplatesCard() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                <TemplateManifestDialog
+                  title={`Manifest von „${item.name}“`}
+                  manifest={item.manifest}
+                  onSave={async (next) => {
+                    const ok = await send(
+                      `/api/frontend-templates/${item.id}`,
+                      {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          name: next.name,
+                          manifest: next,
+                        }),
+                      },
+                    );
+                    return ok ? null : "Konnte nicht gespeichert werden.";
+                  }}
+                  trigger={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-button-border"
+                    >
+                      <Pencil className="size-4" />
+                      Manifest
+                    </Button>
+                  }
+                />
                 {!item.isActive && (
                   <Button
                     type="button"
