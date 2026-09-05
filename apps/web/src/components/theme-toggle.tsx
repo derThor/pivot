@@ -30,7 +30,10 @@ function hasThemeCookie() {
     .some((entry) => entry.startsWith(`${COOKIE_NAME}=`));
 }
 
-/** Dark-Mode-Umschalter in der Topbar (Nutzervorgabe, 2026-08-25) – exakte
+/** Dark-Mode-Umschalter. Sitzt seit 2026-09-05 im Benutzer-Popup
+ * (Nutzervorgabe: "mach den slider in das popup rechts beim nutzer") und
+ * auf Mobil zusätzlich in der Sidebar; die Topbar zeigt ihn nicht mehr.
+ * Geometrie unverändert nach Vorgabe von 2026-08-25 – exakte
  * Geometrie nach Vorgabe: Track 82×36px, Knopf 28px, Positionen
  * left:4/left:50 (Knopf) bzw. left:36/left:10 (Label), volle Rundung.
  * Alle Farben referenzieren Tokens aus globals.css, keine Hex-Literale.

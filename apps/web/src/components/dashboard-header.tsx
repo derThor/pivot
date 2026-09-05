@@ -169,7 +169,6 @@ export function DashboardHeader({
                 </span>
               )}
             </div>
-            <ThemeToggle className="hidden md:block" />
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
@@ -284,6 +283,19 @@ export function DashboardHeader({
                       </span>
                     </span>
                   </DropdownMenuItem>
+                </div>
+                <DropdownMenuSeparator className="mx-0" />
+                {/* Der Dark-Mode-Schalter sitzt seit 2026-09-05 hier statt
+                    in der Topbar (Nutzervorgabe: "mach den slider in das
+                    popup rechts beim nutzer") – er gehört zu den
+                    persönlichen Einstellungen dieses Kontos und nicht
+                    neben die Zähler für Einsendungen und Meldungen.
+
+                    Bewusst KEIN DropdownMenuItem: ein Klick darauf würde
+                    das Menü schließen, und man will das Umschalten sehen. */}
+                <div className="flex items-center justify-between gap-3 px-4 py-3">
+                  <span className="text-sm font-medium">Dunkelmodus</span>
+                  <ThemeToggle />
                 </div>
                 {canViewSettings && (
                   <>

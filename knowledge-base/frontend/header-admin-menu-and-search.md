@@ -228,3 +228,20 @@ Nutzervorgabe: "header bg auf 50% setzen". Der klebende Dashboard-Header
 lag auf `bg-background/70` und steht jetzt auf `bg-background/50` – der
 `backdrop-blur-md` bleibt, darunter durchscrollende Inhalte sind dadurch
 etwas deutlicher sichtbar.
+
+## Update 2026-09-05: Dark-Mode-Schalter zieht ins Benutzer-Popup
+
+Nutzervorgabe: _"mach den slider in das popup rechts beim nutzer"_.
+
+Der Schalter stand in der Topbar zwischen den Zählern (Einsendungen,
+Meldungen) und dem Benutzer-Knopf. Dort war er ein Fremdkörper: die Zähler
+melden Arbeit, der Schalter ist eine persönliche Vorliebe dieses Kontos –
+und genau dafür ist das Popup da (Mein Konto, Sicherheit,
+Benachrichtigungen).
+
+Er sitzt jetzt als eigene Zeile („Dunkelmodus" links, Schalter rechts)
+über der Einstellungen-Zeile. **Bewusst kein `DropdownMenuItem`:** ein
+Klick darauf würde das Menü schließen, und man will das Umschalten sehen.
+
+Auf Mobil bleibt es beim zweiten Platz in der Sidebar (`app-sidebar.tsx`) –
+dort gibt es das Popup so nicht.
